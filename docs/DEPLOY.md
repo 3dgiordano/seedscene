@@ -81,8 +81,9 @@ the tag check is skipped and the site is built from the branch chosen there.
   workflow by hand).
 - **A quick test fails**: the same seed no longer gives the same demo on that
   commit; the old site stays up. `npm run test:quick` locally shows which check.
-- **The deploy step is refused**: Pages is not set to "GitHub Actions" yet
-  (step 2 above).
+- **"Get Pages site failed … Not Found"** at the `configure-pages` step:
+  Pages is not turned on for the repository yet. Set Settings → Pages →
+  Source: GitHub Actions (step 2 above), then run the workflow again.
 
 ## A custom domain
 

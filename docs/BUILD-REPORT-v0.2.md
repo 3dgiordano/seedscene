@@ -1765,6 +1765,14 @@ docs or the renders.
 | Paths that must stay out | an mp4 in `out/`, the site, a package, `.claude/settings.local.json`, a stray `x.mp4`: all ignored |
 | Line endings | text stored as LF, images binary; one file (`requeriments.txt`) has CRLF and will be stored as LF |
 
+**Online.** The owner created the repository (3dgiordano/seedscene), pushed
+the 0.2.0 work in progress and turned GitHub Pages on. The first run of the
+workflow, by hand, built the site and passed the quick tests but stopped at
+`configure-pages`: Pages was not on yet (the API answered 404); once the
+owner set the source to GitHub Actions the same run deployed. The demo is at
+https://3dgiordano.github.io/seedscene/ - checked there: it opens in AUTOPLAY
+with the seed `seedscene`, draws on the GPU, no console errors.
+
 ## What went wrong before that
 
 1. **New seed (`S`) made the picture glitch** — reported by the owner.
