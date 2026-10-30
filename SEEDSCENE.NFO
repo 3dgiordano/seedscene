@@ -1,0 +1,101 @@
+
+  ███████╗███████╗███████╗██████╗ ███████╗ ██████╗███████╗███╗   ██╗███████╗
+  ██╔════╝██╔════╝██╔════╝██╔══██╗██╔════╝██╔════╝██╔════╝████╗  ██║██╔════╝
+  ███████╗█████╗  █████╗  ██║  ██║███████╗██║     █████╗  ██╔██╗ ██║█████╗  
+  ╚════██║██╔══╝  ██╔══╝  ██║  ██║╚════██║██║     ██╔══╝  ██║╚██╗██║██╔══╝  
+  ███████║███████╗███████╗██████╔╝███████║╚██████╗███████╗██║ ╚████║███████╗
+  ╚══════╝╚══════╝╚══════╝╚═════╝ ╚══════╝ ╚═════╝╚══════╝╚═╝  ╚═══╝╚══════╝
+
+                       · One seed. One demo. Forever. ·
+
+ ════════════════════════════════════════════════════════════════════════════
+                       SEEDSCENE v0.2  ·  october 2026
+          generative demoscene  ·  music + motion from a single seed
+ ════════════════════════════════════════════════════════════════════════════
+
+ ┌──────────────────────────────────────────────────────────────────────────┐
+ │                                  THE IDEA                                │
+ └──────────────────────────────────────────────────────────────────────────┘
+
+   Remember typing LOAD"*",8,1 and waiting? Remember the cracktros, the
+   copper bars, the sine scrollers, the chiptunes that were better than
+   the games they came with? SEEDSCENE brings that back, with a twist:
+
+   type any word -- your name, a date, "1989" -- and it composes a demo
+   just for that word. Music and visuals, made on the spot, in your
+   browser. Type the same word tomorrow and you get the very same demo,
+   down to the last pixel. Like a game world seed, but for a 90s intro.
+
+   And then it takes you travelling: from the arcade in 1979 and the C64
+   in 1982, through the Amiga, DOS and VGA, the 32-bit consoles, the
+   handheld and the 64k intros of the 2000s, to the shader art of today.
+
+ ┌──────────────────────────────────────────────────────────────────────────┐
+ │                               WHAT'S INSIDE                              │
+ └──────────────────────────────────────────────────────────────────────────┘
+
+   ▪ eight eras, each with its own screen: arcade · C64 · Amiga
+        DOS/VGA · 32-bit console · handheld · Y2K · modern
+   ▪ THE JOURNEY: a trackmo through all eight, 1979 to now
+   ▪ AUTOPLAY: an endless channel, a new track every 40 seconds
+        and the scenes cut on the music -- never the same sequence
+        each track mixed into the next, beat on beat, like a DJ set
+   ▪ thirty-eight scenes: plasma · tunnel · metaballs · starfield · copper
+        fractal · shadebobs · vector balls · dot tunnel · fireworks · fire
+        kefrens bars · the bouncing checkered ball · interference rings
+        a twister · unlimited bobs · a dual chessboard
+        a chessboard floor with its bouncing cube · a rubber cube
+        a bump-mapped logo · a cracktro
+        an LCD juggler · a car with a red scanner · footsteps in a cup
+        a hopper on a pyramid of cubes · the 3D pipes
+        water ripple · outrun sunset · raymarched morph -- and from
+        the arcade: paddles · invaders · rocks · maze · bricks
+        light riders · snake · a robot title fight · a starfighter run
+        -- the games on a 3D stage that rides the music
+   ▪ twenty-four music styles: SID chiptune · new beat · amiga rave
+        orchestral tracker · gabber · jungle · acid · ambient · trance
+        eurodance · heroic game · handheld chip · happy hardcore
+        dreamwave · synthwave · arcade attract · cyborg pulse
+        derelict ship · synth-pop · chip rock and roll · star pilot
+        tracker jazz · FM metal · MIDI quest
+   ▪ the sound chips of the eras: Paula samples on the Amiga, the
+        Sound Blaster 16 FM or the AWE32 wavetable in DOS
+   ▪ a real C64 boot screen -- LOAD, the striped border, READY., RUN
+   ▪ press A for the about part -- SEEDSCENE's own demo about itself
+   ▪ live in the browser, or rendered to an mp4 you can share
+   ▪ same seed, same demo: byte for byte, every time
+   ▪ no videos, no assets -- only maths (even the samples are its own)
+
+ ┌──────────────────────────────────────────────────────────────────────────┐
+ │                               HOW TO RUN IT                              │
+ └──────────────────────────────────────────────────────────────────────────┘
+
+   npm install
+   node bin/seedscene.js live    --seed yourname
+   node bin/seedscene.js journey  --seed yourname
+   node bin/seedscene.js autoplay --seed yourname --duration 3600
+
+   In live mode press H to see every key. O autoplay · T the journey
+   E or 1-8 era
+   SPACE scene · UP/DOWN music · S seed · M menu · A about · F full
+
+ ┌──────────────────────────────────────────────────────────────────────────┐
+ │                                  CREDITS                                 │
+ └──────────────────────────────────────────────────────────────────────────┘
+
+   idea & direction ........ 3dgiordano
+   code, music engine ...... Claude (Anthropic), in Claude Code
+   discipline .............. github.com/3dgiordano/agent-plugins
+
+ ┌──────────────────────────────────────────────────────────────────────────┐
+ │                                 GREETINGS                                │
+ └──────────────────────────────────────────────────────────────────────────┘
+
+   to everyone who ever typed LOAD and waited · to the trackers and their
+   musicians · to every coder still up at 3 a.m. chasing one more frame ·
+   to the kids who will type their name and see their first demo ·
+   and to the scene: still alive, still making the impossible run.
+
+ ════════════════════════════════════════════════════════════════════════════
+                             keep the scene alive
+ ════════════════════════════════════════════════════════════════════════════

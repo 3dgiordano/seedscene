@@ -1,0 +1,24 @@
+{
+  "name": "seedscene",
+  "version": "0.2.0",
+  "description": "SEEDSCENE: type a word, get a demoscene production - music and motion - in any era from the C64 to today. Live in the browser, or rendered to mp4.",
+  "type": "module",
+  "bin": {
+    "seedscene": "./bin/seedscene.js"
+  },
+  "scripts": {
+    "live": "node bin/seedscene.js live",
+    "journey": "node bin/seedscene.js journey",
+    "render": "node bin/seedscene.js render",
+    "test": "node test/determinism.mjs",
+    "test:quick": "node test/determinism.mjs --quick",
+    "gallery": "node tools/gallery.js",
+    "sampler": "node tools/sampler.js",
+    "build:web": "node tools/build-web.js"
+  },
+  "dependencies": {
+    "ffmpeg-static": "^5.2.0",
+    "puppeteer": "^25.16.0"
+  },
+  "license": "MIT"
+}

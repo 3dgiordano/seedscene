@@ -1,0 +1,78 @@
+{
+  "record": "Agent plugins for seedscene v0.2",
+  "project": "seedscene",
+  "projectVersion": "0.2.0",
+  "status": "in development",
+  "host": {
+    "agent": "Claude Code",
+    "version": "2.1.309",
+    "surface": "Claude desktop app (Code tab)",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "marketplace": {
+    "name": "3dgiordano-agent-plugins",
+    "repository": "https://github.com/3dgiordano/agent-plugins",
+    "install": "claude plugin marketplace add 3dgiordano/agent-plugins"
+  },
+  "startedWith": "the v0.1 set (plugins-v0.1.json)",
+  "updated": {
+    "date": "2026-10-28",
+    "release": "v0.20.0",
+    "releaseTag": "https://github.com/3dgiordano/agent-plugins/releases/tag/v0.20.0",
+    "note": "Claude Code applies plugin updates when a session starts. The session was relaunched on 2026-10-28 and resumed at 15:30 UTC on this set; the installed plugins were checked against it.",
+    "inUseSince": "2026-10-28T15:30Z"
+  },
+  "plugins": [
+    {
+      "name": "aspiration-self-monitoring",
+      "version": "0.4.0",
+      "commit": "a00da2a989ce2998763cce3872dbdd12848a5fd9"
+    },
+    {
+      "name": "coverage-self-monitoring",
+      "version": "0.7.1",
+      "commit": "a00da2a989ce2998763cce3872dbdd12848a5fd9"
+    },
+    {
+      "name": "epistemic-self-monitoring",
+      "version": "0.6.0",
+      "commit": "3199f36a21f840bc73050dbbd75906c0557971af"
+    },
+    {
+      "name": "executive-self-monitoring",
+      "version": "1.11.0",
+      "commit": "a00da2a989ce2998763cce3872dbdd12848a5fd9"
+    },
+    {
+      "name": "handoff-self-monitoring",
+      "version": "0.8.0",
+      "commit": "a00da2a989ce2998763cce3872dbdd12848a5fd9"
+    },
+    {
+      "name": "hygiene-self-monitoring",
+      "version": "0.4.0",
+      "commit": "a00da2a989ce2998763cce3872dbdd12848a5fd9"
+    },
+    {
+      "name": "integrity-self-monitoring",
+      "version": "0.4.0",
+      "commit": "a00da2a989ce2998763cce3872dbdd12848a5fd9"
+    },
+    {
+      "name": "persistence-self-monitoring",
+      "version": "0.5.1",
+      "commit": "a00da2a989ce2998763cce3872dbdd12848a5fd9"
+    },
+    {
+      "name": "progress-self-monitoring",
+      "version": "0.10.0",
+      "commit": "a00da2a989ce2998763cce3872dbdd12848a5fd9"
+    },
+    {
+      "name": "termination-self-monitoring",
+      "version": "0.5.0",
+      "commit": "9efdf2c5259267dda0c00885a2153205945118f4"
+    }
+  ]
+}

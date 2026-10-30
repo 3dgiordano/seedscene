@@ -1,0 +1,76 @@
+# Publish the live demo to GitHub Pages when a release is published.
+#
+# The source lives on main; nothing generated is committed. On a release this
+# checks the same-seed promise (the quick tests: score, audio, choices,
+# AUTOPLAY - no Chrome, no ffmpeg), builds the static site with
+# `npm run build:web` and deploys it to Pages. It can also be run by hand from
+# the Actions tab (Run workflow), e.g. to republish the latest release.
+#
+# One-time setup: Settings -> Pages -> Build and deployment -> Source:
+# "GitHub Actions". See docs/DEPLOY.md.
+
+name: Deploy the demo to GitHub Pages
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# one deployment at a time; a newer release waits for the one in flight
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # the release tag must name the version in package.json (v0.2.0 for 0.2.0)
+      - name: Check the release matches package.json
+        if: github.event_name == 'release'
+        run: |
+          tag="${{ github.event.release.tag_name }}"
+          version="v$(node -p "require('./package.json').version")"
+          if [ "$tag" != "$version" ]; then
+            echo "::error::release tag $tag does not match package.json ($version)"
+            exit 1
+          fi
+
+      # the packages without their downloads: the quick tests and the build need
+      # neither Chrome nor ffmpeg, only that the modules resolve
+      - name: Install
+        run: npm ci --ignore-scripts
+
+      - name: Same seed, same demo (quick tests)
+        run: npm run test:quick
+
+      - name: Build the static site
+        run: npm run build:web
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

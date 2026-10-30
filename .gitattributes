@@ -1,0 +1,10 @@
+# Text is stored and checked out with LF on every machine, whatever the
+# machine's own git setting; the images are binary, never touched.
+* text=auto eol=lf
+
+*.png  binary
+*.gif  binary
+*.jpg  binary
+*.mp4  binary
+*.mp3  binary
+*.wav  binary

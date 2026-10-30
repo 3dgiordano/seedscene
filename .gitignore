@@ -1,0 +1,49 @@
+# What the repository keeps: the code (bin, src, web, tools, test), the docs and
+# their gallery (docs/gallery - the README shows it), the release notes, the
+# package files, the deploy workflow (.github), the agent's notes (.agent) and
+# its silent live preview (.claude/launch.json) - the owner chose to keep both.
+# Everything below is made on a machine, or belongs to one, and is not kept.
+
+# dependencies: npm install brings them back
+node_modules/
+
+# made by the tools: renders and their sound, the static site
+out/
+dist/
+# a render written anywhere else with --out, or a sound file
+*.mp4
+*.webm
+*.mkv
+*.mp3
+*.wav
+*.ogg
+
+# logs and caches
+*.log
+npm-debug.log*
+.npm/
+.cache/
+coverage/
+*.tmp
+*.temp
+
+# secrets, should one ever appear
+.env
+.env.*
+*.pem
+*.key
+
+# one person's settings: the agent's local permissions, editors
+.claude/settings.local.json
+.claude/*.local.*
+.vscode/
+.idea/
+*.swp
+*~
+
+# what the operating system leaves behind
+Thumbs.db
+ehthumbs.db
+desktop.ini
+.DS_Store
+$RECYCLE.BIN/

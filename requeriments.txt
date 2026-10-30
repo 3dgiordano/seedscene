@@ -1,0 +1,8 @@
+Build a local generative music art video tool.
+
+Given a seed, resolution, and style name, it should generate an full video clip with motion and music in a mp4 file.
+The same seed must produce the same style output.
+I want a command-line interface and a few built-in styles.
+
+It needs to run in real time and be experienced live. It doesn't have to be high resolution, but it should be visually pleasing—reminiscent of the "demoscene" productions from the 90s or 2000s.
+Ideally, it should be built entirely using web technologies (HTML), taking advantage of the multimedia capabilities of a browser like Chrome.

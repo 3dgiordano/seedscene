@@ -1,0 +1,18 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "seedscene-live",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "bin/seedscene.js",
+        "live",
+        "--port",
+        "8731",
+        "--no-open",
+        "--mute"
+      ],
+      "port": 8731
+    }
+  ]
+}

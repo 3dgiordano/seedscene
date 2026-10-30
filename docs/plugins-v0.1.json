@@ -1,0 +1,80 @@
+{
+  "record": "Agent plugins active while v0.1 (then music-gen-video) was built",
+  "project": "music-gen-video (now seedscene)",
+  "projectVersion": "0.1.0",
+  "builtOn": "2026-10-27",
+  "host": {
+    "agent": "Claude Code",
+    "version": "2.1.309",
+    "surface": "Claude desktop app (Code tab)",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "marketplace": {
+    "name": "3dgiordano-agent-plugins",
+    "repository": "https://github.com/3dgiordano/agent-plugins",
+    "install": "claude plugin marketplace add 3dgiordano/agent-plugins"
+  },
+  "plugins": [
+    {
+      "name": "aspiration-self-monitoring",
+      "version": "0.3.0",
+      "commit": "9efdf2c5259267dda0c00885a2153205945118f4",
+      "impact": "high"
+    },
+    {
+      "name": "coverage-self-monitoring",
+      "version": "0.7.0",
+      "commit": "9efdf2c5259267dda0c00885a2153205945118f4",
+      "impact": "high"
+    },
+    {
+      "name": "epistemic-self-monitoring",
+      "version": "0.6.0",
+      "commit": "3199f36a21f840bc73050dbbd75906c0557971af",
+      "impact": "high"
+    },
+    {
+      "name": "executive-self-monitoring",
+      "version": "1.10.0",
+      "commit": "9efdf2c5259267dda0c00885a2153205945118f4",
+      "impact": "low"
+    },
+    {
+      "name": "handoff-self-monitoring",
+      "version": "0.7.0",
+      "commit": "9efdf2c5259267dda0c00885a2153205945118f4",
+      "impact": "medium"
+    },
+    {
+      "name": "hygiene-self-monitoring",
+      "version": "0.3.0",
+      "commit": "ec1aee934bd769ba8fd859c80ca7e6d80ba0656f",
+      "impact": "low"
+    },
+    {
+      "name": "integrity-self-monitoring",
+      "version": "0.3.0",
+      "commit": "ec1aee934bd769ba8fd859c80ca7e6d80ba0656f",
+      "impact": "medium"
+    },
+    {
+      "name": "persistence-self-monitoring",
+      "version": "0.5.0",
+      "commit": "52bdd19e6f157ad17212a5c5c3ba2c8854101115",
+      "impact": "medium"
+    },
+    {
+      "name": "progress-self-monitoring",
+      "version": "0.9.0",
+      "commit": "52bdd19e6f157ad17212a5c5c3ba2c8854101115",
+      "impact": "none needed"
+    },
+    {
+      "name": "termination-self-monitoring",
+      "version": "0.5.0",
+      "commit": "9efdf2c5259267dda0c00885a2153205945118f4",
+      "impact": "not triggered"
+    }
+  ]
+}
