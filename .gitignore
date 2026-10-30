@@ -1,5 +1,6 @@
 # What the repository keeps: the code (bin, src, web, tools, test), the docs and
 # their gallery (docs/gallery - the README shows it), the release notes, the
+# MIT LICENSE, the
 # package files, the deploy workflow (.github), the agent's notes (.agent) and
 # its silent live preview (.claude/launch.json) - the owner chose to keep both.
 # Everything below is made on a machine, or belongs to one, and is not kept.

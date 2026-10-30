@@ -14,7 +14,7 @@ is published by a workflow, [.github/workflows/pages.yml](../.github/workflows/p
   the docs and their gallery, the release notes, the package files, this
   workflow, the agent's notes (`.agent/`, where the work stands, so it can
   be picked up from any clone) and `.claude/launch.json` (the live preview,
-  silent, for agent sessions) - 87 files, about 25 MB.
+  silent, for agent sessions) and the MIT `LICENSE` - 88 files, about 25 MB.
   `.gitattributes` stores text with LF on every machine, so a clone is the
   same on Windows, Linux and macOS, and what the workflow builds is what was
   committed.

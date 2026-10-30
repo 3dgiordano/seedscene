@@ -304,6 +304,8 @@ can drive entirely from the keyboard.
   of their own gets the seed `seedscene`, straight into AUTOPLAY; a link with
   a seed opens that demo. The live page takes `autoplay=1` in its address
   and keeps it there, as it keeps every setting. The sound needs HTTPS.
+- **An MIT `LICENSE` file**, as `package.json` already declared, so GitHub
+  shows the repository's license.
 - **Published on each release.** A GitHub Actions workflow builds the static
   site and deploys it to GitHub Pages when a release is published (or when
   run by hand), after checking the release's tag matches `package.json` and
