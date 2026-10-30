@@ -42,6 +42,9 @@ coverage/
 *.swp
 *~
 
+# a state/ folder some tool leaves at the root (origin unknown, 2026-10-29): never versioned
+/state/
+
 # what the operating system leaves behind
 Thumbs.db
 ehthumbs.db
