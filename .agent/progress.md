@@ -11,4 +11,4 @@ Plan: CHANGELOG.md (0.2.0 — in development) and docs/BUILD-REPORT-v0.2.md, sec
 - returned: version control - the 0.2.0 WIP is on GitHub and live at https://3dgiordano.github.io/seedscene/ (2026-10-30); the official release when the plan is closed is the owner's ([detail](progress-git.md))
 - returned: the music audit - 13 of 28 styles pass (modjazz's flute approved with a warning one Amiga sample cannot clear), 15 still fail; which style to put right next is the owner's ([detail](progress-music.md))
 
-Next: the owner looks at the VHS display again, without the snow (moonbike, timecar - D to VHS); new displays come one per technology a scene simulates (full resolution; CRT effects only for CRTs); then the next audit style (jungle).
+Next: the owner checks the screen stays on in AUTOPLAY / THE JOURNEY in their own browser (the app pane refuses the wake lock); new displays come one per technology a scene simulates (full resolution; CRT effects only for CRTs); then the next audit style (jungle).

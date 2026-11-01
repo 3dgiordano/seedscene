@@ -276,6 +276,13 @@ click, never after a minute of nothing: in full screen (`F`) the screensaver
 stays full screen; in a window it fills the window. `saver=<seconds>` in
 the page's address changes the wait, `saver=0` turns it off.
 
+The screensaver lets the computer sleep as it would. AUTOPLAY and THE JOURNEY,
+which you start yourself to leave playing, keep the screen on while they play
+(not while paused), so the computer's power settings don't turn the picture
+off under the music. It uses the browser's Screen Wake Lock (Chrome and Edge,
+Safari 16.4, Firefox 126; on https or localhost); a browser that refuses it -
+a battery saver, a policy - leaves the screen to the computer's settings.
+
 ## The arcade
 
 ![paddles, invaders, rocks, a maze, a brick wall, light riders, a snake, a robot title fight and a space run, each moving to its own music](docs/gallery/arcade.gif)

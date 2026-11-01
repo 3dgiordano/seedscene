@@ -3759,6 +3759,28 @@ live and muted on the real GPU: timecar's sky shows only its own lights, in the
 same places frame to frame; moonbike's stars show as short horizontal streaks,
 a point of light as a tape smears it, and they stay where the scene puts them.
 
+## The screen kept on in a programme
+
+The owner: left in THE JOURNEY or AUTOPLAY, the screen turns off by the
+computer's power settings and the music plays on; in those modes it should
+not. Browsers have the Screen Wake Lock API for this
+(`navigator.wakeLock.request('screen')`: Chrome and Edge 84, Safari 16.4,
+Firefox 126; only on https or localhost, so both GitHub Pages and
+`seedscene live` have it). The browser lets the lock go whenever the page is
+hidden, so `web/live.js` checks once a second, and when the page comes back
+into view: it holds the lock while a programme plays (not paused, the page
+visible) and lets it go otherwise. Not in the screensaver: that one starts
+because nobody is there, and the computer may sleep as it would. A refusal
+is asked again only half a minute on.
+
+Checked live and muted: the app's own browser refuses the lock
+(`NotAllowedError`, its policy), so the logic was checked with the request
+stood in for in the page: asked on entering THE JOURNEY, let go on pause,
+asked on resuming, let go on leaving, asked in AUTOPLAY and let go on leaving
+it; the screensaver (`saver=3`) came on and asked for nothing. Not checked in
+a desktop Chrome, Edge or Safari, where the lock is granted. `npm test`
+passes.
+
 ## What went wrong before that
 
 1. **New seed (`S`) made the picture glitch** — reported by the owner.

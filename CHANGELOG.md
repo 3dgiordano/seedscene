@@ -553,6 +553,10 @@ can drive entirely from the keyboard.
 
 ### Changed
 
+- **The screen stays on in AUTOPLAY and THE JOURNEY.** While a programme plays
+  (not paused, the page in view) the page holds the browser's Screen Wake
+  Lock, so the computer's power settings don't turn the picture off under the
+  music; the screensaver lets the computer sleep as before.
 - **VHS display.** Rebuilt from how a tape records (ntsc-rs's VHS figures):
   soft brightness sharpened back, colour smeared wide and late, a slow wave on
   the lines, colour noise and grain, the heads switching at the bottom. The rolling tracking band - a fault, not the format - is gone.

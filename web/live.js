@@ -566,6 +566,34 @@ function touched() {
   if (saver) wake();
 }
 setInterval(sleepCheck, 1000);
+
+// ---- the screen kept on in a programme: AUTOPLAY or THE JOURNEY is left to play, so the
+// computer's own power settings must not turn the screen off under it (the Screen Wake Lock
+// API: Chrome and Edge 84, Safari 16.4, Firefox 126; only on https or localhost). Not in the
+// screensaver - that one starts because nobody is there, and the computer may sleep as it would.
+// The browser lets the lock go when the page is hidden; it is asked for again when it comes back.
+
+let wakeLock = null;
+let wakeAsking = false;
+let wakeRefused = -Infinity;   // when the browser last said no: asked again only half a minute on
+
+async function keepAwake() {
+  const want = running && !paused && !saver && demo.inProgramme && document.visibilityState === 'visible';
+  if (want && !wakeLock && !wakeAsking && navigator.wakeLock && performance.now() - wakeRefused > 30000) {
+    wakeAsking = true;
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    } catch (e) { wakeRefused = performance.now(); /* refused (battery saver, a policy): the screen sleeps as the computer says */ }
+    wakeAsking = false;
+  } else if (!want && wakeLock) {
+    const l = wakeLock;
+    wakeLock = null;
+    l.release().catch(() => {});
+  }
+}
+setInterval(keepAwake, 1000);
+document.addEventListener('visibilitychange', keepAwake);
 // before every other key handler: the key that wakes the demo does nothing else
 addEventListener('keydown', (e) => {
   const was = saver;
