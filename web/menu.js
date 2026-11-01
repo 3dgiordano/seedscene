@@ -19,8 +19,8 @@ function step(list, current, dir, same = (a, b) => a === b) {
 /**
  * @param {object} o
  * @param {HTMLElement} o.root
- * @param {string[]} o.styles
- * @param {string[]} o.musics        'auto' first, then the music styles
+ * @param {string[]|function():string[]} o.styles   the scenes, in the order the viewer travels them
+ * @param {string[]|function():string[]} o.musics   'auto' first, then the music styles, the era's own first
  * @param {(m:string) => string} o.musicLabel
  * @param {string[]} o.eras          'auto' first, then the eras
  * @param {(e:string) => string} o.eraLabel
@@ -28,7 +28,7 @@ function step(list, current, dir, same = (a, b) => a === b) {
  * @param {object} o.actions         setSeed, randomSeed, setStyle, setResolution,
  *                                   setMusic, setDuration, setOverlay, setSound, commands
  */
-export function createMenu({ root, styles, musics, musicLabel, eras, eraLabel, getState, actions }) {
+export function createMenu({ root, styles, musics, musicLabel, eras, eraLabel, displays, displayLabel, boards, boardLabel, getState, actions }) {
   let open = false;
   let sel = 0;
   let flash = null;          // { row, text, until }
@@ -46,8 +46,9 @@ export function createMenu({ root, styles, musics, musicLabel, eras, eraLabel, g
     },
     {
       id: 'style', label: 'SCENE',
-      value: (s) => `${styles.indexOf(s.style) + 1}. ${s.style}`,
-      change: (s, d) => actions.setStyle(step(styles, s.style, d)),
+      // (stepped as the keys step it: through the catalogue era by era, in the seed's order)
+      value: (s) => s.style,
+      change: (s, d) => actions.stepStyle(d),
     },
     {
       id: 'era', label: 'ERA',
@@ -55,9 +56,19 @@ export function createMenu({ root, styles, musics, musicLabel, eras, eraLabel, g
       change: (s, d) => actions.setEra(step(eras, s.era, d)),
     },
     {
+      id: 'display', label: 'DISPLAY',
+      value: (s) => displayLabel(s.display),
+      change: (s, d) => actions.setDisplay(step(displays, s.display, d)),
+    },
+    {
+      id: 'board', label: 'SOUND BOARD',
+      value: (s) => boardLabel(s.board),
+      change: (s, d) => actions.setBoard(step(boards, s.board, d)),
+    },
+    {
       id: 'music', label: 'MUSIC',
       value: (s) => musicLabel(s.music),
-      change: (s, d) => actions.setMusic(step(musics, s.music, d)),
+      change: (s, d) => actions.stepMusic(d),
     },
     {
       id: 'res', label: 'RESOLUTION',

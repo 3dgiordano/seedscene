@@ -6,7 +6,10 @@ import { Demo, STYLE_NAMES } from '../src/app.js';
 import { SAMPLE_RATE, MUSIC_NAMES, MUSIC_PRESETS } from '../src/core/music.js';
 import { bootSequence } from './boot.js';
 import { createMenu } from './menu.js';
-import { ERAS, ERA_NAMES } from '../src/core/eras.js';
+import { ERAS, ERA_NAMES, eraKey } from '../src/core/eras.js';
+import { sceneTour, sceneList, musicTour } from '../src/core/catalogue.js';
+import { DISPLAYS, DISPLAY_NAMES } from '../src/core/displays.js';
+import { BOARDS, BOARD_NAMES } from '../src/core/boards.js';
 import { resolveChoices } from '../src/core/choose.js';
 import { bornInHome } from '../src/core/journey.js';
 import { cleanGreets } from '../src/brand.js';
@@ -29,8 +32,10 @@ if (params.get('seed') !== seed0 || params.get('scene') !== style0 || params.has
 const cfg = {
   seed: seed0,
   style: style0,
-  era: params.get('era') || 'auto',
+  era: eraKey(params.get('era')) || 'auto',   // (an old machine name still finds its era)
   music: params.get('music') || 'auto',
+  display: params.get('display') || 'auto',   // DISPLAY: auto, or one screen forced on everything
+  board: params.get('board') || 'auto',       // SOUND BOARD: auto, or one board forced on all the music
   width: parseInt(params.get('width') || '854', 10),
   height: parseInt(params.get('height') || '480', 10),
   duration: parseFloat(params.get('duration') || '180'),
@@ -47,6 +52,8 @@ const cfg = {
 };
 if (cfg.music !== 'auto' && !MUSIC_NAMES.includes(cfg.music)) cfg.music = 'auto';
 if (cfg.era !== 'auto' && !ERA_NAMES.includes(cfg.era)) cfg.era = 'auto';
+if (cfg.display !== 'auto' && !DISPLAYS[cfg.display]) cfg.display = 'auto';
+if (cfg.board !== 'auto' && !BOARDS[cfg.board]) cfg.board = 'auto';
 
 const canvas = document.getElementById('c');
 const hud = document.getElementById('hud');
@@ -86,8 +93,10 @@ function updateHud() {
   hud.innerHTML = [
     `<b>${m.title}</b>`,
     `seed   ${escapeHtml(cfg.seed)}`,
-    `era    ${ERAS[demo.era].label} ${ERAS[demo.era].year}${cfg.era === 'auto' ? ' (auto)' : ''}`,
+    `era    ${ERAS[demo.era].label} ${ERAS[demo.era].title}${cfg.era === 'auto' ? ' (auto)' : ''}`,
     `scene  ${demo.style}`,
+    `screen ${DISPLAYS[demo.renderer.display].name}${cfg.display === 'auto' ? ' (auto)' : ''}`,
+    `sound  ${BOARDS[demo.board].name}${cfg.board === 'auto' ? ' (auto)' : ''}`,
     `music  ${m.musicLabel}${cfg.music === 'auto' ? ' (auto)' : ''} &middot; ${m.bpm} bpm &middot; ${m.rootName} ${m.scaleLabel}`,
     `res    ${cfg.width}x${cfg.height}`,
     `<b>H</b> every key &middot; <b>M</b> menu &middot; <b>O</b> autoplay &middot; <b>T</b> the journey &middot; <b>A</b> about`,
@@ -147,7 +156,7 @@ function connectSynth(startPart = 0) {
     numberOfInputs: 0,
     outputChannelCount: [2],
     processorOptions: {
-      seed: demo.seed, duration: demo.duration, music: demo.music, chip: demo.chip, loop: true,
+      seed: demo.seed, duration: demo.duration, music: demo.music, chip: demo.chip, board: cfg.board, loop: true,
       programme: pr ? pr.kind : null, startPart, bornIn: pr ? pr.bornIn : null,
     },
   });
@@ -230,7 +239,7 @@ function setEra(name) {
   if (demo.setEra(name).musicChanged) connectSynth();
   updateHud();
   const e = ERAS[demo.era];
-  toast(name === 'auto' ? `ERA: AUTO (${e.label.toUpperCase()})` : `${e.year} ${e.label.toUpperCase()}`);
+  toast(name === 'auto' ? `ERA: AUTO (${e.label.toUpperCase()})` : `${e.label} ${e.title.toUpperCase()}`);
 }
 
 const ERA_CYCLE = ['auto', ...ERA_NAMES];
@@ -239,9 +248,28 @@ function stepEra(d) {
   setEra(ERA_CYCLE[(i + ERA_CYCLE.length) % ERA_CYCLE.length]);
 }
 
+/**
+ * The next or previous scene: through the catalogue era by era, oldest first, each era's scenes in the
+ * order the seed deals them; past an era's last scene, on into the next era's first, scene and era together.
+ */
 function stepStyle(d) {
-  const i = STYLE_NAMES.indexOf(cfg.style) + d;
-  setStyle(STYLE_NAMES[(i + STYLE_NAMES.length) % STYLE_NAMES.length]);
+  const tour = sceneTour(cfg.seed);
+  let i = tour.findIndex((x) => x.scene === cfg.style && x.era === demo.era);
+  if (i < 0) i = tour.findIndex((x) => x.scene === cfg.style);
+  const next = tour[(i + d + tour.length) % tour.length];
+  if (next.era === demo.era) setStyle(next.scene);
+  else setSceneInEra(next.scene, next.era);
+}
+
+function setSceneInEra(name, era) {
+  cfg.style = name;
+  cfg.era = era;
+  remember('scene', name);
+  remember('era', era);
+  if (demo.setSceneInEra(name, era).musicChanged) connectSynth();
+  else demo.renderer.sceneStart = now() % (demo.inProgramme ? demo.programme.meta.duration : demo.duration);
+  updateHud();
+  toast(`SCENE: ${name.toUpperCase()}  ${ERAS[era].label}`);
 }
 
 function setSeed(seed) {
@@ -263,10 +291,42 @@ function setMusic(music) {
   toast(`MUSIC: ${demo.meta.musicLabel.toUpperCase()}${music === 'auto' ? ' (AUTO)' : ''}`);
 }
 
-const MUSIC_CYCLE = ['auto', ...MUSIC_NAMES];
+/** The music, from the era playing: its own styles first in the seed's order, then the other eras', each once. */
+const musicCycle = () => ['auto', ...musicTour(cfg.seed, demo.era)];
 function stepMusic(d) {
-  const i = MUSIC_CYCLE.indexOf(cfg.music) + d;
-  setMusic(MUSIC_CYCLE[(i + MUSIC_CYCLE.length) % MUSIC_CYCLE.length]);
+  const cycle = musicCycle();
+  const i = cycle.indexOf(cfg.music) + d;
+  setMusic(cycle[(i + cycle.length) % cycle.length]);
+}
+
+/** DISPLAY: auto (each scene its own screen, or its era's), or one screen forced on everything. */
+function setDisplay(name) {
+  cfg.display = name;
+  remember('display', name === 'auto' ? null : name);
+  demo.setDisplay(name);
+  updateHud();
+  toast(name === 'auto' ? `DISPLAY: AUTO (${DISPLAYS[demo.renderer.display].name})` : `DISPLAY: ${DISPLAYS[name].name} - ${DISPLAYS[name].label.toUpperCase()}`);
+}
+const DISPLAY_CYCLE = ['auto', ...DISPLAY_NAMES];
+
+/** SOUND BOARD: auto (each scene its own, or its era's), or one board forced on all the music; the tune starts again on it. */
+function setBoard(name) {
+  cfg.board = name;
+  remember('board', name === 'auto' ? null : name);
+  const pr = demo.programme;
+  const at = pr ? pr.indexAt(now() % pr.meta.duration) : 0;
+  if (demo.setBoard(name).musicChanged) connectSynth(at);
+  updateHud();
+  toast(name === 'auto' ? `SOUND BOARD: AUTO (${BOARDS[demo.board].name})` : `SOUND BOARD: ${BOARDS[name].name} - ${BOARDS[name].label.toUpperCase()}`);
+}
+const BOARD_CYCLE = ['auto', ...BOARD_NAMES];
+function stepBoard(d) {
+  const i = BOARD_CYCLE.indexOf(cfg.board) + d;
+  setBoard(BOARD_CYCLE[(i + BOARD_CYCLE.length) % BOARD_CYCLE.length]);
+}
+function stepDisplay(d) {
+  const i = DISPLAY_CYCLE.indexOf(cfg.display) + d;
+  setDisplay(DISPLAY_CYCLE[(i + DISPLAY_CYCLE.length) % DISPLAY_CYCLE.length]);
 }
 
 function setResolution(w, h) {
@@ -337,7 +397,7 @@ function startBornIn(year) {
   remember('born', String(year));
   programmeChrome('autoplay', true);
   const e = ERAS[bornInHome(year)];
-  toast(`BORN IN ${year}: ${e.year} ${e.label.toUpperCase()}`);
+  toast(`BORN IN ${year}: ${e.label} ${e.title.toUpperCase()}`);
 }
 
 /** The key that leaves the programme playing: B for born in, O for AUTOPLAY, T for THE JOURNEY. */
@@ -387,14 +447,18 @@ function commands() {
 
 const menu = createMenu({
   root: document.getElementById('menu'),
-  styles: STYLE_NAMES,
-  musics: MUSIC_CYCLE,
+  styles: () => sceneList(cfg.seed),
+  musics: musicCycle,
   musicLabel: (m) => (m === 'auto' ? `AUTO: ${demo.meta.musicLabel}` : MUSIC_PRESETS[m].label),
   eras: ERA_CYCLE,
-  eraLabel: (e) => (e === 'auto' ? `AUTO: ${ERAS[demo.era].label}` : `${ERAS[e].year} ${ERAS[e].label}`),
+  displays: DISPLAY_CYCLE,
+  boards: BOARD_CYCLE,
+  boardLabel: (b) => (b === 'auto' ? `AUTO: ${BOARDS[demo.board].name}` : `${BOARDS[b].name} ${BOARDS[b].label}`),
+  displayLabel: (d) => (d === 'auto' ? `AUTO: ${DISPLAYS[demo.renderer.display].name}` : `${DISPLAYS[d].name} ${DISPLAYS[d].label}`),
+  eraLabel: (e) => (e === 'auto' ? `AUTO: ${ERAS[demo.era].label}` : `${ERAS[e].label} ${ERAS[e].title}`),
   getState: () => ({ ...cfg }),
   actions: {
-    setSeed, randomSeed, setStyle, setEra, setMusic, setResolution, setDuration, setOverlay, setSound, commands,
+    setSeed, randomSeed, setStyle, stepStyle, setEra, setMusic, stepMusic, setDisplay, setBoard, setResolution, setDuration, setOverlay, setSound, commands,
   },
 });
 
@@ -531,6 +595,8 @@ const KEYS = [
   ['M', 'MENU: TYPE YOUR OWN SEED AND MORE'],
   ['A', 'THE ABOUT PART'],
   ['P', 'PAUSE'],
+  ['D', 'DISPLAY: AUTO, OR FORCE ONE SCREEN ON EVERYTHING - B/W, MONO, C64, VHS, EGA, SNES, GAME BOY...'],
+  ['C', 'SOUND BOARD: AUTO (EACH SCENE ITS OWN), OR FORCE ONE - HI-FI, PAULA, OPL3 FM, AWE32'],
   ['V', 'SOUND ON / OFF (THE PICTURE KEEPS THE BEAT)'],
   ['F', 'FULLSCREEN'],
   ['I', 'SHOW / HIDE THE INFO PANEL'],
@@ -560,6 +626,8 @@ addEventListener('keydown', (e) => {
   if (k === 'escape' && help.classList.contains('open')) { help.classList.remove('open'); return; }
   if (k === 'p') { handled(); togglePause(); return; }
   if (k === 'v') { handled(); setSound(!cfg.sound); return; }
+  if (k === 'd') { handled(); stepDisplay(1); return; }
+  if (k === 'c') { handled(); stepBoard(1); return; }
   if (k === 'f') {
     if (document.fullscreenElement) document.exitFullscreen();
     else document.documentElement.requestFullscreen();

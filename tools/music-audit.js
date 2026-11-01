@@ -20,6 +20,7 @@ import { composeScore, Synth, MUSIC_PRESETS, MUSIC_NAMES, SAMPLE_RATE, SENDS } f
 import { ERAS, ERA_NAMES } from '../src/core/eras.js';
 import { ERA_CHIPS } from '../src/core/chips.js';
 import { TIMBRE_REFS } from './timbre-refs.js';
+import { SCENE_BOARD, chipOfBoard } from '../src/core/boards.js';
 
 const SR = SAMPLE_RATE;
 const NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
@@ -272,9 +273,14 @@ function render(score, events, seed, chip, seconds) {
   return { rms: 10 * Math.log10(sq / (2 * n) + 1e-12), peak: 20 * Math.log10(pk + 1e-12), bad, speed: (n / SR) / (ms / 1000) };
 }
 
+/** Every chip a style is heard on: its eras' boards, and the boards of the scenes it plays with there. */
 function chipsOf(style) {
   const set = new Set();
-  for (const era of ERA_NAMES) if (ERAS[era].music.includes(style)) for (const c of ERA_CHIPS[era] || [null]) set.add(c);
+  for (const era of ERA_NAMES) {
+    if (!ERAS[era].music.includes(style)) continue;
+    for (const c of ERA_CHIPS[era] || [null]) set.add(c);
+    for (const scene of ERAS[era].scenes) if (SCENE_BOARD[scene]) set.add(chipOfBoard(SCENE_BOARD[scene]));
+  }
   return set.size ? [...set] : [null];
 }
 

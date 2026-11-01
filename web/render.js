@@ -3,12 +3,13 @@
 
 import { Demo } from '../src/app.js';
 import { cleanGreets } from '../src/brand.js';
+import { eraKey } from '../src/core/eras.js';
 
 const p = new URLSearchParams(location.search);
 const cfg = {
   seed: p.get('seed') || 'demo',
   style: p.get('scene') || p.get('style') || 'auto',     // (style: the scene's old name)
-  era: p.get('era') || 'auto',
+  era: eraKey(p.get('era') || 'auto') || 'auto',
   journey: p.get('programme') === 'journey' || p.get('journey') === '1',
   autoplay: p.get('programme') === 'autoplay',
   bornIn: /^\d{4}$/.test(p.get('born') || '') ? parseInt(p.get('born'), 10) : null,
@@ -18,6 +19,8 @@ const cfg = {
   music: p.get('music') || 'auto',
   overlay: p.get('overlay') !== '0',
   greets: cleanGreets(p.get('greets')),
+  display: p.get('display') || 'auto',
+  board: p.get('board') || 'auto',
 };
 const fps = parseFloat(p.get('fps') || '30');
 const mime = p.get('format') === 'jpeg' ? 'image/jpeg' : 'image/png';

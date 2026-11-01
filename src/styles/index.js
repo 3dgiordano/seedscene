@@ -361,11 +361,12 @@ uniform sampler2D uScene;      // the scene, sampled as hard pixels
 uniform sampler2D uSceneSoft;  // the same scene, filtered, for the glow
 uniform sampler2D uText;
 uniform vec2 uRes;             // canvas
-uniform vec2 uVRes;            // the era's resolution
+uniform vec2 uVRes;            // the picture's resolution (always the canvas's)
+uniform vec2 uLineRes;         // the screen's own lines: its scan lines, an LCD's grid, the tape's jitter
 uniform float uTime, uKick, uSnare, uEnergy;
-uniform int uPalMode;          // 0 none, 1 C64, 2 levels per channel, 3 handheld greens
+uniform int uPalMode;          // 0 none, 1 C64, 2 levels per channel, 3 handheld greens, 4 EGA, 5 green mono, 6 grey, 7 phone LCD
 uniform float uLevels, uDither;
-uniform int uDisplay;          // 0 CRT, 1 LCD, 2 TV, 3 clean, 4 modern
+uniform int uDisplay;          // 0 CRT, 1 LCD, 2 TV, 3 clean, 4 modern, 5 videotape
 uniform float uBloom, uScan, uBarrel, uAberr, uGrain, uVignette;
 uniform float uFade;           // 0..1, a fade to black between parts
 uniform float uImpact;         // 0 for most scenes; 1 gives a zoom blur on the kick
@@ -375,6 +376,12 @@ const vec3 C64[16] = vec3[16](
   vec3(0.435, 0.239, 0.525), vec3(0.345, 0.553, 0.263), vec3(0.208, 0.157, 0.475), vec3(0.722, 0.780, 0.435),
   vec3(0.435, 0.310, 0.145), vec3(0.263, 0.224, 0.000), vec3(0.604, 0.404, 0.349), vec3(0.267),
   vec3(0.424), vec3(0.604, 0.824, 0.518), vec3(0.424, 0.369, 0.710), vec3(0.584));
+// the sixteen colours of the EGA's default palette (and the CGA's before it)
+const vec3 EGA[16] = vec3[16](
+  vec3(0.000), vec3(0.000, 0.000, 0.667), vec3(0.000, 0.667, 0.000), vec3(0.000, 0.667, 0.667),
+  vec3(0.667, 0.000, 0.000), vec3(0.667, 0.000, 0.667), vec3(0.667, 0.333, 0.000), vec3(0.667),
+  vec3(0.333), vec3(0.333, 0.333, 1.000), vec3(0.333, 1.000, 0.333), vec3(0.333, 1.000, 1.000),
+  vec3(1.000, 0.333, 0.333), vec3(1.000, 0.333, 1.000), vec3(1.000, 1.000, 0.333), vec3(1.000));
 const vec3 DMG[4] = vec3[4](
   vec3(0.059, 0.220, 0.059), vec3(0.188, 0.384, 0.188), vec3(0.545, 0.675, 0.059), vec3(0.608, 0.737, 0.059));
 
@@ -405,6 +412,34 @@ vec3 quantize(vec3 c, vec2 cell, float dither) {
     }
     return pick;
   }
+  if (uPalMode == 4) {
+    vec3 cc = clamp(c + d * 0.25, 0.0, 1.0);
+    float best = 1e9;
+    vec3 pick = EGA[0];
+    for (int i = 0; i < 16; i++) {
+      vec3 e = (cc - EGA[i]) * vec3(0.9, 1.2, 0.7);
+      float dd = dot(e, e);
+      if (dd < best) { best = dd; pick = EGA[i]; }
+    }
+    return pick;
+  }
+  if (uPalMode == 5) {
+    // green phosphor: the brightness only, in a few steps, glowing green
+    float l = clamp(dot(c, vec3(0.299, 0.587, 0.114)) * 1.15, 0.0, 1.0);
+    l = floor(l * (uLevels - 1.0) + 0.5 + d * 0.6) / (uLevels - 1.0);
+    return vec3(0.18, 1.0, 0.32) * l;
+  }
+  if (uPalMode == 6) {
+    // a black-and-white set: the brightness only, a touch warm
+    float l = clamp(dot(c, vec3(0.299, 0.587, 0.114)), 0.0, 1.0);
+    return vec3(l) * vec3(1.0, 0.985, 0.95);
+  }
+  if (uPalMode == 7) {
+    // the phone's LCD: a pixel is on or off, and an on pixel is dark on the green backlight - so what the
+    // scene draws bright, the phone draws dark
+    float l = dot(c, vec3(0.299, 0.587, 0.114)) + d * 0.45;
+    return l > 0.3 ? vec3(0.13, 0.19, 0.10) : vec3(0.60, 0.72, 0.38);
+  }
   if (uPalMode == 2) return floor(c * (uLevels - 1.0) + 0.5 + d) / (uLevels - 1.0);
   if (uPalMode == 3) {
     float l = clamp(dot(c, vec3(0.299, 0.587, 0.114)) * 1.2 + d * 0.3, 0.0, 0.999);
@@ -428,6 +463,47 @@ void main() {
     col.b = texture(uScene, suv - vec2(ab, 0.0)).b;
   } else {
     col = texture(uScene, suv).rgb;
+  }
+
+  if (uDisplay == 5) {
+    // videotape, as a tape played back well (no tracking fault): the figures are ntsc-rs's for VHS at
+    // standard play - brightness recorded up to 2.4 MHz, colour "under" it at only 320 kHz and four
+    // pixels late - so the picture keeps its shapes, softened a little, while its colour smears wide and
+    // lags to the right; the deck sharpens the brightness back, leaving a light halo on its edges; the
+    // tape's timing makes each line wave sideways, slowly; the colour carries blotchy noise, the picture
+    // a fine grain (no snow: the owner found its specks distracting); and along the bottom the heads switch, a few lines
+    // torn sideways.
+    float line = floor(uv.y * uLineRes.y);
+    // edge wave: each line shifted a little, slowly, by a smooth noise down the picture
+    float wave = (sin(uv.y * 37.0 + uTime * 1.3) * 0.6 + sin(uv.y * 91.0 - uTime * 2.1) * 0.4) * 0.0009;
+    // head switching: the bottom lines torn sideways, more the lower they are
+    float hs = smoothstep(0.03, 0.0, uv.y);
+    vec2 p = suv + vec2(wave + hs * (0.09 + 0.03 * hash12(vec2(line, floor(uTime * 25.0)))), 0.0);
+    const vec3 LW = vec3(0.299, 0.587, 0.114);
+    // brightness: about 250 lines across the picture (a short blur), then the deck's sharpening
+    float y0 = 0.0, yw = 0.0;
+    for (int i = -2; i <= 2; i++) y0 += dot(texture(uSceneSoft, p + vec2(float(i) * 0.0009, 0.0)).rgb, LW);
+    y0 /= 5.0;
+    for (int i = -3; i <= 3; i++) yw += dot(texture(uSceneSoft, p + vec2(float(i) * 0.0028, 0.0)).rgb, LW);
+    yw /= 7.0;
+    float yl = y0 + (y0 - yw) * 0.6;
+    // colour: about 30 lines across the picture, delayed to the right, a little washed out
+    vec3 cs = vec3(0.0);
+    for (int i = -4; i <= 4; i++) cs += texture(uSceneSoft, p + vec2(float(i) * 0.0042 - 0.006, 0.0)).rgb;
+    cs /= 9.0;
+    vec3 chroma = (cs - vec3(dot(cs, LW))) * 0.85;
+    // every noise here is drawn afresh each frame - hashing the cell, then that with the frame - so no
+    // pattern carries over to the next frame a few lines off, which reads as dust falling down the picture
+    float fr = floor(uTime * 30.0);
+    // the colour's blotchy noise: wide patches, a new set every few frames
+    float cb = hash12(vec2(floor(uv.x * 24.0), floor(uv.y * uLineRes.y * 0.5))) * 517.0;
+    float cf = floor(uTime * 12.0);
+    chroma += (vec3(hash12(vec2(cb, cf)), hash12(vec2(cb + 17.0, cf)), hash12(vec2(cb + 41.0, cf))) - 0.5) * 0.035;
+    col = vec3(yl) + chroma;
+    // the picture's fine grain
+    col += (hash12(vec2(hash12(vec2(floor(uv.x * uRes.x * 0.5), line)) * 517.0, fr)) - 0.5) * 0.03;
+    // the head-switch lines are noisy too
+    col += (hash12(vec2(hash12(vec2(floor(uv.x * uRes.x), line)) * 517.0, fr)) - 0.5) * 0.25 * hs;
   }
 
   // impact: a zoom blur out from the centre, and a flash, when the kick lands
@@ -455,16 +531,16 @@ void main() {
 
   // the lettering: in the era's colours where the era had so few of them
   vec4 tx = texture(uText, vUv);
-  vec3 tcol = (uPalMode == 1 || uPalMode == 3) ? quantize(tx.rgb, vec2(0.0), 0.0) : tx.rgb;
+  vec3 tcol = (uPalMode == 1 || uPalMode >= 3) ? quantize(tx.rgb, vec2(0.0), 0.0) : tx.rgb;
   col = mix(col, tcol, tx.a);
   if (uPalMode != 3) col += tcol * tx.a * 0.3;
 
-  if (uDisplay == 0 || uDisplay == 2) {
+  if (uDisplay == 0 || uDisplay == 2 || uDisplay == 5) {
     // one dark gap per line of the era's raster
-    col *= 1.0 - uScan * (0.5 - 0.5 * cos(uv.y * uVRes.y * 6.28318));
+    col *= 1.0 - uScan * (0.5 - 0.5 * cos(uv.y * uLineRes.y * 6.28318));
   } else if (uDisplay == 1) {
     // LCD: a hairline grid between pixels, a matte green-grey glass
-    vec2 f = fract(uv * uVRes);
+    vec2 f = fract(uv * uLineRes);
     float grid = smoothstep(0.0, 0.1, f.x) * smoothstep(0.0, 0.1, f.y);
     col *= 0.8 + 0.2 * grid;
     col = mix(col, vec3(0.62, 0.70, 0.45) * dot(col, vec3(0.33)), 0.08);

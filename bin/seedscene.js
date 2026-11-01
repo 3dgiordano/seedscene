@@ -11,6 +11,9 @@ import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { STYLE_NAMES, STYLE_INFO } from '../src/styles/index.js';
 import { composeScore, MUSIC_PRESETS, MUSIC_NAMES } from '../src/core/music.js';
+import { byEra } from '../src/core/catalogue.js';
+import { DISPLAYS, DISPLAY_NAMES } from '../src/core/displays.js';
+import { BOARDS, BOARD_NAMES } from '../src/core/boards.js';
 import { ERAS, ERA_NAMES, erasForScene } from '../src/core/eras.js';
 import { resolveChoices, checkChoice } from '../src/core/choose.js';
 import { composeJourney, composeAutoplay, AUTOPLAY_PART } from '../src/core/journey.js';
@@ -87,14 +90,15 @@ function showScenes() {
   console.log(`\n${C.b}eras${C.r}  ${C.dim}(--era, keys 1-${ERA_NAMES.length} or E live; each era suggests its scenes and music)${C.r}\n`);
   for (const [i, name] of ERA_NAMES.entries()) {
     const e = ERAS[name];
-    console.log(`  ${C.cy}${i + 1}${C.r} ${C.b}${name.padEnd(9)}${C.r}${String(e.year).padEnd(6)}${e.label.padEnd(16)}${C.dim}${e.blurb}${C.r}`);
+    console.log(`  ${C.cy}${i + 1}${C.r} ${C.b}${name.padEnd(6)}${C.r}${e.label.padEnd(11)}${e.title.padEnd(44)}${C.dim}${e.blurb}${C.r}`);
   }
   console.log(`\n${C.b}scenes${C.r}  ${C.dim}(--scene, space or arrows live)${C.r}\n`);
-  for (const name of STYLE_NAMES) {
+  // (by the first era each belongs to, oldest first, then by name - not the order they were written in)
+  for (const name of byEra(STYLE_NAMES, (e) => ERAS[e].scenes)) {
     console.log(`    ${C.b}${name.padEnd(12)}${C.r}${STYLE_INFO[name].padEnd(54)}${C.dim}${erasForScene(name).join(' ')}${C.r}`);
   }
   console.log(`\n${C.b}music styles${C.r}  ${C.dim}(--music, up/down live)${C.r}\n`);
-  for (const name of MUSIC_NAMES) {
+  for (const name of byEra(MUSIC_NAMES, (e) => ERAS[e].music)) {
     const p = MUSIC_PRESETS[name];
     const home = ERA_NAMES.filter((e) => ERAS[e].music.includes(name));
     console.log(`    ${C.b}${name.padEnd(11)}${C.r}${p.label.padEnd(20)}${C.dim}${p.bpm[0]}-${p.bpm[1]} bpm, ${p.blurb}  [${home.join(' ')}]${C.r}`);
@@ -123,6 +127,8 @@ ${C.b}options${C.r}
   --res <WxH|preset>       854x480, or 240p 360p 480p 576p 720p 1080p           ${C.dim}(default: 480p)${C.r}
   --duration <seconds>     length                                ${C.dim}(default: 30 render, 180 live, ${16 * ERA_NAMES.length} journey, 600 autoplay)${C.r}
   --born <year>            autoplay: open in the era you were twelve in, and stay near it
+  --display <name>         auto | ${DISPLAY_NAMES.join(' | ')}   ${C.dim}(default: each scene its own screen, or its era's)${C.r}
+  --board <name>           auto | ${BOARD_NAMES.join(' | ')}   ${C.dim}(default: each scene its own sound board, or its era's)${C.r}
   --greets "A, B, C"       names to greet in the scroller (and the cracktro): up to eight
   --fps <n>                frames per second                                    ${C.dim}(default: 30)${C.r}
   --out <file.mp4>         output path                                          ${C.dim}(default: out/<seed>-<scene>.mp4)${C.r}
@@ -160,6 +166,12 @@ async function main() {
     era: checkChoice('era', args.era),
     music: checkChoice('music', args.music),
   };
+  // DISPLAY: auto (each scene its own screen, or its era's), or one forced on everything
+  const display = args.display === undefined || args.display === true ? 'auto' : String(args.display).toLowerCase();
+  if (display !== 'auto' && !DISPLAYS[display]) throw new Error(`Unknown display "${args.display}". Available: auto, ${DISPLAY_NAMES.join(', ')}`);
+  // SOUND BOARD: auto (each scene its own, or its era's), or one forced on all the music
+  const board = args.board === undefined || args.board === true ? 'auto' : String(args.board).toLowerCase();
+  if (board !== 'auto' && !BOARDS[board]) throw new Error(`Unknown sound board "${args.board}". Available: auto, ${BOARD_NAMES.join(', ')}`);
   const choice = resolveChoices({ seed, ...req });
   const { width, height } = resolveResolution(args);
 
@@ -172,7 +184,7 @@ async function main() {
     const era = ERAS[choice.era];
     console.log(`\n  ${C.b}${score.meta.title}${C.r}`);
     console.log(`  ${C.dim}seed${C.r}       ${seed}`);
-    console.log(`  ${C.dim}era${C.r}        ${era.year} ${era.label} ${C.dim}- ${era.blurb}${C.r}${why('era')}`);
+    console.log(`  ${C.dim}era${C.r}        ${era.label} ${era.title} ${C.dim}- ${era.blurb}${C.r}${why('era')}`);
     console.log(`  ${C.dim}scene${C.r}      ${choice.style} ${C.dim}- ${STYLE_INFO[choice.style]}${C.r}${why('style')}`);
     console.log(`  ${C.dim}music${C.r}      ${score.meta.musicLabel} ${C.dim}- ${MUSIC_PRESETS[choice.music].blurb}${C.r}${why('music')}`);
     console.log(`  ${C.dim}tempo${C.r}      ${score.meta.bpm} bpm${score.meta.swing ? `, swing ${(score.meta.swing * 100).toFixed(0)}%` : ''}`);
@@ -208,7 +220,7 @@ async function main() {
       const shown = Math.min(j.count, 24);
       for (let i = 0; i < shown; i++) {
         const p = j.plan(i);
-        console.log(`  ${C.dim}${String(i + 1).padStart(3)}  ${String(ERAS[p.era].year).padEnd(5)} ${ERAS[p.era].label.padEnd(15)} ${p.style.padEnd(12)} ${MUSIC_PRESETS[p.music].label}${C.r}`);
+        console.log(`  ${C.dim}${String(i + 1).padStart(3)}  ${ERAS[p.era].label.padEnd(11)} ${p.style.padEnd(12)} ${MUSIC_PRESETS[p.music].label}${C.r}`);
       }
       if (j.count > shown) console.log(`  ${C.dim}  ... and ${j.count - shown} more${C.r}`);
     } else {
@@ -216,7 +228,7 @@ async function main() {
     }
     const { renderVideo } = await import('../tools/render.js');
     const r = await renderVideo({
-      seed, style: choice.style, era: choice.era, music: choice.music, programme, bornIn,
+      seed, style: choice.style, era: choice.era, music: choice.music, programme, bornIn, display, board,
       greets: cleanGreets(args.greets === true ? '' : args.greets),
       width, height, duration, fps, out, crf, format, overlay,
       gpu: args.gpu === true || args.gpu === 'true',
@@ -233,7 +245,7 @@ async function main() {
     const overlay = args.overlay !== false;
     const { origin } = await startServer(port);
     const q = new URLSearchParams({
-      seed: String(seed), scene: choice.style, era: req.era, music: req.music,
+      seed: String(seed), scene: choice.style, era: req.era, music: req.music, display, board,
       width: String(width), height: String(height),
       duration: String(duration), overlay: overlay ? '1' : '0',
       intro: args.intro === false ? '0' : '1',

@@ -13,7 +13,11 @@ import os from 'node:os';
 import { composeScore, Synth, Features, SAMPLE_RATE, MUSIC_NAMES } from '../src/core/music.js';
 import { composeJourney, composeAutoplay, ProgrammeSynth } from '../src/core/journey.js';
 import { resolveChoices } from '../src/core/choose.js';
-import { ERAS } from '../src/core/eras.js';
+import { ERAS, ERA_NAMES, SCENE_ERAS } from '../src/core/eras.js';
+import { sceneTour } from '../src/core/catalogue.js';
+import { DISPLAYS, DISPLAY_NAMES, SCENE_DISPLAY, displayFor, displayUniforms, displayResolution } from '../src/core/displays.js';
+import { BOARDS, BOARD_NAMES, boardFor } from '../src/core/boards.js';
+import { STYLE_NAMES } from '../src/styles/index.js';
 import { renderVideo } from '../tools/render.js';
 
 const sha = (b) => createHash('sha256').update(b).digest('hex').slice(0, 16);
@@ -72,10 +76,12 @@ for (let i = 0; i < 300; i++) {
   const again = resolveChoices({ seed: 'seed' + i });
   if (JSON.stringify(c) !== JSON.stringify(again)) coherent = false;
   if (!ERAS[c.era].scenes.includes(c.style) || !ERAS[c.era].music.includes(c.music)) coherent = false;
-  // given only the era, the seed picks one of that era's scenes
+  // given only the era, the seed picks one of that era's scenes - or, in an era with none of its own yet,
+  // one of them all, seen through that era's screen
   const era = Object.keys(ERAS)[i % Object.keys(ERAS).length];
   const e = resolveChoices({ seed: 'seed' + i, era });
-  if (e.era !== era || !ERAS[era].scenes.includes(e.style) || !ERAS[era].music.includes(e.music)) coherent = false;
+  const pool = ERAS[era].scenes.length ? ERAS[era].scenes : STYLE_NAMES;
+  if (e.era !== era || !pool.includes(e.style) || !ERAS[era].music.includes(e.music)) coherent = false;
 }
 check('a seed always chooses the same scene, era and music, and they belong together', coherent);
 check('every music style composes', MUSIC_NAMES.every((m) => composeScore('aurora', 8, m).events.length > 0),
@@ -94,6 +100,48 @@ function programmeHash(make, block) {
 const journey = () => composeJourney('aurora', 84);
 const jh = programmeHash(journey, 4096);
 check('THE JOURNEY sounds the same every time, whatever the block size', jh === programmeHash(journey, 128), jh);
+{
+  // played on, THE JOURNEY shows three of an era's scenes a pass (fewer where it has fewer), all of them its own,
+  // and goes on through each era's scenes and music until every one has come round; an era with none is passed by
+  const j = composeJourney('aurora', 180, 20);
+  let three = true, belongs = true, all = true;
+  for (const [k, era] of SCENE_ERAS.entries()) {
+    const scenes = new Set(), tunes = new Set();
+    for (let pass = 0; pass < 20; pass++) {
+      const p = j.plan(pass * SCENE_ERAS.length + k);
+      const n = Math.min(3, ERAS[era].scenes.length);
+      if (p.era !== era || p.scenes.length !== n || new Set(p.scenes).size !== n) three = false;
+      if (!p.scenes.every((s) => ERAS[era].scenes.includes(s)) || !ERAS[era].music.includes(p.music)) belongs = false;
+      p.scenes.forEach((s) => scenes.add(s)); tunes.add(p.music);
+    }
+    if (scenes.size !== ERAS[era].scenes.length || tunes.size !== ERAS[era].music.length) all = false;
+  }
+  check('THE JOURNEY plays three scenes an era (fewer where it has fewer), and pass after pass shows every scene and style of each', three && belongs && all, '20 passes');
+}
+
+// DISPLAYS -----------------------------------------------------------------
+{
+  // a game or a film is seen through its own display whatever the era; an effect through its era's; a forced
+  // display wins over both; every display gives the post pass its numbers and a resolution
+  const ok = displayFor('paddles', 'arcade') === 'bw' && displayFor('moonbike', 'c64') === 'vhs'
+    && displayFor('plasma', ERAS[1994].display) === 'vga' && displayFor('plasma', ERAS[1982].display) === 'c64'
+    && displayFor('paddles', 'arcade', 'mono') === 'mono' && displayFor('kefrens', ERAS[1990].display, 'auto') === 'amiga';
+  const named = Object.values(SCENE_DISPLAY).every((d) => DISPLAYS[d]) && ERA_NAMES.every((e) => DISPLAYS[ERAS[e].display]);
+  const whole = DISPLAY_NAMES.every((d) => { const u = displayUniforms(d); const r = displayResolution(d, 854, 480); return Number.isInteger(u.palMode) && Number.isInteger(u.display) && r.w > 0 && r.h > 0; });
+  check('A scene is seen through its own display, or its era\'s, unless one is forced; every display is complete', ok && named && whole,
+    `${DISPLAY_NAMES.length} displays`);
+}
+{
+  // a film's music is the studio's, the Amiga's ball its sample chip's, an Amiga effect its era's chip; a forced
+  // board wins; and THE JOURNEY with a board forced is made with it, the same on the page and in the worklet
+  const ok = boardFor('moonbike', '1982', 'aurora') === 'hifi' && boardFor('ball', '1982', 'aurora') === 'paula'
+    && boardFor('kefrens', '1990', 'aurora') === 'paula' && boardFor('invaders', '1972', 'aurora') === 'hifi'
+    && boardFor('moonbike', '1982', 'aurora', 'opl3') === 'opl3' && BOARD_NAMES.every((b) => BOARDS[b].chip === null || ['paula', 'opl3', 'awe32'].includes(BOARDS[b].chip));
+  const forced = () => composeJourney('aurora', 84, 1, 'awe32');
+  const fh = programmeHash(forced, 4096);
+  check('A scene\'s music plays on its own sound board, or its era\'s, unless one is forced; a forced board sounds the same every time',
+    ok && fh === programmeHash(forced, 128) && fh !== jh, fh);
+}
 
 // AUTOPLAY ------------------------------------------------------------------
 const autoplay = () => composeAutoplay('aurora', 120);
@@ -115,6 +163,31 @@ check('AUTOPLAY sounds the same every time, whatever the block size', ah === pro
     '300 tracks');
 }
 {
+  // each era deals its scenes and music once and every visit goes on from the last: within a few visits an era
+  // has shown all it has (a block's three tracks reach nine of its scenes and three of its styles)
+  const a = composeAutoplay('aurora');
+  const scenes = {}, tunes = {}, visits = {};
+  for (const e of SCENE_ERAS) { scenes[e] = new Set(); tunes[e] = new Set(); visits[e] = 0; }
+  for (let block = 0; block < 8 * 9; block++) {
+    const e = a.plan(block * 3).era;
+    visits[e]++;
+    a.blockScenes(block).slice(0, 9).forEach((s) => scenes[e].add(s));
+    for (let k = 0; k < 3; k++) tunes[e].add(a.plan(block * 3 + k).music);
+  }
+  const short = SCENE_ERAS.filter((e) => scenes[e].size !== ERAS[e].scenes.length || tunes[e].size !== ERAS[e].music.length);
+  check('AUTOPLAY goes on through each era\'s scenes and music visit by visit, until all have come round', short.length === 0,
+    short.length ? `short: ${short.join(', ')}` : `${Math.min(...Object.values(visits))}+ visits an era`);
+}
+{
+  // the live keys' catalogue: era after era, oldest first, every scene of every era, dealt by the seed
+  const t1 = sceneTour('aurora'), t2 = sceneTour('hikari');
+  const inOrder = t1.every((x, i) => i === 0 || ERA_NAMES.indexOf(x.era) >= ERA_NAMES.indexOf(t1[i - 1].era));
+  const whole = ERA_NAMES.every((e) => ERAS[e].scenes.every((s) => t1.some((x) => x.era === e && x.scene === s)));
+  const dealt = t1.some((x, i) => x.scene !== t2[i].scene);
+  check('The catalogue goes era by era, holds every scene, and each seed deals it its own way', inOrder && whole && dealt,
+    `${t1.length} stops`);
+}
+{
   // born in 1985: twelve in 1997, the 32-bit console's year - it opens there and comes back every other
   // block; it sounds the same whatever the block size; and every track still belongs to its era
   const born = () => composeAutoplay('aurora', 120, 1985);
@@ -123,7 +196,7 @@ check('AUTOPLAY sounds the same every time, whatever the block size', ah === pro
   let home = true, belongs = true, repeats = 0;
   for (let i = 0; i < 300; i++) {
     const p = b.plan(i);
-    if (Math.floor(i / 3) % 2 === 0 && p.era !== 'console') home = false;
+    if (Math.floor(i / 3) % 2 === 0 && p.era !== '1997') home = false;
     if (!ERAS[p.era].scenes.includes(p.style) || !ERAS[p.era].music.includes(p.music)) belongs = false;
     if (i > 0) { const q = b.plan(i - 1); if (q.style === p.style && q.music === p.music) repeats++; }
   }
@@ -146,8 +219,11 @@ check('AUTOPLAY sounds the same every time, whatever the block size', ah === pro
       if (j > 0 && s.style === p.scenes[j - 1].style) ok = false;
     });
     changes += p.scenes.length - 1;
+    // (a track of an era with more than one scene changes at least once; one with a single scene cannot)
+    if (ERAS[p.era].scenes.length > 1 && p.scenes.length < 2) ok = false;
+    if (ERAS[p.era].scenes.length === 1 && p.scenes.length !== 1) ok = false;
   }
-  check('AUTOPLAY changes scene with the music, on the bar, inside every track', ok && changes >= 120,
+  check('AUTOPLAY changes scene with the music, on the bar, in every track whose era has more than one scene', ok && changes >= 80,
     `${changes} cuts in 120 tracks`);
 }
 {

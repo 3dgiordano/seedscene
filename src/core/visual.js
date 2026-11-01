@@ -7,7 +7,8 @@ import { program, quad, createTarget, startProgram, programDone, finishProgram }
 import { styleSource, POST, STYLE_FX } from '../styles/index.js';
 import { SIMS } from './sims.js';
 import { ABOUT_PAGES, ABOUT_STORY, ABOUT_GREETS } from '../brand.js';
-import { ERAS, eraUniforms, eraResolution } from './eras.js';
+import { ERAS } from './eras.js';
+import { displayFor, displayUniforms, displayResolution } from './displays.js';
 
 /** Seed -> an Inigo Quilez cosine palette that is pleasant rather than muddy. */
 export function makePalette(seed, style) {
@@ -42,7 +43,7 @@ const SCROLL_WORDS = [
 const KEY_WORDS = [
   'PRESS H TO SEE EVERY KEY',
   'SPACE JUMPS TO THE NEXT SCENE - THE ARROWS STEER - UP AND DOWN CHANGE THE MUSIC',
-  'PRESS E TO TRAVEL TO ANOTHER ERA - OR T FOR THE JOURNEY FROM 1982 TO NOW',
+  'PRESS E TO TRAVEL TO ANOTHER ERA - OR T FOR THE JOURNEY FROM 1972 TO NOW',
   'PRESS A FOR THE ABOUT PART - M FOR THE MENU',
 ];
 
@@ -82,7 +83,8 @@ export class Renderer {
       gl.samplerParameteri(smp, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.samplerParameteri(smp, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     }
-    this.era = opts.era || 'amiga';
+    this.era = opts.era || '1990';
+    this.forcedDisplay = opts.display || 'auto';   // DISPLAY: auto, or one display forced on everything
     this.buildSceneTarget();
 
     // text overlay canvas + texture
@@ -127,6 +129,18 @@ export class Renderer {
     // entrance starts it there (the caller sets it after a cut; 0 otherwise)
     this.sceneStart = 0;
     this.deriveLook();
+    if (this.gl && this.width) this.buildSceneTarget();   // a scene with a display of its own may draw at another size
+  }
+
+  /** The display the picture is seen through now: forced, the scene's own, or its era's. */
+  get display() {
+    return displayFor(this.opts.style, ERAS[this.era] && ERAS[this.era].display, this.forcedDisplay);
+  }
+
+  /** DISPLAY: 'auto' (each scene its own look, or its era's), or one display forced on everything. */
+  setDisplay(name) {
+    this.forcedDisplay = name || 'auto';
+    this.buildSceneTarget();
   }
 
   /** A scene's compiled program, compiled the first time it is asked for. */
@@ -182,10 +196,10 @@ export class Renderer {
   }
 
 
-  /** The scene is drawn at the era's own resolution. */
+  /** The scene is drawn at its display's own resolution. */
   buildSceneTarget() {
     const gl = this.gl;
-    const v = eraResolution(this.era, this.width, this.height);
+    const v = displayResolution(this.display, this.width, this.height);
     if (this.scene && this.scene.w === v.w && this.scene.h === v.h) return;
     if (this.scene) { gl.deleteFramebuffer(this.scene.fbo); gl.deleteTexture(this.scene.tex); }
     this.scene = createTarget(gl, v.w, v.h);
@@ -379,7 +393,7 @@ export class Renderer {
     const era = ERAS[card.era];
     const alpha = Math.min(1, t / 0.25) * (t > 2.6 ? Math.max(0, 1 - (t - 2.6) / 0.6) : 1);
     const mono = 'Consolas, "Courier New", monospace';
-    const face = card.era === 'y2k' || card.era === 'modern' ? '"Segoe UI", Helvetica, Arial, sans-serif' : mono;
+    const face = (ERAS[card.era].year >= 2000) ? '"Segoe UI", Helvetica, Arial, sans-serif' : mono;
 
     ctx.save();
     ctx.globalAlpha = alpha;
@@ -393,11 +407,11 @@ export class Renderer {
     ctx.textBaseline = 'middle';
     ctx.font = `bold ${Math.round(54 * s)}px ${face}`;
     ctx.fillStyle = '#ffffff';
-    ctx.fillText(String(era.year), W / 2, H * 0.42);
+    ctx.fillText(era.label, W / 2, H * 0.42);
     ctx.font = `bold ${Math.round(15 * s)}px ${face}`;
     ctx.letterSpacing = `${Math.round(5 * s)}px`;
     ctx.fillStyle = '#cfe8ff';
-    ctx.fillText(era.label.toUpperCase(), W / 2, H * 0.53);
+    ctx.fillText(era.title.toUpperCase(), W / 2, H * 0.53);
     ctx.letterSpacing = '0px';
 
     // the machine's greeting, typed
@@ -445,7 +459,7 @@ export class Renderer {
     ctx.fillText(card.title, x, y);
     ctx.font = `${Math.round(10 * s)}px ${mono}`;
     ctx.fillStyle = '#bfe4ff';
-    ctx.fillText(`${card.music.toUpperCase()}  ·  ${card.style.toUpperCase()}  ·  ${era.year} ${era.label.toUpperCase()}`, x, y + 22 * s);
+    ctx.fillText(`${card.music.toUpperCase()}  ·  ${card.style.toUpperCase()}  ·  ${era.label}`, x, y + 22 * s);
     ctx.restore();
   }
 
@@ -633,7 +647,10 @@ export class Renderer {
     if (u.uRes) gl.uniform2f(u.uRes, this.canvas.width, this.canvas.height);
     if (u.uVRes) gl.uniform2f(u.uVRes, this.scene.w, this.scene.h);
     p1('uTime', t); p1('uKick', f.kick); p1('uSnare', f.snare); p1('uEnergy', f.energy);
-    const e = eraUniforms(this.era);
+    const e = displayUniforms(this.display);
+    // the screen's own lines over the full picture: its count of them, as wide as the canvas allows (none: one a pixel)
+    const lh = e.lines || this.canvas.height;
+    if (u.uLineRes) gl.uniform2f(u.uLineRes, lh * (this.canvas.width / this.canvas.height), lh);
     if (u.uPalMode) gl.uniform1i(u.uPalMode, e.palMode);
     if (u.uDisplay) gl.uniform1i(u.uDisplay, e.display);
     p1('uLevels', e.levels); p1('uDither', e.dither);

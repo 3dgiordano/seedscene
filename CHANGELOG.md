@@ -553,6 +553,52 @@ can drive entirely from the keyboard.
 
 ### Changed
 
+- **VHS display.** Rebuilt from how a tape records (ntsc-rs's VHS figures):
+  soft brightness sharpened back, colour smeared wide and late, a slow wave on
+  the lines, colour noise and grain, the heads switching at the bottom. The rolling tracking band - a fault, not the format - is gone.
+- **Sound boards.** The music plays on a board as the picture on a display:
+  HI-FI, PAULA, OPL3 FM, AWE32. On AUTO each scene its own (a film or a series
+  the studio's, the Amiga's ball the Amiga's chip, the PC desktop's things the
+  sound card) or its era's; `C` live, the menu, `?board=` and `--board` force
+  one. A programme's track plays on its first scene's board.
+- **Eras are spans of years.** Seven, keyed by the year they start - 1972–1981,
+  1982–1989, 1990–1993, 1994–1996, 1997–1999, 2000–2009, 2010–now - and a game
+  or a film goes to the year it came out (Tron, Q*bert, the robot fight,
+  Arkanoid and OutRun to the 1980s; the 16-bit space shooter and the dinosaur
+  film to 1990–1993). The machine names still find their era. The displays say
+  which screen: COMPOSITE TV, GAME BOY, SVGA, and new SNES and NOKIA (the
+  phone's dark pixels on a green backlight). Every display draws at full
+  resolution - a simulation, not an emulation - and only one that was a CRT
+  gets a CRT's scan lines, curvature and glow; an LCD gets its palette.
+- **Displays.** The screens are their own catalogue, apart from the eras:
+  twelve, named - B/W, ARCADE, MONO, C64, VHS, EGA, AMIGA, VGA, 32-BIT, LCD,
+  HI-RES and MODERN (no filter); B/W, MONO, EGA and VHS are new. On AUTO every
+  scene is seen through its own (a game its machine's, a film or a series the
+  videotape's, an effect its era's); `D` live, the menu, `?display=` and
+  `--display` force one on everything.
+- **One era per scene.** A scene belongs to the era it comes from (a game to
+  its year, an effect to the machines that made it famous, a film or a series
+  to the era of its year), and is shown only there; six effects share two or
+  three eras on purpose. The eras are their filters and could be mixed one day,
+  not yet. An era with no scenes yet (modern) is passed by in THE JOURNEY and
+  AUTOPLAY. The gallery and the README show each scene in its era.
+- **The catalogue in the seed's order.** The live keys and the menu step
+  through the scenes era by era, oldest first, each era's in the order the
+  seed deals them, the era changing with the scene; the music from the era's
+  own styles first. Nothing is shown in the order it was written in any more.
+  AUTOPLAY deals each era's scenes and music once and carries on where its
+  last visit stopped, so a big era shows all it has in about a quarter of the
+  time (Amiga's seventeen scenes by track 41, not 160; DOS's nine styles by
+  track 68, not 407). The README's scene table and `seedscene scenes` go by
+  era.
+- **THE JOURNEY shows the catalogue.** Three of an era's scenes in each part,
+  cut where the music turns, where it showed one; and played on it goes on
+  through each era's scenes three at a time, and its music one style a pass,
+  starting each list again when it runs out - so the seed sets the order, not
+  how much is seen. Y2K no longer plays the 1979 asteroid game or the 90s
+  shooter.
+- **The README's scenes** each name every era they play in; two broken rows
+  of its table mended.
 - **A scene is called a scene.** What v0.1 called a style - the brief asked
   for "a style name" - is a scene everywhere a person meets it: `--scene`,
   `seedscene scenes`, `?scene=` in the page's address, SCENE in the menu and

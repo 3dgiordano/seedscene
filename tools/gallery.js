@@ -14,58 +14,58 @@ import os from 'node:os';
 import ffmpegPath from 'ffmpeg-static';
 import puppeteer from 'puppeteer';
 import { startServer } from './server.js';
-import { ERA_NAMES } from '../src/core/eras.js';
+import { SCENE_ERAS as ERA_NAMES } from '../src/core/eras.js';   // (THE JOURNEY travels the eras with scenes)
 
 const OUT = path.resolve('docs/gallery');
 
-// One seed per scene, chosen to read as a word worth typing, and an era the
-// scene belongs to, so that every era shows up somewhere.
+// One seed per scene, chosen to read as a word worth typing, and the era the
+// scene belongs to (one of them, for the few that belong to two or three).
 export const GALLERY = [
-  { style: 'plasma',      era: 'handheld', seed: '1989' },
-  { style: 'dottunnel',   era: 'c64',      seed: 'warpspeed' },
-  { style: 'copper',      era: 'amiga',    seed: 'copperlist' },
-  { style: 'shadebobs',   era: 'amiga',    seed: 'shadebob' },
-  { style: 'vectorballs', era: 'amiga',    seed: 'vectorballs' },
-  { style: 'ripple',      era: 'amiga',    seed: 'raindrops' },
-  { style: 'tunnel',      era: 'dos',      seed: 'insertdisk2' },
-  { style: 'metaballs',   era: 'dos',      seed: 'lavalamp' },
-  { style: 'fractal',     era: 'dos',      seed: 'julia' },
-  { style: 'fireworks',   era: 'console',  seed: 'newyear' },
-  { style: 'fire',        era: 'dos',      seed: 'inferno' },
-  { style: 'kefrens',     era: 'amiga',    seed: 'copperwave' },
-  { style: 'ball',        era: 'amiga',    seed: 'boing' },
-  { style: 'rings',       era: 'amiga',    seed: 'moire' },
-  { style: 'lcd',         era: 'arcade',   seed: 'juggler' },
-  { style: 'scanner',     era: 'arcade',   seed: 'redsweep' },
-  { style: 'footsteps',   era: 'console',  seed: 'impact' },
-  { style: 'twister',     era: 'amiga',    seed: 'stonebar' },
-  { style: 'bobs',        era: 'amiga',    seed: 'copperlist' },
-  { style: 'dualchess',   era: 'amiga',    seed: 'zoomboard' },
-  { style: 'chessfloor',  era: 'amiga',    seed: 'sunnfun' },
-  { style: 'rubber',      era: 'amiga',    seed: 'jelly' },
-  { style: 'bumplogo',    era: 'dos',      seed: 'emboss' },
-  { style: 'cracktro',    era: 'amiga',    seed: 'hyperspace' },
-  { style: 'cascade',     era: 'y2k',      seed: 'cascade' },
-  { style: 'ansi',        era: 'dos',      seed: 'colorbars' },
-  { style: 'echolines',   era: 'dos',      seed: 'nightshift' },
-  { style: 'maze3d',      era: 'dos',      seed: 'corridors' },
-  { style: 'moonbike',    era: 'modern',   seed: 'moonride', at: 5.1 },
-  { style: 'timecar',     era: 'arcade',   seed: 'gigawatts', at: 12.85 },
-  { style: 'animeop',     era: 'console',  seed: 'hikari', at: 8.06 },
-  { style: 'pyramid',     era: 'arcade',   seed: 'cubes' },
-  { style: 'pipes',       era: 'dos',      seed: 'screensaver' },
-  { style: 'starfield',   era: 'console',  seed: 'hyperspace' },
-  { style: 'morph',       era: 'y2k',      seed: 'liquidmetal' },
-  { style: 'outrun',      era: 'modern',   seed: 'nightdrive' },
-  { style: 'paddles',     era: 'modern',   seed: 'rally' },
-  { style: 'invaders',    era: 'arcade',   seed: 'formation' },
-  { style: 'rocks',       era: 'arcade',   seed: 'vectorscope' },
-  { style: 'maze',        era: 'arcade',   seed: 'powerpill' },
-  { style: 'bricks',      era: 'arcade',   seed: 'brickwall' },
-  { style: 'lightcycles', era: 'modern',   seed: 'neongrid' },
-  { style: 'snake',       era: 'modern',   seed: 'longsnake' },
-  { style: 'boxer',       era: 'arcade',   seed: 'titlefight' },
-  { style: 'starfighter', era: 'console',  seed: 'hyperdrive' },
+  { style: 'plasma',      era: '1982',   seed: '1989' },
+  { style: 'dottunnel',   era: '1982',        seed: 'warpspeed' },
+  { style: 'copper',      era: '1990',      seed: 'copperlist' },
+  { style: 'shadebobs',   era: '1990',      seed: 'shadebob' },
+  { style: 'vectorballs', era: '1990',      seed: 'vectorballs' },
+  { style: 'ripple',      era: '1990',      seed: 'raindrops' },
+  { style: 'tunnel',      era: '1994',        seed: 'insertdisk2' },
+  { style: 'metaballs',   era: '1994',        seed: 'lavalamp' },
+  { style: 'fractal',     era: '1994',        seed: 'julia' },
+  { style: 'fireworks',   era: '1990',    seed: 'newyear' },
+  { style: 'fire',        era: '1994',        seed: 'inferno' },
+  { style: 'kefrens',     era: '1990',      seed: 'copperwave' },
+  { style: 'ball',        era: '1982',      seed: 'boing' },
+  { style: 'rings',       era: '1990',      seed: 'moire' },
+  { style: 'lcd',         era: '1972',     seed: 'juggler' },
+  { style: 'scanner',     era: '1982',     seed: 'redsweep' },
+  { style: 'footsteps',   era: '1990',    seed: 'impact' },
+  { style: 'twister',     era: '1990',      seed: 'stonebar' },
+  { style: 'bobs',        era: '1990',      seed: 'copperlist' },
+  { style: 'dualchess',   era: '1990',      seed: 'zoomboard' },
+  { style: 'chessfloor',  era: '1990',      seed: 'sunnfun' },
+  { style: 'rubber',      era: '1990',      seed: 'jelly' },
+  { style: 'bumplogo',    era: '1994',        seed: 'emboss' },
+  { style: 'cracktro',    era: '1990',      seed: 'hyperspace' },
+  { style: 'cascade',     era: '1990',        seed: 'cascade' },
+  { style: 'ansi',        era: '1994',        seed: 'colorbars' },
+  { style: 'echolines',   era: '1990',        seed: 'nightshift' },
+  { style: 'maze3d',      era: '1994',        seed: 'corridors' },
+  { style: 'moonbike',    era: '1982',     seed: 'moonride', at: 5.1 },
+  { style: 'timecar',     era: '1982',     seed: 'gigawatts', at: 12.85 },
+  { style: 'animeop',     era: '1997',    seed: 'hikari', at: 8.06 },
+  { style: 'pyramid',     era: '1982',     seed: 'cubes' },
+  { style: 'pipes',       era: '1994',        seed: 'screensaver' },
+  { style: 'starfield',   era: '1990',    seed: 'hyperspace' },
+  { style: 'morph',       era: '2000',        seed: 'liquidmetal' },
+  { style: 'outrun',      era: '1982',     seed: 'nightdrive' },
+  { style: 'paddles',     era: '1972',     seed: 'rally' },
+  { style: 'invaders',    era: '1972',     seed: 'formation' },
+  { style: 'rocks',       era: '1972',     seed: 'vectorscope' },
+  { style: 'maze',        era: '1972',     seed: 'powerpill' },
+  { style: 'bricks',      era: '1982',     seed: 'brickwall' },
+  { style: 'lightcycles', era: '1982',     seed: 'neongrid' },
+  { style: 'snake',       era: '1997',     seed: 'longsnake' },
+  { style: 'boxer',       era: '1982',     seed: 'titlefight' },
+  { style: 'starfighter', era: '1990',    seed: 'hyperdrive' },
 ];
 
 // The game-inspired scenes, in motion.
@@ -162,7 +162,7 @@ async function main() {
     // READY., a key press, RUN, and the drop into the demo
     const boot = await browser.newPage();
     await boot.setViewport({ width: 640, height: 400 });
-    const q = new URLSearchParams({ seed: 'readyprompt', style: 'copper', era: 'amiga', width: '640', height: '360' });
+    const q = new URLSearchParams({ seed: 'readyprompt', style: 'copper', era: '1990', width: '640', height: '360' });
     await boot.goto(`${origin}/web/index.html?${q}`, { waitUntil: 'load' });
     const bootDir = path.join(tmp, 'boot');
     await mkdir(bootDir);

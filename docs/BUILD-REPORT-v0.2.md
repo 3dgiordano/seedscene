@@ -3441,10 +3441,323 @@ eighths. Every other style byte for byte as it was; `npm test` passes.
 Before and after: `out/trance-before-after.mp3`, two seeds.
 
 The owner listened and approved trance, put right, its dotted delay kept, on 2026-11-01.
+
+## THE JOURNEY shows the catalogue
+
+The owner noticed THE JOURNEY showed one scene an era, the same ones every
+time, most of them games, and in the Y2K part the asteroid game of 1979. The
+causes, read in the code: a part played one scene, picked from its era by the
+seed, so a seed (and with no seed in the address, always `seedscene`) gave
+the same eight scenes for ever; `seedscene` happened to draw five games; and
+`rocks` - with `starfighter`, a 90s shooter - had been on Y2K's list since
+the first 0.2 commit, with no reason recorded.
+
+The owner's brief: the seed signs the order, it does not ration the
+material; a journey should show the catalogue, and its replays what the last
+pass did not. So:
+
+- **Three scenes an era.** Each part is shared between three of its era's
+  scenes, each cut moved onto a drop or a crash that opens a phrase when one
+  falls near it, every scene at least seven seconds (a part too short for
+  three plays fewer: a 96-second journey, one an era).
+- **Pass after pass.** Live, THE JOURNEY goes on: each era's scenes, in the
+  seed's order, are taken three at a time, and when the list runs out it
+  starts again from the top; its music goes round the era's styles the same
+  way, one a pass. Every scene of an era has come round by its fourth to
+  sixth pass, every style by its ninth at most (DOS has nine). A render is
+  one pass.
+- **Y2K** plays morph, metaballs, fractal, outrun and cascade - no asteroid
+  game, no 90s shooter; both stay in their own eras.
+
+| THE JOURNEY, seed `seedscene` | Before | After, first pass | Second pass |
+|---|---|---|---|
+| Arcade | rocks | lightcycles, timecar, paddles | pyramid, rocks, invaders |
+| C64 | invaders | copper, invaders, plasma | dottunnel, copper, invaders |
+| Y2K | rocks | cascade, morph, metaballs | fractal, outrun, cascade |
+| Modern | snake | morph, outrun, boxer | starfighter, metaballs, moonbike |
+
+Checked live (muted): the arcade part opens on its card over lightcycles,
+cuts to timecar and to paddles; the second pass's arcade plays pyramid and
+rocks to synth-pop where the first played cyborg; no errors. A new test: three
+scenes a part, all its era's, and every scene and style of every era shown
+within twenty passes; `npm test` passes. The gallery's `journey.gif` shows
+the old one-scene parts until the gallery is made again.
+
+## The catalogue in the seed's order, not the order it was written
+
+The owner asked whether AUTOPLAY really shows all the material, and noticed
+that in the plain demo the keys walk the scenes and the music in one fixed
+order - the order they were created in. Read in the code: `space` and the
+arrows stepped through `STYLE_NAMES`, the forty-five scenes as written into
+the scenes' module, ignoring the seed and the era (stepping into scenes of
+other eras without changing it); `↑` `↓` through the twenty-eight styles as
+written; the menu numbered the scenes that way; `seedscene scenes` listed
+them so. AUTOPLAY drew every block's scenes and music afresh - sampling, not
+dealing - so a big era took long to show all it had and showed some of it far
+more than the rest.
+
+| AUTOPLAY, seed `seedscene`, 480 tracks | Before | After |
+|---|---|---|
+| Amiga's 17 scenes all seen by | track 160 (1 h 47 min) | track 41 |
+| DOS's 14 scenes all seen by | track 166 | track 31 |
+| DOS's 9 styles all heard by | track 407 (4 h 31 min) | track 68 |
+| Console's 7 styles all heard by | track 114 | track 54 |
+| Amiga, most / least shown scene | 14 / 6 times | 11 / 10 |
+| DOS, most / least shown scene | 17 / 5 times | 13 / 12 |
+
+The owner's rule: the order is the eras', and inside an era the seed's; the
+order something was made in is nowhere in the system. So:
+
+- **The catalogue** (`src/core/catalogue.js`): every era's scenes, era after
+  era, oldest first, each era's dealt by the seed; the music from an era's
+  point of view, its own styles first in the seed's order, then the other
+  eras'. `space` and the arrows step through it, scene and era together -
+  past an era's last scene, on into the next era's first, its card and its
+  music with it; `↑` `↓` through the music. The menu steps the same way and
+  shows the scene by name, no number. `seedscene scenes` lists scenes and
+  styles by their first era, then by name.
+- **AUTOPLAY** deals each era's scenes and music once, in the seed's order,
+  and each visit to an era carries on where the last one stopped; a list
+  starts again only when it runs out. The eras still take turns as before,
+  and no track repeats the last one's pairing.
+- **The README's scene table** goes by era too: each scene under the first
+  era it belongs to, oldest first, then by name.
+
+Checked live (muted), seed `seedscene`: from pyramid in the arcade, `space`
+goes to paddles, then on into the C64 and its copper bars, the era changing
+with it; `←` comes back; `↑` brings synth-pop, the first of the arcade's
+music in that seed's deal; the menu shows the scene by name; no errors. Two
+new tests: AUTOPLAY shows every scene and style of every era within its
+visits; the catalogue goes era by era, holds every scene, and each seed deals
+it its own way. `npm test` passes, twenty checks.
+
+## One era per scene: the catalogue put right
+
+Stepping through the scenes with the keys, the owner saw some come back far
+more than expected: twenty-one of the forty-five scenes sat in two, three or
+four eras, so the tour (every era's scenes in turn) had seventy-nine stops,
+some repeats four presses apart. The cause was a design of the first 0.2:
+"an era is a screen, not a scene: any scene can be shown through any era",
+each era's list suggesting scenes from others. The owner's reading: an era is
+a time, with its filter; a scene belongs to the era it comes from, and only
+there - the filters may be mixed one day (a party mode), not yet. The owner
+went through the list scene by scene:
+
+| Era | Its scenes now |
+|---|---|
+| Arcade 1979 | paddles (Pong is 1972: no era of its own yet), invaders, rocks, maze, bricks, lightcycles, boxer, lcd, pyramid, outrun |
+| C64 1982 | dottunnel, plasma; the films and series of its years: scanner, timecar, moonbike |
+| Amiga 1990 | shadebobs, copper, vectorballs, ripple, metaballs, tunnel, starfield, kefrens, ball, rings, twister, bobs, dualchess, chessfloor, rubber, cracktro, plasma, fractal, bumplogo, fireworks, morph |
+| DOS 1994 | fractal, tunnel, metaballs, plasma, fire, pipes, bumplogo, ansi, echolines, maze3d, cascade |
+| Console 1997 | starfighter, footsteps, animeop |
+| Handheld 1998 | snake |
+| Y2K 2002 | morph |
+| Modern 2024 | none yet |
+
+Six scenes share eras on purpose (plasma C64, Amiga and DOS; metaballs,
+tunnel, fractal and bumplogo Amiga and DOS; morph Amiga and Y2K), each seen
+through its era's own filter. A film or a series belongs to the computing era
+of its year (Knight Rider, Back to the Future and E.T. to the C64's).
+
+What follows from it: an era with no scenes of its own - modern, now - is
+passed by: THE JOURNEY travels seven eras, AUTOPLAY's turns skip it, a viewer
+born after 2012 is taken to the nearest era that has scenes. Choosing the
+modern era by hand shows the scene of the moment through its filter (or, with
+the scene on auto, the seed's pick of them all). An era with one or two
+scenes shows what it has: THE JOURNEY's part plays fewer than three, and
+AUTOPLAY does not cut to the scene it is already on. Synthwave, modern's own
+style, now plays in no programme (dreamwave still does, in the Amiga's).
+
+The gallery was made again with each scene in its era (eleven stills moved:
+plasma, scanner, timecar and moonbike to the C64; fireworks and starfield to
+the Amiga; cascade to DOS; outrun, paddles and lightcycles to the arcade;
+snake to the handheld; `journey.gif` with seven eras and three scenes each),
+the README's examples, era labels and table order with it, and its era
+section tells the new rule. Checked live (muted): `E` from Y2K to modern keeps
+the scene through modern's screen; THE JOURNEY's Y2K part plays morph and
+goes round to the arcade without a modern part; no errors. `npm test` passes,
+twenty checks (the journey's and AUTOPLAY's cut checks now ask fewer scenes of
+an era that has fewer).
+
+The owner left the thin eras as they are for now (2026-11-01): new scenes for
+them, or a party mode that mixes the filters, come later.
+
+## Displays: how each thing was seen, apart from when
+
+The owner's next step: a film should not be seen through a console's screen,
+nor a game through a machine it did not run on; the screens should have names
+of their own, a switch on AUTO, and a few the eras never used - MONO, B/W, EGA -
+for anyone who wants today's scenes on yesterday's screens; one of them no
+filter at all.
+
+`src/core/displays.js` holds twelve displays, each a screen and its signal
+(resolution, palette, dither, tube, bloom, scan lines, curvature, fringes,
+grain): B/W, ARCADE, MONO, C64, VHS, EGA, AMIGA, VGA, 32-BIT, LCD, HI-RES and
+MODERN. Eight are the eras' screens as they were, moved out of the eras and
+named for what they are; four are new - B/W (grey, soft, grainy), MONO (green
+phosphor, a few steps of brightness), EGA (the sixteen fixed colours of the
+early PC's default palette, dithered) and VHS (colour smeared sideways off a
+sharp brightness, a jitter per line, a tracking band rolling up, the
+head-switching tear at the bottom - since rebuilt without the band, below); MODERN is now no filter at all. Each era
+names the display most of its things were seen on.
+
+A scene that needs a look of its own names its display: Pong B/W; the arcade
+games ARCADE; the phone's snake LCD; the console's space shooter 32-BIT; the
+films and the series (scanner, timecar, moonbike, footsteps, the anime
+opening) VHS; the LCD game, which draws its own device, MODERN. The demo
+effects are seen through their era's, so plasma is the C64's in the C64's
+years and the VGA's in DOS's. DISPLAY on AUTO keeps all of it; any other
+display is forced on everything - `D` live (and the menu, `?display=`), and
+`--display` on the command line and in renders.
+
+Checked on the real GPU (Intel UHD 630, Direct3D 11 through ANGLE), live and
+muted: moonbike on AUTO through VHS, then every display forced in turn - B/W,
+MONO, EGA, LCD and MODERN looked at - with no shader error; Pong on AUTO in
+black and white. A new test: a game or a film keeps its display whatever the
+era, an effect takes its era's, a forced one wins, and every display is
+complete; `npm test` passes, twenty-one checks. The gallery was made again
+with the scenes' own displays.
+
+## Eras as spans of years
+
+The owner's rule: an era is a span of years, not a machine, so whoever looks
+at it sees what came out in those years. Seven eras now, keyed by the year
+they start: 1972–1981 (the first video games), 1982–1989 (home computers,
+arcades and the video shop), 1990–1993 (the demoscene's golden years),
+1994–1996 (the PC demos and the multimedia years), 1997–1999 (3D consoles and
+pocket screens - the console and the handheld years made one), 2000–2009 (the
+64k intro) and 2010–now (shader art). `--era 1990`, any year inside one
+(`--era 1995`) or the machine name it had (`--era amiga`) all find it, so no
+shared link breaks.
+
+A game or a film goes to the year it came out; a demo effect to the years the
+owner placed its machine in (the Amiga's in 1990–1993, the PC's in 1994–1996,
+the C64's in the 1980s). Moved by that: lightcycles, pyramid, boxer, bricks
+and outrun (1982–1986) and the Amiga's bouncing ball (1984) to 1982–1989;
+starfighter and footsteps (1993), cascade and echolines (the early-90s
+desktop) to 1990–1993; Pong now has its year. Each keeps its own display, so
+moving its years never changes how it looks: the ball stays on the Amiga's
+screen, the desktop's card game and screensaver on VGA.
+
+The cards of THE JOURNEY show the span and its title; each era's chime is the
+start-up sound of its display's machine; the sound chips follow the spans
+(Paula's samples in 1990–1993, the FM or wavetable card in 1994–1996,
+wavetable in 1997–1999); BORN IN opens in the span of the twelfth year (or the
+last one before it that has scenes); the intro and the help say 1972 to now.
+
+The owner also asked for display names that say which screen, not which kind:
+32-BIT is PS1, LCD is GAME BOY (the handheld's reflective, passive-matrix STN
+LCD), HI-RES is SVGA; two are new - SNES, the 16-bit console (256×224, 15-bit
+colour without dither), for the 16-bit space shooter; and NOKIA, the phone's
+monochrome LCD (dark pixels on a green backlight, 84×48), for snake, which was
+a phone game, not a Game Boy one. Checked on the real GPU (Intel UHD 630,
+D3D11), muted: starfighter through SNES, snake through NOKIA, THE JOURNEY's
+first card "1972–1981 / THE FIRST VIDEO GAMES", `?era=handheld` finding
+1997–1999, no errors. At the phone's own 84×48 the snake barely read; the
+owner's rule settled it - a homage, not an emulation, pleasant to today's eyes:
+the NOKIA display draws at 160 lines, and an on pixel is dark on the green
+backlight, so the snake the scene draws bright is dark, as on the phone. `npm test`
+passes, twenty-one checks; the README's era section, scene labels, examples
+and order, and the gallery, follow the spans.
+
+The owner then set the rules the displays follow from here on, for the
+catalogue to come - one display for each technology a scene simulates:
+
+- **A display never lowers the picture.** It is a simulation for today's
+  eyes, not an emulation: every display draws at full resolution (until now
+  each drew at its machine's - 200 lines for the C64 and VGA, 144 for the
+  handheld, 48 for the phone - and that lowered the product). Its own line
+  count now only spaces its scan lines, an LCD's grid, a tape's jitter.
+- **A CRT's effects only for what was seen on a CRT.** Each display says
+  which kind of screen it is: CRT, LCD or flat. Scan lines, curvature, glow,
+  colour fringes, grain and the vignette are drawn only for a CRT; the Game
+  Boy's STN and the phone's LCD get their palettes and their grid, nothing of
+  a tube; MODERN nothing.
+- **A name that files nothing wrong.** 32-bit was many machines, and no scene
+  is one of them precisely: the late-90s display is COMPOSITE TV - what it
+  simulates - not PS1. SNES stays: the space shooter is that console's.
+
+Checked on the real GPU (Intel UHD 630, D3D11), muted: the C64's dot tunnel
+and the arcade's invaders sharp, in their palettes, behind their scan lines;
+the snake through NOKIA and the dot tunnel through GAME BOY sharp, in their
+greens, no tube; no errors. `npm test` passes; the gallery was made again.
+
+## Sound boards
+
+The owner's next: the sound boards should follow the scenes as the displays
+do - a film with a better sound than a chip, a console game on its own, the
+Windows things on a PC card - with a switch on AUTO. `src/core/boards.js`
+holds four: HI-FI (the synthesizer's own voices, in full), PAULA, OPL3 FM and
+AWE32 (the chips there were). A scene that needs a sound of its own names its
+board: the films and the series, the 16-bit space shooter, the phone's snake
+and the LCD game HI-FI (no chip here is theirs); the Amiga's ball PAULA, in the
+8-bit decade; the desktop's card game and screensaver OPL3 FM, in the Amiga's
+years. Every other scene plays on its era's, by the seed, as before. The style
+stays the seed's and the era's.
+
+The demo resolves its board with its scene and its era, and composes its music
+for it; in AUTOPLAY and THE JOURNEY a track plays on its first scene's board -
+it cannot change in the middle of a tune - and a forced board makes the
+programme again, the same on the page and in the audio worklet. `C` live, the
+menu's SOUND BOARD, `?board=`, and `--board` on the command line and in
+renders. The music audit now measures a style on every board it is heard on:
+its eras' chips and the boards of the scenes it plays with there.
+
+Checked live (muted): kefrens on AUTO, `C` through HI-FI, PAULA and OPL3 FM,
+the menu's row; THE JOURNEY with AWE32 forced, carrying on across tracks; no
+errors. A new test: a film's music on HI-FI, the ball's on PAULA, an Amiga
+effect's on its era's chip, a forced board winning, and a forced journey the
+same at any block size; `npm test` passes, twenty-two checks.
+
+Audited on every board each style is now heard on: nothing that passed fails;
+the styles that meet a film's HI-FI (the 1997–1999 music, chiptune) peak a
+little higher, within the limit; 13 of 28 styles still pass every check.
+
+The README's scene table had two rows broken (a doubled cell divider before
+echolines and timecar pushed their descriptions out of line); each scene now
+names every era it plays in - read from the eras themselves, every example
+command checked to be one of them - and the music heading counts twenty-eight.
 | The logo, rendered as GitHub renders it | six lines of 74 characters, lined up |
 | The gallery, rendered again | 46 stills and animations; their scrollers read SCENE |
 | `npm test` | 17 checks pass |
 
+
+## VHS, from how a tape records
+
+The owner, on the VHS display: a band of noise rolled up the picture and looked
+bad; find a better simulation. That band was a tracking fault - a tape played
+on a deck whose heads do not follow its tracks - not how a VHS tape looks. The
+display was rebuilt from how the format records, with the figures of ntsc-rs's
+VHS emulation ([standard.rs](https://github.com/ntsc-rs/ntsc-rs/blob/main/crates/ntscrs/src/settings/standard.rs)):
+at standard play the brightness is recorded up to 2.4 MHz and the colour,
+"under" it, at only 320 kHz and four pixels late; the deck sharpens the
+brightness back; the edges wave a little; the colour has blotchy noise and the
+picture a fine grain and rare snow; and the heads switch over a few lines at
+the bottom. Other sources agree on the bandwidths - about 240 lines of
+brightness and about 30 of colour across the picture
+([US patent 5751884](https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/5751884),
+[videouniversity](https://www.videouniversity.com/?p=909),
+[vhs-77](https://vhs-77.blogspot.com)).
+
+The shader now, at full resolution as every display: the brightness blurred
+over about 1/250 of the width and sharpened back against a wider blur (a light
+halo on its edges); the colour blurred over about 1/30 of the width, delayed to
+the right and a little washed out; each line shifted by a slow, smooth wave
+(no per-frame jitter); slow colour blotches and a fine grain; the bottom 3%
+torn sideways, more the lower, with noise. No tracking band. Checked live and muted on the real GPU (moonbike and timecar on
+VHS): no errors, no band; the colour smears and lags off the bright shapes.
+`npm test` passes; the gallery was made again.
+
+The owner, looking at it: much better, but white dust now and then, coming down
+from the top - take it out. It was the snow: its specks were hashed from the
+line plus seven times the frame, so a speck drawn on one line came back seven
+lines lower on the next frame, and fell down the picture. The grain and the
+colour blotches carried the same fault, softer (one line a frame, and
+diagonally). The snow is gone; every noise left is now drawn afresh each frame
+(the cell hashed, then that with the frame), so nothing carries over. Checked
+live and muted on the real GPU: timecar's sky shows only its own lights, in the
+same places frame to frame; moonbike's stars show as short horizontal streaks,
+a point of light as a tape smears it, and they stay where the scene puts them.
 
 ## What went wrong before that
 

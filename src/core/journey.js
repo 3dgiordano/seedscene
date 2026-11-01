@@ -1,15 +1,22 @@
 // Programmes: demos played one after another.
 //
-//   THE JOURNEY  one part per era, oldest first.
+//   THE JOURNEY  one part per era, oldest first, three of the era's scenes in each,
+//                cut where the music turns. Played again it goes on through
+//                each era's list, three scenes a time, and its music, so
+//                every pass shows what the last did not: the seed sets the
+//                order the lists start in, not how much of them is seen.
 //   AUTOPLAY     an endless mix: a few tracks in one era, then another era.
 //                Born in a year, it opens in the era the viewer was twelve in
 //                and keeps coming back to it, the eras between drawn from the
 //                ones nearest it.
 //                Every 40 seconds a new track, and inside each track the
 //                scene changes where the music turns - on the drop, on the
-//                crash that opens a phrase - two or three scenes a track,
-//                in a fresh order every block. It can run for hours and
-//                never repeats a pairing in a row.
+//                crash that opens a phrase - two or three scenes a track.
+//                Each era deals its scenes and its music once, in the seed's
+//                order, and every visit to it goes on where the last one
+//                stopped, so the whole catalogue comes round before any of
+//                it comes again. It can run for hours and never repeats a
+//                pairing in a row.
 //
 // Every part has its own sub-seed, scene, era and music, composed at its own
 // tempo, and is built only when it is needed — on the page and in the
@@ -25,35 +32,38 @@
 // deterministic as a single demo.
 
 import { composeScore, scoreTempo, Features, Synth, SAMPLE_RATE, prepareChip } from './music.js';
-import { ERAS, ERA_NAMES } from './eras.js';
-import { chipFor, ERA_CHIPS } from './chips.js';
-import { Rng, stablePick } from './rng.js';
+import { ERAS, SCENE_ERAS as ERA_NAMES } from './eras.js';   // (the eras with scenes of their own)
+import { ERA_CHIPS } from './chips.js';
+import { boardFor, chipOfBoard } from './boards.js';
+import { Rng } from './rng.js';
 
 /** How each era is announced: a nod to how it used to start. */
 export const ERA_CARDS = {
-  arcade: ['INSERT COIN', 'CREDIT 01   1UP 000000   HI 999990'],
-  c64: ['LOAD "JOURNEY",8,1', 'SEARCHING... LOADING... READY.'],
-  amiga: ['INSERT DISK 2', 'PAL  50 HZ  512K CHIP'],
-  dos: ['C:\\SEEDSCENE> JOURNEY.EXE', 'VGA 320X200  256 COLOURS  SOUND OK'],
-  console: ['PRESS START', '32-BIT  CD-ROM  ANALOG CONTROL'],
-  handheld: ['POWER ON', '160X144  4 SHADES  BATTERY OK'],
-  y2k: ['PRECALCULATING...', '64K INTRO  ALL CODE, NO DATA'],
-  modern: ['COMPILING SHADERS... DONE', 'RAYMARCHING  NEON  NOW'],
+  1972: ['INSERT COIN', 'CREDIT 01   1UP 000000   HI 999990'],
+  1982: ['LOAD "JOURNEY",8,1', 'SEARCHING... LOADING... READY.'],
+  1990: ['INSERT DISK 2', 'PAL  50 HZ  512K CHIP'],
+  1994: ['C:\\SEEDSCENE> JOURNEY.EXE', 'VGA 320X200  256 COLOURS  SOUND OK'],
+  1997: ['PRESS START', '32-BIT  CD-ROM  ANALOG CONTROL'],
+  2000: ['PRECALCULATING...', '64K INTRO  ALL CODE, NO DATA'],
+  2010: ['COMPILING SHADERS... DONE', 'RAYMARCHING  NEON  NOW'],
 };
+// each era's chime, the start-up sound of the screen most of its things were seen on
+const CHIME_OF = { arcade: 'arcade', c64: 'c64', amiga: 'amiga', vga: 'dos', composite: 'console', snes: 'console', gameboy: 'handheld', nokia: 'handheld' };
 
 const BLOCK = 3;               // autoplay: tracks per era before moving on
 const SCENES_PER_TRACK = 3;    // autoplay: at most this many scenes in one track
 const MIN_SCENE = 9;           // autoplay: seconds a scene plays at least
+const JOURNEY_SCENES = 3;      // THE JOURNEY: scenes in each era's part
+const JOURNEY_MIN_SCENE = 7;   // THE JOURNEY: seconds a scene plays at least (a short part plays fewer)
 export const AUTOPLAY_PART = 40;
 const TWELVE = 12;             // born in: the age the era is the viewer's own
 
-/** Born in: the era nearest the year the viewer turned twelve (the earlier one on a tie). */
+/** Born in: the era of the year the viewer turned twelve - or, if that era has no scenes yet, the latest before it that has. */
 export function bornInHome(year) {
   const at = year + TWELVE;
-  return ERA_NAMES.reduce((best, e) => {
-    const d = Math.abs(ERAS[e].year - at), bd = Math.abs(ERAS[best].year - at);
-    return d < bd || (d === bd && ERAS[e].year < ERAS[best].year) ? e : best;
-  });
+  let home = ERA_NAMES[0];
+  for (const e of ERA_NAMES) if (at >= ERAS[e].year) home = e;
+  return home;
 }
 
 /**
@@ -95,18 +105,21 @@ class Transition {
 
 export class Programme {
   /**
-   * @param {{seed:string, kind:'journey'|'autoplay', partSec:number, count?:number}} o
+   * @param {{seed:string, kind:'journey'|'autoplay', partSec:number, count?:number, passes?:number}} o
    */
-  constructor({ seed, kind, partSec, count, bornIn }) {
+  constructor({ seed, kind, partSec, count, bornIn, passes, board }) {
     this.seed = seed;
     this.kind = kind;
+    this.board = board || 'auto';  // SOUND BOARD: auto (each track its first scene's), or one forced on all
     // born in: AUTOPLAY round the era of the viewer's twelfth year
     this.bornIn = kind === 'autoplay' && Number.isInteger(bornIn) ? bornIn : null;
     this.home = this.bornIn !== null ? bornInHome(this.bornIn) : null;
     this.partSec = partSec;
-    this.count = kind === 'journey' ? ERA_NAMES.length : (count || 100000);
+    // THE JOURNEY: every era once a pass; live, pass after pass
+    this.count = kind === 'journey' ? ERA_NAMES.length * Math.max(1, passes || 1) : (count || 100000);
     this.cache = new Map();
     this.transitions = new Map();
+    this.visits = [];              // autoplay: how many blocks before each one were in its era
     const total = this.partSec * this.count;
     this.totalSamples = Math.round(total * SAMPLE_RATE);
     this.meta = { duration: total, title: kind === 'journey' ? 'THE JOURNEY' : this.bornIn !== null ? `BORN IN ${this.bornIn}` : 'AUTOPLAY' };
@@ -115,12 +128,19 @@ export class Programme {
   /** Era, scene and music of part i, without composing it. */
   plan(i) {
     if (this.kind === 'journey') {
-      const era = ERA_NAMES[i];
-      const r = new Rng(`${this.seed}/${era}`, 'journey');
+      // the era's scenes and music in the seed's order, taken a few at a time pass after pass: when a
+      // list runs out it starts again from the top, so every scene and every style comes round
+      const era = ERA_NAMES[i % ERA_NAMES.length];
+      const pass = Math.floor(i / ERA_NAMES.length);
       const e = ERAS[era];
-      // the scene this part favours most, so a scene added to the era moves few seeds' journeys
-      const style = stablePick(String(r.next()), 'journey-scene', e.scenes);
-      return { era, style, music: r.pick(e.music), seed: `${this.seed}/${era}`, eraChanged: true };
+      const order = new Rng(`${this.seed}/${era}`, 'journey-scenes').shuffle(e.scenes);
+      const k = Math.min(order.length, this.journeyScenes());
+      const scenes = Array.from({ length: k }, (_, j) => order[(pass * k + j) % order.length]);
+      const tunes = new Rng(`${this.seed}/${era}`, 'journey-music').shuffle(e.music);
+      return {
+        era, style: scenes[0], scenes, music: tunes[pass % tunes.length],
+        seed: pass ? `${this.seed}/${era}/${pass}` : `${this.seed}/${era}`, eraChanged: true,
+      };
     }
     // autoplay: eras in blocks of tracks; music and scenes in a fresh order every block
     const block = Math.floor(i / BLOCK);
@@ -152,13 +172,34 @@ export class Programme {
     return new Rng(this.seed, `autoplay-cycle-${cycle}`).shuffle(ERA_NAMES)[block % ERA_NAMES.length];
   }
 
+  /** Autoplay: how many blocks before this one played its era - where its era's lists carry on from. */
+  eraVisit(block) {
+    for (let b = this.visits.length; b <= block; b++) {
+      const era = this.blockEra(b);
+      let v = 0;
+      for (let c = b - 1; c >= 0; c--) if (this.blockEra(c) === era) { v = this.visits[c] + 1; break; }
+      this.visits.push(v);
+    }
+    return this.visits[block];
+  }
+
   /**
-   * Autoplay: the order a block plays its era's scenes in. It does not open on
-   * a scene the last block may have closed on (eras share scenes): any of the
+   * Autoplay: an era's scenes or music, dealt once by the seed, turned on to where this block's visit
+   * starts - so each visit plays the next of them, and the list starts again only when it runs out.
+   */
+  eraDeal(block, kind, list, perVisit) {
+    const deal = new Rng(this.seed, `autoplay-${kind}-${this.blockEra(block)}`).shuffle(list);
+    const at = (this.eraVisit(block) * perVisit) % deal.length;
+    return [...deal.slice(at), ...deal.slice(0, at)];
+  }
+
+  /**
+   * Autoplay: the order a block plays its era's scenes in - on from where the era's last visit stopped.
+   * It does not open on a scene the last block may have closed on (eras share scenes): any of the
    * places its last track could have reached, or the one it may have swapped.
    */
   blockScenes(block) {
-    const draw = (n) => new Rng(this.seed, `autoplay-scenes-${n}`).shuffle(ERAS[this.blockEra(n)].scenes);
+    const draw = (n) => this.eraDeal(n, 'scenes', ERAS[this.blockEra(n)].scenes, BLOCK * SCENES_PER_TRACK);
     const order = draw(block);
     if (block > 0) {
       const prev = draw(block - 1);
@@ -171,18 +212,48 @@ export class Programme {
   }
 
   /**
-   * Autoplay: the order a block plays its era's music in. Eras share styles,
+   * Autoplay: the order a block plays its era's music in, on from the era's last visit. Eras share styles,
    * so a block that would open on the style the last block (as drawn) closed
    * on starts with its next one instead.
    */
   blockMusic(block) {
-    const draw = (n) => new Rng(this.seed, `autoplay-music-${n}`).shuffle(ERAS[this.blockEra(n)].music);
+    const draw = (n) => this.eraDeal(n, 'music', ERAS[this.blockEra(n)].music, BLOCK);
     const order = draw(block);
     if (block > 0 && order.length > 1) {
       const prev = draw(block - 1);
       if (order[0] === prev[(BLOCK - 1) % prev.length]) order.push(order.shift());
     }
     return order;
+  }
+
+  /** THE JOURNEY: scenes in each part - three, or fewer where a part is too short to show them. */
+  journeyScenes() {
+    return Math.max(1, Math.min(JOURNEY_SCENES, Math.floor(this.partSec / JOURNEY_MIN_SCENE)));
+  }
+
+  /**
+   * THE JOURNEY: where part i changes scene - the part shared out evenly between its scenes, each cut
+   * moved onto a drop or a crash that opens a phrase if one falls near it, or else onto the nearest bar
+   * line, as long as every scene keeps its time.
+   */
+  journeyCuts(pl, score, inOffset) {
+    const k = pl.scenes.length;
+    if (k < 2) return [{ from: 0, style: pl.style }];
+    const { barSec } = score.meta;
+    const len = this.partSec;
+    const at = (bar) => bar * barSec - inOffset;
+    const marks = [];
+    score.arrangement.forEach((x, bar) => { if (x.drop || x.crash) marks.push(at(bar)); });
+    const cuts = [];
+    for (let q = 1; q < k; q++) {
+      const even = (len * q) / k;
+      const ok = (t) => t - (cuts.length ? cuts[cuts.length - 1] : 0) >= JOURNEY_MIN_SCENE && len - t >= JOURNEY_MIN_SCENE * (k - q);
+      const near = marks.filter((t) => Math.abs(t - even) <= len / (3 * k) && ok(t)).sort((x, y) => Math.abs(x - even) - Math.abs(y - even))[0];
+      const bar = at(Math.round((even + inOffset) / barSec));
+      const lo = (cuts.length ? cuts[cuts.length - 1] : 0) + JOURNEY_MIN_SCENE, hi = len - JOURNEY_MIN_SCENE * (k - q);
+      cuts.push(near !== undefined ? near : ok(bar) ? bar : Math.min(hi, Math.max(lo, even)));
+    }
+    return [0, ...cuts].map((from, j) => ({ from, style: pl.scenes[j] }));
   }
 
   /**
@@ -195,10 +266,13 @@ export class Programme {
     const len = this.partSec;
     const at = (bar) => bar * barSec - inOffset;         // a bar line, in seconds into the slot
     const fits = (t, cuts) => t >= MIN_SCENE && len - t >= MIN_SCENE && cuts.every((c) => Math.abs(c - t) >= MIN_SCENE);
+    // (an era with one scene has nothing to cut to; with two, one cut)
+    const most = Math.min(SCENES_PER_TRACK, ERAS[this.blockEra(Math.floor(i / BLOCK))].scenes.length) - 1;
+    if (most < 1) return [{ from: 0, style: this.blockScenes(Math.floor(i / BLOCK))[0] }];
     const cuts = [];
-    score.arrangement.forEach((x, bar) => { if (x.drop && fits(at(bar), cuts)) cuts.push(at(bar)); });
+    score.arrangement.forEach((x, bar) => { if (x.drop && cuts.length < most && fits(at(bar), cuts)) cuts.push(at(bar)); });
     score.arrangement.forEach((x, bar) => {
-      if (x.crash && cuts.length < SCENES_PER_TRACK - 1 && fits(at(bar), cuts)) cuts.push(at(bar));
+      if (x.crash && cuts.length < most && fits(at(bar), cuts)) cuts.push(at(bar));
     });
     if (!cuts.length) cuts.push(at(Math.round((inOffset + len / 2) / barSec)));
     cuts.sort((x, y) => x - y);
@@ -246,7 +320,8 @@ export class Programme {
     const inBeats = into ? into.beats : 0, inSec = into ? into.seconds : 0;
     const midBeats = out ? out.middle : this.partSec / spb;
     const outBeats = out ? out.beats : 0, outSec = out ? out.seconds : 0;
-    const score = composeScore(pl.seed, (inBeats + midBeats + outBeats) * spb, pl.music, chipFor(pl.era, pl.seed));
+    // the track's sound board: its first scene's (a board cannot change in the middle of a tune), or the forced one
+    const score = composeScore(pl.seed, (inBeats + midBeats + outBeats) * spb, pl.music, chipOfBoard(boardFor(pl.style, pl.era, pl.seed, this.board)));
     yield;
     // score time -> seconds after the track starts sounding
     const warp = (s) => {
@@ -273,7 +348,7 @@ export class Programme {
     const p = {
       index: i, ...pl,
       // the scenes this part plays, and from when (seconds into the part)
-      scenes: this.kind === 'autoplay' ? this.sceneCuts(i, score, inOffset) : [{ from: 0, style: pl.style }],
+      scenes: this.kind === 'autoplay' ? this.sceneCuts(i, score, inOffset) : this.journeyCuts(pl, score, inOffset),
       startSec,
       start: Math.round(startSec * SAMPLE_RATE),
       duration: this.partSec,
@@ -315,8 +390,8 @@ export class Programme {
     const at = (sec) => Math.round(sec * SAMPLE_RATE);
     if (pl.era === 'y2k' && pl.eraChanged && inSec > 0) events.push({ t: 0, instr: 'modem', note: 0, vel: 0.8, dur: at(inSec) });
     if (pl.era === 'handheld') events.push({ t: 0, instr: 'cartridge', note: 0, vel: 0.8, dur: at(0.4) });
-    if (this.kind === 'journey' && pl.eraChanged && pl.era !== 'y2k') {
-      events.push({ t: at(inSec), instr: 'chime', kit: pl.era, note: 60 + meta.root, vel: 0.55, dur: at(2.5) });
+    if (this.kind === 'journey' && pl.eraChanged && ERAS[pl.era].display !== 'svga') {
+      events.push({ t: at(inSec), instr: 'chime', kit: CHIME_OF[ERAS[pl.era].display] || 'bell', note: 60 + meta.root, vel: 0.55, dur: at(2.5) });
     }
     return {
       meta: { fx: { reverb: 0.5, delay: 0.3, delayBeats: 0.5 }, spb: meta.spb, chip: null },
@@ -374,15 +449,20 @@ export class Programme {
   }
 }
 
-/** THE JOURNEY: every era once; the length is split evenly between them. */
-export function composeJourney(seed, duration) {
-  return new Programme({ seed, kind: 'journey', partSec: Math.max(12, duration / ERA_NAMES.length) });
+/**
+ * THE JOURNEY: every era once a pass, the length split evenly between them. A render is one pass;
+ * live it goes on, each pass three new scenes an era and the next of its music.
+ */
+export function composeJourney(seed, duration, passes = 1, board = 'auto') {
+  return new Programme({ seed, kind: 'journey', partSec: Math.max(12, duration / ERA_NAMES.length), passes, board });
 }
+/** Passes a live journey plays before it comes round to the first again. */
+export const JOURNEY_PASSES = 500;
 
 /** AUTOPLAY: an endless mix, or `duration` seconds of it for a render; born in a year, round its era. */
-export function composeAutoplay(seed, duration, bornIn = null) {
+export function composeAutoplay(seed, duration, bornIn = null, board = 'auto') {
   const count = duration ? Math.max(1, Math.ceil(duration / AUTOPLAY_PART)) : undefined;
-  return new Programme({ seed, kind: 'autoplay', partSec: AUTOPLAY_PART, count, bornIn });
+  return new Programme({ seed, kind: 'autoplay', partSec: AUTOPLAY_PART, count, bornIn, board });
 }
 
 /**

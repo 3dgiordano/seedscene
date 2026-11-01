@@ -6,7 +6,7 @@
 // the era's own scenes.
 
 import { Rng, stablePick } from './rng.js';
-import { ERAS, ERA_NAMES, erasForScene } from './eras.js';
+import { ERAS, SCENE_ERAS, erasForScene, eraKey } from './eras.js';
 import { STYLE_NAMES } from '../styles/index.js';
 import { MUSIC_NAMES } from './music.js';
 
@@ -20,12 +20,13 @@ export function resolveChoices({ seed, style, era, music }) {
   // the scene a seed favours most: a new scene takes only the seeds that favour it;
   // with the era given, the one it favours most among the era's (so a seed whose
   // favourite is already there keeps it)
-  const pool = isAuto(style) && !isAuto(era) && ERAS[era] ? ERAS[era].scenes : STYLE_NAMES;
+  // (an era with no scenes of its own yet: the seed's pick of them all, through that era's filter)
+  const pool = isAuto(style) && !isAuto(era) && ERAS[era] && ERAS[era].scenes.length ? ERAS[era].scenes : STYLE_NAMES;
   const s = isAuto(style) ? stablePick(seed, 'style-choice', pool) : style;
   let e = era;
   if (isAuto(era)) {
     const home = erasForScene(s);
-    e = new Rng(seed, 'era-choice').pick(home.length ? home : ERA_NAMES);
+    e = new Rng(seed, 'era-choice').pick(home.length ? home : SCENE_ERAS);
   }
   const m = isAuto(music) ? new Rng(seed, 'music-style').pick(ERAS[e].music) : music;
   return { style: s, era: e, music: m };
@@ -34,7 +35,8 @@ export function resolveChoices({ seed, style, era, music }) {
 /** Validate user input, with the list of what is allowed in the message. */
 export function checkChoice(kind, value) {
   if (isAuto(value)) return 'auto';
-  const v = String(value).toLowerCase();
+  // (an era by its key, a year inside it, or the machine name it once had)
+  const v = kind === 'era' ? String(eraKey(value)).toLowerCase() : String(value).toLowerCase();
   const allowed = { scene: STYLE_NAMES, style: STYLE_NAMES, era: ERA_NAMES, music: MUSIC_NAMES }[kind];
   if (!allowed.includes(v)) {
     throw new Error(`Unknown ${kind} "${value}". Available: auto, ${allowed.join(', ')}`);

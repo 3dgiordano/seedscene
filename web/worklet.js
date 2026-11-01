@@ -2,7 +2,7 @@
 // very same music.js the offline renderer uses runs here unchanged.
 
 import { composeScore, Synth } from '../src/core/music.js';
-import { composeJourney, composeAutoplay, ProgrammeSynth } from '../src/core/journey.js';
+import { composeJourney, composeAutoplay, ProgrammeSynth, JOURNEY_PASSES } from '../src/core/journey.js';
 
 class SeedsceneProcessor extends AudioWorkletProcessor {
   constructor(options) {
@@ -16,8 +16,8 @@ class SeedsceneProcessor extends AudioWorkletProcessor {
     // from any of them; a demo plays one score
     this.kind = o.programme || null;
     this.startPart = o.startPart || 0;
-    this.score = this.kind === 'journey' ? composeJourney(this.seed, Math.max(this.duration, 96))
-      : this.kind === 'autoplay' ? composeAutoplay(this.seed, undefined, Number.isInteger(o.bornIn) ? o.bornIn : null)
+    this.score = this.kind === 'journey' ? composeJourney(this.seed, Math.max(this.duration, 96), JOURNEY_PASSES, o.board || 'auto')
+      : this.kind === 'autoplay' ? composeAutoplay(this.seed, undefined, Number.isInteger(o.bornIn) ? o.bornIn : null, o.board || 'auto')
         : composeScore(this.seed, this.duration, this.music, o.chip || null);
     this.synth = this.makeSynth();
     this.total = this.score.totalSamples;

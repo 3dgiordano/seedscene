@@ -13,8 +13,8 @@ import { createContext } from './core/gl.js';
 import { Renderer } from './core/visual.js';
 import { STYLE_NAMES } from './styles/index.js';
 import { resolveChoices } from './core/choose.js';
-import { composeJourney, composeAutoplay, partAt } from './core/journey.js';
-import { chipFor } from './core/chips.js';
+import { composeJourney, composeAutoplay, partAt, JOURNEY_PASSES } from './core/journey.js';
+import { boardFor, chipOfBoard } from './core/boards.js';
 
 export { STYLE_NAMES };
 
@@ -22,13 +22,13 @@ export class Demo {
   /**
    * @param {{canvas:HTMLCanvasElement, seed:string, style?:string, era?:string,
    *          music?:string, duration:number, width:number, height:number,
-   *          overlay?:boolean, live?:boolean, journey?:boolean, autoplay?:boolean}} opts
+   *          overlay?:boolean, live?:boolean, journey?:boolean, autoplay?:boolean, display?:string}} opts
    */
   constructor(opts) {
     this.opts = opts;
     this.seed = opts.seed;
     this.duration = opts.duration;
-    this.req = { style: opts.style || 'auto', era: opts.era || 'auto', music: opts.music || 'auto' };
+    this.req = { style: opts.style || 'auto', era: opts.era || 'auto', music: opts.music || 'auto', board: opts.board || 'auto' };
     this.resolve();
     this.compose();
 
@@ -41,6 +41,7 @@ export class Demo {
       width: opts.width, height: opts.height,
       meta: this.meta, features: this.features, overlay: opts.overlay, live: !!opts.live,
       greets: opts.greets || [],
+      display: opts.display || 'auto',   // DISPLAY: auto, or one display forced on everything
     });
     if (opts.journey) this.setProgramme('journey');
     else if (opts.autoplay) this.setProgramme('autoplay', { bornIn: opts.bornIn });
@@ -55,7 +56,8 @@ export class Demo {
   }
 
   compose() {
-    this.chip = chipFor(this.era, this.seed);
+    this.board = boardFor(this.style, this.era, this.seed, this.req.board);
+    this.chip = chipOfBoard(this.board);
     this.score = composeScore(this.seed, this.duration, this.music, this.chip);
     this.features = new Features(this.score);
     this.meta = this.score.meta;
@@ -72,7 +74,7 @@ export class Demo {
     if (change.duration !== undefined) this.duration = change.duration;
     this.resolve();
     const recompose = this.music !== before.music || this.seed !== before.seed || this.duration !== before.duration
-      || chipFor(this.era, this.seed) !== this.chip;     // another era, another sound chip
+      || chipOfBoard(boardFor(this.style, this.era, this.seed, this.req.board)) !== this.chip;   // another board
     if (recompose) this.compose();
     if (this.style !== before.style) this.renderer.setStyle(this.style);
     if (this.era !== before.era) this.renderer.setEra(this.era);
@@ -81,8 +83,26 @@ export class Demo {
   }
 
   setStyle(name) { return this.update({ req: { style: name } }); }
+  /** A scene in a given era of its own, both at once (the live keys travel the catalogue era by era). */
+  setSceneInEra(name, era) { return this.update({ req: { style: name, era } }); }
   setEra(name) { return this.update({ req: { era: name } }); }
   setMusic(name) { return this.update({ req: { music: name } }); }
+  /**
+   * SOUND BOARD: 'auto' (each scene its own, or its era's) or one board forced on everything. A programme
+   * playing is made again with it, so the page and the audio worklet agree on every track's board.
+   */
+  setBoard(name) {
+    if (this.programme) {
+      const { kind, bornIn } = this.programme;
+      this.req.board = name;
+      this.programme = null;
+      this.setProgramme(kind, { bornIn });
+      return { musicChanged: true };
+    }
+    return this.update({ req: { board: name } });
+  }
+  /** DISPLAY: 'auto' (each scene its own look, or its era's) or a display forced on everything. */
+  setDisplay(name) { this.renderer.setDisplay(name); return { musicChanged: false }; }
   setSeed(seed) { return this.update({ seed }); }
   setDuration(seconds) { return this.update({ duration: seconds }); }
 
@@ -132,8 +152,8 @@ export class Demo {
     if ((this.programme && this.programme.kind) === kind && (!kind || this.programme.bornIn === born)) return;
     if (kind) {
       this.programme = kind === 'journey'
-        ? composeJourney(this.seed, Math.max(this.duration, 96))
-        : composeAutoplay(this.seed, undefined, born);
+        ? composeJourney(this.seed, Math.max(this.duration, 96), JOURNEY_PASSES, this.req.board)
+        : composeAutoplay(this.seed, undefined, born, this.req.board);
       this.partIndex = -1;
     } else {
       this.programme = null;

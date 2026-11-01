@@ -1,73 +1,62 @@
-// Eras: how a frame looked on the machines the scene grew up on.
+// Eras: spans of years, and what came out in them.
 //
-// An era is a screen, not a scene: a resolution, a palette, a dither and a
-// kind of display. Any scene can be shown through any era, and each era
-// suggests the scenes and the music that belonged to it. Platform names are
-// used only to say which period a look recalls.
+// An era is a time - from one year to another - not a machine: the scenes and the
+// music of those years, and the display most of its things were seen on (the
+// screens themselves are in displays.js, and a scene can bring its own). A scene
+// belongs to the era of its year: a game or a film to the year it came out, a demo
+// effect to the years the scene made it famous (a few to two or three, each seen
+// through that era's display) - and is shown only there. An era is named by its
+// years; its key is the year it starts, and the machine names it once had still
+// work as aliases (arcade, c64, amiga, dos, console, handheld, y2k, modern).
 
 export const ERAS = {
-  arcade: {
-    label: 'Arcade cabinet', year: 1979, blurb: 'raster and vector monitors in a dark room full of coins',
-    lines: 224, pixelAspect: 1,
-    palette: 'levels', levels: 4, dither: 0.35,  // a few bright colours, hard edges
-    display: 'crt', bloom: 1.3, scan: 0.35, barrel: 0.085, aberr: 0.0016, grain: 0.03, vignette: 0.7,
-    scenes: ['paddles', 'invaders', 'rocks', 'maze', 'bricks', 'lightcycles', 'snake', 'boxer', 'scanner', 'lcd', 'pyramid', 'timecar'],
+  1972: {
+    label: '1972–1981', year: 1972, to: 1981, title: 'The first video games',
+    blurb: 'the arcades and the black-and-white set: Pong, the invaders, the rocks, the maze',
+    display: 'arcade',   // the screen most of its things were seen on (src/core/displays.js)
+    scenes: ['paddles', 'invaders', 'rocks', 'maze', 'lcd'],
     music: ['arcade', 'cyborg', 'derelict', 'synthpop'],
   },
-  c64: {
-    label: 'Commodore 64', year: 1982, blurb: '16 colours, fat pixels, a TV in the bedroom',
-    lines: 200, pixelAspect: 2,             // multicolour mode: pixels twice as wide
-    palette: 'c64', levels: 0, dither: 0.55,
-    display: 'crt', bloom: 0.55, scan: 0.32, barrel: 0.07, aberr: 0.0012, grain: 0.03, vignette: 0.65,
-    scenes: ['plasma', 'copper', 'dottunnel', 'invaders'],
+  1982: {
+    label: '1982–1989', year: 1982, to: 1989, title: 'Home computers, arcades and the video shop',
+    blurb: 'the 8-bit home, the arcade hits of the decade, and the films and series on tape',
+    display: 'c64',
+    scenes: ['lightcycles', 'pyramid', 'boxer', 'bricks', 'outrun', 'scanner', 'timecar', 'moonbike', 'dottunnel', 'plasma', 'ball'],
     music: ['chiptune', 'synthpop'],
   },
-  amiga: {
-    label: 'Amiga', year: 1990, blurb: '4096-colour copper gradients on a PAL monitor',
-    lines: 256, pixelAspect: 1,
-    palette: 'levels', levels: 16, dither: 0,   // 12-bit colour: honest banding, no dither
-    display: 'crt', bloom: 0.8, scan: 0.28, barrel: 0.06, aberr: 0.0012, grain: 0.025, vignette: 0.6,
-    scenes: ['shadebobs', 'copper', 'vectorballs', 'ripple', 'metaballs', 'tunnel', 'starfield', 'bricks', 'kefrens', 'ball', 'rings', 'twister', 'bobs', 'dualchess', 'chessfloor', 'rubber', 'cracktro'],
+  1990: {
+    label: '1990–1993', year: 1990, to: 1993, title: 'The demoscene\'s golden years',
+    blurb: 'copper, vector balls and cracktros; the first 3D on the consoles; the desktop and its games',
+    display: 'amiga',
+    scenes: ['shadebobs', 'copper', 'vectorballs', 'ripple', 'metaballs', 'tunnel', 'starfield', 'kefrens', 'rings', 'twister', 'bobs', 'dualchess', 'chessfloor', 'rubber', 'cracktro', 'plasma', 'fractal', 'bumplogo', 'fireworks', 'morph', 'footsteps', 'starfighter', 'cascade', 'echolines'],
     music: ['rave', 'newbeat', 'orchestral', 'dreamwave', 'modjazz'],
   },
-  handheld: {
-    label: 'Handheld', year: 1998, blurb: 'four shades of green on a reflective LCD',
-    lines: 144, pixelAspect: 1,
-    palette: 'dmg', levels: 0, dither: 0.7,
-    display: 'lcd', bloom: 0, scan: 0, barrel: 0, aberr: 0, grain: 0, vignette: 0.25,
-    scenes: ['dottunnel', 'plasma', 'fireworks', 'starfield', 'tunnel', 'invaders', 'maze', 'snake'],
-    music: ['gameboy', 'rocknroll'],
-  },
-  dos: {
-    label: 'PC DOS · VGA', year: 1994, blurb: 'mode 13h: 320x200, 256 colours, dithered',
-    lines: 200, pixelAspect: 1,
-    palette: 'levels', levels: 6, dither: 0.85,
-    display: 'crt', bloom: 0.5, scan: 0.16, barrel: 0.035, aberr: 0.0008, grain: 0.02, vignette: 0.5,
-    scenes: ['vectorballs', 'fractal', 'tunnel', 'fireworks', 'ripple', 'metaballs', 'plasma', 'fire', 'rings', 'pipes', 'bumplogo', 'ansi', 'echolines', 'maze3d'],
+  1994: {
+    label: '1994–1996', year: 1994, to: 1996, title: 'The PC demos and the multimedia years',
+    blurb: 'mode 13h, the sound card, the bulletin boards and the screensavers',
+    display: 'vga',
+    scenes: ['fractal', 'tunnel', 'metaballs', 'plasma', 'fire', 'pipes', 'bumplogo', 'ansi', 'maze3d'],
     music: ['ambient', 'acid', 'gabber', 'eurodance', 'jungle', 'fmmetal', 'midiquest', 'keygen', 'triphop'],
   },
-  console: {
-    label: '32-bit console', year: 1997, blurb: '15-bit colour, ordered dither, composite TV',
-    lines: 240, pixelAspect: 1,
-    palette: 'levels', levels: 32, dither: 1,
-    display: 'tv', bloom: 0.9, scan: 0.18, barrel: 0.05, aberr: 0.0022, grain: 0.02, vignette: 0.55,
-    scenes: ['vectorballs', 'starfield', 'tunnel', 'fireworks', 'maze', 'bricks', 'boxer', 'starfighter', 'footsteps', 'animeop'],
-    music: ['heroic', 'eurodance', 'rocknroll', 'starpilot', 'midiquest', 'animeop', 'skatepunk'],
+  1997: {
+    label: '1997–1999', year: 1997, to: 1999, title: '3D consoles and pocket screens',
+    blurb: 'the 32-bit consoles on the TV, a game on every phone, the anime of the afternoons',
+    display: 'composite',
+    scenes: ['snake', 'animeop'],
+    music: ['heroic', 'eurodance', 'rocknroll', 'starpilot', 'midiquest', 'animeop', 'skatepunk', 'gameboy'],
   },
-  y2k: {
-    label: 'Y2K PC demo', year: 2002, blurb: 'hi-res, glow on everything, the 64k intro',
-    lines: 0, pixelAspect: 1,
-    palette: 'none', levels: 0, dither: 0,
-    display: 'clean', bloom: 1.5, scan: 0, barrel: 0, aberr: 0.0006, grain: 0.01, vignette: 0.4,
-    scenes: ['morph', 'metaballs', 'fractal', 'outrun', 'rocks', 'starfighter', 'cascade'],
+  2000: {
+    label: '2000–2009', year: 2000, to: 2009, title: 'The 64k intro',
+    blurb: 'hi-res, glow on everything, a whole demo in 64 kilobytes',
+    display: 'svga',
+    scenes: ['morph'],
     music: ['trance', 'hardcore', 'keygen', 'triphop'],
   },
-  modern: {
-    label: 'Modern', year: 2024, blurb: 'shader art, neon and film grain',
-    lines: 0, pixelAspect: 1,
-    palette: 'none', levels: 0, dither: 0,
-    display: 'modern', bloom: 1.1, scan: 0, barrel: 0, aberr: 0.0015, grain: 0.045, vignette: 0.5,
-    scenes: ['outrun', 'morph', 'metaballs', 'paddles', 'lightcycles', 'snake', 'boxer', 'starfighter', 'moonbike'],
+  2010: {
+    label: '2010–now', year: 2010, to: null, title: 'Shader art',
+    blurb: 'shader art, neon and the synthwave revival',
+    display: 'modern',
+    scenes: [],
     music: ['synthwave', 'dreamwave'],
   },
 };
@@ -75,33 +64,30 @@ export const ERAS = {
 /** Oldest first: the order THE JOURNEY travels in. */
 export const ERA_NAMES = Object.keys(ERAS).sort((a, b) => ERAS[a].year - ERAS[b].year);
 
-const PALETTE_MODE = { none: 0, c64: 1, levels: 2, dmg: 3 };
-const DISPLAY_MODE = { crt: 0, lcd: 1, tv: 2, clean: 3, modern: 4 };
+/** The names the eras had when they were machines: still understood, so no shared link breaks. */
+export const ERA_ALIASES = {
+  arcade: '1972', c64: '1982', amiga: '1990', dos: '1994', console: '1997', handheld: '1997', y2k: '2000', modern: '2010',
+};
 
-/** The numbers the post shader needs for an era. */
-export function eraUniforms(name) {
-  const e = ERAS[name];
-  return {
-    palMode: PALETTE_MODE[e.palette],
-    levels: e.levels || 2,
-    dither: e.dither,
-    display: DISPLAY_MODE[e.display],
-    bloom: e.bloom, scan: e.scan, barrel: e.barrel, aberr: e.aberr,
-    grain: e.grain, vignette: e.vignette,
-  };
+/** An era asked for by its key, a year inside it, or an old machine name: the era's key (or the input as it was). */
+export function eraKey(name) {
+  if (name === undefined || name === null) return name;
+  const s = String(name).toLowerCase();
+  if (ERAS[s]) return s;
+  if (ERA_ALIASES[s]) return ERA_ALIASES[s];
+  if (/^\d{4}$/.test(s)) { const y = Number(s); const e = eraOfYear(y); if (e) return e; }
+  return name;
 }
 
-/**
- * The resolution an era draws at, for a canvas of w x h: the era's line count,
- * as wide as the canvas aspect allows, and halved for fat-pixel modes.
- */
-export function eraResolution(name, w, h) {
-  const e = ERAS[name];
-  if (!e.lines || e.lines >= h) return { w, h, pixelated: false };
-  const vh = e.lines;
-  const vw = Math.max(16, Math.round((vh * (w / h)) / e.pixelAspect));
-  return { w: vw, h: vh, pixelated: true };
+/** The era a year falls in (the first one for a year before them all, the last for one after). */
+export function eraOfYear(y) {
+  let found = null;
+  for (const e of ERA_NAMES) if (y >= ERAS[e].year) found = e;
+  return found || ERA_NAMES[0];
 }
+
+/** The eras that have scenes of their own, oldest first: the ones a programme travels. */
+export const SCENE_ERAS = ERA_NAMES.filter((n) => ERAS[n].scenes.length > 0);
 
 /** Which eras a scene belongs to, oldest first. */
 export function erasForScene(scene) {

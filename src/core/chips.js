@@ -671,9 +671,9 @@ export function buildChips(native) {
 
 /** Which chip an era's music plays on: none for the eras that keep the synthesizer's own voices. */
 export const ERA_CHIPS = {
-  amiga: ['paula'],
-  dos: ['opl3', 'awe32'],
-  console: ['awe32'],
+  1990: ['paula'],                // (the years of the Amiga's samples)
+  1994: ['opl3', 'awe32'],        // (the sound card's FM, or its wavetable)
+  1997: ['awe32'],                // (the wavetable of the late 90s)
 };
 
 /** The chip a song plays on in an era: chosen by the song's seed where the era had more than one. */
