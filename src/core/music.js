@@ -43,6 +43,12 @@ const DREAD = [[0, 0, 1, 0], [0, 5, 0, 1], [0, 0, 6, 5]];
 const JAZZ = [[1, 4, 0, 5], [0, 5, 1, 4], [3, 2, 1, 4]];
 // metal: the minor i with its VI and VII, the phrygian half-step, a darker walk
 const METAL = [[0, 0, 5, 6], [0, 1, 0, 6], [0, 5, 3, 4]];
+// three-chord punk: I-V-vi-IV, I-IV-V, and the ska punk turn through ii (V I ii IV)
+const PUNK = [[0, 4, 5, 3], [0, 3, 4, 3], [4, 0, 1, 3], [0, 5, 3, 4]];
+// the anison's chorus: the "Royal Road", IV-V-iii-vi, most of all
+const ROYAL = [[3, 4, 2, 5], [3, 4, 2, 5], [3, 4, 0, 5], [0, 4, 5, 3]];
+// noir: the minor i that will not move, the VI, the iv, a half-step of the spy films
+const NOIR = [[0, 0, 5, 5], [0, 3, 0, 4], [0, 5, 3, 4], [0, 0, 1, 1]];
 
 /**
  * Music styles. Each one picks its own drums, bass, chords, lead and arp
@@ -71,7 +77,9 @@ export const MUSIC_PRESETS = {
   trance: {
     label: 'Trance', blurb: 'gated supersaws, rolling offbeat bass, big builds',
     bpm: [134, 142], scales: ['minor', 'harmonicMinor'], progressions: ANTHEM,
-    drums: 'trance', bass: 'offbeat', chords: 'gated', lead: 'supersaw', arp: 'pluck16',
+    drums: 'trance', bass: 'offbeat', chords: 'gated', lead: 'hook', arp: 'pluck16',
+    hook: { instr: 'supersaw', oct: 72, vel: 0.5, line: true },
+    melody: { free: [1, 9], dense: [0.65, 0.65, 0.65], close: true, moving: true },
     swing: 0, intro: 0.06, fx: { reverb: 1.3, delay: 1.1, delayBeats: 0.75 },
   },
   rave: {
@@ -137,7 +145,9 @@ export const MUSIC_PRESETS = {
   synthwave: {
     label: 'Synthwave', blurb: 'the modern revival: gated snares, octave bass, neon arps',
     bpm: [92, 118], scales: ['minor', 'dorian'],
-    drums: 'synthwave', bass: 'octave8', chords: 'synthpad', lead: 'lead', arp: 'pluck16',
+    drums: 'synthwave', bass: 'octave8', chords: 'synthpad', lead: 'hook', arp: 'pluck16',
+    hook: { instr: 'lead', oct: 72, vel: 0.5, line: true },
+    melody: { free: [1, 9], dense: [0.6, 0.6, 0.6], close: true, moving: true },
     swing: 0, intro: 0.06, fx: { reverb: 1.4, delay: 1.3, delayBeats: 0.75 },
   },
   // --- tributes to the arcade, the cinema and the charts. Sounds and moods,
@@ -146,15 +156,18 @@ export const MUSIC_PRESETS = {
     label: 'Arcade Attract', blurb: 'coin-op bleeps: a pulse hook, a marching bass, zaps and blips',
     bpm: [140, 165], scales: ['minor', 'dorian', 'major'],
     drums: 'arcade', bass: 'march', chords: 'chiparp', lead: 'hook', arp: null, sfx: true,
-    hook: { instr: 'chip', oct: 72, vel: 0.5 }, leadFrom: 0.15,
+    hook: { instr: 'chip', oct: 72, vel: 0.5, line: true }, leadFrom: 0.15,
+    melody: { free: [1, 9], dense: [0.65, 0.65, 0.65], close: true, moving: true },
     swing: 0, intro: 0.03, fx: { reverb: 0.35, delay: 0.8, delayBeats: 0.5 },
   },
   cyborg: {
     label: 'Cyborg Pulse', blurb: 'a mid-80s machine score: anvils in an odd metre, ostinato bass, dark brass',
     bpm: [96, 112], steps: 13, scales: ['harmonicMinor', 'minor', 'phrygian'],
     drums: 'cyborg', bass: 'ostinato', chords: 'power', lead: 'hook', arp: null,
-    hook: { instr: 'brass', oct: 60, vel: 0.55, hits: [3, 4] }, leadFrom: 0.3,
-    swing: 0, intro: 0.06, fx: { reverb: 1.4, delay: 0.8, delayBeats: 0.75 },
+    hook: { instr: 'brass', kit: 'real', oct: 60, vel: 0.6, hits: [3, 4], line: true, answer: true }, leadFrom: 0.3,
+    melody: { free: [0, 5], dense: [0.5, 0.5, 0.5], hits: [0, 6, 8], pickup: 11, close: true, moving: 'always', home: 0 },
+    power: { fifths: true, vel: 0.32 },            // (the stabs the root and the fifth, a little back: the brass line on top)
+    swing: 0, intro: 0.06, fx: { reverb: 1.4, delay: 0.5, delayBeats: 2 },   // (a long echo, two beats on: a dotted one, or one a beat on, landed a step from the theme's next note)
   },
   derelict: {
     label: 'Derelict Ship', blurb: 'deep-space dread: drones, pings off the hull, a slow heartbeat',
@@ -166,15 +179,17 @@ export const MUSIC_PRESETS = {
     label: 'Synth-Pop', blurb: 'the 80s chart single: gated drums, octave bass, a chorus you hum all day',
     bpm: [112, 124], scales: ['major', 'minor', 'dorian'], progressions: POP,
     drums: 'synthwave', bass: 'octave8', chords: 'synthpad', lead: 'hook', arp: 'arp',
-    hook: { instr: 'lead', oct: 72, vel: 0.44, lift: true }, leadFrom: 0.15,
+    hook: { instr: 'lead', oct: 72, vel: 0.5, lift: true, line: true }, leadFrom: 0.15,
+    melody: { free: [1, 9], dense: [0.65, 0.65, 0.65] },
     swing: 0, intro: 0.04, fx: { reverb: 1.2, delay: 1.1, delayBeats: 0.75 },
   },
   starpilot: {
     label: 'Star Pilot', blurb: '16-bit space opera: driving octave bass, a brass hook, orchestra hits, lasers in key',
     bpm: [140, 158], scales: ['minor', 'dorian'], progressions: EPIC,
     drums: 'heroic', bass: 'octave8', chords: 'orchhit', lead: 'hook', arp: 'arp', sfx: true,
-    hook: { instr: 'brass', oct: 72, vel: 0.5, lift: true }, leadFrom: 0.15,
-    swing: 0, intro: 0.04, fx: { reverb: 1.2, delay: 0.8, delayBeats: 0.75 },
+    hook: { instr: 'brass', kit: 'real', oct: 72, vel: 0.68, lift: true, line: true }, leadFrom: 0.15,
+    melody: { free: [1, 9], dense: [0.6, 0.6, 0.6], close: true },
+    swing: 0, intro: 0.04, fx: { reverb: 1.2, delay: 0.8, delayBeats: 0.5 },   // (an echo on the eighths, under the brass line)
   },
   // --- the eras of better sound cards: tracker samples, FM and wavetable. Each
   //     brings its own instruments (an electric piano, a flute, a harp, an
@@ -183,29 +198,81 @@ export const MUSIC_PRESETS = {
     label: 'Tracker Jazz', blurb: 'a demo-party jazz tune: a walking slap bass, electric piano comping, a flute that improvises',
     bpm: [100, 126], scales: ['dorian', 'mixolydian', 'minor'], progressions: JAZZ, shuffle: 0.333,
     drums: 'jazz', bass: 'upright', chords: 'ep', lead: 'hook', arp: null,
-    hook: { instr: 'flute', oct: 72, vel: 0.5 }, leadFrom: 0.2,
+    hook: { instr: 'flute', kit: 'real', oct: 72, vel: 0.55 }, leadFrom: 0.2,   // (a flute with a real flute's harmonics)
     swing: 0, intro: 0.06, fx: { reverb: 1.1, delay: 0.9, delayBeats: 0.75 },
   },
   fmmetal: {
     label: 'FM Metal', blurb: 'a DOS shooter at full tilt: palm-muted power chords, a double kick, a guitar that solos',
     bpm: [150, 178], scales: ['phrygian', 'minor', 'harmonicMinor'], progressions: METAL,
     drums: 'metal', bass: 'chug', chords: 'riff', lead: 'hook', arp: null,
-    hook: { instr: 'guitar', kit: 'lead', oct: 64, vel: 0.5, hits: [5, 8] }, leadFrom: 0.3,
-    swing: 0, intro: 0.03, fx: { reverb: 0.8, delay: 0.6, delayBeats: 0.75 },
+    hook: { instr: 'guitar', kit: 'lead', oct: 64, vel: 0.6, hits: [5, 8], line: true }, leadFrom: 0.3,
+    melody: { free: [0, 9], dense: [0.7, 0.7, 0.7], close: true },
+    swing: 0, intro: 0.03, fx: { reverb: 0.8, delay: 0.6, delayBeats: 0.5 },   // (an echo on the eighths: a dotted one smears the solo)
   },
   midiquest: {
     label: 'MIDI Quest', blurb: 'an adventure on a sound card: strings, a harp, a flute and the timpani of a long road',
-    bpm: [84, 108], scales: ['major', 'dorian', 'mixolydian', 'minor'], progressions: EPIC,
+    bpm: [92, 112], scales: ['major', 'dorian', 'mixolydian', 'minor'], progressions: EPIC,
     drums: 'orchestral', bass: 'strings', chords: 'orchestra', lead: 'hook', arp: 'harp',
-    hook: { instr: 'flute', oct: 72, vel: 0.5, lift: true }, leadFrom: 0.2,
-    swing: 0, intro: 0.08, fx: { reverb: 1.4, delay: 0.7, delayBeats: 0.75 },
+    hook: { instr: 'flute', kit: 'real', oct: 72, vel: 0.6, lift: true, line: true, answer: true }, leadFrom: 0.2,
+    melody: { free: [1, 9], dense: [0.55, 0.55, 0.55], close: true, moving: true },
+    orch: { noChoir: true },                       // (the strings hold the chord; no choir over the flute)
+    swing: 0, intro: 0.08, fx: { reverb: 1.4, delay: 0.35, delayBeats: 1 },   // (a quiet echo on the beat: a dotted one rubbed the next note)
   },
   rocknroll: {
     label: 'Chip Rock and Roll', blurb: 'a 50s shuffle on a sound chip: boogie bass, twelve bars, a riff',
-    bpm: [150, 176], scales: ['mixolydian', 'major'], progressions: TWELVE_BAR, shuffle: 0.333,
+    bpm: [150, 176], scales: ['major'], progressions: TWELVE_BAR, shuffle: 0.333,   // (major: the blues' V is a major chord, mixolydian's minor)
     drums: 'rock', bass: 'boogie', chords: 'boogie', lead: 'hook', arp: null,
-    hook: { instr: 'lead', kit: 'hero', oct: 72, vel: 0.46 }, leadFrom: 0.15,
+    hook: { instr: 'lead', kit: 'hero', oct: 72, vel: 0.46, line: true, bars: 12 }, leadFrom: 0.15,
+    melody: { free: [0, 8], dense: [0.6, 0.6, 0.6], close: true, moving: true },
     swing: 0, intro: 0.03, fx: { reverb: 0.7, delay: 0.6, delayBeats: 0.5 },
+  },
+  // --- the crack intros' tracker music, from the pattern data of forty keygen
+  //     modules: 125 bpm (the tracker's default) in most, the arpeggio effect's
+  //     chords stepping on the tick, slides and vibrato on the lead, and in half
+  //     of them a second channel echoing the lead a few rows later, quieter
+  keygen: {
+    label: 'Keygen', blurb: 'the crack intros\' tracker tunes: chords arpeggiated on the tick, a squelchy sliding lead and its echo, a bouncing bass',
+    bpm: [120, 140], bpmPick: [125, 125, 125, 125, 125, 125, 128, 128, 120, 132, 135, 140, 140],
+    scales: ['minor', 'harmonicMinor', 'dorian', 'major'], progressions: ANTHEM,
+    drums: 'keygen', bass: 'bounce', chords: 'xmarp', lead: 'squelch', arp: null,
+    hook: { hits: [7, 10] }, leadFrom: 0.12,
+    swing: 0, intro: 0.04, fx: { reverb: 0.25, delay: 0.3, delayBeats: 0.75 },
+  },
+  // --- the 90s Bristol sound, from a trip-hop drum cheat sheet (the tempo, the
+  //     kicks leading into the beats, two snares, the ride on the upbeats, the
+  //     MPC shuffle, the drums pitched down in a big room, the crackle) and the
+  //     genre's own description (a bass-heavy beat, film-score strings, a
+  //     Rhodes, a theremin, turntable scratches)
+  triphop: {
+    label: 'Trip-Hop', blurb: 'the Bristol sound: a slow, shuffled break in a big room, a deep bass, dark strings, a Rhodes, a theremin, scratches, the crackle of the record',
+    bpm: [68, 90], scales: ['minor', 'harmonicMinor', 'phrygian', 'dorian'], progressions: NOIR, mpc: 0.15,
+    drums: 'triphop', bass: 'deep', chords: 'noir', lead: 'noir', arp: null,
+    hook: { hits: [3, 5] }, leadFrom: 0.35,
+    swing: 0, intro: 0.06, fx: { reverb: 1.5, delay: 1.0, delayBeats: 0.75 },
+  },
+  // --- the 90s anime opening: J-rock with brass in the anison's form - intro, verse,
+  //     prechorus, chorus (a corpus study of openings finds almost all of them so,
+  //     at about ninety seconds); the chorus often a minor third up from the verse,
+  //     and the last chorus pumped up a step; 140-170 bpm (openings of the era
+  //     measure 142 and 155); a big lead to sing along, brass doubling it
+  animeop: {
+    label: 'Anime Opening', blurb: 'the 90s anime opening: J-rock with brass, verse, prechorus, a chorus to sing along, a key change before the last one',
+    bpm: [140, 170], scales: ['major', 'major', 'minor', 'harmonicMinor'], progressions: ROYAL, form: 'anime',
+    drums: 'jrock', bass: 'jrock', chords: 'jrock', lead: 'anisong', arp: null,
+    hook: { hits: [6, 9] },
+    swing: 0, intro: 0.04, fx: { reverb: 0.9, delay: 0.6, delayBeats: 0.75 },
+  },
+  // --- the skateboarding games' punk: fast, 180-200 (the skate games' ska-punk
+  //     single plays at about 195), ska verses - upstrokes on the off-beats over a
+  //     backbeat - and punk choruses: the snare on every "and", the kick on the beat
+  //     and the sixteenth after, doubled before the snare, the hats open; a lead like
+  //     a shouted gang chorus, a few notes, chanted
+  skatepunk: {
+    label: 'Skate Punk', blurb: 'the skate games\' punk at 190: ska verses with upstrokes, punk choruses, a synth chorus shouted like a gang',
+    bpm: [180, 200], scales: ['major', 'major', 'mixolydian', 'minor'], progressions: PUNK, form: 'punk',
+    drums: 'skate', bass: 'skate', chords: 'skate', lead: 'shout', arp: null,
+    melody: { verse: [0, 5], pre: [1, 6], chorus: [2, 7], bridge: [0, 5], dense: [0.55, 0.7, 0.85], square: true },
+    swing: 0, intro: 0.03, fx: { reverb: 0.5, delay: 0.15, delayBeats: 0.5 },
   },
 };
 export const MUSIC_NAMES = Object.keys(MUSIC_PRESETS);
@@ -262,7 +329,8 @@ export function scoreTempo(seed, music = 'auto') {
   const style = !music || music === 'auto' ? pickMusic(seed) : music;
   const P = MUSIC_PRESETS[style];
   if (!P) throw new Error(`Unknown music style "${music}"`);
-  const bpm = Math.round(new Rng(seed, 'music:' + style).float(P.bpm[0], P.bpm[1]));
+  const r = new Rng(seed, 'music:' + style);
+  const bpm = P.bpmPick ? r.pick(P.bpmPick) : Math.round(r.float(P.bpm[0], P.bpm[1]));
   return { bpm, spb: 60 / bpm, barBeats: (P.steps || 16) / 4 };
 }
 
@@ -276,7 +344,7 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
   if (!P) throw new Error(`Unknown music style "${music}". Available: ${MUSIC_NAMES.join(', ')}`);
   const rng = new Rng(seed, 'music:' + style);
 
-  const bpm = Math.round(rng.float(P.bpm[0], P.bpm[1]));
+  const bpm = P.bpmPick ? rng.pick(P.bpmPick) : Math.round(rng.float(P.bpm[0], P.bpm[1]));
   const root = rng.int(0, 11);
   const scaleName = rng.pick(P.scales);
   const scale = SCALES[scaleName];
@@ -295,7 +363,8 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
     if (t < 0 || t >= totalSamples) return;
     events.push({ t, instr, note, vel, dur: Math.round(durSec * SR), ...extra });
   };
-  const noteOf = (base, deg) => base + root + degreeToSemitone(scale, deg);
+  let keyShift = 0;                     // semitones the key has moved by (the anime opening's sections)
+  const noteOf = (base, deg) => base + root + keyShift + degreeToSemitone(scale, deg);
 
   // --- material shared by several roles -----------------------------------
   const classicKick = rng.pick([
@@ -385,6 +454,180 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
   const ghosts = xr.euclid(16, xr.int(3, 5), xr.int(1, 6));
   const approach = Array.from({ length: 64 }, () => xr.pick([-1, 1]));
 
+  // --- the keygen's material, from a stream of its own -----------------------
+  const kr = new Rng(seed, 'keygen:' + style);
+  const kgKick = kr.pick([[0, 4, 8, 12], [0, 8, 10], [0, 6, 8], [0, 3, 8, 11], [0, 7, 8, 10]]);
+  const kgBounce = kr.pick([[0, 12, 0, 12, 0, 12, 0, 12], [0, 0, 12, 0, 0, 12, 0, 12], [0, 12, 7, 12, 0, 12, 7, 12]]);
+  // the chord: held for half a bar, struck on the eighths, or on the off-beats against the bass
+  const kgChord = kr.pick(['held', 'eighths', 'offbeat']);
+  // the arpeggio's numbers: the triad's (47 major, 37 minor), or the fifth and the octave (7c)
+  const kgWide = kr.bool(0.3);
+  // the echo channel, in about half the tunes: four rows behind most often
+  const kgEcho = kr.bool(0.55) ? kr.weighted([1, 2, 3, 4, 6], [3, 3, 3, 6, 2]) : 0;
+  const kgSlide = kr.float(0.2, 0.45);
+  const kgTick = bpm * 2 / 5;                 // the tracker's tick: 50 a second at 125 bpm
+  let kgLast = null;
+
+  // --- trip-hop's material, from a stream of its own --------------------------
+  const tr = new Rng(seed, 'triphop:' + style);
+  const thLead = tr.pick([[3, 7, 11], [7, 11], [3, 11], [11], [7, 10]]);   // the kicks leading into the beats
+  const thShake = tr.euclid(16, tr.int(3, 5), tr.int(1, 5));                 // the shaker's accents
+  const thEvery = tr.pick([2, 4]);                                           // a scratch every other bar, or every fourth
+  const thScratch = tr.pick(['baby', 'chirp', 'tear']);
+  const thBass = tr.pick([[0, 10], [0, 7, 10], [0, 11, 14]]);
+  const thComp = tr.pick([[0, 7], [0, 10], [3, 10]]);
+  let thPrevBass = null;
+  let thLast = null;
+
+  // --- the anime opening's material and form, from a stream of its own --------
+  const ar = new Rng(seed, 'anime:' + style);
+  const anVerse = ar.pick([[0, 5, 3, 4], [0, 4, 5, 3], [0, 3, 4, 4], [5, 3, 0, 4]]);
+  const anPre = ar.pick([[3, 4, 3, 4], [3, 4, 5, 4], [1, 4, 3, 4]]);
+  const anChorusUp = ar.bool(0.4) ? 3 : 0;            // the chorus a minor third up, on the flat mediant
+  const anPump = ar.pick([1, 2, 2]);                   // and the last one a step higher still
+  const anKick = ar.pick([[0, 8], [0, 6, 8], [0, 8, 10], [0, 6, 8, 10]]);
+  const anStab = ar.pick([[0, 6, 10], [0, 3, 6, 10], [0, 7, 10]]);
+  const sk = new Rng(seed, 'skate:' + style);
+  const skKick = sk.bool(0.35);                        // the chorus's kick doubled before every snare
+  const skWalk = sk.pick([[0, 2, 4, 2], [0, 0, 4, 2], [0, 4, 7, 4]]);   // the verse bass, in degrees of the scale: the chord's own
+  // the sections, bar by bar: intro, verse, prechorus, chorus, again; a bridge; the last chorus; out
+  const anForm = P.form === 'anime' || P.form === 'punk' ? (() => {
+    const T = totalBars, big = T >= 40;
+    const V = big ? 8 : 4, PR = big ? 4 : 2, CH = big ? 8 : 4, BR = big ? 4 : 2;
+    const intro = T >= 16 ? 4 : 2, outro = T >= 16 ? 2 : 1, tail = BR + CH + outro;
+    const sec = [];
+    const add = (name, n) => { for (let k = 0; k < n; k++) sec.push({ name, k, n }); };
+    add('intro', intro);
+    const cycles = Math.max(1, Math.floor((T - intro - tail) / (V + PR + CH)));
+    for (let c = 0; c < cycles; c++) { add('verse', V); add('pre', PR); add('chorus', CH); }
+    while (sec.length < T - tail) add('verse', Math.min(V, T - tail - sec.length));
+    add('bridge', BR); add('last', CH); add('outro', outro);
+    while (sec.length < T) add('outro', 1);
+    return sec.slice(0, T);
+  })() : null;
+
+  // the singer's line, composed once per section and sung the same each time it comes back.
+  // Degrees count from the tonic (not from each chord, or the line jumps with the harmony),
+  // in one register whatever the key: the tonic between F#3 and F4.
+  const anBase = root >= 6 ? 48 : 60;
+  const anChords = {
+    verse: (k) => anVerse[k % 4], pre: (k) => anPre[k % 4],
+    chorus: (k) => progression[k % 4], bridge: (k) => [5, 3, 4, 4][k % 4],
+    free: (k) => progression[k % progression.length],
+  };
+  const isChordTone = (d, c) => [0, 2, 4].includes((((d - c) % 7) + 7) % 7);
+  // a two-bar phrase's rhythm: on the eighths, a sixteenth now and then, a long last note and a breath
+  const anRhythm = (density, pickup) => {
+    const on = [];
+    // (a theme of long notes on the style's own hits, two bars a phrase; now and then a pickup into the second)
+    if (P.melody && P.melody.hits) {
+      for (const b of [0, 16]) for (const h of P.melody.hits) on.push(b + h);
+      if (P.melody.pickup && ar.bool(density)) on.push(16 + P.melody.pickup);
+      return [...new Set(on)].sort((x, y) => x - y);
+    }
+    for (let st = pickup ? 2 : 0; st < 24; st += 2) {
+      if (st === 0 || st === 16 || ar.bool(density)) on.push(st);
+      if (st % 4 === 2 && ar.bool(0.12) && !(P.melody && P.melody.square)) on.push(st + 1);
+    }
+    on.push(ar.pick([24, 26]));
+    return [...new Set(on)].sort((x, y) => x - y);
+  };
+  // the pitches of a phrase over its two chords: a chord tone nearest the last note on each beat and on
+  // every long note, steps between them, heading for a target; the last note a chord tone held
+  const anWalk = (rhythm, chordOf, from, lo, hi, peak, end) => {
+    // the phrase's shape: an arch, rising from where it starts to its peak a little before the middle,
+    // falling to where it ends; on each beat and each long note the chord tone nearest the arch, no
+    // more than a fifth from the last note, and not the same note three times running; steps between
+    const out = [];
+    let prev = from, same = 0;
+    const home = end !== null ? end : Math.round((from + lo) / 2);
+    const arch = (st) => { const x = Math.min(1, st / 26); return x < 0.45 ? from + (peak - from) * (x / 0.45) : peak + (home - peak) * ((x - 0.45) / 0.55); };
+    rhythm.forEach((st, j) => {
+      const c = chordOf(st < 16 ? 0 : 1);
+      const len = (j + 1 < rhythm.length ? rhythm[j + 1] : 32) - st;
+      const last = j === rhythm.length - 1;
+      const goal = last ? home : arch(st);
+      let d;
+      // (a chant - a gang shouting over a chord struck on every eighth - sings only the chord's tones)
+      if (st % 4 === 0 || len >= 3 || last || (P.melody && P.melody.square)) {
+        let best = null, score = 1e9;
+        // (a chant stays close: a chord tone within a third of the last note, if there is one)
+        const reach = P.melody && (P.melody.square || P.melody.close) ? [2, 4] : [4];
+        for (const r of reach) {
+          if (best !== null) break;
+          for (let x = Math.max(lo, prev - r); x <= Math.min(hi, prev + r); x++) {
+            if (!isChordTone(x, c)) continue;
+            if (x === prev && P.melody && (P.melody.moving === 'always' || (P.melody.moving && same >= 1))) continue;
+            const sc = Math.abs(x - goal) + (x === prev && same >= 1 ? 2 : 0);
+            if (sc < score) { score = sc; best = x; }
+          }
+        }
+        d = best === null ? prev : best;
+      } else {
+        const dir = Math.sign(goal - prev) || (j % 2 ? 1 : -1);
+        d = prev + (Math.abs(goal - prev) > 2 && ar.bool(0.25) ? 2 * dir : dir);
+      }
+      d = Math.max(lo, Math.min(hi, d));
+      // (at the edge of the register a step turns back rather than standing still)
+      if (d === prev && P.melody && (P.melody.moving === 'always' || (P.melody.moving && same >= 1))) d = Math.max(lo, Math.min(hi, prev + (prev <= lo ? 1 : -1)));
+      same = d === prev ? same + 1 : 0;
+      out.push({ step: st, deg: d, len: Math.max(1, Math.min(len, last ? 8 : 6)) });
+      prev = d;
+    });
+    return out;
+  };
+  // a section's line, two bars a phrase: A, A' (the same rhythm, its own notes over its chords), A
+  // again, and B ending home; a prechorus climbs, each phrase a third higher; a bridge sings long notes
+  const anLine = (name, nBars) => {
+    const chords = anChords[name];
+    const reg = (P.melody || { verse: [-1, 7], pre: [0, 8], chorus: [2, 9], bridge: [0, 7] })[name];
+    const dense = (P.melody && P.melody.dense) || [0.5, 0.6, 0.75];          // verse, prechorus, chorus
+    const bars = [];
+    const phraseAt = (b) => (k) => chords(b + k);
+    if (name === 'bridge') {
+      for (let b = 0; b < nBars; b++) {
+        const c = chords(b);
+        let d = reg[0]; for (let x = reg[0]; x <= reg[1]; x++) if (isChordTone(x, c)) { d = x; if (x >= 3) break; }
+        bars.push([{ step: 0, deg: d, len: 14 }]);
+      }
+      return bars;
+    }
+    const rA = anRhythm(name === 'chorus' ? dense[2] : name === 'pre' ? dense[1] : dense[0], ar.bool(0.4) && !(P.melody && P.melody.square));
+    const rB = anRhythm(name === 'chorus' ? 0.6 : 0.5, false);
+    const phrases = [];
+    const start = name === 'chorus' ? reg[0] + 3 : reg[0] + 2;
+    for (let ph = 0; ph * 2 < nBars; ph++) {
+      const b = ph * 2;
+      const lastPh = (ph + 1) * 2 >= nBars;
+      let notes;
+      // A again - where its chords come round again (a twelve-bar's fifth bar is the IV, not the I)
+      if (ph === 2 && phrases[0] && chords(b) === chords(0) && chords(b + 1) === chords(1)) notes = phrases[0];
+      else if (name === 'pre') {
+        const lift = ph * 2;
+        notes = anWalk(rA, phraseAt(b), start + lift, reg[0] + lift, Math.min(reg[1] + 2, reg[1] + lift), reg[1], null);
+      } else {
+        notes = anWalk(lastPh && ph > 0 ? rB : rA, phraseAt(b), phrases.length ? phrases[phrases.length - 1].at(-1).deg : start,
+          reg[0], reg[1], reg[1] - (ph % 2) - (name === 'verse' ? 1 : 0), lastPh && (name === 'chorus' || name === 'free') ? (P.melody && P.melody.home !== undefined ? P.melody.home : 7) : null);   // (home: the octave, or where the style says)
+      }
+      phrases.push(notes);
+      bars.push(notes.filter((n) => n.step < 16), notes.filter((n) => n.step >= 16).map((n) => ({ ...n, step: n.step - 16 })));
+    }
+    return bars.slice(0, nBars);
+  };
+  const anMel = {};
+  if (anForm) {
+    const lens = {};
+    for (const sc of anForm) lens[sc.name] = Math.max(lens[sc.name] || 0, sc.n);
+    for (const name of ['verse', 'pre', 'chorus', 'bridge']) if (lens[name]) anMel[name] = anLine(name, lens[name]);
+    anMel.last = anMel.chorus;
+  }
+  // a hook that sings a line (a style without sections): eight bars over its progression, home at the end
+  // (as long as the style's chords go round: a twelve-bar blues sings twelve bars, not eight over the wrong chords)
+  const hookBars = P.hook && P.hook.bars ? P.hook.bars : 8;
+  const hookLine = P.hook && P.hook.line ? anLine('free', hookBars) : null;
+  // an answer: a second eight bars, so the tune goes A A B A rather than the same eight all the way
+  const hookAnswer = hookLine && P.hook.answer ? anLine('free', hookBars) : null;
+
   // --- arrangement --------------------------------------------------------
   const arrangement = [];
   const breakStart = Math.floor(totalBars * rng.float(0.5, 0.62));
@@ -413,13 +656,42 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
     });
   }
 
+  if (anForm) {
+    anForm.forEach((sec, bar) => {
+      const end = sec.k === sec.n - 1, first = sec.k === 0;
+      const loud = sec.name === 'chorus' || sec.name === 'last';
+      arrangement[bar] = {
+        pad: true, section: sec.name,
+        hat: sec.name !== 'bridge' || sec.k >= sec.n - 1,
+        kick: sec.name !== 'bridge' && !(sec.name === 'outro' && sec.k > 0),
+        snare: sec.name !== 'bridge',
+        bass: sec.name !== 'bridge' || sec.k > 0,
+        arp: false,
+        lead: sec.name === 'verse' || sec.name === 'pre' || loud || sec.name === 'bridge',
+        stab: sec.name === 'intro' || loud,
+        chords: true,
+        fill: (sec.name === 'verse' && end) || (sec.name === 'chorus' && end),
+        build: (sec.name === 'pre' || sec.name === 'bridge') && end,
+        drop: (loud && first),
+        crash: (loud && first) || (sec.name === 'intro' && first) || (sec.name === 'outro' && first),
+        intensity: loud ? 1 : sec.name === 'pre' ? 0.75 : sec.name === 'intro' ? 0.8 : sec.name === 'bridge' ? 0.45 : 0.6,
+      };
+    });
+  }
+
   // --- the bars -----------------------------------------------------------
   let prevAcid = null;
   let prevReese = null;
   for (let bar = 0; bar < totalBars; bar++) {
     const a = arrangement[bar];
     const barT = bar * barSec;
-    const chordDeg = progression[bar % progression.length];
+    // the anime opening moves its key at the sections' edges: the chorus maybe on the flat
+    // mediant, the last chorus pumped up a step; and each section has its own progression
+    const sec = anForm ? anForm[bar] : null;
+    if (sec && P.form === 'anime') keyShift = sec.name === 'chorus' ? anChorusUp : (sec.name === 'last' || sec.name === 'outro') ? anChorusUp + anPump : 0;
+    const chordDeg = !sec ? progression[bar % progression.length]
+      : sec.name === 'chorus' || sec.name === 'last' ? progression[sec.k % 4]
+        : sec.name === 'pre' ? anPre[sec.k % 4] : sec.name === 'bridge' ? [5, 3, 4, 4][sec.k % 4] : anVerse[sec.k % 4];
     const triad = [0, 2, 4].map((d) => d + chordDeg);
     const breakPat = rng.pick(P.drums === 'amen' ? AMENS : BREAKS);
     if (P.bass === 'acid' && bar % 4 === 0) acidPhrases[bar / 4] = makeAcid();
@@ -441,7 +713,7 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
     }
     if (P.chords === 'orchestra' && a.chords) {
       for (const d of triad) push(barT, 'strings', noteOf(60, d), 0.5 + 0.2 * a.intensity, barSec * 1.02);
-      if (a.lead || a.stab) for (const d of triad) push(barT, 'choir', noteOf(48, d), 0.45, barSec * 1.02);
+      if ((a.lead || a.stab) && !(P.orch && P.orch.noChoir)) for (const d of triad) push(barT, 'choir', noteOf(48, d), 0.45, barSec * 1.02);
     }
     if (P.chords === 'power' && a.chords) {
       for (const d of [0, 4]) push(barT, 'strings', noteOf(48, chordDeg + d), 0.35, barSec * 1.02);
@@ -463,11 +735,16 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
     if (P.chords === 'hoover' && a.chords) {
       for (const d of triad) push(barT, 'hoover', noteOf(48, d), 0.5, barSec * 0.42);
     }
+    if (P.chords === 'noir' && a.chords) {
+      // the dark strings of the film scores, low and held
+      for (const d of triad) push(barT, 'strings', noteOf(48, d), 0.3 + 0.12 * a.intensity, barSec * 1.02);
+    }
 
     for (let step = 0; step < STEPS; step++) {
       // swing nudges the odd sixteenths; a shuffle drags the off-beat eighth
       const swingOff = (step % 2 === 1 ? swing * spb * 0.5 : 0)
-        + (P.shuffle && step % 4 === 2 ? P.shuffle * spb * 0.5 : 0);
+        + (P.shuffle && step % 4 === 2 ? P.shuffle * spb * 0.5 : 0)
+        + (P.mpc && step % 2 === 1 ? P.mpc * spb * 0.5 : 0);
       const t = barT + (step / 4) * spb + swingOff;
       const accent = step % 4 === 0 ? 1 : (step % 2 === 0 ? 0.82 : 0.66);
       const sixteenth = spb / 4;
@@ -596,18 +873,71 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
           if (a.hat && step % 2 === 0) push(t, 'hat', 0, 0.2 * accent, 0.05);
           if (a.hat && P.drums === 'amen' && step % 2 === 1) push(t, 'hat', 0, 0.09, 0.03);
           break;
+        case 'skate':
+          if (a.section === 'chorus' || a.section === 'last' || a.section === 'intro') {
+            // the punk beat: the snare on every "and", the kick on the beat and the sixteenth after,
+            // or doubled just before the snare; the hats open, eighths
+            const kicks = skKick ? [0, 1, 4, 5, 8, 9, 12, 13] : [0, 5, 8, 13];
+            if (a.kick && kicks.includes(step)) push(t, 'kick', 0, step % 4 === 0 ? 0.95 : 0.78, 0.25, { kit: 'break' });
+            if (a.snare && step % 4 === 2) push(t, 'snare', 0, 0.85, 0.2, { kit: 'break' });
+            if (a.hat && step % 2 === 0) push(t, 'hat', 0, 0.2, 0.14, { open: true });
+          } else if (a.section === 'bridge') {
+            // the breakdown: half time
+            if (a.kick && step === 0) push(t, 'kick', 0, 0.9, 0.3, { kit: 'break' });
+            if (a.snare && step === 8) push(t, 'snare', 0, 0.85, 0.25, { kit: 'break' });
+            if (a.hat && step % 4 === 0) push(t, 'hat', 0, 0.16, 0.05);
+          } else {
+            // the ska verse: a backbeat, the hats closed on the eighths
+            if (a.kick && (step === 0 || step === 8 || (step === 10 && bar % 2))) push(t, 'kick', 0, 0.9, 0.25, { kit: 'break' });
+            if (a.snare && (step === 4 || step === 12)) push(t, 'snare', 0, 0.85, 0.2, { kit: 'break' });
+            if (a.hat && step % 2 === 0) push(t, 'hat', 0, step % 4 === 2 ? 0.2 : 0.13, 0.04);
+          }
+          break;
+        case 'jrock':
+          // a J-rock drummer: the kick on one and three and the seed's pushes, the snare's backbeat,
+          // eighths on the hat - open and riding through the chorus - a crash on each chorus
+          if (a.kick && anKick.includes(step)) push(t, 'kick', 0, step % 8 === 0 ? 0.95 : 0.8, 0.3, { kit: 'break' });
+          if (a.snare && (step === 4 || step === 12)) push(t, 'snare', 0, 0.9, 0.25, { kit: 'break' });
+          if (a.hat && step % 2 === 0) {
+            const loud = a.section === 'chorus' || a.section === 'last';
+            push(t, 'hat', 0, (step % 4 === 0 ? 0.22 : 0.15) + (loud ? 0.06 : 0), loud ? 0.18 : 0.05, { open: loud && step % 4 === 2 });
+          }
+          break;
+        case 'triphop':
+          // the break slowed down and shuffled: the kick on one and three with sixteenths leading into
+          // the beats, a big roomy snare on two and a crisp side-stick on four, the ride on the upbeats,
+          // a shaker when it builds, the record's crackle under it all, and a scratch at the end of a phrase
+          if (a.kick && (step === 0 || step === 8 || thLead.includes(step))) push(t, 'thkick', 0, step % 8 === 0 ? 0.95 : 0.62, 0.4);
+          if (a.snare && step === 4) push(t, 'thsnare', 0, 0.85, 0.4, { kit: 'room' });
+          if (a.snare && step === 12) push(t, 'thsnare', 0, 0.7, 0.2, { kit: 'stick' });
+          if (a.hat && step % 4 === 2) push(t, 'thride', 0, 0.3, 0.6);
+          if (a.hat && a.intensity > 0.5) push(t, 'thshaker', 0, thShake[step] ? 0.16 : 0.07, 0.06);
+          if (step === 0) push(t, 'vinyl', 0, 0.5, barSec);
+          if (a.kick && bar % thEvery === thEvery - 1 && step >= 8 && step % 2 === 0) {
+            push(t, 'scratch', noteOf(48, chordDeg), step === 8 ? 0.6 : 0.5, sixteenth * 2, { kit: thScratch });
+          }
+          break;
+        case 'keygen':
+          // a tracker's drum samples: a kick and a snare cut from records, the hat on the eighths
+          if (a.kick && kgKick.includes(step)) push(t, 'xmkick', 0, 0.95, 0.3);
+          if (a.snare && (step === 4 || step === 12)) push(t, 'xmsnare', 0, 0.85, 0.25);
+          if (a.hat && step % 2 === 0) {
+            const open = step % 4 === 2 && a.intensity > 0.7;
+            push(t, 'xmhat', 0, step % 4 === 2 ? 0.26 : 0.15, open ? 0.2 : 0.05, { open });
+          }
+          break;
         default:
           break;
       }
 
       // ---- rolls: fills at phrase ends, a full roll into the drop ----
-      const SNARE_ROLLS = ['classic', 'chip', 'break', 'amen', 'gb', 'ambient', 'orchestral', 'heroic', 'synthwave',
+      const SNARE_ROLLS = ['classic', 'chip', 'break', 'amen', 'gb', 'ambient', 'orchestral', 'heroic', 'synthwave', 'jrock', 'skate',
         'arcade', 'cyborg', 'rock', 'jazz', 'metal'];
-      const rollInstr = SNARE_ROLLS.includes(P.drums) ? 'snare' : 'clap';
+      const rollInstr = P.drums === 'keygen' ? 'xmsnare' : SNARE_ROLLS.includes(P.drums) ? 'snare' : 'clap';
       const rollKit = (P.drums === 'chip' || P.drums === 'gb' || P.drums === 'arcade') ? 'chip'
-        : (P.drums === 'break' || P.drums === 'amen' || P.drums === 'heroic' || P.drums === 'rock') ? 'break'
+        : (P.drums === 'break' || P.drums === 'amen' || P.drums === 'heroic' || P.drums === 'rock' || P.drums === 'jrock' || P.drums === 'skate') ? 'break'
           : P.drums === 'cyborg' ? 'gated' : undefined;
-      if (P.drums === 'heartbeat') {
+      if (P.drums === 'heartbeat' || P.drums === 'triphop') {
         // no rolls in the dark: only the riser before the drop
       } else if (a.build) {
         const every = step < 8 ? 2 : 1;
@@ -678,9 +1008,14 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
             }
             break;
           case 'march':
-            // four steps down, one per beat: the formation closing in
+            // four steps down, one per beat: the formation closing in - a step that would land a semitone
+            // from the chord's notes goes on down to the next (in C major: C A G E, not C B A G)
             if (step % 4 === 0) {
-              push(t, 'chipbass', noteOf(36, chordDeg - step / 4), 0.85, spb * 0.45);
+              const pcs = triad.map((d) => (((noteOf(0, d) % 12) + 12) % 12));
+              const rubs = (d) => { const pc = (((noteOf(0, d) % 12) + 12) % 12); return pcs.some((c) => (pc - c + 12) % 12 === 1 || (c - pc + 12) % 12 === 1); };
+              let d = chordDeg;
+              for (let k = 0; k < step / 4; k++) d = rubs(d - 1) ? d - 2 : d - 1;
+              push(t, 'chipbass', noteOf(36, d), 0.85, spb * 0.45);
             }
             break;
           case 'ostinato':
@@ -717,6 +1052,38 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
               push(t, 'bass', noteOf(36, chordDeg), riffAccents.includes(step) ? 0.9 : 0.7, sixteenth * 0.8, { kit: 'pluck' });
             }
             break;
+          case 'skate':
+            if (a.section === 'verse' || a.section === 'bridge') {
+              // the ska verse: the bass walking on the beats
+              if (step % 4 === 0) push(t, 'bass', noteOf(36, chordDeg + skWalk[step / 4]), 0.8, spb * 0.8, { kit: 'pluck' });
+            } else if (step % 2 === 0) {
+              // the punk chorus: eighths on the root, picked hard
+              push(t, 'bass', noteOf(36, chordDeg), step % 4 === 0 ? 0.9 : 0.78, sixteenth * 1.6, { kit: 'pluck' });
+            }
+            break;
+          case 'jrock':
+            // driving eighths on the root, an octave popping up on the off-beats in the chorus
+            if (step % 2 === 0) {
+              const pop = (a.section === 'chorus' || a.section === 'last') && step % 4 === 2;
+              push(t, 'bass', noteOf(36, chordDeg) + (pop ? 12 : 0), step % 4 === 0 ? 0.85 : 0.72, sixteenth * 1.7, { kit: 'pluck' });
+            }
+            break;
+          case 'deep':
+            // the deep bass: a long note on the root, a pickup into the next, sliding
+            if (thBass.includes(step)) {
+              const n = step === 0 ? noteOf(36, chordDeg) : noteOf(36, chordDeg + tr.pick([4, 0, -1]));
+              push(t, 'thbass', n, step === 0 ? 0.9 : 0.7, step === 0 ? spb * 1.6 : spb * 0.7, { slideFrom: step === 0 ? null : thPrevBass });
+              thPrevBass = n;
+            }
+            break;
+          case 'bounce':
+            // the bouncing bass: a row on, a row off, up to the octave and back
+            if (step % 2 === 0) {
+              push(t, 'xmbass', noteOf(36, chordDeg) + kgBounce[step / 2], 0.8, sixteenth * 1.5);
+            } else if (step === 15 && bar % 2 === 1) {
+              push(t, 'xmbass', noteOf(36, chordDeg) + 12, 0.6, sixteenth * 0.8);
+            }
+            break;
           case 'reese':
             if (step === 0 || step === 8) {
               const n = noteOf(36, chordDeg + (step === 8 ? rng.pick([0, 0, 4, -3]) : 0));
@@ -741,17 +1108,19 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
           for (const d of triad) push(t, 'hoover', noteOf(48, d), 0.4, spb * 0.5);
         }
         if (P.chords === 'power' && a.lead && powerRhythm.includes(step)) {
-          for (const d of triad) push(t, 'brass', noteOf(48, d), 0.4, spb * 0.4);
+          // (where the style asks, a power chord as its name says - the root and the fifth - under the line)
+          const pv = P.power && P.power.fifths ? [chordDeg, chordDeg + 4] : triad;
+          for (const d of pv) push(t, 'brass', noteOf(48, d), P.power && P.power.vel ? P.power.vel : 0.4, spb * 0.4);
         }
         if (P.chords === 'piano' && pianoRhythm.includes(step)) {
           for (const d of triad) push(t, 'piano', noteOf(60, d), 0.5, spb * 0.35);
         }
         // orchestra hits: brass, strings and a timpani on the syncopations
         if (P.chords === 'orchhit' && [0, 3, 6, 10].includes(step) && (a.lead || step === 0)) {
-          for (const d of triad) {
-            push(t, 'brass', noteOf(60, d), 0.42, spb * 0.28);
-            push(t, 'strings', noteOf(48, d), 0.55, spb * 0.3);
-          }
+          // the chord shared between the sections, not doubled: the brass the root and the fifth,
+          // the strings the root and the third (on a wavetable card each note is a whole section)
+          for (const d of [chordDeg, chordDeg + 4]) push(t, 'brass', noteOf(60, d), 0.4, spb * 0.28);
+          for (const d of [chordDeg, chordDeg + 2]) push(t, 'strings', noteOf(48, d), 0.5, spb * 0.3);
           if (step === 0 || step === 6) push(t, 'timpani', noteOf(36, chordDeg), 0.7, 0.6);
         }
         if (P.chords === 'ep' && compRhythm.includes((step + (bar % 2) * 2) % 16)) {
@@ -760,15 +1129,68 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
         }
         if (P.chords === 'riff') {
           // power chords: palm-muted chugs on the riff, open on its accents
-          const root = noteOf(40, chordDeg);
+          // (on the chord's own root - the bass's - raised into the guitar's low register)
+          let root = noteOf(36, chordDeg);
+          if (root < 40) root += 12;
           if (riffAccents.includes(step)) {
-            for (const iv of [0, 7, 12]) push(t, 'guitar', root + iv, 0.5, spb * 0.9);
+            for (const iv of [0, 7]) push(t, 'guitar', root + iv, 0.42, spb * 0.9);
           } else if (riffPat[step] && a.lead) {
-            for (const iv of [0, 7]) push(t, 'guitar', root + iv, 0.42, sixteenth * 0.9, { kit: 'mute' });
+            for (const iv of [0, 7]) push(t, 'guitar', root + iv, 0.34, sixteenth * 0.9, { kit: 'mute' });
           }
         }
-        if (P.chords === 'boogie' && step % 4 === 2) {
-          for (const d of [...triad, chordDeg + 6]) push(t, 'piano', noteOf(60, d), 0.38, spb * 0.3);
+        if (P.chords === 'skate') {
+          // the power chord on the chord's own root (the bass's), up into the guitar's low register
+          let g = noteOf(36, chordDeg);
+          if (g < 40) g += 12;
+          if (a.section === 'verse' || a.section === 'bridge') {
+            // the ska upstroke: a short, bright chop on every off-beat
+            if (step % 4 === 2) for (const d of [chordDeg, chordDeg + 2]) push(t, 'guitar', noteOf(60, d), 0.34, sixteenth * 0.9, { kit: 'mute' });
+          } else if (a.section === 'pre') {
+            if (step % 4 === 0) for (const iv of [0, 7]) push(t, 'guitar', g + iv, 0.42, spb * 0.9);
+          } else if (step % 2 === 0) {
+            // the punk chorus: power chords hammered on the eighths
+            for (const iv of [0, 7]) push(t, 'guitar', g + iv, step % 4 === 0 ? 0.48 : 0.4, sixteenth * 1.7);
+          }
+        }
+        if (P.chords === 'jrock') {
+          const loud = a.section === 'chorus' || a.section === 'last';
+          // (on the chord's own root - the bass's - raised into the guitar's low register)
+          let g = noteOf(36, chordDeg);
+          if (g < 40) g += 12;
+          if (a.section === 'verse' && step % 2 === 0) {
+            // the verse: the guitar palm-muted on the eighths
+            push(t, 'guitar', g, 0.4, sixteenth * 1.3, { kit: 'mute' });   // (one string: the drive fills in the fifth)
+          } else if ((loud || a.section === 'intro' || a.section === 'outro') && (step === 0 || step === 6 || step === 10)) {
+            // the chorus: open power chords, ringing
+            for (const iv of [0, 7]) push(t, 'guitar', g + iv, 0.5, spb * 0.8);
+          } else if (a.section === 'pre' && step % 4 === 0) {
+            for (const iv of [0, 7]) push(t, 'guitar', g + iv, 0.42, spb * 0.9);
+          }
+          // the brass: stabs through the intro and the chorus
+          // (one horn line, on the chord's third - the guitars and strings hold the chord - under the singer)
+          if (a.stab && anStab.includes(step)) push(t, 'brass', noteOf(48, chordDeg + 2), 0.4, spb * 0.3);
+          // strings holding the chord under the prechorus and the chorus, swelling into it
+          if (step === 0 && (a.section === 'pre' || loud || a.section === 'bridge')) {
+            for (const d of [chordDeg, chordDeg + 2]) push(t, 'strings', noteOf(60, d), a.section === 'pre' ? 0.36 + 0.08 * a.intensity : 0.34, barSec * 1.02);
+          }
+        }
+        if (P.chords === 'noir' && thComp.includes(step)) {
+          // a Rhodes on top, the seventh chord, softly
+          for (const d of [0, 2, 4, 6]) push(t, 'ep', noteOf(60, chordDeg + d), 0.2 + 0.06 * a.intensity, spb * 0.9);
+        }
+        if (P.chords === 'xmarp' && (kgChord === 'held' ? step % 8 === 0 : kgChord === 'eighths' ? step % 2 === 0 : step % 4 === 2)) {
+          // the arpeggio effect: one channel stepping the chord on the tracker's tick
+          const base = noteOf(60, chordDeg);
+          const chord = kgWide ? [base, base + 7, base + 12] : [base, noteOf(60, chordDeg + 2), noteOf(60, chordDeg + 4)];
+          const len = kgChord === 'held' ? barSec * 0.5 : sixteenth * 1.8;
+          push(t, 'xmarp', 0, kgChord === 'held' ? 0.5 : 0.55 * accent, len, { chord, rate: kgTick });
+        }
+        if (P.chords === 'boogie' && step % 2 === 0) {
+          // the fifties comp, on every eighth with the boogie bass: on each chord's own root, the major chord with its
+          // sixth added on the second and fourth beats (C, C6, C, C6), chopped short
+          const r0 = noteOf(60, chordDeg);
+          const sixth = Math.floor(step / 4) % 2 === 1;
+          for (const iv of sixth ? [0, 4, 7, 9] : [0, 4, 7]) push(t, 'piano', r0 + iv, step % 4 === 0 ? 0.36 : 0.3, spb * 0.2, { kit: 'chop', tail: 0.12 });
         }
       }
 
@@ -846,6 +1268,17 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
             }
             break;
           case 'hook': {
+            if (hookLine) {
+              // the line: chord tones on the beats, steps between, an arch to each phrase, the same each time round
+              const tune = hookAnswer && Math.floor(bar / hookBars) % 4 === 2 ? hookAnswer : hookLine;
+              const nt = tune[bar % hookBars].find((x) => x.step === step);
+              if (!nt) break;
+              const lift = 0;                      // (a line keeps one register: no octave leap at the peak)
+              const len = STEPS < 16 ? Math.min(nt.len, STEPS - step) : nt.len;   // (an odd metre's bar ends early)
+              push(t, P.hook.instr, noteOf(anBase + lift, nt.deg) + (P.hook.oct >= 64 && anBase < 60 ? 12 : 0), P.hook.vel * (step % 4 === 0 ? 1 : 0.9),
+                len * sixteenth * 0.95, P.hook.kit ? { kit: P.hook.kit } : undefined);
+              break;
+            }
             const half = bar % 2;
             const rh = hookRhythm[half];
             if (!rh[step]) break;
@@ -860,6 +1293,73 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
             const lift = H.lift && a.intensity > 0.9 ? 12 : 0;
             push(t, H.instr, noteOf(H.oct + lift, chordDeg + deg), H.vel * (step % 4 === 0 ? 1 : 0.85),
               Math.min((next - step) * sixteenth * 0.9, spb * 1.5), H.kit ? { kit: H.kit } : undefined);
+            break;
+          }
+          case 'shout': {
+            // the line: sung plain in the verse, and in the chorus shouted - two voices in unison, the
+            // wide one doubling it like a gang - a few notes, chanted on the eighths
+            const sc = anForm[bar];
+            const line = anMel[sc.name];
+            if (!line) break;
+            const nt = line[sc.k % line.length].find((x) => x.step === step);
+            if (!nt) break;
+            const n = noteOf(anBase, nt.deg);
+            const len = nt.len * sixteenth * 0.9;
+            const loud = sc.name === 'chorus' || sc.name === 'last';
+            push(t, 'lead', n, loud ? 0.42 : 0.38, len);
+            if (loud) push(t, 'supersaw', n, 0.3, len);
+            break;
+          }
+          case 'anisong': {
+            // the singer: the section's line, the same each time it comes back; in the last
+            // chorus the brass sings it too, an octave down
+            const sc = anForm[bar];
+            const line = anMel[sc.name];
+            if (!line) break;
+            const nt = line[sc.k % line.length].find((x) => x.step === step);
+            if (!nt) break;
+            const n = noteOf(anBase, nt.deg);
+            const len = nt.len * sixteenth * 0.96;
+            const loud = sc.name === 'chorus' || sc.name === 'last';
+            push(t, 'lead', n, (loud ? 0.62 : 0.55) * (step % 4 === 0 ? 1 : 0.9), len);   // (the singer over the band)
+            if (sc.name === 'last') push(t, 'brass', n - 12, 0.22, len);
+            break;
+          }
+          case 'noir': {
+            // a theremin singing the hook, sparse, gliding from one note to the next
+            const half = bar % 2;
+            const rh = hookRhythm[half];
+            if (!rh[step]) break;
+            let deg = hookDeg[half * STEPS + step];
+            if (step % 4 === 0) deg = [0, 2, 4, 7].reduce((b, c) => (Math.abs(c - deg) < Math.abs(b - deg) ? c : b));
+            if (bar % 4 === 3 && step >= STEPS / 2) deg = step % 4 === 0 ? 0 : Math.min(deg, 2);
+            let next = step + 1;
+            while (next < STEPS && !rh[next]) next++;
+            const n = noteOf(72, chordDeg + deg);
+            const at = bar * STEPS + step;
+            push(t, 'theremin', n, 0.4, Math.min((next - step) * sixteenth, spb * 2), { slideFrom: thLast && at - thLast.at <= 6 ? thLast.n : null });
+            thLast = { n, at };
+            break;
+          }
+          case 'squelch': {
+            // the call and answer of the hook, on a squelching tracker lead that slides into its
+            // notes (the 3xx effect); the echo channel plays it again a few rows on, quieter, on the other side
+            const half = bar % 2;
+            const rh = hookRhythm[half];
+            if (!rh[step]) break;
+            let deg = hookDeg[half * STEPS + step];
+            if (step % 4 === 0) deg = [0, 2, 4, 7].reduce((b, c) => (Math.abs(c - deg) < Math.abs(b - deg) ? c : b));
+            if (bar % 4 === 3 && step >= STEPS / 2) deg = step % 4 === 0 ? 0 : Math.min(deg, 2);
+            let next = step + 1;
+            while (next < STEPS && !rh[next]) next++;
+            const n = noteOf(72, chordDeg + deg);
+            const at = bar * STEPS + step;
+            const from = kgLast && at - kgLast.at <= 2 && kgLast.n !== n && kr.bool(kgSlide) ? kgLast.n : null;
+            const len = Math.min((next - step) * sixteenth * 0.95, spb * 1.5);
+            const vel = 0.5 * (step % 4 === 0 ? 1 : 0.85);
+            push(t, 'xmlead', n, vel, len, { slideFrom: from });
+            if (kgEcho) push(t + kgEcho * sixteenth, 'xmlead', n, vel * 0.45, len, { slideFrom: from, kit: 'echo' });
+            kgLast = { n, at };
             break;
           }
           case 'pianolead':
@@ -1026,6 +1526,8 @@ class Voice {
   }
 }
 
+// the scratched record's "ah": the voice's harmonics, two formants
+const SCRATCH_W = [0.5, 0.7, 0.9, 1.0, 0.8, 0.5, 0.55, 0.4, 0.2, 0.1];
 const SUPERSAW = [-0.03, -0.018, -0.008, 0, 0.009, 0.019, 0.031];
 const ORGAN_H = [1, 2, 3, 4, 6];               // the organ's drawbars
 const ORGAN_A = [1, 0.7, 0.45, 0.3, 0.18];
@@ -1324,6 +1826,322 @@ const INSTR = {
       out[0] = sig; out[1] = sig * 0.9;
     },
   },
+  // --- the sounds between the tracks ----------------------------------------------
+  // a dial-up modem's handshake, from an annotated spectrogram of one (Oona
+  // Raisanen, "The sound of the dialup, pictured"), squeezed into the mix from one
+  // track into the next: the dial tone, the number dialled in DTMF, the answering
+  // modem's bursts, the 2100 Hz answer tone with its snaps, the probing comb of
+  // tones, the hiss of scrambled data - and silence, connected, on the drop
+  modem: {
+    tail: 0.01,
+    render(v, out) {
+      const t = v.age / SR, D = Math.max(0.5, v.ev.dur / SR), u = t / D;
+      if (u >= 1) { out[0] = out[1] = 0; return; }
+      const sin = (f, ph = 0) => Math.sin(TAU * f * t + ph);
+      let s = 0;
+      if (u < 0.05) s = 0.5 * (sin(350) + sin(440));                          // the dial tone
+      else if (u < 0.16) {                                                    // the number, in DTMF
+        const k = Math.floor((u - 0.05) / 0.01), w = ((u - 0.05) / 0.01) % 1;
+        const lo = [697, 770, 852, 941][(k * 7 + 3) % 4], hi = [1209, 1336, 1477][(k * 5 + 1) % 3];
+        s = w < 0.65 ? 0.5 * (sin(lo) + sin(hi)) : 0;
+      } else if (u >= 0.22 && u < 0.40) {                                     // the answer, bursts of FSK
+        const burst = Math.floor((u - 0.22) / 0.045), on = ((u - 0.22) / 0.045) % 1 < 0.75;
+        const bit = (Math.floor(t * 300) * 2654435761 >>> 0) % 2;
+        const [m0, m1] = burst % 2 ? [980, 1180] : [1650, 1850];
+        if (on) { v.phase += (bit ? m1 : m0) / SR; s = Math.sin(TAU * v.phase) * 0.8; }
+      } else if (u >= 0.44 && u < 0.63) {                                     // the answer tone, its snaps every 450 ms
+        const ta = t - 0.44 * D;
+        s = 0.7 * Math.sin(TAU * 2100 * t + Math.PI * Math.floor(ta / 0.45)) * (1 + 0.2 * Math.sin(TAU * 15 * t));
+        if (u >= 0.53) { const bit = (Math.floor(t * 300) * 40503 >>> 0) % 2; v.phase2 += (bit ? 1180 : 980) / SR; s += 0.5 * Math.sin(TAU * v.phase2); }
+      } else if (u >= 0.63 && u < 0.70) {                                     // the probing: a comb of tones, 150 Hz apart
+        const on = ((u - 0.63) / 0.035) % 1 < 0.8 ? 1 : 0;
+        for (let k = 1; k <= 25; k++) s += Math.cos(TAU * 150 * k * t + k * k * 0.37) * 0.09;
+        s *= on;
+      } else if (u >= 0.70) {                                                 // scrambled data: the hiss
+        const f = v.filt.process(v.noise(), 1800, 0.55);
+        s = f.band * (u < 0.85 ? 4.0 : 5.0);                                 // as loud as the tones, louder when both talk
+      }
+      // a telephone line's band, and the speaker it came out of
+      s = v.filt2.process(s, 2600, 0.7).low;
+      const sig = s * v.ev.vel * 0.32;
+      out[0] = sig; out[1] = sig;
+    },
+  },
+  // a cartridge going in: a slide, the click as it seats, the clack, the power switch's thump
+  cartridge: {
+    tail: 0.05,
+    render(v, out) {
+      const t = v.age / SR;
+      let s = 0;
+      if (t < 0.06) s += v.filt.process(v.noise(), 1500, 1.2).band * 0.15;
+      const hit = (at, f, body, decay) => {
+        const x = t - at;
+        if (x < 0) return 0;
+        return Math.sin(TAU * body * x) * Math.exp(-x * decay) * 0.6 + v.noise() * Math.exp(-x * 900) * f;
+      };
+      s += hit(0.06, 0.8, 320, 60) + hit(0.14, 0.5, 140, 35);
+      const p = t - 0.27;
+      if (p >= 0) s += Math.sin(TAU * 60 * p) * Math.exp(-p * 40) * 0.8;
+      const sig = Math.tanh(s) * v.ev.vel * 0.6;
+      out[0] = sig; out[1] = sig * 0.95;
+    },
+  },
+  // each era's chime, of its own, in the spirit of how its machines started; on the incoming
+  // track's key (the note is its root)
+  chime: {
+    tail: 2.6,
+    render(v, out) {
+      const t = v.age / SR, era = v.ev.kit, n = v.ev.note;
+      const hz = (m) => midiToFreq(m);
+      let s = 0;
+      if (era === 'arcade') {
+        // a coin dropping in - two metal pings - and the credit counting up
+        for (const at of [0, 0.07]) {
+          const x = t - at;
+          if (x >= 0) for (const [r, a] of [[1, 0.5], [2.76, 0.3], [5.4, 0.15]]) s += Math.sin(TAU * 1900 * r * x) * a * Math.exp(-x * 9);
+        }
+        const x = t - 0.25;
+        if (x >= 0 && x < 0.3) { v.phase += hz(n + 24) * Math.pow(2, Math.min(1, x / 0.12)) / SR; s += (v.phase % 1 < 0.5 ? 0.35 : -0.35) * Math.exp(-x * 6); }
+      } else if (era === 'c64') {
+        // the SID: a pulse running up the chord, then holding with its width moving
+        const steps = [0, 4, 7, 12], k = Math.min(3, Math.floor(t / 0.06));
+        v.phase += hz(n + 12 + steps[k]) / SR;
+        const pw = 0.5 + 0.35 * Math.sin(TAU * 3 * t);
+        s = (v.phase % 1 < pw ? 0.4 : -0.4) * envAt(t, 0.9, 0.003, 0.3, 0.6, 0.25);
+      } else if (era === 'amiga') {
+        // the floppy drive, stepping: click, click, click-clack
+        for (const at of [0, 0.13, 0.26, 0.33]) {
+          const x = t - at;
+          if (x >= 0) s += v.filt.process(v.noise(), 1100, 3).band * Math.exp(-x * 120) * 0.9 + Math.sin(TAU * 90 * x) * Math.exp(-x * 50) * 0.3;
+        }
+      } else if (era === 'dos') {
+        // the beep a PC gives when it has checked itself and found all well
+        v.phase += 1000 / SR;
+        s = t < 0.18 ? (v.phase % 1 < 0.5 ? 0.3 : -0.3) : 0;
+      } else if (era === 'handheld') {
+        // a ping in two notes, the second a fifth above and ringing
+        const second = t >= 0.08;
+        v.phase += hz(n + 24 + (second ? 7 : 0)) / SR;
+        s = (v.phase % 1 < 0.25 ? 0.3 : -0.1) * (second ? Math.exp(-(t - 0.08) * 3.5) : 1);
+      } else if (era === 'console') {
+        // a deep chord swelling out of nothing, a shimmer over it
+        const sw = Math.min(1, t / 0.7) * Math.exp(-Math.max(0, t - 0.9) * 1.6);
+        for (const [m, a] of [[-24, 0.35], [-12, 0.3], [-5, 0.2], [0, 0.18], [4, 0.12]]) s += Math.sin(TAU * hz(n + m) * t) * a;
+        s += Math.sin(TAU * hz(n + 31) * t) * 0.06 * (0.5 + 0.5 * Math.sin(TAU * 7 * t));
+        s *= sw;
+      } else {
+        // a soft bell, a chord of sines dying away slowly
+        for (const [m, a, d] of [[-12, 0.3, 0.995], [0, 0.25, 1.002], [7, 0.18, 1], [16, 0.1, 1.003]]) s += Math.sin(TAU * hz(n + m) * d * t) * a;
+        s *= Math.min(1, t / 0.02) * Math.exp(-t * 1.6);
+      }
+      const sig = s * v.ev.vel;
+      out[0] = sig * 0.95; out[1] = sig;
+    },
+  },
+  // --- trip-hop's: a break pitched down (a dull deep kick, a roomy snare and a
+  //     side-stick, a ride, a shaker), the record's crackle, a deep bass, a
+  //     record scratched back and forth, a theremin
+  thkick: {
+    tail: 0.5,
+    render(v, out) {
+      const t = v.age / SR;
+      const f = 42 + 90 * Math.exp(-t * 25) + 300 * Math.exp(-t * 160);
+      v.phase += f / SR;
+      const amp = Math.exp(-t * 5) * (1 - Math.exp(-t * 900));
+      const knock = v.filt.process(v.noise(), 1800, 0.8).low * Math.exp(-t * 90) * 0.6;
+      out[0] = out[1] = Math.tanh((Math.sin(TAU * v.phase) * amp + knock) * 1.6) * v.ev.vel * 0.85;
+    },
+  },
+  thsnare: {
+    tail: 0.45,
+    render(v, out) {
+      const t = v.age / SR;
+      if (v.ev.kit === 'stick') {
+        // the side-stick: a short wooden click
+        v.phase += 420 / SR;
+        const n = v.filt.process(v.noise(), 2500, 1.2).band * Math.exp(-t * 45);
+        const s = (Math.sin(TAU * v.phase) * Math.exp(-t * 60) * 0.6 + n) * v.ev.vel * 0.7;
+        out[0] = s * 0.9; out[1] = s;
+        return;
+      }
+      // the big one, pitched down: a low tone and a long, trashy noise
+      v.phase += 160 / SR;
+      v.phase2 += 270 / SR;
+      const tone = (Math.sin(TAU * v.phase) + 0.5 * Math.sin(TAU * v.phase2)) * Math.exp(-t * 20);
+      const f = v.filt.process(v.noise(), 1500 + 1500 * Math.exp(-t * 18), 0.9);
+      const noisy = (f.band * 1.3 + f.high * 0.5) * Math.exp(-t * 9);
+      const s = Math.tanh((tone * 0.5 + noisy) * 1.5) * v.ev.vel * 0.8;
+      out[0] = s; out[1] = s * 0.95;
+    },
+  },
+  thride: {
+    tail: 0.8,
+    render(v, out) {
+      const t = v.age / SR;
+      // a ride: a wash of noise and three metal partials ringing
+      v.ph[0] += 3170 / SR; v.ph[1] += 4730 / SR; v.ph[2] += 5910 / SR;
+      const ping = (Math.sin(TAU * v.ph[0]) + Math.sin(TAU * v.ph[1]) + Math.sin(TAU * v.ph[2])) * Math.exp(-t * 4) * 0.12;
+      const wash = v.filt.process(v.noise(), 6000, 0.9).high * Math.exp(-t * 6) * 0.5;
+      const s = (ping + wash) * v.ev.vel;
+      out[0] = s * 0.8; out[1] = s;
+    },
+  },
+  thshaker: {
+    tail: 0.1,
+    render(v, out) {
+      const t = v.age / SR;
+      const s = v.filt.process(v.noise(), 6500, 0.9).high * (1 - Math.exp(-t * 300)) * Math.exp(-t * 35) * v.ev.vel;
+      out[0] = s; out[1] = s * 0.8;
+    },
+  },
+  vinyl: {
+    tail: 0.02,
+    render(v, out) {
+      const t = v.age / SR;
+      // the record: a soft hiss, and a pop now and then
+      const hiss = v.filt.process(v.noise(), 3000, 0.8).band * 0.012;
+      if (v.noise() > 0.9993) v.phase = 1;
+      v.phase *= 0.93;
+      const pop = v.phase * (v.noise() > 0 ? 1 : -1) * 0.12;
+      const fade = Math.min(1, t * 20, Math.max(0, (v.ev.dur / SR - t) * 20));
+      const s = (hiss + pop) * fade * v.ev.vel;
+      out[0] = s; out[1] = s * 0.9;
+    },
+  },
+  thbass: {
+    tail: 0.15,
+    render(v, out) {
+      const t = v.age / SR;
+      let f = midiToFreq(v.ev.note);
+      if (v.ev.slideFrom !== null && v.ev.slideFrom !== undefined) {
+        const f0 = midiToFreq(v.ev.slideFrom);
+        f = f0 * Math.pow(f / f0, Math.min(1, t / 0.1));
+      }
+      const dt = f / SR;
+      const s = sineAt(v, 0, dt) + 0.3 * sineAt(v, 1, dt * 2) + 0.12 * sineAt(v, 2, dt * 3);
+      const amp = envAt(t, v.ev.dur / SR, 0.006, 0.6, 0.8, 0.12);
+      out[0] = out[1] = Math.tanh(s * 1.3) * amp * v.ev.vel * 0.55;
+    },
+  },
+  scratch: {
+    tail: 0.03,
+    render(v, out) {
+      const t = v.age / SR;
+      const dur = v.ev.dur / SR;
+      // a record pushed forward and pulled back once in the note's length: the hand's speed is the
+      // pitch; a chirp cuts the fader on the way back, a tear stutters the push
+      const u = Math.min(1, t / dur);
+      let rate = 2.4 * Math.sin(TAU * u);
+      if (v.ev.kit === 'tear' && u < 0.5) rate *= 0.6 + 0.4 * Math.sign(Math.sin(TAU * u * 6));
+      v.phase += rate / SR;
+      const pos = v.phase;
+      // the sound on the record: a voice's "ah" on the chord's root, as a few harmonics
+      const f0 = midiToFreq(v.ev.note);
+      let src = 0;
+      for (let k = 0; k < SCRATCH_W.length; k++) src += SCRATCH_W[k] * Math.sin(TAU * (k + 1) * f0 * pos);
+      const gate = v.ev.kit === 'chirp' && rate < 0 ? 0 : 1;
+      const level = Math.min(1, Math.abs(rate) * 0.8) * gate * Math.max(0, Math.min(1, (dur - t) * 200));
+      const s = Math.tanh(src * 0.9) * level * v.ev.vel * 0.35;
+      out[0] = s * 0.85; out[1] = s;
+    },
+  },
+  theremin: {
+    tail: 0.3,
+    render(v, out) {
+      const t = v.age / SR;
+      let f = midiToFreq(v.ev.note);
+      if (v.ev.slideFrom !== null && v.ev.slideFrom !== undefined) {
+        const f0 = midiToFreq(v.ev.slideFrom);
+        f = f0 * Math.pow(f / f0, Math.min(1, t / 0.18));
+      }
+      f *= 1 + 0.012 * Math.sin(TAU * 6 * t) * Math.min(1, t * 2.5);
+      const dt = f / SR;
+      const s = sineAt(v, 0, dt) + 0.08 * sineAt(v, 1, dt * 2);
+      const amp = envAt(t, v.ev.dur / SR, 0.08, 0.5, 0.85, 0.25);
+      const sig = s * amp * v.ev.vel * 0.42;
+      out[0] = sig * 0.9; out[1] = sig;
+    },
+  },
+  // --- the keygen's tracker samples: drums cut from records, the arpeggio effect
+  //     stepping a chord on the tick, a bouncing bass, a squelchy lead
+  xmkick: {
+    tail: 0.4,
+    render(v, out) {
+      const t = v.age / SR;
+      const f = 46 + 170 * Math.exp(-t * 32) + 700 * Math.exp(-t * 260);
+      v.phase += f / SR;
+      const amp = Math.exp(-t * 8) * (1 - Math.exp(-t * 1500));
+      const click = v.noise() * Math.exp(-t * 500) * 0.5;
+      out[0] = out[1] = Math.tanh(Math.sin(TAU * v.phase) * amp * 2.2 + click) * v.ev.vel * 0.85;
+    },
+  },
+  xmsnare: {
+    tail: 0.35,
+    render(v, out) {
+      const t = v.age / SR;
+      v.phase += 210 / SR;
+      const tone = Math.sin(TAU * v.phase) * Math.exp(-t * 28);
+      const f = v.filt.process(v.noise(), 3000 + 2500 * Math.exp(-t * 30), 0.9);
+      const noisy = (f.band * 1.2 + f.high) * Math.exp(-t * 16);
+      const s = Math.tanh((tone * 0.55 + noisy) * 1.4) * v.ev.vel * 0.8;
+      out[0] = s; out[1] = s * 0.96;
+    },
+  },
+  xmhat: {
+    tail: 0.3,
+    render(v, out) {
+      const t = v.age / SR;
+      // (the filter's own limit: much past 7 kHz this one runs away)
+      const s = v.filt.process(v.noise(), 7000, 0.9).high * Math.exp(-t * (v.ev.open ? 11 : 45)) * v.ev.vel;
+      out[0] = s * 0.85; out[1] = s;
+    },
+  },
+  xmbass: {
+    tail: 0.05,
+    render(v, out) {
+      const t = v.age / SR;
+      const f = midiToFreq(v.ev.note), dt = f / SR;
+      const s = sawAt(v, 0, dt) * 0.6 + pulseAt(v, 1, dt, 0.5) * 0.5;
+      const o = v.filt.process(s, Math.min(6000, f * 4 + 2400 * Math.exp(-t * 26)), 1.4).low;
+      const amp = envAt(t, v.ev.dur / SR, 0.001, 0.14, 0.45, 0.015);
+      out[0] = out[1] = Math.tanh(o * 1.8) * amp * v.ev.vel * 0.5;
+    },
+  },
+  xmarp: {
+    tail: 0.03,
+    render(v, out) {
+      const t = v.age / SR;
+      // the arpeggio effect: the note, then +x, then +y, a tick each, at the song's tick rate
+      const chord = v.ev.chord;
+      const note = chord[Math.floor(t * v.ev.rate) % chord.length];
+      const s = pulseAt(v, 0, midiToFreq(note) / SR, 0.5);
+      const amp = envAt(t, v.ev.dur / SR, 0.001, 0.3, 0.55, 0.02);
+      const sig = s * amp * v.ev.vel * 0.24;
+      out[0] = sig * 0.7; out[1] = sig;
+    },
+  },
+  xmlead: {
+    tail: 0.05,
+    render(v, out) {
+      const t = v.age / SR;
+      let f = midiToFreq(v.ev.note);
+      // sliding into the note (the 3xx effect), then a vibrato that waits a moment (4xy)
+      if (v.ev.slideFrom !== null && v.ev.slideFrom !== undefined) {
+        const f0 = midiToFreq(v.ev.slideFrom);
+        f = f0 * Math.pow(f / f0, Math.min(1, t / 0.07));
+      }
+      f *= 1 + 0.008 * Math.sin(TAU * 5.5 * t) * Math.min(1, Math.max(0, (t - 0.14) * 6));
+      const dt = f / SR;
+      const s = sawAt(v, 0, dt) * 0.55 + pulseAt(v, 1, dt, 0.35) * 0.45;
+      // the squelch: a resonant filter snapping open and closing again on every note; the echo duller
+      const echo = v.ev.kit === 'echo';
+      const cut = Math.min(7000, 500 + 3800 * Math.exp(-t * 11) + f * 1.5) * (echo ? 0.6 : 1);
+      const o = v.filt.process(s, cut, 6).low;
+      const amp = envAt(t, v.ev.dur / SR, 0.002, 0.2, 0.7, 0.02);
+      const sig = Math.tanh(o * 1.6) * amp * v.ev.vel * 0.42;
+      if (echo) { out[0] = sig * 0.35; out[1] = sig; } else { out[0] = sig; out[1] = sig * 0.55; }
+    },
+  },
   lead: {
     tail: 0.5,
     render(v, out) {
@@ -1394,7 +2212,7 @@ const INSTR = {
       }
       s += v.noise() * Math.exp(-t * 300) * 0.12;
       const dur = v.ev.dur / SR;
-      const rel = t > dur ? Math.exp(-(t - dur) * 12) : 1;
+      const rel = t > dur ? Math.exp(-(t - dur) * (v.ev.kit === 'chop' ? 40 : 12)) : 1;   // (chopped: the damper down at once)
       const sig = s * rel * v.ev.vel * 0.42;
       out[0] = sig * 1.03; out[1] = sig * 0.97;
     },
@@ -1459,6 +2277,21 @@ const INSTR = {
       const t = v.age / SR;
       const f = midiToFreq(v.ev.note);
       const s = sawAt(v, 0, f / SR) + sawAt(v, 1, (f * 1.004) / SR);
+      if (v.ev.kit === 'real') {
+        // a horn that plays a melody: as a real trombone, mellow when soft and brighter as it grows louder -
+        // the harmonics above a kilohertz or so falling steeply, the lowest ones a little under the next few -
+        // and each long note swelling into its brightness
+        const level = Math.min(1, v.ev.vel * (0.6 + 0.4 * Math.min(1, t / 0.35) + 0.15 * Math.min(1, t / 1.5)));
+        const cut = 300 + 1100 * level;
+        const lo = v.filt2.process(v.filt.process(s * 0.5, cut, 0.75).low, cut, 0.75).low;
+        // (the fundamental eased back, more as it grows loud: a loud trombone's second harmonic is its strongest)
+        v.lowz = (v.lowz || 0) + (lo - (v.lowz || 0)) * (1 - Math.exp((-TAU * (120 + 320 * level)) / SR));
+        const hp = lo - v.lowz;
+        const amp = envAt(t, v.ev.dur / SR, 0.05, 0.3, 0.85, 0.15);
+        const sig = hp * amp * v.ev.vel * 0.75;
+        out[0] = sig * 0.97; out[1] = sig;
+        return;
+      }
       // the brass swell: the filter opens fast, then settles
       const cut = 500 + 2800 * Math.min(1, t * 14) * (0.6 + 0.4 * Math.exp(-t * 3));
       const o = v.filt.process(s * 0.5, cut, 1.2).low;
@@ -1567,7 +2400,8 @@ const INSTR = {
 Object.assign(INSTR, NEW_INSTR);
 
 /** How much of each instrument feeds the delay and reverb busses. */
-const SENDS = {
+/** How much of each instrument goes to the echo and the reverb (exported for the music audit). */
+export const SENDS = {
   kick:     { delay: 0.00, reverb: 0.02 },
   snare:    { delay: 0.08, reverb: 0.26 },
   clap:     { delay: 0.06, reverb: 0.3 },
@@ -1598,6 +2432,23 @@ const SENDS = {
   blip:     { delay: 0.2,  reverb: 0.1 },
   boom:     { delay: 0.0,  reverb: 0.3 },
   drone:    { delay: 0.05, reverb: 0.5 },
+  xmkick:   { delay: 0.0,  reverb: 0.02 },
+  xmsnare:  { delay: 0.04, reverb: 0.12 },
+  xmhat:    { delay: 0.02, reverb: 0.05 },
+  xmbass:   { delay: 0.0,  reverb: 0.0 },
+  xmarp:    { delay: 0.1,  reverb: 0.1 },
+  xmlead:   { delay: 0.12, reverb: 0.12 },
+  thkick:   { delay: 0.0,  reverb: 0.08 },
+  thsnare:  { delay: 0.1,  reverb: 0.65 },
+  thride:   { delay: 0.05, reverb: 0.2 },
+  thshaker: { delay: 0.02, reverb: 0.1 },
+  vinyl:    { delay: 0.0,  reverb: 0.0 },
+  thbass:   { delay: 0.0,  reverb: 0.02 },
+  scratch:  { delay: 0.2,  reverb: 0.25 },
+  theremin: { delay: 0.3,  reverb: 0.45 },
+  modem:    { delay: 0.0,  reverb: 0.0 },
+  cartridge: { delay: 0.0, reverb: 0.08 },
+  chime:    { delay: 0.15, reverb: 0.5 },
 };
 
 Object.assign(SENDS, NEW_SENDS);
@@ -1690,7 +2541,7 @@ export class Synth {
         const mono = (t[0] + t[1]) * 0.5;
         sendD += mono * sends.delay * fxD;
         sendR += mono * sends.reverb * fxR;
-        if (v.age > v.ev.dur + spec.tail * SR) { v.done = true; anyDone = true; }
+        if (v.age > v.ev.dur + (v.ev.tail !== undefined ? v.ev.tail : spec.tail) * SR) { v.done = true; anyDone = true; }
       }
       if (anyDone) this.voices = vs.filter((v) => !v.done);
 
@@ -1744,6 +2595,8 @@ const FEATURE_OF = {
   organ: 'bass', timpani: 'kick', strings: 'pad', choir: 'pad', fmbell: 'arp',
   guitar: 'stab', flute: 'lead', harp: 'arp', ep: 'stab', slap: 'bass',
   anvil: 'snare', zap: 'arp', blip: 'arp', boom: 'kick', drone: 'pad',
+  xmkick: 'kick', xmsnare: 'snare', xmhat: 'hat', xmbass: 'bass', xmarp: 'arp', xmlead: 'lead',
+  thkick: 'kick', thsnare: 'snare', thride: 'hat', thshaker: 'hat', thbass: 'bass', scratch: 'stab', theremin: 'lead',
 };
 const FEATURE_DECAY = { kick: 7, snare: 9, hat: 26, bass: 8, pad: 1.1, arp: 14, lead: 4.5, stab: 5 };
 

@@ -72,6 +72,10 @@ for (let i = 0; i < 300; i++) {
   const again = resolveChoices({ seed: 'seed' + i });
   if (JSON.stringify(c) !== JSON.stringify(again)) coherent = false;
   if (!ERAS[c.era].scenes.includes(c.style) || !ERAS[c.era].music.includes(c.music)) coherent = false;
+  // given only the era, the seed picks one of that era's scenes
+  const era = Object.keys(ERAS)[i % Object.keys(ERAS).length];
+  const e = resolveChoices({ seed: 'seed' + i, era });
+  if (e.era !== era || !ERAS[era].scenes.includes(e.style) || !ERAS[era].music.includes(e.music)) coherent = false;
 }
 check('a seed always chooses the same scene, era and music, and they belong together', coherent);
 check('every music style composes', MUSIC_NAMES.every((m) => composeScore('aurora', 8, m).events.length > 0),
@@ -109,6 +113,22 @@ check('AUTOPLAY sounds the same every time, whatever the block size', ah === pro
   }
   check('AUTOPLAY keeps every track in its era, and never repeats a pairing back to back', belongs && repeats === 0,
     '300 tracks');
+}
+{
+  // born in 1985: twelve in 1997, the 32-bit console's year - it opens there and comes back every other
+  // block; it sounds the same whatever the block size; and every track still belongs to its era
+  const born = () => composeAutoplay('aurora', 120, 1985);
+  const bh = programmeHash(born, 4096);
+  const b = composeAutoplay('aurora', undefined, 1985);
+  let home = true, belongs = true, repeats = 0;
+  for (let i = 0; i < 300; i++) {
+    const p = b.plan(i);
+    if (Math.floor(i / 3) % 2 === 0 && p.era !== 'console') home = false;
+    if (!ERAS[p.era].scenes.includes(p.style) || !ERAS[p.era].music.includes(p.music)) belongs = false;
+    if (i > 0) { const q = b.plan(i - 1); if (q.style === p.style && q.music === p.music) repeats++; }
+  }
+  check('BORN IN opens in the era of the twelfth year, keeps coming back, sounds the same whatever the block size',
+    home && belongs && repeats === 0 && bh === programmeHash(born, 128), bh);
 }
 {
   // inside a track the scene changes with the music: on a bar line, each scene

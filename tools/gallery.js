@@ -44,7 +44,14 @@ export const GALLERY = [
   { style: 'chessfloor',  era: 'amiga',    seed: 'sunnfun' },
   { style: 'rubber',      era: 'amiga',    seed: 'jelly' },
   { style: 'bumplogo',    era: 'dos',      seed: 'emboss' },
-  { style: 'cracktro',    era: 'amiga',    seed: 'warez' },
+  { style: 'cracktro',    era: 'amiga',    seed: 'hyperspace' },
+  { style: 'cascade',     era: 'y2k',      seed: 'cascade' },
+  { style: 'ansi',        era: 'dos',      seed: 'colorbars' },
+  { style: 'echolines',   era: 'dos',      seed: 'nightshift' },
+  { style: 'maze3d',      era: 'dos',      seed: 'corridors' },
+  { style: 'moonbike',    era: 'modern',   seed: 'moonride', at: 5.1 },
+  { style: 'timecar',     era: 'arcade',   seed: 'gigawatts', at: 12.85 },
+  { style: 'animeop',     era: 'console',  seed: 'hikari', at: 8.06 },
   { style: 'pyramid',     era: 'arcade',   seed: 'cubes' },
   { style: 'pipes',       era: 'dos',      seed: 'screensaver' },
   { style: 'starfield',   era: 'console',  seed: 'hyperspace' },
@@ -110,7 +117,8 @@ async function main() {
     // ---- a still per scene
     for (const g of GALLERY) {
       await openRender(page, origin, { seed: g.seed, style: g.style, era: g.era, duration: '40', fps: '30' }, STILL.w, STILL.h);
-      await writeFile(path.join(OUT, `${g.style}.png`), await grab(page, Math.round(STILL.at * 30)));
+      // a scene whose moment comes elsewhere can name its own (the moon bike's crossing)
+      await writeFile(path.join(OUT, `${g.style}.png`), await grab(page, Math.round((g.at || STILL.at) * 30)));
       console.log(`  ${g.style.padEnd(12)} ${g.era.padEnd(9)} seed "${g.seed}"`);
     }
 

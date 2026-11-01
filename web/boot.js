@@ -120,6 +120,8 @@ export function bootSequence({ root, screen, seed, intro, sound = true, prepare,
     say(' 64K RAM SYSTEM  38911 BASIC BYTES FREE');
     say('');
     say('READY.');
+    // the loading starts at once, so the first scene compiles while the intro types and the viewer reads
+    setTimeout(doPrepare, 60);
     if (!intro) { readyForRun(); return; }
     await sleep(900);
     if (ran) return;
@@ -175,9 +177,9 @@ export function bootSequence({ root, screen, seed, intro, sound = true, prepare,
     draw();
     stripes = true;
     requestAnimationFrame(stripeFrame);
-    await sleep(650);
+    // the stripes run on as a tape loading until the first scene is ready to show
+    await Promise.all([sleep(650), started]);
     stripes = false;
-    await started;
 
     clearInterval(blink);
     root.classList.add('off');                     // CRT switch-off collapse

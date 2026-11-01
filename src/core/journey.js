@@ -2,6 +2,9 @@
 //
 //   THE JOURNEY  one part per era, oldest first.
 //   AUTOPLAY     an endless mix: a few tracks in one era, then another era.
+//                Born in a year, it opens in the era the viewer was twelve in
+//                and keeps coming back to it, the eras between drawn from the
+//                ones nearest it.
 //                Every 40 seconds a new track, and inside each track the
 //                scene changes where the music turns - on the drop, on the
 //                crash that opens a phrase - two or three scenes a track,
@@ -42,6 +45,16 @@ const BLOCK = 3;               // autoplay: tracks per era before moving on
 const SCENES_PER_TRACK = 3;    // autoplay: at most this many scenes in one track
 const MIN_SCENE = 9;           // autoplay: seconds a scene plays at least
 export const AUTOPLAY_PART = 40;
+const TWELVE = 12;             // born in: the age the era is the viewer's own
+
+/** Born in: the era nearest the year the viewer turned twelve (the earlier one on a tie). */
+export function bornInHome(year) {
+  const at = year + TWELVE;
+  return ERA_NAMES.reduce((best, e) => {
+    const d = Math.abs(ERAS[e].year - at), bd = Math.abs(ERAS[best].year - at);
+    return d < bd || (d === bd && ERAS[e].year < ERAS[best].year) ? e : best;
+  });
+}
 
 /**
  * The overlap from one track into the next: `beats` beats of each, played
@@ -84,16 +97,19 @@ export class Programme {
   /**
    * @param {{seed:string, kind:'journey'|'autoplay', partSec:number, count?:number}} o
    */
-  constructor({ seed, kind, partSec, count }) {
+  constructor({ seed, kind, partSec, count, bornIn }) {
     this.seed = seed;
     this.kind = kind;
+    // born in: AUTOPLAY round the era of the viewer's twelfth year
+    this.bornIn = kind === 'autoplay' && Number.isInteger(bornIn) ? bornIn : null;
+    this.home = this.bornIn !== null ? bornInHome(this.bornIn) : null;
     this.partSec = partSec;
     this.count = kind === 'journey' ? ERA_NAMES.length : (count || 100000);
     this.cache = new Map();
     this.transitions = new Map();
     const total = this.partSec * this.count;
     this.totalSamples = Math.round(total * SAMPLE_RATE);
-    this.meta = { duration: total, title: kind === 'journey' ? 'THE JOURNEY' : 'AUTOPLAY' };
+    this.meta = { duration: total, title: kind === 'journey' ? 'THE JOURNEY' : this.bornIn !== null ? `BORN IN ${this.bornIn}` : 'AUTOPLAY' };
   }
 
   /** Era, scene and music of part i, without composing it. */
@@ -120,8 +136,18 @@ export class Programme {
     };
   }
 
-  /** Autoplay: the era of a block - every era once a cycle, in a new order each cycle. */
+  /**
+   * Autoplay: the era of a block - every era once a cycle, in a new order each cycle.
+   * Born in: the viewer's own era every other block, from the first; between them an
+   * era drawn by how near its year is to the one they turned twelve in.
+   */
   blockEra(block) {
+    if (this.home) {
+      if (block % 2 === 0) return this.home;
+      const at = this.bornIn + TWELVE;
+      const others = ERA_NAMES.filter((e) => e !== this.home);
+      return new Rng(this.seed, `born-${this.bornIn}-${block}`).weighted(others, others.map((e) => Math.exp(-Math.abs(ERAS[e].year - at) / 5)));
+    }
     const cycle = Math.floor(block / ERA_NAMES.length);
     return new Rng(this.seed, `autoplay-cycle-${cycle}`).shuffle(ERA_NAMES)[block % ERA_NAMES.length];
   }
@@ -181,6 +207,16 @@ export class Programme {
     return [0, ...cuts].map((from, j) => ({ from, style: order[(first + j) % order.length] }));
   }
 
+  /**
+   * Where the live page drops into an endless programme, for u in [0, 1): anywhere
+   * in AUTOPLAY; born in, at the start of one of the viewer's own era's blocks.
+   */
+  entry(u) {
+    const n = Math.min(this.count, 50000);
+    if (this.home) return Math.floor(u * n / (2 * BLOCK)) * 2 * BLOCK;
+    return Math.floor(u * n);
+  }
+
   /** Part i, composed on first use; only the last few are kept. */
   part(i) {
     if (this.cache.has(i)) return this.cache.get(i);
@@ -232,6 +268,7 @@ export class Programme {
     }
     const startSec = i * this.partSec;
     const inOffset = inBeats * spb;
+    const between = this.between(pl, inSec, audioSec, score.meta);
     let features = null;
     const p = {
       index: i, ...pl,
@@ -242,6 +279,8 @@ export class Programme {
       duration: this.partSec,
       // what the synth plays: the score with its first and last beats laid on the shared tempo
       audio: { meta: score.meta, events, totalSamples: Math.round(audioSec * SAMPLE_RATE) },
+      // the sounds between the tracks, played over the mix rather than in it
+      between,
       audioStart: Math.round((startSec - inSec) * SAMPLE_RATE),
       outStart: Math.round((startSec + this.partSec - outSec) * SAMPLE_RATE),
       inOffset,
@@ -255,13 +294,41 @@ export class Programme {
       get features() { return features || (features = new Features(score)); },
       // the cards load whichever programme is playing
       card: pl.eraChanged
-        ? { kind: 'era', lines: ERA_CARDS[pl.era].map((l) => l.replace('JOURNEY', this.kind.toUpperCase())) }
+        ? { kind: 'era', lines: this.eraCard(pl.era) }
         : { kind: 'track' },
     };
     if (this.cache.has(i)) return this.cache.get(i);   // finished another way meanwhile
     this.cache.set(i, p);
     if (this.cache.size > 4) this.cache.delete(this.cache.keys().next().value);
     return p;
+  }
+
+  /**
+   * The sounds between the tracks for a part, on the part's own clock (0 is where it starts
+   * sounding, inSec where its slot opens): a modem's handshake through the mix into the
+   * media-player years (the Y2K PC stands in for them), the line connecting on the drop; a
+   * cartridge going in as a handheld track starts; and in THE JOURNEY, the era's chime as
+   * it opens, on the incoming track's key.
+   */
+  between(pl, inSec, audioSec, meta) {
+    const events = [];
+    const at = (sec) => Math.round(sec * SAMPLE_RATE);
+    if (pl.era === 'y2k' && pl.eraChanged && inSec > 0) events.push({ t: 0, instr: 'modem', note: 0, vel: 0.8, dur: at(inSec) });
+    if (pl.era === 'handheld') events.push({ t: 0, instr: 'cartridge', note: 0, vel: 0.8, dur: at(0.4) });
+    if (this.kind === 'journey' && pl.eraChanged && pl.era !== 'y2k') {
+      events.push({ t: at(inSec), instr: 'chime', kit: pl.era, note: 60 + meta.root, vel: 0.55, dur: at(2.5) });
+    }
+    return {
+      meta: { fx: { reverb: 0.5, delay: 0.3, delayBeats: 0.5 }, spb: meta.spb, chip: null },
+      events, totalSamples: at(audioSec),
+    };
+  }
+
+  /** The card an era opens on; born in, the viewer's own era says so. */
+  eraCard(era) {
+    const lines = ERA_CARDS[era].map((l) => l.replace('JOURNEY', this.kind.toUpperCase()));
+    if (era === this.home) lines[1] = `BORN ${this.bornIn}   TWELVE IN ${this.bornIn + TWELVE}`;
+    return lines;
   }
 
   /** A part's tempo, without composing it. */
@@ -312,10 +379,10 @@ export function composeJourney(seed, duration) {
   return new Programme({ seed, kind: 'journey', partSec: Math.max(12, duration / ERA_NAMES.length) });
 }
 
-/** AUTOPLAY: an endless mix, or `duration` seconds of it for a render. */
-export function composeAutoplay(seed, duration) {
+/** AUTOPLAY: an endless mix, or `duration` seconds of it for a render; born in a year, round its era. */
+export function composeAutoplay(seed, duration, bornIn = null) {
   const count = duration ? Math.max(1, Math.ceil(duration / AUTOPLAY_PART)) : undefined;
-  return new Programme({ seed, kind: 'autoplay', partSec: AUTOPLAY_PART, count });
+  return new Programme({ seed, kind: 'autoplay', partSec: AUTOPLAY_PART, count, bornIn });
 }
 
 /**
@@ -380,6 +447,8 @@ export class ProgrammeSynth {
     this.decks = new Map();      // part index -> its synth and filters
     this.bufL = new Float32Array(128);
     this.bufR = new Float32Array(128);
+    this.fxL = new Float32Array(16);
+    this.fxR = new Float32Array(16);
     this.limGain = 1;
   }
 
@@ -390,7 +459,10 @@ export class ProgrammeSynth {
       const p = this.programme.part(k);
       const synth = new Synth(p.audio, p.seed);
       if (at > p.audioStart) synth.seek(at - p.audioStart);    // joining a track under way
-      d = { p, synth, hp: [new Filter(), new Filter()], lp: [new Filter(), new Filter()] };
+      // the sounds between the tracks: their own synth, outside the part's fades and filters
+      const fx = p.between.events.length ? new Synth(p.between, p.seed) : null;
+      if (fx && at > p.audioStart) fx.seek(at - p.audioStart);
+      d = { p, synth, fx, hp: [new Filter(), new Filter()], lp: [new Filter(), new Filter()] };
       this.decks.set(k, d);
     }
     return d;
@@ -436,6 +508,10 @@ export class ProgrammeSynth {
         for (let jj = 0; jj < m; jj++) {
           outL[o + jj] += d.lp[0].run(d.hp[0].run(this.bufL[jj], true), false) * mx.gain;
           outR[o + jj] += d.lp[1].run(d.hp[1].run(this.bufR[jj], true), false) * mx.gain;
+        }
+        if (d.fx) {
+          d.fx.render(this.fxL, this.fxR, 0, m);
+          for (let jj = 0; jj < m; jj++) { outL[o + jj] += this.fxL[jj]; outR[o + jj] += this.fxR[jj]; }
         }
         done += m;
       }

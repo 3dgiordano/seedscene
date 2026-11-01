@@ -2298,7 +2298,7 @@ const crackCode = (ch) => Math.max(0, CRACK_CHARS.indexOf(ch));
 export const CRACK_LINE = 24;              // characters a line of a page
 
 export class CracktroSim {
-  constructor(seed, spb, meta, features) {
+  constructor(seed, spb, meta, features, greets = []) {
     this.spb = spb;
     this.logo = 'SEEDSCENE';
     const music = meta && meta.musicLabel ? meta.musicLabel.toUpperCase().slice(0, CRACK_LINE) : 'A LITTLE TUNE';
@@ -2308,6 +2308,9 @@ export class CracktroSim {
       ['SEEDSCENE', 'PRESENTS', 'ONE SEED - ONE DEMO', music + (bpm && music.length + bpm.length < CRACK_LINE ? ' ' + bpm : '')],
       ['THANKS TO', '3DGIORDANO', 'AND THE SEEDSCENE', 'COMMUNITY!'],
     ];
+    // and the viewer's greetings, three names a page, in the letters the font has
+    const names = greets.map((n) => [...n].filter((ch) => CRACK_CHARS.includes(ch)).join('').replace(/ +/g, ' ').trim()).filter(Boolean);
+    for (let i = 0; i < names.length; i += 3) this.pages.push(['GREETINGS TO', ...names.slice(i, i + 3)]);
     // the font as bits: rows 0-3 in one number, rows 4-6 in the next, two glyphs a vec4
     this.font = new Float32Array(48 * 2);
     CRACK_FONT.forEach((g, i) => {
@@ -2399,4 +2402,487 @@ export class CracktroSim {
   }
 }
 
-export const SIMS = { cracktro: CracktroSim, rubber: RubberSim, chessfloor: ChessfloorSim, bobs: BobsSim, pyramid: PyramidSim, pipes: PipesSim, maze: MazeSim, snake: SnakeSim, rocks: RocksSim, starfighter: StarSim, paddles: PaddlesSim, invaders: InvadersSim, bricks: BricksSim, lightcycles: LightcyclesSim };
+// ---------------------------------------------------------------------------
+// The card cascade: the card game won, its four foundations emptying one card
+// at a time, each card falling and bouncing off the bottom of the table and
+// leaving a copy of itself at every step, as the game drew it without ever
+// clearing the screen. Planned here a phrase at a time: a card leaves a pile
+// on every bar, round the four piles from the kings down, and when the music
+// is busy another leaves halfway through the bar; each is thrown so it first
+// lands on the beat, on the "and" or on the sixteenth between, and bounces
+// livelier the busier the music. Most cards fly across a few steps at a time;
+// a third crawl a step or so, and their edges pile up into black arches. Each phrase deals a new game: the table is cleared and the
+// piles are full again. The shader works out every copy from these numbers.
+// ---------------------------------------------------------------------------
+
+export const CASCADE_MAX = 52;             // a deck: no phrase throws more
+export const CASCADE_PHRASE = 32;          // beats between new deals
+const CASCADE_STEPS = 24;                  // copies a beat
+const CASCADE_G = 402;                     // gravity, in card pixels a beat squared
+const CASCADE_BUSY = 0.55;                // the smoothed energy above which the off-beat throws too
+const CASCADE_H0 = 332;                    // a card on its pile: its bottom this far above the floor
+
+export class CascadeSim {
+  constructor(seed, spb, meta, features) {
+    this.seed = seed;
+    this.spb = spb;
+    this.phrases = new Map();
+    // the piles: one suit each, in the seed's order (0 spades, 1 hearts, 2 clubs, 3 diamonds)
+    this.suits = new Rng(seed, 'cascade-suits').shuffle([0, 1, 2, 3]);
+    this.energy = null;
+    this.tracks = null;
+    if (!features) return;
+    const tr = features.tracks, n = features.n;
+    this.tracks = tr;
+    const k = 1 - Math.exp(-1 / (spb * FEATURE_RATE));      // smoothed over about a beat
+    this.energy = new Float32Array(n);
+    let en = 0;
+    for (let i = 0; i < n; i++) {
+      const e = Math.min(1, tr.kick[i] * 0.55 + tr.snare[i] * 0.4 + tr.bass[i] * 0.35 + tr.lead[i] * 0.3 + tr.arp[i] * 0.25 + tr.pad[i] * 0.5);
+      en += (e - en) * k;
+      this.energy[i] = en;
+    }
+  }
+
+  energyAt(t) {
+    if (!this.energy) return 0.5;
+    const i = Math.min(this.energy.length - 1, Math.max(0, Math.floor(t * FEATURE_RATE)));
+    return this.energy[i];
+  }
+
+  /** How hard the kick and the snare hit at the start of a beat, and how busy the music was. */
+  hitsAt(beat) {
+    if (!this.tracks) return [beat % 2 === 0 ? 1 : 0, beat % 2 === 1 ? 1 : 0, 0.5];
+    const tr = this.tracks, n = tr.kick.length;
+    const i0 = Math.max(0, Math.floor(beat * this.spb * FEATURE_RATE));
+    const i1 = Math.min(n, i0 + Math.max(1, Math.round(this.spb * FEATURE_RATE / 6)));
+    let kick = 0, snare = 0;
+    for (let i = i0; i < i1; i++) { kick = Math.max(kick, tr.kick[i]); snare = Math.max(snare, tr.snare[i]); }
+    return [kick, snare, this.energyAt(beat * this.spb)];
+  }
+
+  /** The cards a phrase throws: when, from which pile, how. */
+  phrase(pi) {
+    if (this.phrases.has(pi)) return this.phrases.get(pi);
+    const cards = [];
+    const r = new Rng(`${this.seed}/${pi}`, 'cascade-throws');
+    for (let b = 0; b < CASCADE_PHRASE / 2 && cards.length < CASCADE_MAX; b++) {
+      const beat = pi * CASCADE_PHRASE + b * 2;
+      const e = this.energyAt(beat * this.spb);
+      if (b % 2 === 1 && e < CASCADE_BUSY) continue;      // the mid-bar card only when the music is busy
+      const n = cards.length;
+      const pile = n % 4, rank = 12 - Math.floor(n / 4);
+      const k1 = r.pick([1, 1, 1.5, 1.5, 1.25]);        // the first landing, in beats after the throw
+      const u0 = (0.5 * CASCADE_G * k1 * k1 - CASCADE_H0) / k1;
+      const step = r.float() < 0.33 ? 1 + r.float() * 0.6 : 2 + r.float() * 4;   // card pixels a copy
+      const speed = step * CASCADE_STEPS;
+      const vx = r.float() < 0.5 ? -speed : speed;
+      const rest = Math.min(0.88, 0.7 + 0.16 * e + r.float() * 0.03);
+      cards.push({ t0: beat * this.spb, pile, vx, id: this.suits[pile] * 13 + rank, u0, rest, k1 });
+    }
+    this.phrases.set(pi, cards);
+    if (this.phrases.size > 8) this.phrases.delete(this.phrases.keys().next().value);
+    return cards;
+  }
+
+  uniforms(t) {
+    const beats = Math.max(0, t / this.spb);
+    const all = this.phrase(Math.floor(beats / CASCADE_PHRASE));
+    const a = new Float32Array(CASCADE_MAX * 4), b = new Float32Array(CASCADE_MAX * 4);
+    const top = [-1, -1, -1, -1];
+    let n = 0;
+    for (const c of all) {
+      if (c.t0 > t) { if (top[c.pile] < 0) top[c.pile] = c.id; continue; }
+      a.set([c.t0, c.pile, c.vx, c.id], n * 4);
+      b.set([c.u0, c.rest, c.k1, 0], n * 4);
+      n++;
+    }
+    // a pile this phrase has finished throwing from shows what the deck left on it, if anything
+    for (let p = 0; p < 4; p++) {
+      if (top[p] >= 0) continue;
+      const thrown = all.filter((c) => c.pile === p).length;
+      if (thrown < 13) top[p] = this.suits[p] * 13 + 12 - thrown;
+    }
+    // the hits on each beat of the phrase: the trails keep them
+    const pi = Math.floor(beats / CASCADE_PHRASE), hits = new Float32Array(CASCADE_PHRASE * 4);
+    for (let i = 0; i < CASCADE_PHRASE; i++) hits.set([...this.hitsAt(pi * CASCADE_PHRASE + i), 0], i * 4);
+    return {
+      uBeats: { v: hits, kind: '4fv' },
+      uCA: { v: a, kind: '4fv' },
+      uCB: { v: b, kind: '4fv' },
+      uPiles: { v: top, kind: '4f' },
+      uCasc: { v: [n, CASCADE_G, CASCADE_H0, pi * CASCADE_PHRASE], kind: '4f' },
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// The ANSI board: a bulletin board's art arriving over the modem, a line a
+// beat, scrolling up as it fills the screen. Each phrase brings a part of the
+// file - a spaced-out header, a picture, a line about the music and a big
+// block-letter logo whose last line lands as the next phrase opens. The art is
+// drawn by the shader from the seed; here are only its words, in the 5x7 font
+// the cracktro uses, for the part arriving and the one above it.
+// ---------------------------------------------------------------------------
+
+export const ANSI_PHRASE = 32;             // lines a part: one a beat, a part a phrase
+export const ANSI_WORD = 12;               // letters a logo
+export const ANSI_LINE = 40;               // characters a line of text
+
+export class AnsiSim {
+  constructor(seed, spb, meta) {
+    this.spb = spb;
+    const clean = (s, n) => [...String(s).toUpperCase()].filter((ch) => CRACK_CHARS.includes(ch)).join('').slice(0, n);
+    const word = clean(seed, ANSI_WORD).replace(/^ +| +$/g, '') || 'SEED';
+    const music = meta && meta.musicLabel ? clean(meta.musicLabel, 24) : 'A LITTLE TUNE';
+    const bpm = meta && meta.bpm ? ` AT ${meta.bpm} BPM` : '';
+    const style = clean(music.split(' ')[0], 9) || 'MUSIC';
+    // what each part says: the first presents the project, then the seed, the music, the project again
+    this.parts = [
+      { head: 'SEEDSCENE PRESENTS', info: 'ONE SEED - ONE DEMO', logo: 'SEEDSCENE' },
+      { head: 'CONNECT 2400', info: `SEED: ${word}`, logo: word },
+      { head: 'NOW PLAYING', info: (music + bpm).slice(0, ANSI_LINE), logo: style },
+      { head: 'THANKS FOR CALLING', info: 'THANKS TO 3DGIORDANO', logo: 'SEEDSCENE' },
+    ];
+    this.font = new Float32Array(48 * 2);
+    CRACK_FONT.forEach((g, i) => {
+      let lo = 0, hi = 0;
+      g.split('|').forEach((row, y) => [...row].forEach((c, x) => {
+        if (c !== '#') return;
+        if (y < 4) lo += 2 ** (y * 5 + x); else hi += 2 ** ((y - 4) * 5 + x);
+      }));
+      this.font[i * 2] = lo; this.font[i * 2 + 1] = hi;
+    });
+  }
+
+  part(si) { return si < 0 ? this.parts[3] : si < this.parts.length ? this.parts[si] : this.parts[1 + ((si - 1) % 3)]; }
+
+  uniforms(t) {
+    const si = Math.floor(Math.max(0, t / this.spb) / ANSI_PHRASE);
+    // two parts: the one above (si - 1) and the one arriving (si)
+    const words = new Float32Array(2 * ANSI_WORD), lines = new Float32Array(4 * ANSI_LINE), lens = [0, 0, 0, 0];
+    [si - 1, si].forEach((s, j) => {
+      const p = this.part(s);
+      [...p.logo].forEach((ch, i) => { words[j * ANSI_WORD + i] = crackCode(ch); });
+      [...p.head].forEach((ch, i) => { lines[(j * 2) * ANSI_LINE + i] = crackCode(ch); });
+      [...p.info].forEach((ch, i) => { lines[(j * 2 + 1) * ANSI_LINE + i] = crackCode(ch); });
+      lens[j * 2] = p.logo.length;
+      lens[j * 2 + 1] = p.head.length + 100 * p.info.length;
+    });
+    return {
+      uFont: { v: this.font, kind: '4fv' },
+      uWords: { v: words, kind: '4fv' },
+      uLines: { v: lines, kind: '4fv' },
+      uAnsi: { v: [si, ...lens.slice(0, 3)], kind: '4f' },
+      uAnsiLen: { v: [lens[3], 0, 0, 0], kind: '4f' },
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// The bouncing lines screensaver: two four-cornered figures whose corners fly
+// in straight lines and bounce off the edges of the screen, each drawn again
+// at moments just behind, so it trails a fan of echoes. The corners' paths are
+// fixed by the seed; the music sets how far along them the figures are - a
+// clock that runs faster as the music builds, with a shove on each kick and a
+// burst as each phrase opens. The kick stretches the echoes apart like a
+// spring; each snare hit moves the figures' colours on; the busier the music,
+// the more echoes.
+// ---------------------------------------------------------------------------
+
+export const ECHO_MAX = 16;                // echoes a figure, at most
+const ECHO_GAP = 0.045;                    // seconds between echoes
+const ECHO_STEP = 0.05;                    // the least distance between echoes along the path
+
+export class EcholinesSim {
+  constructor(seed, spb, meta, features) {
+    this.spb = spb;
+    this.clock = null;
+    if (!features) return;
+    const tr = features.tracks, n = features.n, dt = 1 / FEATURE_RATE;
+    const k = 1 - Math.exp(-dt / 0.8);
+    this.clock = new Float32Array(n + 1);
+    this.hue = new Float32Array(n + 1);
+    this.energy = new Float32Array(n);
+    let pace = 0.6, push = 0, prevKick = 0, prevSnare = 0, en = 0, hue = 0;
+    for (let i = 0; i < n; i++) {
+      const e = Math.min(1, tr.kick[i] * 0.55 + tr.snare[i] * 0.4 + tr.bass[i] * 0.35 + tr.lead[i] * 0.3 + tr.arp[i] * 0.25 + tr.pad[i] * 0.5);
+      en += (e - en) * k;
+      pace += (0.45 + 1.4 * en - pace) * k;
+      push += Math.max(0, tr.kick[i] - prevKick) * 0.9;
+      // as each phrase opens, a burst
+      const beats = i * dt / spb, local = beats - Math.floor(beats / 32) * 32;
+      if (local < dt / spb) push += 2.5;
+      push *= Math.exp(-dt * 4);
+      if (tr.snare[i] - prevSnare > 0.3) hue += 0.11;
+      prevKick = tr.kick[i]; prevSnare = tr.snare[i];
+      this.clock[i + 1] = this.clock[i] + (pace + push) * dt;
+      this.hue[i + 1] = hue;
+      this.energy[i] = en;
+    }
+    this.kick = tr.kick;
+  }
+
+  sample(arr, t) {
+    const x = Math.max(0, t * FEATURE_RATE), i = Math.min(arr.length - 2, Math.floor(x)), f = Math.min(1, x - i);
+    return arr[i] + (arr[i + 1] - arr[i]) * f;
+  }
+
+  uniforms(t) {
+    const u = new Float32Array(ECHO_MAX);
+    if (!this.clock) {
+      for (let j = 0; j < ECHO_MAX; j++) u[j] = Math.max(0, t - j * ECHO_GAP) * 0.7;
+      return { uEchoU: { v: u, kind: '4fv' }, uEcho: { v: [8, t * 0.03, 0.5 + t * 0.03, 1], kind: '4f' } };
+    }
+    const fi = Math.min(this.kick.length - 1, Math.max(0, Math.floor(t * FEATURE_RATE)));
+    // echoes evenly apart along the path, as the screensaver drew them a frame apart; never
+    // closer than a fixed step, so they stay a fan when the music is slow; the kick stretches them
+    const stretch = 1 + 1.6 * this.kick[fi];
+    const now = this.sample(this.clock, t);
+    const du = Math.max(now - this.sample(this.clock, Math.max(0, t - ECHO_GAP)), ECHO_STEP) * stretch;
+    for (let j = 0; j < ECHO_MAX; j++) u[j] = now - j * du;
+    const en = this.energy[fi];
+    const hue = this.sample(this.hue, t);
+    return {
+      uEchoU: { v: u, kind: '4fv' },
+      uEcho: { v: [Math.min(ECHO_MAX, 6 + 9 * en), hue + t * 0.01, hue + 0.5 + t * 0.013, 0.85 + 0.3 * en], kind: '4f' },
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// The 3D maze screensaver: brick corridors walked in first person. The seed
+// cuts a maze of 11 x 11 cells (walls are whole blocks, 23 x 23 of them) and
+// the walk keeps a hand on the right-hand wall, so it never ends. A move every
+// two beats - a step to the next cell, or a quarter turn - so the steps and the
+// turns land on the first and third beats of the bar. As each phrase ends a spinning stone waits on the path ahead; the walk
+// goes through it on the drop and the world turns upside down, until the next.
+// ---------------------------------------------------------------------------
+
+export const MAZE3D_CELLS = 11;
+export const MAZE3D_BLOCKS = 2 * MAZE3D_CELLS + 1;    // 23: rows fit a float exactly
+const MAZE3D_MOVES = 4096;                           // beats of walk planned
+
+export class Maze3dSim {
+  constructor(seed, spb) {
+    this.spb = spb;
+    const n = MAZE3D_CELLS, B = MAZE3D_BLOCKS;
+    const r = new Rng(seed, 'maze3d');
+    // carve: a depth-first walk from a random cell, the seed's own maze
+    const open = new Uint8Array(B * B);
+    const seen = new Uint8Array(n * n);
+    const stack = [[r.int(0, n - 1), r.int(0, n - 1)]];
+    seen[stack[0][1] * n + stack[0][0]] = 1;
+    open[(2 * stack[0][1] + 1) * B + 2 * stack[0][0] + 1] = 1;
+    while (stack.length) {
+      const [x, y] = stack[stack.length - 1];
+      const next = r.shuffle(DIRS).map(([dx, dy]) => [x + dx, y + dy, dx, dy])
+        .find(([nx, ny]) => nx >= 0 && ny >= 0 && nx < n && ny < n && !seen[ny * n + nx]);
+      if (!next) { stack.pop(); continue; }
+      const [nx, ny, dx, dy] = next;
+      seen[ny * n + nx] = 1;
+      open[(2 * y + 1 + dy) * B + 2 * x + 1 + dx] = 1;
+      open[(2 * ny + 1) * B + 2 * nx + 1] = 1;
+      stack.push([nx, ny]);
+    }
+    const isOpen = (bx, by) => bx >= 0 && by >= 0 && bx < B && by < B && open[by * B + bx] === 1;
+    this.rows = new Float32Array(24);                   // a vec4 array: padded to 24
+    this.rows.set(packRows(B, B, (x, y) => !isOpen(x, y)));
+    // the walk: a hand on the right-hand wall; each beat a step or a quarter turn
+    // a corner is taken walking - the turn and the step in one move, as the screensaver rounded
+    // them - and only a dead end is turned in place, all the way round
+    let cx = 2 * r.int(0, n - 1) + 1, cy = 2 * r.int(0, n - 1) + 1, d = r.int(0, 3), turn = d;
+    this.px = new Float32Array(MAZE3D_MOVES + 1);
+    this.py = new Float32Array(MAZE3D_MOVES + 1);
+    this.ang = new Float32Array(MAZE3D_MOVES + 1);
+    const canGo = (dir) => isOpen(cx + DIRS[dir][0], cy + DIRS[dir][1]);
+    for (let i = 0; i <= MAZE3D_MOVES; i++) {
+      this.px[i] = cx; this.py[i] = cy; this.ang[i] = turn * Math.PI / 2;
+      const right = (d + 1) % 4, left = (d + 3) % 4;
+      if (canGo(right)) { d = right; turn += 1; }
+      else if (canGo(d)) { /* straight on */ }
+      else if (canGo(left)) { d = left; turn -= 1; }
+      else { d = (d + 2) % 4; turn += 2; continue; }
+      cx += 2 * DIRS[d][0]; cy += 2 * DIRS[d][1];
+    }
+  }
+
+  uniforms(t) {
+    const beats = Math.max(0, t / this.spb), moves = beats / 2;
+    const i = Math.min(MAZE3D_MOVES - 1, Math.floor(moves)), f = moves - Math.floor(moves);
+    const e = f * f * (3 - 2 * f);
+    const x = this.px[i] + (this.px[i + 1] - this.px[i]) * e;
+    const y = this.py[i] + (this.py[i + 1] - this.py[i]) * e;
+    const a = this.ang[i] + (this.ang[i + 1] - this.ang[i]) * e;
+    // the stone: on the path four beats before each drop, met on the drop
+    const phrase = Math.floor(beats / 32), local = beats - phrase * 32;
+    const at = Math.min(MAZE3D_MOVES, (phrase + 1) * 16);
+    const stone = local > 24 ? [this.px[at], this.py[at], 1] : [0, 0, 0];
+    // the world turns over on each drop, over a beat
+    const flip = Math.min(1, local);
+    const roll = Math.PI * (phrase + (phrase > 0 ? flip * flip * (3 - 2 * flip) : 0) - (phrase > 0 ? 1 : 0));
+    return {
+      uMaze: { v: this.rows, kind: '4fv' },
+      uWalk: { v: [x, y, a, roll], kind: '4f' },
+      uStone: { v: [stone[0], stone[1], stone[2], 0], kind: '4f' },
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// The moon bike's clock: beats since the scene came on, so that it always
+// opens with the bicycle riding in, wherever the music is when the cut comes.
+// ---------------------------------------------------------------------------
+
+export class MoonbikeSim {
+  constructor(seed, spb) {
+    this.spb = spb;
+  }
+
+  uniforms(t, start = 0) {
+    const from = t >= start ? start : 0;      // the loop came round: from the top
+    return { uMoonT: { v: [(t - from) / this.spb, 0, 0, 0], kind: '4f' } };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// The time car's runs, on the music's big moments - the bars that open on a
+// crash or on the drop, where the programmes cut too. Before each the car
+// comes in at the far end of the lot, swings round to face the onlookers and
+// charges, its readout climbing to 88 on the moment; there it is gone. Only a
+// jump seen since the scene came on leaves fire and a plate behind it. Between
+// moments it laps the lot, passing in front of the onlookers.
+// ---------------------------------------------------------------------------
+
+const TIMECAR_RETURN = 8;                  // beats after a jump before it comes in again
+const TIMECAR_CHARGE = 5;                  // beats of the charge, flat out
+const TIMECAR_SPEED = 9;                   // metres a beat round the lap
+// the lap: in from the far right, across the lot in front of the onlookers, round the far left,
+// back across the middle, round the far right, across the back and into the charge
+const TC_LAP = [[46, 38], [14, 11], [-12, 10], [-27, 25], [-12, 35], [15, 29], [27, 41], [8, 49], [-11, 43], [-7, 32]];
+// the lot, in metres (the shader has the same): where the charge starts, where the car vanishes
+const TC_S = [-7, 32], TC_V = [-0.4, 6.5];
+
+export class TimecarSim {
+  constructor(seed, spb, meta) {
+    this.spb = spb;
+    const barBeats = meta && meta.barSec ? Math.round(meta.barSec / spb) : 4;
+    const acc = (meta && meta.accents) || [];
+    // the big moments, in beats; with none, every eight bars
+    this.marks = acc.map((bar) => bar * barBeats).filter((b) => b > 0);
+    this.every = 8 * barBeats;
+    const hx = TC_V[0] - TC_S[0], hz = TC_V[1] - TC_S[1], hl = Math.hypot(hx, hz);
+    this.h = [hx / hl, hz / hl];
+    this.side = [-this.h[1], this.h[0]];
+    this.runLen = hl;
+  }
+
+  /** The i-th big moment, in beats: the music's own, then every eight bars after the last (from the top if none). */
+  mark(i) {
+    const m = this.marks, n = m.length;
+    if (!n) return (i + 1) * this.every;
+    return i < n ? m[i] : m[n - 1] + (i - n + 1) * this.every;
+  }
+
+  /** The big moment at or before this beat (-Infinity if none), and the next after it. */
+  around(beats) {
+    let i = 0;
+    while (this.mark(i) <= beats) i++;
+    return [i > 0 ? this.mark(i - 1) : -Infinity, this.mark(i)];
+  }
+
+  /** A point on the lap: segment i, t 0 to 1 along it (a Catmull-Rom curve through the lap's points). */
+  lapPoint(i, t) {
+    const P = TC_LAP, n = P.length;
+    const p0 = P[Math.max(0, i - 1)], p1 = P[i], p2 = P[Math.min(n - 1, i + 1)];
+    const p3 = i + 2 < n ? P[i + 2] : [2 * P[n - 1][0] - P[n - 2][0], 2 * P[n - 1][1] - P[n - 2][1]];
+    const f = (a, b, c, d) => 0.5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t * t + (-a + 3 * b - 3 * c + d) * t * t * t);
+    const g = (a, b, c, d) => 0.5 * ((-a + c) + 2 * (2 * a - 5 * b + 4 * c - d) * t + 3 * (-a + 3 * b - 3 * c + d) * t * t);
+    const dx = g(p0[0], p1[0], p2[0], p3[0]), dz = g(p0[1], p1[1], p2[1], p3[1]), dl = Math.hypot(dx, dz) || 1;
+    return [f(p0[0], p1[0], p2[0], p3[0]), f(p0[1], p1[1], p2[1], p3[1]), dx / dl, dz / dl];
+  }
+
+  /** Where the car is on its lap, u from 0 to 1 of the lap's length, and which way it faces. */
+  lap(u) {
+    if (!this.lapLen) {
+      this.lapLen = [];
+      for (let i = 0; i < TC_LAP.length - 1; i++) {
+        let L = 0, prev = this.lapPoint(i, 0);
+        for (let k = 1; k <= 16; k++) { const p = this.lapPoint(i, k / 16); L += Math.hypot(p[0] - prev[0], p[1] - prev[1]); prev = p; }
+        this.lapLen.push(L);
+      }
+      this.lapTotal = this.lapLen.reduce((a, b) => a + b, 0);
+    }
+    let d = Math.max(0, Math.min(1, u)) * this.lapTotal, i = 0;
+    while (i < this.lapLen.length - 1 && d > this.lapLen[i]) { d -= this.lapLen[i]; i++; }
+    return this.lapPoint(i, Math.min(1, d / this.lapLen[i]));
+  }
+
+  uniforms(t, start = 0) {
+    const beats = Math.max(0, t / this.spb), sb = Math.max(0, start / this.spb);
+    const [prev, next] = this.around(beats);
+    const seen = prev >= sb - 1e-6;                        // a jump since the scene came on
+    const since = seen ? beats - prev : 1e3;
+    const from = Math.max(sb, Number.isFinite(prev) ? prev + TIMECAR_RETURN : 0);
+    const chargeAt = Math.max(from, next - TIMECAR_CHARGE);
+    this.lap(0);
+    const lapBeats = this.lapTotal / TIMECAR_SPEED;
+    const swingAt = Math.max(from, chargeAt - lapBeats);
+    // a short lap starts part of the way round, so its pace stays the same
+    const lapFrom = 1 - (chargeAt - swingAt) / lapBeats;
+    let car = [0, 0, 0, 0], present = 0, mph = 0, charge = 0;
+    if (beats >= swingAt && beats < next) {
+      present = 1;
+      if (beats < chargeAt) {
+        const u = lapFrom + (1 - lapFrom) * (beats - swingAt) / Math.max(1e-3, chargeAt - swingAt);
+        car = this.lap(u);
+        mph = 44 + 5 * Math.sin(u * 13);
+      } else {
+        const r = (beats - chargeAt) / Math.max(1e-3, next - chargeAt);
+        charge = r;
+        mph = 44 + 44 * Math.pow(r, 1.5);
+        const along = (44 * r + 44 * Math.pow(r, 2.5) / 2.5) / (44 + 44 / 2.5);
+        car = [TC_S[0] + this.h[0] * this.runLen * along, TC_S[1] + this.h[1] * this.runLen * along, this.h[0], this.h[1]];
+      }
+    }
+    return {
+      uTimecar: { v: [since, mph, present, charge], kind: '4f' },
+      uTcCar: { v: car, kind: '4f' },
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// The anime opening's title card: the seed, as the show's name, in the 5x7 font
+// the cracktro uses, handed to the shader as bits; SEEDSCENE above it, small.
+// ---------------------------------------------------------------------------
+
+export const ANIMEOP_TITLE = 10;            // letters a title, at most
+
+export class AnimeopSim {
+  constructor(seed) {
+    const clean = (s) => [...String(s).toUpperCase()].filter((ch) => CRACK_CHARS.includes(ch) && ch !== ' ').join('');
+    this.title = clean(seed).slice(0, ANIMEOP_TITLE) || 'SEEDSCENE';
+    this.font = new Float32Array(48 * 2);
+    CRACK_FONT.forEach((g, i) => {
+      let lo = 0, hi = 0;
+      g.split('|').forEach((row, y) => [...row].forEach((c, x) => {
+        if (c !== '#') return;
+        if (y < 4) lo += 2 ** (y * 5 + x); else hi += 2 ** ((y - 4) * 5 + x);
+      }));
+      this.font[i * 2] = lo; this.font[i * 2 + 1] = hi;
+    });
+    this.text = new Float32Array(12);
+    [...this.title].forEach((ch, i) => { this.text[i] = crackCode(ch); });
+  }
+
+  uniforms() {
+    return {
+      uFont: { v: this.font, kind: '4fv' },
+      uTitle: { v: this.text, kind: '4fv' },
+      uAo: { v: [this.title.length, 0, 0, 0], kind: '4f' },
+    };
+  }
+}
+
+export const SIMS = { animeop: AnimeopSim, timecar: TimecarSim, moonbike: MoonbikeSim, maze3d: Maze3dSim, echolines: EcholinesSim, ansi: AnsiSim, cascade: CascadeSim, cracktro: CracktroSim, rubber: RubberSim, chessfloor: ChessfloorSim, bobs: BobsSim, pyramid: PyramidSim, pipes: PipesSim, maze: MazeSim, snake: SnakeSim, rocks: RocksSim, starfighter: StarSim, paddles: PaddlesSim, invaders: InvadersSim, bricks: BricksSim, lightcycles: LightcyclesSim };

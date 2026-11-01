@@ -36,12 +36,43 @@ export function compile(gl, type, src) {
 }
 
 export function program(gl, fragSrc, vertSrc = VERT) {
+  return finishProgram(gl, startProgram(gl, fragSrc, vertSrc));
+}
+
+/**
+ * Hand a program to the driver to compile and link, without asking how it
+ * went: asking is what makes the page wait for it. With the parallel-compile
+ * extension the driver works on it in the background meanwhile.
+ */
+export function startProgram(gl, fragSrc, vertSrc = VERT) {
   const p = gl.createProgram();
-  gl.attachShader(p, compile(gl, gl.VERTEX_SHADER, vertSrc));
-  gl.attachShader(p, compile(gl, gl.FRAGMENT_SHADER, fragSrc));
+  const shaders = [[gl.VERTEX_SHADER, vertSrc], [gl.FRAGMENT_SHADER, fragSrc]].map(([type, src]) => {
+    const sh = gl.createShader(type);
+    gl.shaderSource(sh, src);
+    gl.compileShader(sh);
+    gl.attachShader(p, sh);
+    return { sh, src };
+  });
   gl.bindAttribLocation(p, 0, 'aPos');
   gl.linkProgram(p);
+  return { p, shaders };
+}
+
+/** Whether a started program is done, without waiting for it (true when the driver cannot tell). */
+export function programDone(gl, started, parallel) {
+  return !parallel || gl.getProgramParameter(started.p, parallel.COMPLETION_STATUS_KHR);
+}
+
+/** A started program, ready to draw with: waits for the rest of its compile if it is not done. */
+export function finishProgram(gl, started) {
+  const { p, shaders } = started;
   if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+    for (const { sh, src } of shaders) {
+      if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+        const numbered = src.split('\n').map((l, i) => `${i + 1}: ${l}`).join('\n');
+        throw new Error(`Shader compile failed:\n${gl.getShaderInfoLog(sh)}\n---\n${numbered}`);
+      }
+    }
     throw new Error('Program link failed: ' + gl.getProgramInfoLog(p));
   }
   const uniforms = {};

@@ -8,17 +8,22 @@ import { bootSequence } from './boot.js';
 import { createMenu } from './menu.js';
 import { ERAS, ERA_NAMES } from '../src/core/eras.js';
 import { resolveChoices } from '../src/core/choose.js';
+import { bornInHome } from '../src/core/journey.js';
+import { cleanGreets } from '../src/brand.js';
 
 const params = new URLSearchParams(location.search);
 // No seed in the address (a visitor arriving at a published copy): the seed
 // "seedscene"; no scene: the one the seed picks.
 const seed0 = params.get('seed') || 'seedscene';
-const style0 = STYLE_NAMES.includes(params.get('style')) ? params.get('style')
+// the scene: ?scene=, or ?style= - its old name, still in addresses shared before
+const asked = params.get('scene') || params.get('style');
+const style0 = STYLE_NAMES.includes(asked) ? asked
   : resolveChoices({ seed: seed0, style: 'auto', era: params.get('era') || 'auto', music: 'auto' }).style;
-if (params.get('seed') !== seed0 || params.get('style') !== style0) {
+if (params.get('seed') !== seed0 || params.get('scene') !== style0 || params.has('style')) {
   const u = new URL(location.href);
   u.searchParams.set('seed', seed0);
-  u.searchParams.set('style', style0);
+  u.searchParams.delete('style');
+  u.searchParams.set('scene', style0);
   history.replaceState(null, '', u);      // so a reload, or the address shared, brings back this demo
 }
 const cfg = {
@@ -33,6 +38,12 @@ const cfg = {
   intro: params.get('intro') !== '0',
   sound: params.get('sound') !== '0',      // off: the synth still runs - it is the picture's clock - at no volume
   autoplay: params.get('autoplay') === '1', // start in AUTOPLAY
+  journey: params.get('journey') === '1',   // ... or in THE JOURNEY
+  bornIn: /^\d{4}$/.test(params.get('born') || '') ? parseInt(params.get('born'), 10) : null,   // ... born in that year
+  // the viewer's greetings live after the # of the address: a browser never sends that part anywhere
+  greets: cleanGreets(new URLSearchParams(location.hash.slice(1)).get('greets')),
+  // seconds without input before the screensaver comes on; 0 never
+  saver: /^\d+$/.test(params.get('saver') || '') ? parseInt(params.get('saver'), 10) : 60,
 };
 if (cfg.music !== 'auto' && !MUSIC_NAMES.includes(cfg.music)) cfg.music = 'auto';
 if (cfg.era !== 'auto' && !ERA_NAMES.includes(cfg.era)) cfg.era = 'auto';
@@ -42,6 +53,8 @@ const hud = document.getElementById('hud');
 const help = document.getElementById('help');
 const hint = document.getElementById('hint');
 const toastEl = document.getElementById('toast');
+const bornEl = document.getElementById('born');
+const greetEl = document.getElementById('greet');
 
 let demo, ctx, node, gain;
 let audioPos = 0;          // sample position reported by the worklet
@@ -92,8 +105,8 @@ function toast(text) {
 
 // ---- audio ---------------------------------------------------------------
 
-async function startAudio() {
-  ctx = new AudioContext({ sampleRate: SAMPLE_RATE });
+async function startAudio(ready = null) {
+  ctx = new AudioContext({ sampleRate: SAMPLE_RATE });          // inside the viewer's gesture, before any wait
   if (ctx.sampleRate !== SAMPLE_RATE) {
     console.warn(`AudioContext runs at ${ctx.sampleRate} Hz; the synth assumes ${SAMPLE_RATE} Hz.`);
   }
@@ -101,6 +114,8 @@ async function startAudio() {
   gain = ctx.createGain();
   gain.gain.value = cfg.sound ? 0.9 : 0;
   gain.connect(ctx.destination);
+  // the music starts with the picture: once the first scene can be drawn
+  if (ready) await ready;
   connectSynth(firstPart());
 }
 
@@ -111,7 +126,7 @@ async function startAudio() {
  * `seedscene autoplay` starts at its beginning, so a seed still reproduces it.)
  */
 function firstPart() {
-  return demo && demo.inAutoplay ? Math.floor(Math.random() * Math.min(demo.programme.count, 50000)) : 0;
+  return demo && demo.inAutoplay ? demo.programme.entry(Math.random()) : 0;
 }
 
 /** Stop a synth for good. Disconnecting alone leaves it running and talking. */
@@ -133,7 +148,7 @@ function connectSynth(startPart = 0) {
     outputChannelCount: [2],
     processorOptions: {
       seed: demo.seed, duration: demo.duration, music: demo.music, chip: demo.chip, loop: true,
-      programme: pr ? pr.kind : null, startPart,
+      programme: pr ? pr.kind : null, startPart, bornIn: pr ? pr.bornIn : null,
     },
   });
   node = current;
@@ -170,14 +185,20 @@ function loop() {
 
 function prepare() {
   if (!demo) buildDemo();
+  // every scene compiled in the background while the boot screen plays: this
+  // era's first, then the rest, so switching never waits for the driver
+  const era = ERAS[demo.era] ? demo.era : null;
+  const mine = era ? ERAS[era].scenes : [];
+  demo.renderer.warm([...mine, ...STYLE_NAMES.filter((n) => !mine.includes(n))]);
 }
 
 /** Runs inside the viewer's key press or click, so audio is allowed to start. */
 async function start() {
   prepare();
   // asked for in the address: start in AUTOPLAY (the synth then starts somewhere new in it)
-  if (cfg.autoplay) { if (!demo.inAutoplay) demo.setProgramme('autoplay'); programmeChrome('autoplay', true); }
-  await startAudio();
+  if (cfg.journey) { if (!demo.inJourney) demo.setProgramme('journey'); programmeChrome('journey', true); }
+  else if (cfg.autoplay) { if (!demo.inAutoplay) demo.setProgramme('autoplay', { bornIn: cfg.bornIn }); programmeChrome('autoplay', true); }
+  await startAudio(demo.renderer.whenReady());
   running = true;
   loop();
   // Let the info panel introduce the demo, then get out of its way.
@@ -188,14 +209,17 @@ async function start() {
 
 function remember(key, value) {
   const u = new URL(location.href);
-  u.searchParams.set(key, value);
+  if (value === null) u.searchParams.delete(key);
+  else u.searchParams.set(key, value);
   history.replaceState(null, '', u);
 }
 
 function setStyle(name) {
   cfg.style = name;
-  remember('style', name);
+  remember('scene', name);
   if (demo.setStyle(name).musicChanged) connectSynth();
+  // the scene comes on now, on the music's clock (a new tune starts it from the top)
+  else demo.renderer.sceneStart = now() % (demo.inProgramme ? demo.programme.meta.duration : demo.duration);
   updateHud();
   toast(`SCENE: ${name.toUpperCase()}`);
 }
@@ -291,18 +315,40 @@ function toggleProgramme(kind) {
   demo.setProgramme(on ? kind : null);
   connectSynth(firstPart());
   cfg.autoplay = demo.inAutoplay;                // kept in the address, so a reload comes back to it
+  cfg.journey = demo.inJourney;
   remember('autoplay', cfg.autoplay ? '1' : '0');
+  remember('journey', cfg.journey ? '1' : null);
+  cfg.bornIn = null;
+  remember('born', null);
   programmeChrome(kind, on);
   if (!on) toast(`BACK TO ${String(cfg.seed).toUpperCase()}`);
   else toast(kind === 'journey' ? `THE JOURNEY: ${ERAS[ERA_NAMES[0]].year} TO NOW` : 'AUTOPLAY: ERA AFTER ERA, NO END');
 }
+
+/** Born in: AUTOPLAY opened in the era of the viewer's twelfth year, and kept near it. */
+function startBornIn(year) {
+  demo.setProgramme('autoplay', { bornIn: year });
+  connectSynth(firstPart());
+  cfg.autoplay = true;
+  cfg.journey = false;
+  remember('journey', null);
+  cfg.bornIn = year;
+  remember('autoplay', '1');
+  remember('born', String(year));
+  programmeChrome('autoplay', true);
+  const e = ERAS[bornInHome(year)];
+  toast(`BORN IN ${year}: ${e.year} ${e.label.toUpperCase()}`);
+}
+
+/** The key that leaves the programme playing: B for born in, O for AUTOPLAY, T for THE JOURNEY. */
+const backKey = (kind) => (kind === 'autoplay' && demo.programme && demo.programme.bornIn !== null ? 'B' : PROGRAMME_KEY[kind]);
 
 /** The page's chrome for a programme: quiet, as the About part, and the hint to get back. */
 function programmeChrome(kind, on) {
   document.body.classList.toggle('about', on);    // the same quiet chrome as About
   if (on) hud.classList.add('hidden');
   else updateHud();
-  const key = PROGRAMME_KEY[kind];
+  const key = backKey(kind);
   hint.textContent = on ? `${key} · BACK TO YOUR DEMO   SPACE · NEXT` : 'H · KEYS';
 }
 
@@ -328,7 +374,7 @@ function toggleAbout() {
 /** The command lines that reproduce exactly what is on screen. */
 function commands() {
   const q = (s) => (/^[\w.-]+$/.test(s) ? s : `"${s.replace(/"/g, '\\"')}"`);
-  const base = `--seed ${q(cfg.seed)} --style ${cfg.style}`
+  const base = `--seed ${q(cfg.seed)} --scene ${cfg.style}`
     + (cfg.era === 'auto' ? '' : ` --era ${cfg.era}`)
     + (cfg.music === 'auto' ? '' : ` --music ${cfg.music}`)
     + ` --res ${cfg.width}x${cfg.height} --duration ${cfg.duration}`
@@ -352,6 +398,124 @@ const menu = createMenu({
   },
 });
 
+// ---- born in (B): the year, typed --------------------------------------------
+
+let bornDigits = '';
+const bornOpen = () => bornEl.classList.contains('open');
+function drawBorn() {
+  const year = parseInt(bornDigits, 10);
+  const ok = bornDigits.length === 4 && year >= 1900 && year <= new Date().getFullYear();
+  const e = ok ? ERAS[bornInHome(year)] : null;
+  bornEl.innerHTML = `
+    <div class="panel">
+      <div class="title">**** BORN IN ****</div>
+      <div class="krow"><span>THE YEAR YOU WERE BORN</span><span class="key">${bornDigits}<span class="cur">_</span></span></div>
+      <div class="krow"><span>TWELVE IN</span><span class="key">${ok ? `${year + 12} &middot; ${e.label.toUpperCase()}` : '....'}</span></div>
+      <div class="help">${ok ? 'RETURN &middot; AUTOPLAY FROM THERE' : 'TYPE FOUR DIGITS'} &nbsp; ESC &middot; CANCEL</div>
+    </div>`;
+  return ok ? year : null;
+}
+function openBorn() { bornDigits = cfg.bornIn ? String(cfg.bornIn) : ''; drawBorn(); bornEl.classList.add('open'); }
+function closeBorn() { bornEl.classList.remove('open'); }
+/** Keys while the year is being typed. */
+function bornKey(e) {
+  const k = e.key;
+  e.preventDefault();
+  if (k === 'Escape') closeBorn();
+  else if (k === 'Backspace') { bornDigits = bornDigits.slice(0, -1); drawBorn(); }
+  else if (/^\d$/.test(k) && bornDigits.length < 4) { bornDigits += k; drawBorn(); }
+  else if (k === 'Enter') {
+    const year = drawBorn();
+    if (year !== null) { closeBorn(); startBornIn(year); }
+  }
+}
+
+// ---- greetings (G): names for the scroller -----------------------------------
+
+const greetOpen = () => greetEl.classList.contains('open');
+function openGreet() {
+  greetEl.innerHTML = `
+    <div class="panel">
+      <div class="title">**** GREETINGS ****</div>
+      <div class="row">NAMES TO GREET, BETWEEN COMMAS - UP TO EIGHT</div>
+      <input class="names" type="text" maxlength="160" spellcheck="false" autocomplete="off">
+      <div class="note">THEY STAY ON THIS SCREEN. NOTHING IS SENT ANYWHERE.</div>
+      <div class="help">RETURN &middot; INTO THE SCROLLER &nbsp; ESC &middot; CANCEL</div>
+    </div>`;
+  const input = greetEl.querySelector('input');
+  input.value = cfg.greets.join(', ').toLowerCase();
+  greetEl.classList.add('open');
+  input.focus();
+}
+function closeGreet() { greetEl.classList.remove('open'); }
+/** Keys while names are typed: the field takes the letters; RETURN keeps them, ESC leaves. */
+function greetKey(e) {
+  if (e.key === 'Escape') { e.preventDefault(); closeGreet(); return; }
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  setGreets(cleanGreets(greetEl.querySelector('input').value));
+  closeGreet();
+}
+function setGreets(names) {
+  cfg.greets = names;
+  demo.setGreets(names);
+  // kept after the #, so a reload brings them back without them ever reaching a server
+  const u = new URL(location.href);
+  u.hash = names.length ? new URLSearchParams({ greets: names.join(',') }).toString() : '';
+  history.replaceState(null, '', u);
+  toast(names.length ? `GREETINGS TO ${names.join(', ')}` : 'NO GREETINGS');
+}
+
+// ---- the screensaver: a minute without input, and AUTOPLAY takes the screen ---------
+
+let lastInput = performance.now();
+// the screensaver is on (in full screen if the page was - a browser lets a page ask for full
+// screen only right after a key or a click, never after a minute of nothing: in a window it fills the window)
+let saver = false;
+let lastMouse = null;
+
+function sleepCheck() {
+  if (!running || saver || paused || !cfg.saver || document.visibilityState !== 'visible') return;
+  // not over a programme, the About part, or a box the viewer has open
+  if (demo.inProgramme || demo.inAbout || menu.isOpen() || bornOpen() || greetOpen() || help.classList.contains('open')) return;
+  if (performance.now() - lastInput < cfg.saver * 1000) return;
+  saver = true;
+  demo.setProgramme('autoplay');
+  connectSynth(firstPart());
+  programmeChrome('autoplay', true);
+  hint.textContent = '';
+  document.body.classList.add('saver');
+}
+
+/** Any key, a click, the wheel, a touch, the mouse moving: the demo comes back. */
+function wake() {
+  saver = false;
+  document.body.classList.remove('saver');
+  demo.setProgramme(null);
+  connectSynth();
+  programmeChrome('autoplay', false);
+  toast(`BACK TO ${String(cfg.seed).toUpperCase()}`);
+}
+
+function touched() {
+  lastInput = performance.now();
+  if (saver) wake();
+}
+setInterval(sleepCheck, 1000);
+// before every other key handler: the key that wakes the demo does nothing else
+addEventListener('keydown', (e) => {
+  const was = saver;
+  touched();
+  if (was) { e.preventDefault(); e.stopImmediatePropagation(); }
+}, true);
+for (const ev of ['mousedown', 'wheel', 'touchstart']) addEventListener(ev, touched, { passive: true });
+addEventListener('mousemove', (e) => {
+  // a hand on the mouse, not the desk shaking
+  const far = !lastMouse || Math.abs(e.screenX - lastMouse[0]) + Math.abs(e.screenY - lastMouse[1]) > 8;
+  lastMouse = [e.screenX, e.screenY];
+  if (far) touched();
+});
+
 // ---- the help screen (H) ---------------------------------------------------
 
 const KEYS = [
@@ -361,6 +525,8 @@ const KEYS = [
   ['E', `NEXT ERA (OR 1-${ERA_NAMES.length} TO JUMP: ${ERA_NAMES[0].toUpperCase()} ... ${ERA_NAMES[ERA_NAMES.length - 1].toUpperCase()})`],
   ['O', 'AUTOPLAY: ERA AFTER ERA, FOR HOURS (SPACE SKIPS)'],
   ['T', `THE JOURNEY: EVERY ERA, ${ERAS[ERA_NAMES[0]].year} TO NOW`],
+  ['B', 'BORN IN: TYPE YOUR YEAR, AUTOPLAY FROM WHEN YOU WERE TWELVE'],
+  ['G', 'GREETINGS: TYPE NAMES FOR THE SCROLLER (THEY STAY ON THIS SCREEN)'],
   ['S', 'NEW RANDOM SEED'],
   ['M', 'MENU: TYPE YOUR OWN SEED AND MORE'],
   ['A', 'THE ABOUT PART'],
@@ -369,6 +535,7 @@ const KEYS = [
   ['F', 'FULLSCREEN'],
   ['I', 'SHOW / HIDE THE INFO PANEL'],
   ['H', 'SHOW / HIDE THIS SCREEN'],
+  ['', 'A MINUTE WITHOUT INPUT: AUTOPLAY AS A SCREENSAVER - ANY KEY BRINGS YOU BACK'],
 ];
 help.innerHTML = `
   <div class="panel">
@@ -383,6 +550,8 @@ const toggleHelp = () => help.classList.toggle('open');
 addEventListener('keydown', (e) => {
   if (!running) return;
   if (menu.isOpen()) { menu.handleKey(e); return; }
+  if (bornOpen()) { bornKey(e); return; }
+  if (greetOpen()) { greetKey(e); return; }
   const k = e.key.toLowerCase();
   const handled = () => e.preventDefault();
 
@@ -400,6 +569,13 @@ addEventListener('keydown', (e) => {
   if (!demo.inAbout) {
     if (k === 't' || (k === 'escape' && demo.inJourney)) { handled(); toggleProgramme('journey'); return; }
     if (k === 'o' || (k === 'escape' && demo.inAutoplay)) { handled(); toggleProgramme('autoplay'); return; }
+    if (k === 'b') {
+      handled();
+      // born in: B asks for the year; in it, B goes back to the demo
+      if (demo.inAutoplay && demo.programme.bornIn !== null) toggleProgramme('autoplay');
+      else openBorn();
+      return;
+    }
   }
   if (demo.inProgramme && (k === ' ' || k === 'arrowright' || k === 'arrowleft')) {
     handled();
@@ -407,12 +583,15 @@ addEventListener('keydown', (e) => {
     return;
   }
   if (demo.inAbout || demo.inProgramme) {
-    const back = demo.inAbout ? 'A' : PROGRAMME_KEY[demo.programme.kind];
+    const back = demo.inAbout ? 'A' : backKey(demo.programme.kind);
     if (k.length === 1 || k.startsWith('arrow')) { handled(); toast(`PRESS ${back} TO GO BACK`); }
     return;
   }
 
-  if (k === 'm') {
+  if (k === 'g') {
+    handled();               // or the "g" lands in the names field
+    openGreet();
+  } else if (k === 'm') {
     handled();               // or the "m" lands in the seed field the menu focuses
     menu.toggle();
   } else if (k === ' ') {

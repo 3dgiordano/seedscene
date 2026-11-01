@@ -9,11 +9,12 @@ Where it stands (2026-10-30):
 - GitHub Pages on, source "GitHub Actions"; the workflow run by hand deployed
   the WIP to https://3dgiordano.github.io/seedscene/ - checked: it opens in
   AUTOPLAY with the seed seedscene, draws, no console errors
-- uncommitted: the `state/` rule in .gitignore, the error text in docs/DEPLOY.md,
-  these notes
+- the `state/` rule in .gitignore, the error text in docs/DEPLOY.md and these
+  notes were committed by the owner (e2ad4a9, 0b2be4b); the tree is clean
+- the project folder was renamed to C:/David/seedscene on 2026-10-30; the
+  remote is unchanged, nothing in the repository refers to the folder path
 
 Left, the owner's:
-- commit and push those when convenient
 - the official release when the plan is closed: docs/DEPLOY.md, "Each release"
 - optional: the workflow's actions have newer majors (checkout v7, setup-node v7,
   configure-pages v6, upload-pages-artifact v5, deploy-pages v5); GitHub warns

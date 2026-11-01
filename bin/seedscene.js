@@ -15,7 +15,7 @@ import { ERAS, ERA_NAMES, erasForScene } from '../src/core/eras.js';
 import { resolveChoices, checkChoice } from '../src/core/choose.js';
 import { composeJourney, composeAutoplay, AUTOPLAY_PART } from '../src/core/journey.js';
 import { startServer } from '../tools/server.js';
-import { banner, TAGLINE, VERSION } from '../src/brand.js';
+import { cleanGreets, banner, TAGLINE, VERSION } from '../src/brand.js';
 
 const RESOLUTIONS = {
   '240p': [426, 240], '360p': [640, 360], '480p': [854, 480],
@@ -83,13 +83,13 @@ function num(v, dflt, name, min, max) {
   return n;
 }
 
-function showStyles() {
+function showScenes() {
   console.log(`\n${C.b}eras${C.r}  ${C.dim}(--era, keys 1-${ERA_NAMES.length} or E live; each era suggests its scenes and music)${C.r}\n`);
   for (const [i, name] of ERA_NAMES.entries()) {
     const e = ERAS[name];
     console.log(`  ${C.cy}${i + 1}${C.r} ${C.b}${name.padEnd(9)}${C.r}${String(e.year).padEnd(6)}${e.label.padEnd(16)}${C.dim}${e.blurb}${C.r}`);
   }
-  console.log(`\n${C.b}scenes${C.r}  ${C.dim}(--style, space or arrows live)${C.r}\n`);
+  console.log(`\n${C.b}scenes${C.r}  ${C.dim}(--scene, space or arrows live)${C.r}\n`);
   for (const name of STYLE_NAMES) {
     console.log(`    ${C.b}${name.padEnd(12)}${C.r}${STYLE_INFO[name].padEnd(54)}${C.dim}${erasForScene(name).join(' ')}${C.r}`);
   }
@@ -112,16 +112,18 @@ ${C.b}usage${C.r}
   seedscene render  [options]     render a demo to an mp4 file
   seedscene journey [options]     render THE JOURNEY - every era, ${ERAS[ERA_NAMES[0]].year} to now - to mp4
   seedscene autoplay [options]    render AUTOPLAY - era after era, ${AUTOPLAY_PART}s a track - to mp4
-  seedscene styles                list the eras, scenes and music styles
+  seedscene scenes                list the eras, scenes and music styles
   seedscene info    [options]     print what a seed composes, without rendering
 
 ${C.b}options${C.r}
   --seed <string>          anything; the same seed always gives the same demo   ${C.dim}(default: random)${C.r}
-  --style <name>           the scene, see 'seedscene styles'                    ${C.dim}(default: chosen by the seed)${C.r}
+  --scene <name>           the scene, see 'seedscene scenes'                    ${C.dim}(default: chosen by the seed)${C.r}
   --era <name>             auto | ${ERA_NAMES.join(' | ')}   ${C.dim}(default: an era the scene belongs to)${C.r}
   --music <name>           auto | a music style                                 ${C.dim}(default: music of the era)${C.r}
   --res <WxH|preset>       854x480, or 240p 360p 480p 576p 720p 1080p           ${C.dim}(default: 480p)${C.r}
   --duration <seconds>     length                                ${C.dim}(default: 30 render, 180 live, ${16 * ERA_NAMES.length} journey, 600 autoplay)${C.r}
+  --born <year>            autoplay: open in the era you were twelve in, and stay near it
+  --greets "A, B, C"       names to greet in the scroller (and the cracktro): up to eight
   --fps <n>                frames per second                                    ${C.dim}(default: 30)${C.r}
   --out <file.mp4>         output path                                          ${C.dim}(default: out/<seed>-<scene>.mp4)${C.r}
   --crf <n>                h.264 quality, lower is better                       ${C.dim}(default: 18)${C.r}
@@ -135,9 +137,10 @@ ${C.b}options${C.r}
 
 ${C.b}examples${C.r}
   seedscene live --seed aurora --era amiga
-  seedscene render --seed aurora --style vectorballs --era dos --music gabber
+  seedscene render --seed aurora --scene vectorballs --era dos --music gabber
   seedscene journey --seed yourname --res 720p
   seedscene autoplay --seed yourname --duration 3600
+  seedscene autoplay --seed yourname --born 1985
 `;
 
 async function main() {
@@ -146,13 +149,14 @@ async function main() {
   const cmd = args._[0] || 'help';
 
   if (cmd === 'help' || args.help || args.h) { console.log(HELP); return; }
-  if (cmd === 'styles') { showStyles(); return; }
+  // (styles, --style and ?style= are the old names, from when a scene was called a style)
+  if (cmd === 'scenes' || cmd === 'styles') { showScenes(); return; }
 
   const seed = args.seed !== undefined && args.seed !== true
     ? String(args.seed)
     : Math.random().toString(36).slice(2, 9);
   const req = {
-    style: checkChoice('style', args.style),
+    style: checkChoice('scene', args.scene !== undefined ? args.scene : args.style),
     era: checkChoice('era', args.era),
     music: checkChoice('music', args.music),
   };
@@ -189,12 +193,15 @@ async function main() {
     const format = args.format === 'jpeg' ? 'jpeg' : 'png';
     const overlay = args.overlay !== false;
     const safe = String(seed).replace(/[^\w.-]/g, '_');
+    // born in a year (autoplay only): the programme opens in the era the viewer was twelve in
+    const bornIn = programme === 'autoplay' && args.born !== undefined && args.born !== true
+      ? Math.round(num(args.born, 1985, 'born', 1900, 2100)) : null;
     const out = args.out && args.out !== true
       ? String(args.out)
-      : path.join('out', programme ? `${safe}-${programme}.mp4` : `${safe}-${choice.style}.mp4`);
+      : path.join('out', programme ? `${safe}-${bornIn !== null ? `born${bornIn}` : programme}.mp4` : `${safe}-${choice.style}.mp4`);
 
     if (programme) {
-      const j = journey ? composeJourney(seed, duration) : composeAutoplay(seed, duration);
+      const j = journey ? composeJourney(seed, duration) : composeAutoplay(seed, duration, bornIn);
       const total = journey ? j.meta.duration : duration;
       console.log(`\n  ${C.b}${j.meta.title}${C.r}  ${C.cy}${seed}${C.r} / ${width}x${height} / ${total}s @ ${fps}fps`);
       // the plan only: listing a programme should not compose it
@@ -209,7 +216,8 @@ async function main() {
     }
     const { renderVideo } = await import('../tools/render.js');
     const r = await renderVideo({
-      seed, style: choice.style, era: choice.era, music: choice.music, programme,
+      seed, style: choice.style, era: choice.era, music: choice.music, programme, bornIn,
+      greets: cleanGreets(args.greets === true ? '' : args.greets),
       width, height, duration, fps, out, crf, format, overlay,
       gpu: args.gpu === true || args.gpu === 'true',
     });
@@ -225,7 +233,7 @@ async function main() {
     const overlay = args.overlay !== false;
     const { origin } = await startServer(port);
     const q = new URLSearchParams({
-      seed: String(seed), style: choice.style, era: req.era, music: req.music,
+      seed: String(seed), scene: choice.style, era: req.era, music: req.music,
       width: String(width), height: String(height),
       duration: String(duration), overlay: overlay ? '1' : '0',
       intro: args.intro === false ? '0' : '1',

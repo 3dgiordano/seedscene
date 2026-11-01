@@ -4,7 +4,7 @@
 
 The release that turns the tool into **SEEDSCENE**: a name, a personality,
 a Commodore 64 front door, eight eras of computing from the 1979 arcade to
-now, twenty-four styles of music, an endless AUTOPLAY channel, and a live mode you
+now, twenty-eight styles of music, an endless AUTOPLAY channel, and a live mode you
 can drive entirely from the keyboard.
 
 ### Added
@@ -247,6 +247,231 @@ can drive entirely from the keyboard.
   rainbow copper lines, and pages typing in, in a 5x7 bitmap font of the
   time: what this is, and thanks to 3dgiordano and the SEEDSCENE community -
   which then fades away and leaves the stars.
+- **The card cascade** (`cascade`, Y2K): the end of the desktop card game,
+  built from captures of the original's win screen - the four foundations
+  emptying from the kings down, each card falling and bouncing off the bottom
+  of the table and leaving a copy of itself at every step, never cleared: fast
+  cards fan out in white edges with their red and black indices, slow ones
+  pile their borders into black arches, and a card that has stopped bouncing
+  slides along the bottom. On the music: a card leaves on every bar, and
+  another halfway through the bar when the music is busy; each first lands on
+  the beat, on the "and" or on the sixteenth between; the busier the music,
+  the livelier the bounce; every phrase deals a new game. The Y2K era's glow
+  and colour fringes are turned down for this scene, so the one-pixel edges
+  stay black. After the owner's look, the effects: the table floats on the
+  stage like the game scenes, punching in on the kick; the trails keep the
+  music - the copies after a kick warm, after a snare cool, a band of colour
+  for each hit - and older copies sink into the table; each card casts its
+  shadow; its first landing throws up sparks and a flash along the floor; the
+  felt is woven cloth breathing with the bass; and in the last bar of each
+  phrase colour runs through every trail before the new deal.
+- **The ANSI board** (`ansi`, DOS): the art of the bulletin boards, built
+  from ANSI works of 1995 - VGA text mode in sixteen colours, pictures and
+  block-letter logos of full and half blocks and the three shades, gradients
+  down the artists' ramps, grey outlines, stars. All of it drawn by the seed,
+  the texts about the project only. A line of the file arrives each beat, at
+  about the speed of a 2400-baud modem, the screen scrolling smoothly as it fills;
+  each phrase brings a part - a spaced-out header, a sunset or a night sky
+  with its moon over a shaded land, a line about the music, and a logo
+  (SEEDSCENE, the seed, the music) whose last line lands as the next phrase
+  opens. The camera shows the whole screen on the drop, draws slowly nearer
+  as the picture arrives - the lines already drawn kept in view - and eases
+  back out over the logo so the drop shows it whole; the kick lights the
+  letters as they arrive and punches the screen in,
+  the snare sets the stars twinkling, and on the drop the logo cycles its
+  colours.
+- **The bouncing lines** (`echolines`, DOS): the screensaver of the early 90s,
+  built from captures of it - two figures of four corners, each corner flying
+  straight and bouncing off the edges of the screen, each figure drawn again
+  at the moments just behind it in thin lines of one colour, a fan of echoes.
+  On the music: the figures fly faster as it builds, with a shove on each kick
+  and a burst as each phrase opens; the kick stretches the echoes apart and
+  punches the screen; each snare hit moves the colours on; the busier the
+  music, the more echoes, from six to fourteen.
+- **The 3D maze** (`maze3d`, DOS): the maze screensaver of the mid-90s,
+  built from captures of it - corridors of dark red bricks with pale mortar,
+  a tan floor, a ceiling of white tiles, walked in first person through a maze
+  of the seed's own with a hand on the wall, corners taken walking. A move
+  every two beats, on the first and third of the bar; each kick a footfall
+  that dips the view and punches the screen; the snare brightens the ceiling;
+  as each phrase ends a grey stone spins on the path ahead, and on the drop
+  the walk goes through it and the world turns upside down, until the next.
+- **The moon bike** (`moonbike`, modern): the boy and his friend from the
+  stars, as an idea, built from stills of the film's moon shot - a deep blue
+  night, a huge pale moon with its seas and a wisp of cloud, pines at the
+  corners, and a bicycle crossing the moon in silhouette, the rider hunched
+  over the bars with his cape flying and a bundle in a blanket in the basket.
+  It always opens with the bicycle riding in; it crosses for four bars and
+  is gone for two, turning round past the edge of the frame, then comes back
+  the way it went - near and through the moon, then far and high; the
+  camera pans after it and draws in as it crosses, the stars, the moon, a far
+  forest and the corner pines each moving less the farther they are; the
+  halo opens as it crosses; the wheels turn a turn a beat, the cape streams
+  and ripples on the eighths, the kick lights the moon and
+  punches the screen, the hats set the stars twinkling, and the snare sends a
+  shooting star every other bar. A scene can now know when it came on, so
+  a cut of AUTOPLAY opens it with its entrance; and the gallery can take a
+  scene's still at its own moment.
+- **The local server's front door works.** Its root address served the live
+  page where the page's own relative paths could not resolve, so it never
+  started; the root now sends the browser to `/web/index.html`, keeping the
+  address's settings.
+- **Scenes compile in the background.** The live page compiles every scene
+  while its boot screen plays, two at a time, so showing one for the first
+  time no longer stops the picture - the heaviest took seconds; renders are
+  unchanged. The first scene starts compiling as soon as the boot screen is
+  up, nothing competes with it, and the tape stripes run on until it is ready;
+  the time car's, the boxing match's and the card cascade's shaders compile in
+  a third of the time or less, with the same pictures; and the live page
+  starts loading the first scene as soon as its boot screen is up.
+- **Cyborg pulse, put right** through the music audit: its brass hook leapt
+  with every chord to D#6, under brass triads struck on the same hits; the
+  brass sings a slow theme now, long, short, long in each bar of thirteen,
+  with an answer phrase, over power chords that are the root and the fifth;
+  a brass of its own for the theme, mellow when soft and brighter as it
+  grows, as a real trombone, where it was a saw. Every check passes.
+- **The music audit** tells a note struck with a chord but held its own length
+  from the chord: a horn line on the beat a horn section stabs.
+- **Trance, put right** through the music audit: its supersaw leapt with every
+  chord to E8; it sings a line now. Its dotted-eighth delay, the genre's own,
+  stays, let off by name in the audit. Every check passes.
+- **Synthwave, put right** through the music audit: its lead leapt with every
+  chord to A#7; it sings a line now, as synth-pop does. Every check passes.
+- **Chip rock and roll, put right** through the music audit: its piano comped
+  the key's triads against a boogie bass that walks each chord's own sixth
+  and flat seventh; it comps as the fifties did now, C and C6 on every eighth
+  with the bass, chopped short. Its melody sings a twelve-bar line over the
+  twelve bars (it sang eight, then over the wrong chords). Every check
+  passes; it renders faster than before.
+- **Star pilot's brass** is the real brass now (cyborg's): on the AWE32 its
+  filter opens with the note's velocity, as a SoundFont's does - mellow soft,
+  brighter loud, as a trombone - where it was the same saw at every loudness.
+  The orchestral score's and new beat's, on the Amiga, are as they were: one
+  tracker sample cannot brighten as it is played louder.
+- **Tracker jazz's flute** is a real flute's now (MIDI quest's), where it was a
+  whistle: on the Amiga, one sample taken at A4, 10 dB from the real flute at
+  its worst where it was 25.
+- **The music audit listens for the instrument**: a melody instrument that
+  imitates a real one is held against that instrument's measured spectrum
+  (a flute, a trombone soft and loud; `tools/timbre-refs.js`, each with its
+  source), on every chip of its eras. And two things to listen for, which
+  only warn: echoes landing a step from the next note, and one note struck a
+  third time running. In a bar of thirteen it counts the beats from the bar
+  line. It finds tracker jazz's flute a whistle, and three styles' brass no
+  brighter loud than soft.
+- **Arcade attract, put right** through the music audit: its marching bass
+  stepped through the scale whatever the chord, a sixth of its notes a
+  semitone off the arpeggio; it skips those steps now (C A G E). The pulse
+  hook, which climbed to F7, sings a line. Every check passes.
+- **MIDI quest, put right** through the music audit: its flute climbed to
+  C#8 and leapt with every chord, 12 dB under a choir that entered with it;
+  it sings a line now, over the strings and the harp, with no choir on top;
+  a flute of its own, with a real flute's harmonics by register where it was
+  a whistle; an answer phrase (A A B A); an echo on the beat, not the dotted
+  one that rubbed the next note; a little faster. Every check passes.
+- **Star pilot, put right** through the music audit: its brass line climbed
+  to C#8 and leapt with the chords, 8 dB under orchestra hits so heavy on the
+  AWE32 that it rendered at 1.2 times real time; it sings a line now, above
+  hits that share one chord between brass and strings, at 4 times real time.
+  Every check passes.
+- **Synth-pop, put right** through the music audit: its hook climbed to C#8
+  and leapt with every chord; it sings a line now, in one register, in steps
+  over chord tones, the same each time round - a chorus to hum. Every check
+  passes.
+- **The anime opening, put right** through the music audit: its guitars stood
+  on the chord's third, not its root, and on the AWE32 its brass and ringing
+  guitars made it render at 1.6 times real time, too slow for AUTOPLAY's
+  overlaps; the guitars on the root, the brass one line, 4.2 times real time,
+  the singer a little louder; every check passes.
+- **FM metal, put right** through the music audit: its power chords stood a
+  major third above the harmony (the bass rubbed them at 97% of its notes) and
+  its solo leapt with every chord, 16 dB under the riff. The riff now stands
+  on the bass's root, the solo sings a line of chord tones in steps, the same
+  each time round, above the riff; every check of the audit passes.
+- **The music audit** (`npm run audit:music [-- <style>]`): every style,
+  or one, analysed as music from its score - the bass under each chord, rubs
+  between bass, chords and melody, the melody's register, leaps and repeats,
+  the grid and the echo, the melody against the chords in the mix, peaks and
+  speed - each check passing, warning or failing, a style let off where the
+  clash is its point. The review it belongs to is written down
+  (`docs/MUSIC-REVIEW.md`): audit, fix, audit again, then the ear.
+- **Skate Punk** (`skatepunk`, 32-bit console): the skateboarding games'
+  punk at 180-200 bpm (the skate games' best-known ska-punk single plays at
+  about 195), from a punk drumming lesson's beats - ska verses, the guitar
+  chopping on the off-beats over a backbeat; punk choruses with the snare on
+  every "and", the kick on the beat and the sixteenth after or doubled before
+  the snare, the hats open; power chords on the eighths; a synth chorus
+  shouted like a gang, an octave at most, the same every time it returns.
+- **Anime Opening** (`animeop`, 32-bit console): the anime opening scene's
+  own music, built from a corpus study of anime openings (J. Li, *Music
+  Theory Online* 32.1) and the measured tempos of the era's - an anison in
+  sections: intro, verse, prechorus, a chorus a singer could sing (one
+  register, mostly steps, chord tones on the beats, the same tune each time
+  it returns), again, a bridge, the last chorus with the brass joining in; the chorus on the Royal
+  Road progression, in some seeds a minor third up from the verse, and the
+  last chorus pumped up a step or two; J-rock drums, a driving bass,
+  palm-muted guitars in the verse and open power chords in the chorus.
+- **Between the tracks**: in THE JOURNEY each era opens on a chime of its
+  own, in the spirit of its machines' start-up (a coin, a SID arpeggio, the
+  floppy drive, the POST beep, a swell, a ping, a bell), on the incoming
+  track's key; a handheld track starts with a cartridge clicking in; and the
+  mix into the media-player years (Y2K) rises on a dial-up handshake, built
+  from an annotated spectrogram of one, the line connecting on the drop. They
+  play over the mix, outside its fades and filters.
+- **Screensaver** (live): after a minute without input AUTOPLAY takes the
+  screen, nothing on it but the picture; any key, a click or a touch brings
+  the demo back. Full screen if the page already was (a browser allows a page
+  full screen only right after a key or a click); `saver=<seconds>` in the
+  address changes the wait, `saver=0` turns it off.
+- **Greetings** (`G` live, `--greets` for a video): type a few names and
+  they scroll in the greetings - in every scene's scroller, the About part's
+  greetings and the cracktro's pages - as every demo greeted its friends.
+  Live, they are kept after the address's `#`, which a browser never sends:
+  they stay on the screen.
+- **Born in** (`B` live, `--born` for `autoplay`): type the year you were
+  born and AUTOPLAY opens in the era you were twelve in, its card saying so,
+  and comes back to it every other block, the eras between drawn by how near
+  their year is to yours. The year stays in the page's address, so a reload
+  comes back to it.
+- **Trip-Hop** (`triphop`, DOS and Y2K): the 90s Bristol sound, from a
+  trip-hop drum cheat sheet and the genre's own description - 68 to 90 bpm, a
+  break pitched down and shuffled as an MPC does (the off-sixteenths at 65%),
+  the kick on one and three with sixteenths leading into the beats, a big
+  roomy snare on two and a side-stick on four, the ride on the upbeats, a
+  shaker when it builds, the record's crackle; a deep bass sliding into its
+  pickups, dark strings held low, a Rhodes, a theremin singing the hook, and a
+  record scratched back and forth at the end of a phrase.
+- **Keygen** (`keygen`, DOS and Y2K): the crack intros' tracker tunes,
+  built from the pattern data of forty real keygen modules - 125 bpm most
+  often (the tracker's default), the chord stepped by the arpeggio effect on
+  the tracker's tick (major, minor, or the fifth and the octave), a squelchy
+  lead sliding into its notes with a vibrato that waits, and in about half the
+  tunes an echo channel playing it again a few rows later, quieter, on the
+  other side; a bouncing octave bass and drum samples. On DOS it plays from
+  samples, as a module player did, whatever card the seed chose.
+- **The anime opening** (`animeop`, 32-bit console): the openings the 90s
+  brought to Latin America, built from frames of two of them - a cut on every
+  bar: the team in a row against a red sunburst, three of them against a
+  sunset, a power-up over two bars - the charge, then on the downbeat a white
+  flash, a column of fire bursting up and a ring of dust, lightning out of the
+  sky, and the energized state that stays: a tall serrated aura with arcs of
+  lightning crawling round it, the hair spiked up gold, the muscles swollen - a
+  flight across a sky rushing right to left, a charge out of speed lines;
+  muscular silhouettes of their own, drawn as the cels draw them, striking a new pose on
+  every beat, the kick punching and bursting the lines, the last bar cutting on
+  every beat into a white flash, and the title card - the seed in thick outlined
+  letters over rushing blue streaks - slamming in on the drop.
+- **The time car** (`timecar`, arcade): the time-travel car of the 80s, as
+  an idea, built from stills of the film's first run and its fire trails - a
+  wet parking lot lit orange, a long low building beyond, two onlookers (one
+  with the remote, one filming) swaying to the music. A steel wedge in 3D laps
+  the lot, passing in front of them, swings round and charges between them,
+  its readout climbing to 88 on the next big moment of the music; lightning
+  crawls round it as it nears; they brace. At 88 it bursts and is gone, and
+  only then the fire: the reverse shot, the two hopping from foot to foot on
+  the beat as the trails race between their legs; then the plate it left,
+  spinning on its edge like a coin until it falls flat, SEEDSCENE on it. The
+  car is drawn from the coupe's side profile; the fire is a volume with a glow.
 - **The starfighter, against the console original.** Six screenshots of the
   16-bit classic were the reference. White streaks that crossed the screen
   from below are gone: they were background stars passing too close to the
@@ -328,6 +553,22 @@ can drive entirely from the keyboard.
 
 ### Changed
 
+- **A scene is called a scene.** What v0.1 called a style - the brief asked
+  for "a style name" - is a scene everywhere a person meets it: `--scene`,
+  `seedscene scenes`, `?scene=` in the page's address, SCENE in the menu and
+  in the scroller. "Style" now means only a style of music. `--style`,
+  `seedscene styles` and `?style=` still work, so no shared link breaks.
+- **The README's gallery** gives each still the command that makes it
+  (`--scene cracktro --era amiga --seed hyperspace`), not its seed alone; the
+  cracktro's still takes a new seed, `hyperspace`, in place of one that named
+  the scene's illegal side. A **Watch it online** section links the published
+  page straight into AUTOPLAY, THE JOURNEY (`journey=1`, new), born in, the
+  greetings, each era. The block-letter logo lines up again: two of its lines
+  were two characters shorter, and centred, they sat one to the right.
+- **An era chosen alone brings its own scenes.** Given only the era
+  (`--era dos`, `?era=dos`), a seed picks the scene it favours most among
+  that era's, not among all of them; a seed whose scene was already of the era
+  keeps it, and a seed left to choose everything chooses as before.
 - **A seed keeps its scene as scenes are added.** A seed used to pick its
   scene from the list by position, so every new scene moved about half the
   seeds to another scene. Now each scene gets its own score from the seed

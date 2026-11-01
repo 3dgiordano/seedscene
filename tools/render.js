@@ -17,9 +17,9 @@ import { encodeWav } from './wav.js';
 import { startServer } from './server.js';
 
 /** Render the soundtrack (a demo, or a programme) to a 16-bit WAV buffer. */
-export function renderAudio(seed, duration, music, programme = null, era = null) {
+export function renderAudio(seed, duration, music, programme = null, era = null, bornIn = null) {
   const score = programme === 'journey' ? composeJourney(seed, duration)
-    : programme === 'autoplay' ? composeAutoplay(seed, duration)
+    : programme === 'autoplay' ? composeAutoplay(seed, duration, bornIn)
       : composeScore(seed, duration, music, chipFor(era, seed));
   const n = score.totalSamples;
   const L = new Float32Array(n);
@@ -43,7 +43,7 @@ export async function renderVideo(opts) {
   const {
     seed, style, width, height, duration, fps, out,
     crf = 18, format = 'png', overlay = true, quiet = false, gpu = false,
-    music, era, programme = null,
+    music, era, programme = null, bornIn = null, greets = [],
   } = opts;
 
   const log = quiet ? () => {} : (s) => process.stdout.write(s);
@@ -51,7 +51,7 @@ export async function renderVideo(opts) {
 
   // 1. soundtrack ---------------------------------------------------------
   log(`  audio   rendering ${duration}s of ${SAMPLE_RATE} Hz stereo...`);
-  const { wav, score } = renderAudio(seed, duration, music, programme, era);
+  const { wav, score } = renderAudio(seed, duration, music, programme, era, bornIn);
   const tmp = path.join(os.tmpdir(), `seedscene-${process.pid}-${Date.now()}`);
   await mkdir(tmp, { recursive: true });
   const wavPath = path.join(tmp, 'track.wav');
@@ -92,10 +92,10 @@ export async function renderVideo(opts) {
     });
 
     const q = new URLSearchParams({
-      seed: String(seed), style: style || 'auto', width: String(width), height: String(height),
+      seed: String(seed), scene: style || 'auto', width: String(width), height: String(height),
       duration: String(duration), fps: String(fps), format,
-      music: music || 'auto', era: era || 'auto', programme: programme || '',
-      overlay: overlay ? '1' : '0',
+      music: music || 'auto', era: era || 'auto', programme: programme || '', born: bornIn === null ? '' : String(bornIn),
+      overlay: overlay ? '1' : '0', greets: greets.join(','),
     });
     await page.goto(`${origin}/web/render.html?${q}`, { waitUntil: 'load' });
     await page.waitForFunction('window.SEEDSCENE || window.SEEDSCENE_ERROR', { timeout: 60000 });

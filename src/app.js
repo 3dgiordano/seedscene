@@ -40,9 +40,10 @@ export class Demo {
       seed: this.seed, style: this.style, era: this.era,
       width: opts.width, height: opts.height,
       meta: this.meta, features: this.features, overlay: opts.overlay, live: !!opts.live,
+      greets: opts.greets || [],
     });
     if (opts.journey) this.setProgramme('journey');
-    else if (opts.autoplay) this.setProgramme('autoplay');
+    else if (opts.autoplay) this.setProgramme('autoplay', { bornIn: opts.bornIn });
   }
 
   /** Turn the requested choices (maybe 'auto') into concrete ones. */
@@ -91,6 +92,9 @@ export class Demo {
     this.renderer.resize(w, h);
   }
 
+  /** The viewer's greetings: up to eight names for the scroller and the cracktro. */
+  setGreets(names) { this.renderer.setGreets(names); }
+
   /** Live mode: show or hide the title plate and the scroller. */
   setOverlay(on) {
     this.opts.overlay = on;
@@ -120,14 +124,16 @@ export class Demo {
   /**
    * Programmes: THE JOURNEY (every era in turn) or AUTOPLAY (an endless mix
    * by era). While one plays, the demo's own choices are kept aside and
-   * restored afterwards. null switches back to the demo.
+   * restored afterwards. null switches back to the demo. AUTOPLAY may be born
+   * in a year: { bornIn: 1985 } opens it in the era the viewer was twelve in.
    */
-  setProgramme(kind) {
-    if ((this.programme && this.programme.kind) === kind) return;
+  setProgramme(kind, { bornIn = null } = {}) {
+    const born = kind === 'autoplay' && Number.isInteger(bornIn) ? bornIn : null;
+    if ((this.programme && this.programme.kind) === kind && (!kind || this.programme.bornIn === born)) return;
     if (kind) {
       this.programme = kind === 'journey'
         ? composeJourney(this.seed, Math.max(this.duration, 96))
-        : composeAutoplay(this.seed);
+        : composeAutoplay(this.seed, undefined, born);
       this.partIndex = -1;
     } else {
       this.programme = null;
@@ -165,10 +171,12 @@ export class Demo {
       this.renderer.setStyle(scene.style);
       this.renderer.setEra(part.era);
       this.renderer.setSeed(part.seed, part.meta, part.features);
+      this.renderer.sceneStart = part.scoreTimeAt(scene.from);
     } else if (scene.style !== this.sceneStyle) {
       // the music turned: cut to the next scene on the beat
       this.sceneStyle = scene.style;
       this.renderer.setStyle(scene.style);
+      this.renderer.sceneStart = part.scoreTimeAt(scene.from);
     }
     // in from black, out to black: each era its own reel
     const fadeIn = Math.max(0, 1 - local / 0.7);

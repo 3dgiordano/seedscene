@@ -712,7 +712,7 @@ The home computer's screens, and the internet:
 | Scene | Homage to | On the music | Effort |
 |---|---|---|---|
 | **screensavers** | the screensavers of the 90s | pipes growing through 3D space on the beat, bouncing lines with trails, a maze walked on the bar | M |
-| **card cascade** | the card-game win | the cards bouncing off the bottom of the screen in trails, a new card on each beat | S |
+| **card cascade** | the card-game win | the cards bouncing off the bottom of the screen in trails, a new card on each bar (two when the music is busy) | S |
 | **ANSI board** | the bulletin boards | ANSI art drawn line by line at modem speed in text-mode colours, the logo complete on the drop | S |
 | **cracktro** | the crack intros | a chrome logo bouncing, a sine scroller of greetings, a starfield, a little music: the purest demoscene there is | S |
 
@@ -815,7 +815,11 @@ era; the device is from 1980, and it needs its colours);
 the scanner car and the footsteps (round 12's films and TV); the 3D pipes
 (round 12's home computer screens); the unlimited bobs, the dual chessboard,
 the chessboard floor with its cube, the rubber vector, the bump-mapped logo
-and the cracktro (round 12's demo effects).
+and the cracktro (round 12's demo effects); the card cascade (round 12's
+home computer screens, in the Y2K era until the media-player years are built);
+the ANSI board, the bouncing lines and the 3D maze (round 12's home
+computer screens, which completes its screensavers); the moon bike and the time car (round
+12's films and TV); the anime opening.
 
 **When a round is done** — the same gates as before:
 
@@ -891,3 +895,4 @@ The owner's answers of 2026-10-28.
 | Q5 | The city's disasters: one per track, picked by the seed, the monster the rarest? | **Yes** |
 | Q6 | The radio stations only in the racer? | **Yes** |
 | Q7 | Claude's own ideas, proposed after "anything else?"? | **Yes, all of them** — now in sections 3 to 8 |
+| Q8 | The card cascade: a card on each beat, as planned, or on each bar? (2026-10-30: a card a beat buried the arcs at 175 BPM) | **On each bar**, another halfway through when the music is busy |

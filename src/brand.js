@@ -60,6 +60,17 @@ export const ABOUT_STORY = [
   'KEEP THE SCENE ALIVE',
 ].join('   ***   ');
 
+/**
+ * Greetings typed by the viewer: up to eight names, twenty letters each, in
+ * capitals, accents dropped (the demo fonts had none), separated by commas.
+ */
+export function cleanGreets(text) {
+  return String(text || '').split(/[,;\n]/)
+    .map((s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase()
+      .replace(/[^\x20-\x7E]/g, '').replace(/\s+/g, ' ').trim().slice(0, 20))
+    .filter(Boolean).slice(0, 8);
+}
+
 /** The fast little scroller along the top, running the other way. */
 export const ABOUT_GREETS = [
   'GREETINGS TO', 'EVERYONE WHO EVER TYPED LOAD AND WAITED', 'EVERYONE WHO EVER INSERTED DISK 2', 'THE TRACKER MUSICIANS',

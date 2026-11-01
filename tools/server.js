@@ -24,7 +24,8 @@ export function startServer(port = 0) {
     try {
       const url = new URL(req.url, 'http://localhost');
       let rel = decodeURIComponent(url.pathname);
-      if (rel === '/') rel = '/web/index.html';
+      // the front door is the live page: sent there, so its own relative paths resolve
+      if (rel === '/') { res.writeHead(302, { Location: '/web/index.html' + url.search }).end(); return; }
       const file = path.resolve(ROOT, '.' + rel);
       // never serve outside the project
       if (!file.startsWith(ROOT)) { res.writeHead(403).end('forbidden'); return; }

@@ -8,7 +8,7 @@ v0.2 takes the v0.1 tool ([BUILD-REPORT-v0.1.md](BUILD-REPORT-v0.1.md)) and
 turns it into **SEEDSCENE**: a name, a nostalgic front door, a live mode you
 drive from the keyboard, an About part, eight eras of computing from the
 1979 arcade to today with a journey through all of them, an endless AUTOPLAY
-channel, thirty-eight scenes and twenty-four styles of music on the sound chips of their eras.
+channel, forty-four scenes and twenty-seven styles of music on the sound chips of their eras.
 
 ## At a glance
 
@@ -1772,6 +1772,1679 @@ workflow, by hand, built the site and passed the quick tests but stopped at
 owner set the source to GitHub Actions the same run deployed. The demo is at
 https://3dgiordano.github.io/seedscene/ - checked there: it opens in AUTOPLAY
 with the seed `seedscene`, draws on the GPU, no console errors.
+
+### The card cascade
+
+The owner asked to go on with round 12, and the card cascade was the next
+piece (`cascade`, Y2K): the win animation of the desktop card game. The
+references were a still of the original's end screen and two animated
+captures of it, frames taken from them and measured: a card 71 x 96 on a
+table about 640 wide, the four foundations at the top right with the kings on
+them, the spent stock with its green ring at the top left; a card leaves a
+pile left or right, falls, and bounces off the bottom, each bounce reaching
+about two thirds of the last; the game draws it at every step and never
+clears the screen, so fast cards leave fans of white edges with the red and
+black indices down them, and slow ones - a pixel or so a step - pile their
+borders into solid black arches; a card that stops bouncing slides along the
+bottom. The cards are drawn in the game's own pixels (`src/styles/index.js`):
+the indices in a 5x7 font, the pips laid out as on the cards, the court cards
+a picture of our own (a figure in red, yellow and blue, turned round through
+the middle), never the original's art. The throws are planned a phrase at a
+time (`src/core/sims.js`), and the shader works out every copy from a few
+numbers per card: within a bounce the height is a parabola, so the newest
+copy over a point is solved, not searched.
+
+The musical direction: a card leaves the piles on every bar, round the four
+piles from the kings down, and another halfway through the bar when the
+music is busy; each is thrown so that it first lands on the beat, on the
+"and" or on the sixteenth between; the busier the music, the livelier the
+bounce; every phrase (32 beats) deals a new game - the table cleared, the
+piles full - so a cut of AUTOPLAY, which falls where a phrase opens, finds a
+clean table.
+
+Three things changed after the first frames. The plan says a card on each
+beat: at 175 BPM that covered the table in seconds and the arcs, which are
+the effect, were lost - the original throws one card at a time - so it is a
+card a bar, two when the music is busy; the owner chose that over a card
+a beat on 2026-10-30. The cards crossed too fast for the
+black arches: a third of them now crawl a pixel or so a step, as the
+original's slow cards did. And the Y2K era's glow filled in the one-pixel
+edges and fringed them with colour, so the trails read as a white wash: a
+scene can now ask for less of its era's glow and fringes (`STYLE_FX`, read
+in `src/core/visual.js`), and the cascade takes a quarter; every other scene
+is drawn as before - a full gallery run gave byte-identical stills.
+
+The plan puts the cascade in the media-player years, a period not yet built;
+it plays in the Y2K era, the nearest, until then.
+
+| Check | Result |
+|---|---|
+| Frames at the start, mid-phrase and with the table full, against the references | the cards falling off the piles, the fans of edges with their indices, the black arches of the slow cards, the decaying bounces, the green table and the stock's ring |
+| On the real GPU (Intel UHD 630, Direct3D 11), every scene compiled and drawn | all 39 pass |
+| Cost with the table full, software renderer, 854×480, a harness that times the whole frame (post pass included, so not comparable with the figures above) | cascade 246 ms a frame; starfighter 477, rocks 269, morph 154 in the same run |
+| Cost on the real GPU, whole frame, table full | 21.6 ms at 1280×720 and 29.9 at 1920×1080; morph 19.8 and 33.5, starfighter 52.4 and 85.0 |
+| The copy search solved instead of walked, and the visible card's face drawn once instead of once for each pile | frames the same as the stepwise version (PSNR 98 dB); the cost from 664 to 489 ms, then to 246 |
+| `npm test` | 16 checks pass |
+
+**The owner's look.** The table looked static: it needed the punch the other
+scenes have, more movement with the music, and effects that look worked on.
+Now the table floats on the stage as the game scenes do - the camera riding
+the music, a new angle every eight bars, punching in on the kick, leaning on
+the snare - with the zoom blur on each kick. The trails keep the music: the
+sim hands the shader each beat's kick and snare for the phrase, and the
+copies drawn just after a hit are tinted, warm for a kick, cool for a snare,
+fading through the beat, so each hit is a band of colour down the trail
+(the first frames tinted one copy a beat, too thin to see). Older copies sink
+into the table, so the newest arcs stand out; the card in flight casts a
+shadow; its first landing, which falls on the beat, throws up sparks and a
+flash along the floor; the felt is woven cloth with a pool of light,
+breathing with the bass; and in the last bar of each phrase colour runs
+through every trail before the new deal.
+
+| Check | Result |
+|---|---|
+| Frames through two phrases: the first landing, the kick bands, a kick, the last bar | the sparks and floor flash on landing; orange bands down the trails once the kick comes in; the zoom blur on the kick; the colour running through the trails; the stage's angles |
+| On the real GPU (Intel UHD 630, Direct3D 11), every scene compiled and drawn | all 39 pass |
+| Cost with the table full, software renderer, 854×480, whole frame | cascade 329 ms a frame; starfighter 454, rocks 265, morph 151 in the same run |
+| Cost on the real GPU, whole frame, table full | 17.3 ms at 1280×720 and 31.0 at 1920×1080; morph 11.9 and 24.6, starfighter 32.3 and 69.5 |
+| `npm test` | 16 checks pass |
+
+The owner approved the card cascade on 2026-10-30.
+
+### The ANSI board
+
+The owner said go on, and the next piece was the ANSI board (`ansi`, DOS):
+the art the bulletin boards showed their callers. The references were works
+from an ANSI art pack of June 1995 in the 16colo.rs archive, the first
+screen of each: VGA text mode, 80 x 25 cells of 9 x 16 pixels in the sixteen
+colours; pictures and logos built of full and half blocks and the light,
+medium and dark shades; gradients drawn down a ramp of colours - white,
+yellow, brown; white, light cyan, cyan, blue - with the shades between the
+stops; grey outlines round the letters; sparkles in the sky; small text with
+its letters spaced out; long files that scroll up the screen as they arrive.
+None of their art is copied: the scene draws its own from the seed
+(`src/styles/index.js`), and its words - in the 5x7 font the cracktro uses -
+are about the project only (`src/core/sims.js`).
+
+The musical direction: a line of the file arrives each beat, the cursor
+sweeping it - at 130 to 180 BPM, about the 2400 baud of the modems of the
+time - and the screen scrolls up as it fills. Each phrase brings a part of
+the file: a spaced-out header (SEEDSCENE PRESENTS, CONNECT 2400, NOW
+PLAYING), a rule, a picture - a sunset over a black land, or a night sky with
+its moon over a land shaded in the part's colours - a line about the music,
+and a block-letter logo of thirteen lines (SEEDSCENE, the seed, the music's
+name) whose last line lands as the next phrase opens: the logo complete on
+the drop, as the plan asks. The camera rides in close on the cursor, swinging
+back with each line like a carriage return, and pulls out over the logo so
+the drop shows the whole screen, coming back in a bar later; the kick lights
+the letters as they arrive and punches the screen (the zoom blur of the game
+scenes); the snare sets the stars twinkling; on the drop the finished logo
+cycles its colours for a bar.
+
+The first frames were mostly grey (the ramp was chosen at random and the grey
+one came up twice), with a flat white sky and a notched rule: the parts now
+take the coloured ramps only, the bright sky became a sunset, and the rule a
+bar of half blocks. A night sky seen close up was nearly black: it has a moon
+now, shaded down the ramp, and more stars.
+
+| Check | Result |
+|---|---|
+| Frames through two phrases: a part arriving, the logo arriving, the drop, the next part, a night sky close up | the header, the rule, the pictures, the info line, the logo with its ramp, outline and shadow; the camera close on the cursor and out for the drop; the logo cycling its colours under the punch; the moon and the stars |
+| On the real GPU (Intel UHD 630, Direct3D 11), every scene compiled and drawn | all 40 pass |
+| Cost, software renderer, 854×480, whole frame | ansi 134 ms a frame; fire 90, bumplogo 115, fireworks 117, pipes 217 in the same run |
+| Cost on the real GPU, whole frame, 1920×1080 | ansi 20.4 ms; fire 21.6, bumplogo 79.7 |
+| `npm test` | 16 checks pass |
+
+**The owner's look.** The writing seen in close-up was odd: everything shook
+and was so near that what was being drawn could not be seen until it was
+finished; the zoom should come in and go out instead. Three things shook it:
+the camera swinging with each line, the full punch on every kick (at 173 BPM,
+every beat), and the whole screen jumping a line each beat once it was full.
+Now the camera shows the whole screen on the drop, draws slowly nearer as
+the picture arrives - to a fifth closer at most, centred, drifting gently
+over the phrase, the lines already drawn kept in view above the cursor - and
+eases back out over the logo; the screen scrolls smoothly, the line being
+written rising as it fills; and the scene takes half the punch, so the text
+can be read as it arrives. The gallery's seed moved to one whose still falls
+just after a drop, the logo whole.
+
+The owner then missed the punch with the rhythm, and saw the seed's last
+letter missing from the logo (`3dgiordano` came out as 3DGIORDAN): the seed
+word was cut at nine letters, and the logo has room for twelve, so it now
+takes twelve, in the logo and the info line. The full punch is back, and the
+camera pushes in on each kick as the stage does for the game scenes - a
+punch, not a swing.
+
+| Check | Result |
+|---|---|
+| Frames with the seed `3dgiordano`: after the drop, on a kick and off it | the logo and the info line with all ten letters; the push-in and the zoom blur on the kick (on the off-beat, where this jungle puts it) |
+| On the real GPU, every scene compiled and drawn | all 40 pass |
+| `npm test` | 16 checks pass |
+
+The owner approved the ANSI board on 2026-10-30.
+
+### The bouncing lines
+
+The owner said go on; the next piece was the second of the plan's
+screensavers, the bouncing lines (`echolines`, DOS). The references were
+captures of the screensaver as Windows 3.1 and 95 showed it, still and
+animated: a black screen; two closed figures of four corners, each in one
+solid colour that changes over time; each drawn again at moments just
+behind, a fan of thin parallel lines evenly apart; the corners flying in
+straight lines and bouncing off the edges. A corner bouncing in a straight
+line is a triangle wave along each axis, so the shader works out every echo
+from how far along its path the figure is (`src/styles/index.js`); the music
+sets that distance (`src/core/sims.js`).
+
+The musical direction: the figures fly faster as the music builds, with a
+shove on each kick and a burst as each phrase opens; the kick stretches the
+echoes apart like a spring and punches the screen (the zoom blur of the game
+scenes); each snare hit moves both figures' colours on; the busier the music,
+the more echoes, from six when it is quiet to fourteen. In the first frames
+the quiet intro drew the echoes on top of one another, a thick band: the
+screensaver always drew them apart, so the echoes now keep a least distance
+along the path, about the gap the captures show.
+
+| Check | Result |
+|---|---|
+| Frames through the intro and a busy part, against the captures | two figures in fans of thin lines, one colour each, bouncing off the edges; the fan open in the intro too; the echoes stretched and the punch on a kick |
+| On the real GPU (Intel UHD 630, Direct3D 11), every scene compiled and drawn | all 41 pass |
+| Cost, software renderer, 854×480, whole frame | echolines 88 ms a frame; fire 59, ansi 89, pipes 214 in the same run |
+| Cost on the real GPU, whole frame, 1920×1080 | echolines 17.6 ms; fire 13.8 |
+| `npm test` | 16 checks pass |
+
+The owner approved the bouncing lines on 2026-10-30.
+
+### The 3D maze
+
+The owner said go on; the next piece was the last of the plan's
+screensavers, the maze walked on the bar (`maze3d`, DOS - `maze` was taken
+by the chomper). The references were captures of the maze screensaver of
+Windows 95, still and animated: corridors seen in first person, the eye
+halfway up walls as tall as the corridor is wide; dark red bricks, mottled,
+with pale grey mortar, a third of a block long and six courses high; a tan
+floor; a ceiling of white speckled tiles in a grid; corners taken while
+walking; grey stones spinning in the corridors that turn the world upside
+down when they are passed. Its sign with the system's logo, and its other
+characters, are left out. The seed cuts a maze of 11 x 11 cells and the walk
+keeps a hand on the wall (`src/core/sims.js`); the shader steps through the
+grid a block at a time to find the wall each ray meets, and draws the bricks,
+the floor, the tiles and the stone (`src/styles/index.js`).
+
+The musical direction: a move every two beats - a step down the corridor, or
+a corner taken walking - so the steps land on the first and third beats of
+the bar; each kick is a footfall that dips the view, with the punch of the
+game scenes; the snare brightens the ceiling; as each phrase ends a stone
+spins on the path four bars ahead, the walk reaches it on the drop and the
+world turns over in a beat, staying upside down until the next drop turns it
+back. The first frames had bricks too bright and tiles too large against the
+captures; the bricks are darker and blotched now, the tiles smaller. And the
+walk at first turned standing still in the middle of a cell, half a block
+from a wall, so for a whole move the screen was bricks: corners are now taken
+walking, as the screensaver did, and only a dead end is turned in place.
+
+| Check | Result |
+|---|---|
+| Frames of a walk, the stone before the drop, the drop, against the captures | brick corridors, the floor and the tiled ceiling; corners taken walking; the stone growing ahead; the world turning over on the drop |
+| On the real GPU (Intel UHD 630, Direct3D 11), every scene compiled and drawn | all 42 pass |
+| Cost, software renderer, 854×480, whole frame | maze3d 78 ms a frame; fire 67, echolines 93, pipes 186 in the same run |
+| Cost on the real GPU, whole frame, 1920×1080 | maze3d 19.6 ms; fire 15.6 |
+| `npm test` | 16 checks pass |
+
+The owner approved the 3D maze on 2026-10-30.
+
+### The moon bike
+
+The owner said go on; the next piece was the moon bike (`moonbike`,
+modern), the boy and his friend from the stars. The references were stills
+of the film's moon shot: a deep blue sky going violet at the edges; a moon so
+large it fills most of the height, pale blue with darker seas and wisps of
+cloud, a halo round it; pines black in the lower corners; and the bicycle in
+silhouette against the moon - a BMX with spoked wheels, the rider hunched
+over the bars with his hood up and a cape streaming behind, a bundle in a
+blanket sitting up in the basket on the bars. The friend's face is left out:
+the bundle stays a blanket. All of it is drawn in the shader
+(`src/styles/index.js`), the bicycle and its riders as shapes.
+
+The musical direction: the bicycle comes in low from the left over the last
+two bars of each phrase, rising, and is right in front of the moon on the
+drop, slowing to all but still as the halo opens, then away over the next
+bar; the wheels turn a turn a beat and the pedals with them, the cape flaps
+on the eighths; the kick lights the moon and punches the screen; the hats
+set the stars twinkling; the snare sends a shooting star every other bar.
+The first frames had the moon nearly white - the era's glow washing out its
+seas - and the bicycle crossing low; the moon is darker now, so the glow
+brightens it without hiding its face, and the bicycle crosses its upper
+half, as in the shot. The moon, the pines and the bicycle are worked out only
+where they can be seen, which brought the cost down by a quarter with the
+frames unchanged. And since the gallery takes every still at the same second,
+when the bicycle is not crossing, a gallery entry can now name its own moment
+(`tools/gallery.js`); this one is taken on a drop.
+
+| Check | Result |
+|---|---|
+| Frames through a crossing, against the stills | the moon with its seas and clouds, the pines, the bicycle in silhouette with its spokes, the cape and the bundle, crossing the moon's upper half; the halo opening on the drop |
+| On the real GPU (Intel UHD 630, Direct3D 11), every scene compiled and drawn | all 43 pass |
+| Cost, software renderer, 854×480, whole frame | moonbike 141 ms a frame; outrun 99, starfighter 578, boxer 601 in the same run |
+| Cost on the real GPU, whole frame, 1920×1080 | moonbike 24.3 ms; outrun 16.1, starfighter 68.8 |
+| Bounded to where they can be seen | the gallery still the same, byte for byte; 31.6 ms down to 24.3 |
+| `npm test` | 16 checks pass |
+
+**The owner's look.** Three things. The cape did not look right: close up it
+was two stiff triangles standing off the back; it is cloth now, streaming
+back from the shoulders and widening, a wave running down it on the eighths
+and its hem rippling. The scene felt static even with the punch: it wanted
+zooming in and out, a moving camera, parallax. Now the camera pans after the
+bicycle and draws in as it crosses the moon, back out as it leaves, and the
+picture is in layers that move less the farther they are - the stars, the
+moon, a forest far off along the foot of the frame (a treeline of tips of
+their own heights; the first was a regular saw), and clumps of pines in the
+corners. And the scene should always open with the boy riding in, not in the
+middle of the screen: AUTOPLAY cuts to a scene on any bar where a drop or a
+crash falls, so the scene now knows when it came on - the renderer hands the
+scene's start, on the score's clock, to its simulation: the cut's time in a
+programme, the moment of the switch in the live page, the top otherwise
+(`src/core/visual.js`, `src/app.js`, `web/live.js`); every other scene ignores
+it. From there a crossing comes every four bars: near, left to right through
+the moon, then far and high on the way back, behind the pines. The gallery
+still moved to the first crossing's moment.
+
+| Check | Result |
+|---|---|
+| Frames from the scene's start through two crossings | the bicycle riding in from the left; the camera following, drawing in over the moon; the far crossing small and high; the cape as cloth; the pines and the far forest shifting against the moon |
+| A cut of AUTOPLAY to the moon bike | 0.4 s after the cut the scene counts 0.6 beats since it came on: it opens with the entrance |
+| On the real GPU, every scene compiled and drawn | all 43 pass |
+| Cost on the real GPU, whole frame, 1920×1080 | moonbike 27.5 ms; outrun 14.8 |
+| `npm test` | 16 checks pass |
+
+The owner liked it, and asked for time out of the frame: the bicycle left and
+came straight back, so the boy was always going out or coming in. Now a
+crossing takes four bars and is followed by two with the bicycle gone -
+turning round somewhere past the edge of the frame - while the camera
+settles toward the middle; it comes back from the side it left by, as if it
+had turned. The scene still opens with it riding in.
+
+| Check | Result |
+|---|---|
+| Frames through the exit, the two bars out and the return | the bicycle out on the right; the moon, the pines and the stars alone as the camera settles; the bicycle back from the right, far and high |
+| On the real GPU, every scene compiled and drawn | all 43 pass |
+| `npm test` | 16 checks pass |
+
+The owner approved the moon bike on 2026-10-30.
+
+### The time car
+
+The owner said go on; the next piece was the time car (`timecar`, arcade).
+The plan has it as a car down a night road, a speedometer climbing through
+the build, a burst of light and two trails of fire on the drop. The first
+version was that, seen from behind on a road, from stills of the film's
+posters; the owner asked, before seeing it finished, for another
+perspective for the car and for references to recreate the best-known
+scene. So the references became stills of the first run in the film: a
+parking lot at night, wet and lit orange by its lamps, a long low building
+with lit windows beyond; the two onlookers standing in the lot; two
+straight trails of fire running on the asphalt and between their legs as
+the car vanishes; the car itself a long low wedge of brushed steel with a
+black band across its nose and its lamps set in it. The onlookers stay
+silhouettes, with no faces; the car is a shape of our own, a wedge with a
+raked windscreen and a fastback, with no maker's marks or plate text.
+
+The car is now in 3D (`src/styles/index.js`): a wedge raymarched in the
+scene, lit by the lot's lamps, the night mirrored in its steel, on a ground
+that mirrors the lamps and the fire. Two shots, cut on the music: over the
+onlookers' shoulders as it comes at them three-quarters on; and on the jump
+the reverse, low between the trails, the onlookers standing over them. The
+simulation (`src/core/sims.js`) takes the music's big moments from the score
+- the bars where a crash or the drop falls, where AUTOPLAY cuts too - and
+sets the readout and the car's place on its run by them.
+
+The musical direction: the readout climbs from 30 toward 88 as the next big
+moment nears, faster at the end; past 70 the light gathers blue at the
+car's nose and lightning crawls round it, jumping on every sixteenth; on the
+moment it reads 88, the light bursts and the car is gone, the cut to the
+reverse with it; the trails burn down over the next bars, tongues leaping;
+six beats on the car comes back out of a flash; the kick shakes the camera
+and punches the screen.
+
+The first frames of the 3D version had the onlookers so near that they
+filled the frame, the car lit flat and pale, lamp poles crossing the frame
+as dark bars, and the light at its nose a glare over the whole car; the
+camera was moved back and onto the car's line so it comes between them, the
+steel darkened and lit from above, the poles taken out and the glow
+tightened.
+
+| Check | Result |
+|---|---|
+| Frames through a run and a jump, against the stills | the lot, the building and the lamps; the onlookers from behind with the car coming between them; the lightning; the burst; the reverse with the trails between their legs; the trails burning out |
+| On the real GPU (Intel UHD 630, Direct3D 11), every scene compiled and drawn | all 44 pass |
+| Cost, software renderer, 854×480, whole frame | timecar 147 ms a frame; scanner 81, pyramid 175, boxer 267 in the same run |
+| Cost on the real GPU, whole frame, 1920×1080 | timecar 21.4 ms; scanner 15.6 |
+| `npm test` | 16 checks pass |
+
+**The owner's look.** It was not right. The scene opened with fire on the
+ground and the plate already spinning, when both belong after the jump: the
+simulation treated the time before the first big moment as if the car had
+just jumped; now nothing burns and no plate falls unless a jump has happened
+since the scene came on. The plate did not look like a plate, and the change
+of shot was odd - the "reverse" looked the same way as the first shot. The
+car crept toward the camera and one of the onlookers hid most of it; the
+scene took too long; the onlookers stood like statues; and the plate only
+turned on the ground instead of spinning like a coin.
+
+Now: between moments the car laps the lot - in from the far right, across in
+front of the onlookers, round the far left - and charges in six beats from
+the far end, the readout from 30 to 88, the camera centred behind the two of
+them so it comes between them. On the jump the cut goes to a true reverse -
+low on the car's side, looking back at them over the fire - and then to an
+insert of the plate on the ground. The plate is a plate - cream, a coloured
+band, a row of characters of no real text, a dark rim - and it tumbles down,
+lands on its edge, and spins like a coin, tilting further and wobbling faster
+as it slows, until it falls flat with a rattle. The onlookers move: one holds
+the remote with its aerial up, the other films with the camera at the eye;
+they sway on the beat, lean back and brace as the car charges, shield their
+faces from the burst, and hop from foot to foot on the beat over the fire.
+
+| Check | Result |
+|---|---|
+| Frames from the start through a lap, a charge, the jump, the reverse and the insert | no fire or plate before the jump; the car passing in front of them and charging between them; the burst with the two shielding; the reverse with them hopping over the trails; the plate on its edge, wobbling, falling flat face up |
+| On the real GPU, every scene compiled and drawn | all 44 pass |
+| Cost on the real GPU, whole frame, 1920×1080 | timecar 22.0 ms; scanner 19.6 |
+| `npm test` | 16 checks pass |
+
+Then, at the owner's word: the plate reads SEEDSCENE, in a 5x7 font of the
+shader's own, the right way up on its face. The car looked like a limousine -
+a long box with another on top: it is now drawn from its side profile, the
+wedge of the stainless coupe of the early 80s - a low sharp nose, a long flat
+bonnet, a steep windscreen, a short roof, a long louvred fastback, a cut-off
+tail - with the glasshouse narrower than the flanks, the black band round its
+foot, four lamps in the black nose panel, red bands at the tail and two vent
+boxes on the deck; checked from six angles in a view made for the purpose.
+It goes faster: nine metres a beat round a longer lap, with a second
+crossing, and a five-beat charge from 44 to 88. The fire is a volume over
+each track now, marched front to back - turbulence rising, coloured by its
+heat from deep red to a white core - with a glow round it and its light on
+the wet ground; in the arcade era its four levels a channel still draw it in
+flat bands, as they draw everything there.
+
+**Why the scene is slow to load.** Measured on the real GPU: the time car's
+shader takes 4.6 to 5.6 s to compile and draw its first frame the first time
+(the browser keeps it, so the next time is 0.4 s); the other scenes take
+under 0.8 s, most a few tenths. The renderer compiles a scene when it is
+first shown, on the page's own thread, so the picture stops until it is
+done. Taking the shader apart showed no single culprit: without the car it
+takes 2.1 s, without the onlookers 2.9, the fire 3.2, the ground 3.6, the
+plate 3.8 - the Direct3D compiler's time is spread across the whole of it;
+keeping its loops rolled and the car's normal to one copy changed nothing.
+The browser here can compile in the background (`KHR_parallel_shader_compile`
+is available), which would take the wait off the picture; that is a change to
+how every scene loads, and the owner's to decide.
+
+**Compiled in the background.** The owner chose it. A program is now handed
+to the driver to compile and link without asking how it went - asking is what
+makes the page wait - and finished only when it is done or needed
+(`src/core/gl.js`). The live page queues every scene while its boot screen
+plays, this era's first, two at a time, collecting each as the driver reports
+it done (`src/core/visual.js`, `web/live.js`); the first scene is started the
+same way and finished on its first frame. A scene asked for before it is ready
+waits only for the rest of its compile. Where the driver cannot say when a
+compile is done, scenes compile when first shown, as before. The offline
+render and the tests are unchanged: the same render hash, the gallery still
+the same byte for byte.
+
+| Check | Result |
+|---|---|
+| The time car compiled from scratch, waiting as before | the page stopped for 4.76 s |
+| The same, in the background | the page never busy more than 0.13 s at a time; finishing it took 0 ms |
+| The twelve heaviest scenes from scratch, two at a time | the page busy at most 14 ms at a time, 55 ms in all, over 26 s of compiling |
+| Every scene warmed in the live renderer | 44 of 44 ready, no errors; switching to the time car then took 3 ms |
+| The live page, opened at the time car | loads clean, the boot screen plays to READY |
+| `npm test` | 16 checks pass, the render hash unchanged |
+
+**Still about 14 seconds.** The owner still waited about 14 s for the scene.
+Measured as a first visit - a browser on the real GPU with an empty profile,
+so nothing cached - a click on the boot screen took 10 s to show the time car,
+and a CPU profile put 5.35 s of it in waiting for the driver to finish the
+scene's program on the first frame; the warm-up's own compiles, started at
+the same time, slowed it further. Three changes to how the first scene loads:
+without the intro, the loading starts as soon as the boot screen says READY,
+not at the click (`web/boot.js`); nothing else is compiled while the scene on
+screen still is (`src/core/visual.js`); and the boot screen's tape stripes
+run on until the scene is ready, with the music starting together with the
+picture (`web/boot.js`, `web/live.js`). The page no longer freezes, but the
+compile still had to finish: so the time car's shader was made lighter to
+compile with the same picture - the car's side drawn from the lines of two
+convex pieces instead of a loop over its corners, one copy of the car in the
+march (its normal sampled in the same loop instead of six more copies), and
+one march of fire folded across the car's line for both trails. Its first
+compile on an empty profile went from 4.9 s to 2.6 s.
+
+| Check | Result |
+|---|---|
+| First visit, click to scene, before | 10 s, the page frozen for 4.4 and 8.5 s |
+| After the loading changes alone | 6.4 to 6.6 s, no freeze |
+| After the lighter shader too, with the intro, three runs | 3.4 to 4.6 s, no freeze; with the browser's cache, a later visit is near instant |
+| The frames before and after the lighter shader | the same picture; the fire's turbulence drawn a little differently |
+| On the real GPU, every scene compiled and drawn | all 44 pass |
+| `npm test` | 16 checks pass, the render hash unchanged |
+
+Measured the same way, two other scenes take as long to compile on a first
+visit: the card cascade 4.4 s and the starfighter 4.2 s; the warm-up covers
+them once the page has been open a while.
+
+**Lighter to compile.** The owner asked for the card cascade and the
+starfighter too, then said the time car still took a while and the boxing
+match was slow to load. Measured in a fresh browser each time (the machine
+was busy with another program's build for part of the session, and those
+runs were thrown away): the boxer took 12.8 to 18.4 s to compile, its robot's
+shape twelve copies in the shader - his march, his normal's four samples, his
+shade, yours, its four, its part; it is now one loop that takes them all in
+turn, one copy, and compiles in 3.8 to 4.1 s. The card cascade drew a suit's
+shape for every pip a card could have: it now finds the nearest pip from the
+layout and draws one shape a card face (3.9 s to about 1.5). The time car
+looks up the lot's lamps once a pixel instead of three times and draws only
+the onlooker nearer the pixel (1.6 to 1.7 s, from 4.9 at first). The
+starfighter's ship and drones were put in tables of corners and faces; its
+picture is unchanged but its compile did not move (about 5 s), its weight
+being elsewhere. And the live page now starts loading the first scene as soon
+as the boot screen is up, so the intro's typing covers the compile.
+
+| Check | Result |
+|---|---|
+| The frames of each changed scene, before and after | the same, byte for byte (time car, card cascade, boxer, starfighter) |
+| First visit, empty cache, click to scene, with the intro | time car 1.1 s, boxer 1.1 s - the boot screen's own RUN stripes and switch-off; the compile is done while the intro types |
+| The same without the intro | time car 2.1 s |
+| On the real GPU, every scene compiled and drawn | all 44 pass |
+| `npm test` | 16 checks pass, the render hash unchanged |
+
+The owner approved the time car on 2026-10-31, every scene loading well.
+
+### The anime opening
+
+The owner approved the time car and said go on; the next piece was the anime
+opening (`animeop`, 32-bit console). The references were frames of two
+openings of the late 80s that Latin American television played through the
+90s: a title card of thick letters with a black outline and a yellow-to-orange
+or blue fill, over horizontal streaks rushing past; the team lined up against
+a flat red; the hero in armour against ruins and the cosmos; figures flying
+across a sky of clouds; close-ups; flat colours, black outlines. No character,
+name or logo is copied: the figures are silhouettes of our own (three kinds -
+spiky hair, long hair and a cape, short hair and broad - and four poses), and
+the title is the seed in the project's 5x7 font, SEEDSCENE above it
+(`src/core/sims.js` hands the letters over).
+
+The musical direction: a cut on every bar, as those openings cut on the music
+- the title for the drop's two bars, then the lineup against a red sunburst,
+the hero in a flame aura against the cosmos, a flight in formation through
+rushing clouds, three of them closer against a sunset, a charge out of black
+speed lines growing through the bar; a new pose on every beat; the kick
+punches the picture and bursts the lines; the last bar of each phrase cuts on
+every beat and ends in a white flash; on the drop the title slams in with a
+bounce, a star glinting at its corner. The first frames had the fliers
+tumbling (the pointing arm hung down once they were laid flat) and the second
+lineup a copy of the first: they fly fist first now, and the second lineup is
+three of them, closer, against a sunset. Made with the loading lesson in mind:
+each pixel draws only the figure nearest it, and the title's outline reads its
+neighbours in one loop.
+
+| Check | Result |
+|---|---|
+| Frames through a phrase, against the reference frames | the title card, the sunburst lineup, the aura, the flight, the sunset lineup, the speed lines, the white flash into the title |
+| First compile on an empty profile, fresh browser | 1.2 s |
+| First visit, click to scene, with the intro | 1.1 s |
+| On the real GPU (Intel UHD 630, Direct3D 11), every scene compiled and drawn | all 45 pass |
+| Cost on the real GPU, whole frame, 1920×1080 | animeop 18.7 ms; footsteps 19.6 |
+| `npm test` | 16 checks pass |
+
+On the way, the local server's root address turned out not to work: it
+served the live page there, where the page's relative path to its own script
+pointed at a file that does not exist, so the page never started (the `live`
+command opens `/web/index.html` and was never affected). At the owner's word
+the root now redirects to `/web/index.html`, keeping the address's settings
+(`tools/server.js`): opened at the root with a seed and a scene, the page
+lands on the live page with them, loads its script and boots to READY; the
+16 checks pass.
+
+The owner's look found two things. The clouds of the flight ran the wrong way
+- the figures fly to the right, so the sky has to rush past right to left;
+the clouds and the streaks run that way now. And the power-up began well but
+fell short where it matters: the moment they explode with all their energy
+and stay energized. New references - animated frames of the transformations
+in those series - showed it in three beats: the charge (crouched, arms
+crossed before the face, the ground cracking, pebbles rising, a small aura
+flickering close); the burst (a white flash, the arms thrown down and out, a
+column of fire shooting up out of the body and the ground, a ring of dust
+racing out across the plain); and the state that stays (a tall pale-yellow
+aura, its tongues rising and serrated, sharper at the tips above the head,
+drawn a frame at a time as cel animation is, the hair standing up spiked and
+gold with a dark outline, lightning crackling round the body). The power-up
+is a shot of two bars now: the charge through the first, the burst on the
+next bar's downbeat, the energized aura for the rest; the kick swells the
+aura, the snare throws the lightning; a moment of it comes back in the last
+bar's cuts.
+
+| Check | Result |
+|---|---|
+| Frames through the power-up, against the reference frames | the charge with the cracks and pebbles, the white flash, the column of fire and the ring of dust, the serrated aura and the gold spiked hair after |
+| Frames of the flight | the clouds and the streaks rushing right to left, the figures flying right |
+| First compile on an empty profile, fresh browser | 1.7 s |
+| On the real GPU (Intel UHD 630, Direct3D 11), every scene compiled and drawn | all 45 pass |
+| Cost on the real GPU, whole frame, 1920×1080, through the energized aura | 17.5 ms |
+| `npm test` | 16 checks pass |
+
+The owner's second look: the transformation lacked lightning, and the figure
+was tubes and spheres - it should gain muscle as it transforms. New
+references: stills of the transformed state with its lightning (long jagged
+arcs, white at the core and blue at the rim, crawling up beside the body and
+round the aura's edge, always some of them), and full-body drawings of
+muscular fighters, measured for the figure's proportions (shoulders about
+3.5 heads wide with the deltoids, the waist half that, the lats flaring under
+the arms, thighs and calves swelling and tapering). The figure is drawn the
+way those are now: a torso whose width follows the body from the narrow
+waist up through the lats and the chest to the traps sloping into a thick
+neck, deltoids capping the shoulders, every limb tapering with its muscle
+swelling along it - the quads, the calves, the biceps, the forearms - all
+joined smoothly. Every shot uses it. In the power-up the muscles swell a
+little through the charge and burst out on the downbeat, pumping on the
+kick, and the chest's edge, the line down the middle and the stomach's rows
+are drawn in light on him once he is lit. The lightning: eight arcs, each
+living two frames - a few through the charge, more on the snare; always some
+once he is lit; and on the charge's last beat and the burst, bolts down out
+of the sky onto him, the sky flickering with them. They cross in front of
+him as they do in the references.
+
+The new figure, drawn in each of the four shots, took the first compile from
+1.7 s to 3.7 s: the compiler copies a function at every place it is called.
+Each shot now only says where the figure stands, its pose, its kind and its
+size, and it is drawn once - 1.9 s, the same pictures.
+
+| Check | Result |
+|---|---|
+| Frames through the phrase, against the references | the lineup, the flight and the speed lines with the new figure; the charge with bolts from the sky; the energized aura with arcs round it and the muscles drawn in light |
+| First compile on an empty profile, fresh browser | 1.9 s |
+| On the real GPU (Intel UHD 630, Direct3D 11), every scene compiled and drawn | all 45 pass |
+| Cost on the real GPU, whole frame, 1920×1080 | charge 18.3 ms, energized 16.8, lineup 13.0 |
+| `npm test` | 16 checks pass |
+
+The owner approved the anime opening on 2026-10-31.
+
+| Check | Result |
+|---|---|
+| Frames of a lap, the charge, the burst, the reverse, the plate | the car passing close in front of them, charging between them; the fire at their feet; the plate spinning, reading SEEDSCENE |
+| On the real GPU, every scene compiled and drawn | all 44 pass |
+| Cost on the real GPU, whole frame, 1920×1080 | timecar 17.2 to 19.9 ms through a run and the fire; scanner 14.5 to 15.0 |
+| `npm test` | 16 checks pass |
+
+| Check | Result |
+|---|---|
+| Frames through a phrase, every four beats | the whole screen at the drop, the slow approach with the earlier lines in view, the pull-out over the logo, the text readable under the punch |
+| On the real GPU, every scene compiled and drawn | all 40 pass |
+| `npm test` | 16 checks pass |
+
+### Keygen
+
+The owner approved the anime opening and chose the next piece: `keygen`, the
+first of round 12's two music styles - the chiptunes of the crack intros:
+tracker music with fast arpeggios, a squelchy lead and a bouncing bass (the
+plan's words), for the media-player years (the Y2K PC stands in for them)
+and the DOS party.
+
+**The references.** Not descriptions: the music itself. An online library
+of keygen music plays the modules in the browser, so their files could be
+read there, in memory, without playing a note: forty FastTracker 2 modules
+spread across its archive, their headers and every pattern parsed. What they
+share:
+
+| Measured in 40 keygen modules | Result |
+|---|---|
+| Tempo | 125 bpm (the tracker's default) in 16; 128 in 4; 140 in 3; almost all 118 to 143 |
+| Rows | speed 6 (four rows a beat) in 16, speed 3 in 10 |
+| Channels | 4 in 13, 8 to 14 in most of the rest |
+| The arpeggio effect | in 22: most often 47 (a major chord), 37 (minor), 49, 38, 7c (the fifth and the octave), 0c |
+| Vibrato, slides to the note | in 25 and 22 |
+| An echo channel - a second channel playing another's notes a few rows later | in 19: 4 rows behind most often, then 1, 2, 3, 6; quieter in most |
+
+From the format's description: the arpeggio effect plays the note, then +x,
+then +y, a tick each, and the tick is the tempo times two-fifths a second -
+50 at 125 bpm.
+
+**What was built** (`src/core/music.js`). The tempo is picked from the ones
+the modules used, 125 most often. The chord is one channel stepping through
+it on the tick - the triad's numbers, or the fifth and the octave - held for
+half a bar, struck on the eighths or on the off-beats. The lead is a saw and
+a pulse through a resonant filter that snaps open and closes on every note
+(the squelch), sliding into a note close after the last (the 3xx slide), its
+vibrato waiting a moment (4xy); it plays the style's call and answer. In
+about half the seeds an echo channel plays it again 1 to 6 rows later - 4
+most often - quieter and duller, on the other side. The bass bounces a row
+on, a row off, up to the octave and back; the drums are samples of a kick and
+a snare, the hat on the eighths. Its instruments are its own, so on DOS it
+plays from samples, as a module player mixed them, whatever card the seed
+chose; the crash and the riser still sound on the card. Its material comes
+from a stream of its own, so the other styles keep every note.
+
+**What went wrong.** The first renders were almost all invalid samples: the
+hat's filter, set at 8.5 kHz, ran away and filled the echo and the reverb
+with infinities. It sits at 7 kHz now, where the engine's own hat sits.
+
+**One consequence.** A seed left to choose its music picks from its era's
+list, and the DOS and Y2K lists are longer by one: some seeds of those eras
+now land on another style, as happened when the earlier styles were added.
+Two gallery stills changed this way (`julia` now plays eurodance, `emboss`
+MIDI quest), and THE JOURNEY's animation.
+
+| Check | Result |
+|---|---|
+| The arpeggio alone, at 50 ticks a second | three notes in turn, a tick each |
+| Six seeds | 120 to 140 bpm; the echo 3 or 4 rows behind in five, none in one; 14 to 32 slides in 40 s |
+| Every earlier style on every chip of its eras, three seeds, before and after | 138 takes, all byte-identical |
+| Keygen on the synthesizer's own voices, OPL3 and AWE32, three seeds | peaks -2.0 to -2.5 dBFS, no invalid samples, 7 to 17 times real time |
+| Live, DOS, seed `razor` (muted) | Keygen, 140 bpm, C dorian; no console errors |
+| `npm test` | 16 checks pass, 25 styles compose; the render hash unchanged |
+| A taste to listen to | `out/keygen-taste.mp3`: three seeds, 24 s each |
+
+The owner listened and approved keygen on 2026-10-31.
+
+### Trip-hop
+
+The owner chose the next piece: `triphop`, round 12's last music style -
+the 90s Bristol sound: a slow, heavy break, a deep bass, a dark string,
+scratches (the plan's words), for DOS 1994 and the media-player years.
+
+**The references.** The modules of the genre could not be read this time
+(the archive that holds them does not let a page read its files), so the
+style is built from two written sources: a trip-hop drum cheat sheet from a
+music-software maker (the tempo, 60 to 90 bpm; the kick on one and three
+with sixteenths leading into two, three and four; a big snare on two and a
+crisp side-stick on four; the ride on the upbeats, a shaker; a heavy MPC
+shuffle, about 65%, "what actually makes the beat sound like trip-hop"; the
+drums pitched down into a big room, thinned like a vinyl sample, with
+crackle) and the genre's encyclopedia entry (a bass-heavy beat of slowed
+breaks, film-score samples, Rhodes, theremin, turntable scratching, minor
+keys).
+
+**What was built** (`src/core/music.js`). 68 to 90 bpm, minor modes, a
+progression of its own that hardly moves (the i held, the VI, the iv, the
+half-step of the spy films). The break, as the cheat sheet programs it, on
+drums of its own pitched down - a dull deep kick, the big snare with most of
+the room on it, a side-stick, a ride ringing on three metal partials, a
+shaker - every off-sixteenth late by the MPC's 65%; the record's hiss and
+pops under every bar; no snare rolls. The bass: a long deep note on the root
+and a pickup sliding into the next. The strings held low through each bar,
+a Rhodes on top with the seventh, a theremin singing the style's hook,
+sparse, gliding between its notes. At the end of a phrase - every second or
+fourth bar - a record scratched: a voice's "ah" on the chord's root, pushed
+forward and pulled back once an eighth, the hand's speed as its pitch; a
+chirp cuts the fader on the way back, a tear stutters the push. The strings
+and the Rhodes sound on the card on DOS (the AWE32's section, or the OPL3's
+FM); the drums, the scratch and the theremin are its own.
+
+As with keygen, some DOS and Y2K seeds left to choose now land on another
+style: two more gallery stills changed (`inferno` now plays FM metal,
+`insertdisk2` keygen), and THE JOURNEY's animation.
+
+| Check | Result |
+|---|---|
+| The shuffle, measured on the shaker | the off-sixteenths at 65.0% of the eighth |
+| Three seeds | 76 to 82 bpm, D phrygian, D# dorian, F# harmonic minor; every part present |
+| Every earlier style on every chip of its eras, three seeds, before and after | 147 takes (keygen among them), all byte-identical |
+| Trip-hop on the synthesizer's own voices, OPL3 and AWE32, three seeds | peaks -2.2 to -2.9 dBFS, no invalid samples, 8.6 to 13 times real time |
+| Live, Y2K, seed `bristol` (muted) | Trip-Hop, 76 bpm, D# dorian; the cards falling on the beat; no console errors |
+| `npm test` | 16 checks pass, 26 styles compose; the render hash unchanged |
+| A taste to listen to | `out/triphop-taste.mp3`: three seeds, 24 s each |
+
+The owner listened and approved trip-hop on 2026-10-31. With it, round 12's two music styles are done.
+
+### Born in
+
+The owner chose the next piece: the first of round 12's three ways to watch.
+The plan: "type the year you were born: AUTOPLAY starts in the era when you
+were twelve, and stays near it".
+
+**What was built.** The era is the one whose year is nearest the year the
+viewer turned twelve (the earlier on a tie; before 1979 that is the arcade,
+after 2002 the modern era). AUTOPLAY born in a year plays it every other
+block, from the first, and between those an era drawn by how near its year
+is: the weight falls by e for every five years away. Born in 1985: the
+console, then Y2K, the console, DOS, the console, DOS, the console, the
+handheld, the console, the Amiga. The era's card says so - `BORN 1985
+TWELVE IN 1997` under the era's own line - and the programme is called
+BORN IN 1985. Live, `B` opens a C64-style box that asks for the year and
+shows, as it is typed, the year it was twelve and that era; RETURN starts it,
+dropping in at the start of one of its own era's blocks (somewhere new each
+time, as AUTOPLAY does); `B` again goes back to the demo. The year is kept
+in the page's address (`born=1985`), so a reload returns to it. (The
+address's query goes with the page's request when it is reloaded; the
+greetings, built next, keep their names where a browser never sends them.) The audio thread builds the same programme from the same year.
+On the command line: `seedscene autoplay --born 1985`.
+
+| Check | Result |
+|---|---|
+| Eight years, 1950 to 2015 | arcade, arcade, C64, Amiga, console, Y2K, modern, modern - each first, every other block, its neighbours between |
+| Live (muted): `B`, 1985, RETURN | the box shows TWELVE IN 1997 - 32-BIT CONSOLE; AUTOPLAY drops into a console block; the address keeps `autoplay=1&born=1985`; `B` goes back and the year leaves the address; no console errors |
+| Live, reloaded with `born=1972` | born-in AUTOPLAY on a Commodore 64 block |
+| `seedscene autoplay --born 1985`, 40 s | the plan opens on the 1997 console; the era card reads BORN 1985 TWELVE IN 1997 |
+| `npm test` | 17 checks pass - a new one: born in 1985 opens on the console and comes back every other block, every track in its era, no pairing twice in a row, the same sound whatever the block size; plain AUTOPLAY's hash unchanged |
+
+The owner approved born in on 2026-10-31.
+
+### Greetings
+
+The owner chose the next piece, the second way to watch. The plan: "type a
+few names: they scroll in the greetings, as every demo greeted its friends.
+The names stay on the screen; nothing is sent anywhere".
+
+**What was built.** `G` opens a C64-style box with a field for names,
+between commas; RETURN keeps them, ESC leaves. The names are cleaned once,
+for every place that shows them (`src/brand.js`): up to eight, twenty
+letters each, in capitals, accents dropped as the demo fonts had none (José
+is JOSE, Ñoño NONO). They go first into the sine scroller of every scene -
+`GREETINGS TO JOSE - ANA MARIA - LUCIA` right after the title, before the
+key hints - and stay there through AUTOPLAY and THE JOURNEY; into the About
+part's greetings, after its GREETINGS TO; and onto the cracktro's pages, three
+names a page after its thanks, in the letters its font has. Without names
+everything is as before, byte for byte.
+
+**Nothing is sent anywhere.** The names are kept after the `#` of the page's
+address (`#greets=JOSE,ANA+MARIA`). A browser never sends that part with a
+request, so the server - the local one, or the published page's - never sees
+them; a reload brings them back from the address itself. Checked in the
+browser's own list of requests: the page's request carries the address up to
+the `#` and stops there. A video takes them on the command line,
+`--greets "Jose, Ana Maria"`, and the renderer only hands them to its own
+page on this machine.
+
+| Check | Result |
+|---|---|
+| Live (muted): `G`, four names with accents, RETURN | the toast GREETINGS TO JOSE, ANA MARIA, THE 3 A.M. CODER, LUCIA; the scroller GREETINGS TO JOSE - ANA MARIA - ...; the cracktro's page GREETINGS TO / LUCIA; no console errors |
+| The page's request after a reload | the address up to `#` only; the names back in the box from the address |
+| Names cleaned | José, Ana María, the 3 a.m. coders, Lucía, Ñoño & co -> JOSE, ANA MARIA, THE 3 A.M. CODERS, LUCIA, NONO & CO; eight at most |
+| The cracktro's pages | two pages of greetings after the thanks; a character its font lacks dropped (NONO CO) |
+| `seedscene render --style cracktro --greets ...`, 12 s | the cracktro's GREETINGS TO page typing in at 9 s |
+| `npm test` | 17 checks pass; the render hash unchanged (no names, the same file) |
+
+A first limit of sixteen letters cut THE 3 A.M. CODERS short; it is twenty
+now, inside the cracktro's 24-letter line.
+
+The owner approved greetings on 2026-10-31.
+
+### Screensaver
+
+The owner chose the last way to watch. The plan: "after a minute without
+input, SEEDSCENE goes to AUTOPLAY full screen; any key brings you back".
+
+**What was built** (`web/live.js`). The page notes the last key, click,
+wheel, touch or mouse movement (a movement of more than a few pixels: a
+hand on the mouse, not the desk shaking). A minute after it, with the demo
+running and visible, AUTOPLAY comes on, dropping in somewhere new as it does,
+with nothing on the screen but the picture: no info panel, no hint, no toast,
+no pointer. Any key, a click, the wheel, a touch or the mouse moving brings
+the demo back; the key that wakes it is caught before every other key
+handler, so it does nothing else. It does not come on while the demo is
+paused, while the menu, the keys screen or a box is open, or over a
+programme or the About part. It changes nothing in the page's address.
+`saver=<seconds>` there changes the wait; `saver=0` turns it off.
+
+**Full screen, as far as a browser allows.** A page may ask for full screen
+only right after a key or a click; after a minute of nothing the browser
+refuses it (seen live: "API can only be initiated by a user gesture"). So the
+screensaver does not ask: in full screen (`F`) it stays full screen, in a
+window it fills the window, its chrome gone.
+
+| Check | Result |
+|---|---|
+| Live (muted), `saver=5` | after five seconds untouched, AUTOPLAY on a handheld track, the panel and the hint gone; the address unchanged |
+| A key (`E`) | the demo back - the Amiga plasma of the seed - and the era unchanged: the key did nothing else |
+| The mouse moving | the demo back |
+| A fresh tab | no console warnings (the first version asked for full screen and the browser logged its refusal) |
+| `npm test` | 17 checks pass |
+
+The owner approved the screensaver on 2026-10-31. With it, round 12's three ways to watch are done.
+
+### A scene is called a scene
+
+The owner found the README's gallery misleading: each still ended with its
+seed (`--seed warez` under the cracktro) as if the seed chose the scene, and
+asked whether the style should be called a scene, and where the word came
+from. It came from the first brief (`requeriments.txt`, 2026-10-27): "given
+a seed, a resolution and a style name"; v0.1's six visual styles took
+`--style`. v0.2 brought styles of music, and the word came to mean two
+things - `--music` takes one of twenty-six styles, `--style` one of
+forty-five scenes - while the live page already said scene. At the owner's
+word it is a scene wherever a person meets it: `--scene` and `seedscene
+scenes` on the command line, `?scene=` in the page's address (an old
+`?style=` is read and rewritten to `scene`), SCENE in the menu and in every
+scroller, the commands the menu copies. `--style`, `seedscene styles` and
+`?style=` still work. The code keeps its own names (`STYLE_NAMES`,
+`src/styles/`): renaming them would change nothing for anyone using it.
+
+The gallery's captions now give the command that makes each still,
+`--scene cracktro --era amiga --seed hyperspace`. `warez` - the scene's
+word for pirated software - gave way to `hyperspace` (not `starfield`,
+first tried: that is also a scene's name, the very confusion being fixed).
+Every still was rendered again, its scroller reading SCENE.
+
+Two more of the owner's notes, the same day:
+
+- **Watch it online.** The README now opens with links to the published
+  page set up for each way to watch: AUTOPLAY, THE JOURNEY, born in 1985, the
+  cracktro with greetings, each era, your own word, the screensaver. THE
+  JOURNEY had no address of its own: `journey=1` now starts the live page in
+  it, as `autoplay=1` does AUTOPLAY. Building the era links showed that
+  with only the era given, a seed picked its scene from all forty-five - the
+  scene chose its era, not the other way round - so `?seed=insertcoin&era=arcade`
+  opened the tunnel. At the owner's word an era chosen alone now brings its
+  own scenes (`src/core/choose.js`): the seed takes the scene it favours most
+  among the era's. Each scene has a fixed score for each seed, so a seed whose
+  favourite was already of the era keeps it. The era links use the words
+  first meant for them: insertcoin, readyrun, disk2, soundblaster,
+  pressstart, poweron, precalc, raymarch. The party mode the owner asked
+  about is not built yet: it is round 7's.
+- **The logo.** Its third and fourth lines were two characters shorter (the
+  last letter's trailing spaces trimmed); centred on GitHub, each line on its
+  own, they sat one character to the right. All six are 74 now.
+
+| Check | Result |
+|---|---|
+| `seedscene scenes` and `styles`; `info --scene` and `--style`; a bad name | the same list; the same scene; "Unknown scene" |
+| Live, an old link with `?style=cracktro` | the cracktro; the address rewritten to `?scene=cracktro`; the menu's SCENE row; no console errors |
+| Live, `journey=1` | THE JOURNEY from the 1979 card; T goes back |
+| Live, the greetings link through the root address | the names after the `#` survive the redirect and reach the box |
+| The eight era links | each opens on a scene of its era: the time car, the copper bars, the rings, the 3D maze, the footsteps, the invaders, the fractal, the morph |
+| An era given alone, 2,000 seeds in each of the eight | 16,000 of 16,000 on a scene of the era; 3,612 of 3,612 seeds whose scene was already there keep it; everything on `auto` unchanged; a check of it added to `npm test`'s choices |
+
+### Between the tracks
+
+The owner said go on with round 12's last piece. The plan: a modem's
+handshake "as the riser of a transition in the media-player era, the drop
+when the line connects"; a start-up chime "of its own, in the spirit of each
+era's start-up sound, opening an era in THE JOURNEY"; "the click of a
+cartridge going in, opening the woodgrain console's and the 16-bit consoles'
+tracks".
+
+**The reference.** For the modem, an annotated spectrogram of a real
+handshake (Oona Raisanen, "The sound of the dialup, pictured", 2012), read
+off over its nineteen seconds: the dial tone; the number in DTMF; the
+answering modem and the V.8bis bursts of FSK around 1 and 2 kHz; the 2100 Hz
+answer tone with its phase snaps, the calling modem's bursts over it; the
+probing, a comb of tones 150 Hz apart; the scrambled data's hiss, the
+loudest stretch; then silence.
+
+**What was built.** Three instruments (`src/core/music.js`) and a layer of
+their own in the programmes (`src/core/journey.js`): each part carries the
+sounds between it and the part before, on a synth of its own that plays
+over the mix - a modem placed in the incoming track would have come in at
+nothing and thin, as the mix brings a track in, just where the dial tone
+is. The modem is the handshake squeezed into the overlap into the media-
+player years (the Y2K PC stands in for them), entering the era, in AUTOPLAY
+and THE JOURNEY; it stops dead where the overlap ends, as the new track
+lands whole. The cartridge clicks in as each handheld track starts - the
+cartridge era the project has; the woodgrain and 16-bit consoles' periods
+are not built yet, and will take it when they are. The chimes open each era
+in THE JOURNEY, on the incoming track's key, each in the spirit of its
+machines and none a copy of one: a coin's two pings and a credit counting
+up; a SID pulse running up the chord; the floppy drive stepping; the beep a
+PC gives when its self-test passes; a deep chord swelling; a ping of two
+notes a fifth apart; a soft bell. Y2K's is the modem.
+
+| Check | Result |
+|---|---|
+| The modem, 8 s, measured in twentieths against the spectrogram | 350 Hz dial tone; DTMF pairs; a gap; FSK at 1650-1850 and 980-1180 Hz; a gap; 2100 Hz (96% of the power) with the calling bursts over it; the comb; the hiss at -18 to -20 dB, as loud as the tones (it was 13 dB under them at first); nothing after the drop |
+| THE JOURNEY, seed `aurora` | the seven chimes at each era's slot, the cartridge and the handheld's ping, the modem into Y2K |
+| AUTOPLAY, 60 tracks | 3 modems (each way into Y2K), 6 cartridges (each handheld track), no chimes |
+| THE JOURNEY, 128 s rendered | peak -1.3 dBFS, no invalid samples, 3x real time |
+| Live (muted), `journey=1`, skipping on | plays on; no console errors |
+| The 26 styles on every chip of their eras, three seeds | 156 takes, all byte-identical |
+| `npm test` | 17 checks pass; THE JOURNEY's sound changed (the chimes), the same whatever the block size |
+| A taste to listen to | `out/between-tracks-taste.mp3`: each era's way in, 85 s |
+
+The owner approved the sounds between the tracks on 2026-10-31. With them, round 12 of the plan is done: its two styles, its films, screens and demo effects, its three ways to watch and its sounds between the tracks.
+
+### The anime opening's music
+
+The owner chose round 11's `animeop` style next: the anime opening scene
+played music borrowed from its era. The plan: "fast J-rock with brass, a key
+change before the last chorus, a big sing-along lead"; the famous themes are
+never quoted, the tune is the seed's.
+
+**The references.** A corpus study of anime openings (Joy Li, "Modulation
+and Chromatic Mediants in Japanese Anime Songs", *Music Theory Online* 32.1):
+of 108 openings of the most popular series, 92.6% are in verse-prechorus-
+chorus form, cut to about ninety seconds (the "TV size"); their sections
+change key at their edges - the prechorus often carrying the chorus a minor
+third away, to the flat mediant - and full-length songs "pump up" into the
+final chorus. The J-pop corpora's "Royal Road" progression, IV-V-iii-vi. The
+tempos and keys of openings of the era, measured: 142 bpm in C harmonic minor,
+155 in D major.
+
+**What was built** (`src/core/music.js`). The anison's form, bar by bar, to
+fit the length: an intro; verse, prechorus, chorus, again as often as there
+is room; a bridge; the last chorus; out. Each section has its progression -
+the chorus the Royal Road - and the key moves at their edges: in two seeds of
+five the chorus goes up a minor third, and the last chorus a step or two
+higher still (a key that moves with the sections: an offset added to every
+note, nought for every other style). J-rock drums - the kick on one and three
+and the seed's pushes, the backbeat, the hat open through the chorus - a bass
+driving on the eighths with octaves popping in the chorus, the guitar
+palm-muted in the verse and ringing power chords in the chorus, brass stabs
+in the intro and the chorus, strings swelling under the prechorus; the lead
+the style's hook, lower and sparer in the verse, climbing in the prechorus,
+high and full in the chorus with the brass doubling it an octave down. On the
+32-bit console it plays on the AWE32's guitar, brass and strings.
+
+**What went wrong.** The first arrangement rendered at only 1.1 to 1.4 times
+real time on the AWE32 - two tracks overlapping in AUTOPLAY would have
+dropped out. Measured instrument by instrument, the guitar's three-note
+chords ringing long were most of it, then the brass and strings' triads. The
+verse's muted guitar is one string now (the drive fills in the fifth), the
+chorus's power chords root and fifth, the brass and strings two notes: 4.9
+to 5.9 times real time on the AWE32, where FM metal, the other guitar style,
+runs at 4.2 to 4.9.
+
+| Check | Result |
+|---|---|
+| The form, three lengths | 90 s at 154 bpm: intro, verse, prechorus, chorus, twice, bridge, last chorus, out; 40 s and 180 s fitted the same way |
+| The key change into the last chorus, six seeds | up 1 or 2 semitones in all six |
+| Levels, the synthesizer's own voices and the AWE32, three seeds | peaks -1.9 to -2.1 dBFS, no invalid samples |
+| Speed | 6.9 to 9.4 times real time on its own voices, 4.9 to 5.9 on the AWE32 |
+| Every earlier style on every chip of its eras, three seeds, before and after | 156 takes, all byte-identical |
+| Live (muted), its own scene on the 32-bit console | Anime Opening, 154 bpm, G major; no console errors |
+| `npm test` | 17 checks pass, 27 styles compose |
+| A taste to listen to | `out/animeop-taste.mp3`: three seeds, each from the last prechorus through the key change |
+
+**The owner's listen: strident and disconnected** - "the attempt at a voice
+that sounds like high tones over a good tune", the analysis left to Claude.
+The lead, measured as a melody over five seeds, bore it out: it reached E7 to
+G7 in the chorus and spread over two and a half octaves; 38% of its moves
+were leaps wider than a major third, 13% wider than a sixth; and the two
+choruses did not sing the same tune. The cause: each note was placed from the
+chord's root, not the key's, so the line jumped with every change of chord,
+and its register rose with the chord, the key and the section at once. It is
+a singer's line now, composed once per section: degrees counted from the
+tonic, in one register whatever the key (the tonic between F#3 and F4, the
+verse lowest, the chorus highest); two-bar phrases on the eighths with a long
+last note and a breath; each phrase an arch, rising to a peak a little before
+its middle and falling home; on every beat and long note the chord tone
+nearest the arch, never more than a fifth from the last note nor the same
+note three times running, steps between; the chorus A A' A B, ending on the
+tonic, the same tune each time it comes back; the prechorus climbing a third
+each phrase; the bridge long notes. The lead is the plain one, not the
+screaming hero lead; the brass joins it only in the last chorus, and its
+stabs sit an octave lower, under the singer.
+
+| The lead, five seeds | Before | After |
+|---|---|---|
+| Range | 30 to 33 semitones, up to G7 | 18 to 22, about F#3 to B5 |
+| Leaps wider than a major third / a sixth | 38% / 13% | 10% / 0% |
+| On the beat, a tone of that beat's chord | 61% | 99 to 100% |
+| Held notes, a chord tone | - | 99 to 100% |
+| The choruses sing the same tune | no | yes |
+
+One chorus, hikari (G major): D4 G4 A4 G4 A4 B4 A4 | A4 G4 F#4 E4 F#4 D4- |
+E4 E4 F#4 G4 A4 G4 A4 | G4 F#4 E4 D4 E4 C4- | the first two bars again |
+E4 F#4 G4 A4 G4 | G4 E4 F#4 G4-. Speed unchanged: 5.3 to 5.9 times real time
+on the AWE32; peaks -2 dBFS; `npm test` passes; the taste rendered again.
+
+The owner listened live and approved the anime opening's music on 2026-10-31.
+
+### Skate punk
+
+The owner chose round 11's `skatepunk` next. The plan: "fast punk at 190,
+ska upstrokes, a synth lead like a shouted chorus", for the 32-bit console.
+
+**The references.** The skate games' best-known ska-punk single: about 195
+bpm, in D, its chords A, D, Em, G and Bm - ska verses against punk choruses.
+A punk drumming lesson's beats (drumhelper, "10 Punk Drum Beats"): eighths on
+the hat, the snare on every "and", the kick on the beat and the "e" after it;
+the kick doubled just before the snare, "one of the biggest concepts that make
+a punk drum beat sound like a punk drum beat"; the hats opened for aggression.
+
+**What was built** (`src/core/music.js`), on the anime opening's song form,
+shared: its sections and its singer's line, with this style's register and
+density and no key changes (the anime opening, checked, is byte for byte as
+approved). 180-200 bpm, the progressions of three-chord punk - I-V-vi-IV,
+I-IV-V, the ska-punk turn V-I-ii-IV. The verse is ska: a backbeat, the hats
+closed, the bass walking the chord on the beats, the guitar chopping two-note
+upstrokes on every off-beat. The prechorus strikes power chords on the beat.
+The chorus is punk: the lesson's beat - the snare on every "and", the kick on
+the beat and the sixteenth after, or in a third of the seeds doubled before
+every snare - the hats open, the bass picking eighths on the root, power
+chords hammered on the eighths. The bridge drops to half time. The lead sings
+the verse plain; in the chorus a wide supersaw doubles it in unison, the gang
+shouting - the line kept to an octave (the anime opening's lesson: no high
+screaming), chanted on the eighths, the same each time it comes back.
+
+| Check | Result |
+|---|---|
+| The lead, five seeds | one octave, G3 to D5 by key; leaps wider than a third 7%, wider than a sixth none; chord tones on the beat 93% (measured against the bass, which walks the third and fifth in the verse); the choruses the same tune |
+| The anime opening after the shared form changed | its six takes byte-identical |
+| Levels and speed, its own voices and the AWE32 | peaks -1.9 to -2.0 dBFS, no invalid samples; 6 to 7.6 times real time, 4.7 to 5.8 on the AWE32; 183 to 197 bpm |
+| Every earlier style on every chip of its eras, three seeds | 162 takes, all byte-identical |
+| `npm test` | 17 checks pass, 28 styles compose |
+| A taste to listen to | `out/skatepunk-taste.mp3`: three seeds, each from the ska verse into the punk chorus |
+
+**The owner's listen: out of step** - "two things playing at the same time,
+out of square", harmonies overlapping at different times; the cause left to
+Claude. Measured, three things, the first the worst:
+
+1. **The guitar a major third off.** Its power chords were built from
+   `noteOf(40, ...)`, and the 40 is not a register: the key's tonic sits at
+   the base plus the key's root, so 40 put every power chord four semitones
+   above the harmony - on the chord's third and major seventh - and that
+   seventh rubbed a semitone against the root the bass played: 99% of the bass
+   notes sounded a semitone from a guitar note. The chords now stand on the
+   bass's root, raised an octave into the guitar's register.
+2. **The echo off the grid.** A dotted-eighth echo (237 ms at 190 bpm) laid a
+   copy of every note of the chant a sixteenth off the eighths, over the next
+   chord. It is an eighth now, on the grid, and quieter.
+3. **The verse bass** walked a major triad's fixed semitones over minor chords
+   too; it walks the scale's degrees, the chord's own tones.
+
+And the chant is square: on the eighths, no sixteenths, no pickup; its every
+note a chord tone (a gang shouting over a chord struck on each eighth sings
+nothing else), within a third of the last where it can be.
+
+| Measured, five seeds | Before | After |
+|---|---|---|
+| Bass notes a semitone from the guitar struck with them | 99% | 0% |
+| Lead notes a semitone from a guitar note sounding with them | 12% | 0% |
+| Lead notes off the eighths | 5% | 0% |
+| Leaps wider than a third | 7% | 1% |
+| The anime opening (sharing the form) | - | byte-identical |
+
+The same `noteOf(40, ...)` stands in two styles already built: the anime
+opening's guitars (approved by ear) and FM metal's riff. It is the owner's to
+say whether they are put right: it changes what they sound like.
+
+The owner listened again and approved skate punk on 2026-10-31.
+
+### The music audit
+
+The owner asked how the music was being reviewed: twice the faults had been
+found only once he heard them, though the score showed them. Until now a
+style was checked for its levels, its peaks, its speed on each chip and its
+determinism - nothing about it as music. At his word there is now a music
+audit (`tools/music-audit.js`, `npm run audit:music [-- <style>]`), a style
+at a time or all of them, and a written review it belongs to
+(`docs/MUSIC-REVIEW.md`): audit, find the cause, fix, audit again, then the
+ear. It splits each score into bass, chords and melody and checks the bass
+under each chord, rubs between them, the melody's chord tones, register,
+leaps and repeats, the grid and the echo, the melody against the chords in
+the mix, peaks and speed, each against a threshold, a style let off where
+the clash is the point (the derelict ship's half-step and pedal, the jazz
+bass's chromatic approach), with the reason written down.
+
+**Tested on the faults already known** before it was run on the rest: FM
+metal's guitars a third off (the bass in the chord at 1% of changes, 97% of
+bass notes rubbing - fail); the anime opening's guitar, the same fault under
+correct strings and brass (77% and 6% - warn); skate punk, fixed, passing.
+Two false alarms were found and removed: a melody note on the fifth when no
+one plays the fifth, and a melody note when only the bass is sounding.
+
+**All 28 styles** (`docs/MUSIC-AUDIT.md`): four pass with no failure - acid,
+tracker jazz, the anime opening, skate punk. In the other 24 the failures
+gather round a few causes:
+
+| Cause | Styles failing | What it is |
+|---|---|---|
+| The melody's register | 20 | the shared lead roles place each note from the chord's root, with octave leaps, so the line climbs to C7-C9 (the anime opening's first fault) |
+| The melody's leaps | 15 wider than a third, 16 wider than a sixth | the same: the line jumps with every chord |
+| The melody off the chord | 9 on the beat, 7 held, 5 rubbing | the same, and lines that ignore the chord under them |
+| A buried melody | 9 | the lead 8 to 16 dB under the chords: trance, rave, hardcore, eurodance, gabber, orchestral, star pilot, FM metal, MIDI quest |
+| The guitar a third off | FM metal (fail), the anime opening (warn) | `noteOf(40, ...)` used as a register |
+| Bass rubs | arcade, rock and roll, FM metal | the marching and boogie basses through the scale, and the guitar fault |
+
+Nothing failed off the grid, at its peaks or on speed. Nothing was changed:
+the audit only reports. Which style is put right first, and how, is the
+owner's: each fix changes how a style sounds, and comes back to him with its
+audit before and after and a taste to listen to.
+
+### FM metal, through the audit
+
+The owner chose FM metal for the first turn of the loop: the worst of the 28,
+with nearly every kind of fault. Four passes, two of which put the audit
+itself right.
+
+1. **The audit, before**: the bass in the chord at 1% of chord changes, 97%
+   of bass notes rubbing; 33% of held melody notes rubbing; 41% of moves
+   leaping past a third, 21% past a sixth; the melody 16 dB under the riff.
+2. **The causes, in the composer.** The riff's power chords from
+   `noteOf(40, ...)` - a major third above the harmony. The solo is the
+   shared "hook", which places each note from the chord's root, so it leapt
+   with the chords. And the riff struck three-note chords louder than the solo.
+3. **The fixes, in this style's own code.** The riff on the bass's root,
+   raised into the guitar's register, root and fifth, a little softer; the
+   hook may now sing a line (`hook.line`, FM metal's alone - the other seven
+   hook styles are untouched): eight bars over the progression, composed as
+   the anime opening's singer's line - chord tones on the beats, steps between,
+   an arch to each phrase, home at the end, the same each time round - kept
+   close (a chord tone within a third where there is one), and louder; the
+   echo on the eighths, as skate punk's.
+4. **The audit put right on the way.** It took the solo for part of the riff
+   (both a guitar, struck together): an instrument's variants are separate
+   players now. It counted the third as off the chord over power chords that
+   have none: over a bare root and fifth the scale's third counts. And it
+   judged the echo by the style's delay alone: it now uses what the melody's
+   instrument sends to it.
+
+| FM metal | Before | After |
+|---|---|---|
+| Bass in the chord | 1% | 99% |
+| Bass rubs | 97% | 0% |
+| Melody on the beat a chord tone | - | 87% |
+| Held notes a chord tone, rubbing | 67%, 33% | 94%, 5% |
+| Leaps past a third, past a sixth | 41%, 21% | 4%, 0% |
+| Range, top note | 14, C6 | 11, F#5 |
+| Phrases heard again | 97% | 88% |
+| Melody against the riff | -16.0 dB | -2.6 dB |
+| Speed on its slowest chip | 4.2x | 3.8 to 4.5x |
+| Every check | 6 fail, 1 warn | all pass |
+
+Every other style byte for byte as it was (159 takes); `npm test` passes. A
+before-and-after to listen to: `out/fmmetal-before-after.mp3`, two seeds -
+one on the Sound Blaster 16's FM, one on the AWE32 - each before, then after.
+
+The owner listened and approved FM metal, put right, on 2026-10-31.
+
+### The anime opening, through the audit
+
+The owner chose the anime opening next: approved by ear, but its audit
+warned of the same guitar a third off, its melody a little under the band -
+and, on its slowest chip, it failed on speed.
+
+| The anime opening | Before | After |
+|---|---|---|
+| Bass in the chord | 77% | 98% |
+| Bass rubs | 6% | 0% |
+| Melody against the chords | -6.4 dB | -2.8 dB |
+| Speed on the AWE32, seed aurora, live block size | 1.6x | 4.2 to 4.6x |
+| Every check | 1 fail, 3 warn | all pass |
+
+The causes: the guitar from `noteOf(40, ...)` (in G major it struck B, the
+third, for G); and on the AWE32 the brass stabs - two notes, each a section
+of three horns - and the chorus guitars ringing past the next chord cost so
+much that a track ran at 1.6 times real time where the dense part fell (the
+first measurements, of twelve seconds, had missed it), too slow for two
+tracks overlapping in AUTOPLAY. The guitar now stands on the bass's root; the
+stabs are one horn line on the chord's third (the guitars and the strings
+hold the chord); the chorus guitars ring for most of a beat, not past it;
+and the singer is a little louder. The melody, the form and the key changes
+are as approved. Every other style byte for byte as it was; `npm test`
+passes. A before and after: `out/animeop-before-after.mp3`, two seeds on
+the AWE32, a chorus each, before then after.
+
+The owner listened and approved the anime opening, put right, on 2026-10-31.
+
+### Synth-pop, through the audit
+
+The owner chose synth-pop next, the style whose point is "a chorus you hum
+all day". Its hook was the shared one: each note placed from the chord's root
+at C5, so the line ran round D6-F#6 and leapt with the chords, and an octave
+lift in the busiest bars (fifteen of forty-three) took it to C#8.
+
+| Synth-pop | Before | After |
+|---|---|---|
+| Top note, range | C#8, 33 semitones | G#5, 13 |
+| Leaps past a third, past a sixth | 46%, 10% | 15%, 0% |
+| Held notes a chord tone, rubbing | 90%, 7% | 100%, 0% |
+| Phrases heard again | 63% | 80% |
+| Melody against the chords | -3.2 dB | -2.3 dB |
+| Every check | 4 fail, 2 warn | all pass |
+
+The fix is FM metal's, by the style's own setting: the hook sings a line
+(`hook.line`), eight bars over the progression in one register, chord tones
+on the beats, steps between, an arch to each phrase, the same each time
+round, a little louder; and a line keeps its register - no octave leap at the
+peak. The eighties' dotted-eighth echo stays: it is the genre's own sound,
+and this line is not held to the eighths. One phrase of the new hook (seed
+aurora): G4 A4 B4 E5 G5 F#5 E5 | D5 C5 B4 A4-, and again two bars on. One
+pass was enough. Every other style byte for byte as it was; `npm test`
+passes. Before and after: `out/synthpop-before-after.mp3`, two seeds.
+
+The owner listened and approved synth-pop, put right, on 2026-10-31.
+
+### Star pilot, through the audit
+
+Next, star pilot: the same hook, its brass line climbing to C#8 and leaping
+with the chords, buried 8 dB under the orchestra hits - and those hits, a
+three-note chord in the brass and another in the strings four times a bar,
+made it render at 1.2 times real time on the 32-bit console's AWE32, where
+every brass and string note is a section of players.
+
+| Star pilot | Before | After |
+|---|---|---|
+| Top note, range | C#8, 34 semitones | G5, 10 |
+| Leaps past a third, past a sixth | 40%, 19% | 13%, 0% |
+| Held notes a chord tone, rubbing | 85%, 8% | 100%, 0% |
+| Melody against the chords | -8.2 dB | -2.9 dB |
+| Speed on its slowest chip | 1.2x | 3.9 to 4.0x |
+| Every check | 6 fail, 2 warn | all pass |
+
+Two passes. The hook sings a line, kept close, louder; the orchestra hit is
+one chord shared between the sections rather than doubled - the brass the
+root and the fifth, the strings the root and the third, the same three notes
+at half the players; the echo on the eighths, under the brass line.
+
+The audit learned one more thing on the way: where the chords are only
+struck now and then - an orchestra hit, then nothing but an arpeggio - it
+counted a held note on the chord's third as off the chord. It now adds the
+key's third over the bass, as it already added the fifth: the chord the bass
+implies. The styles already put right still pass. Every other style byte
+for byte as it was; `npm test` passes. Before and after:
+`out/starpilot-before-after.mp3`, two seeds on the AWE32.
+
+The owner listened and approved star pilot, put right, on 2026-10-31.
+
+### MIDI quest, through the audit
+
+Next, MIDI quest, the adventure on a sound card. Its flute had the old hook:
+each note placed from the chord's root, so it leapt with every chord change,
+and an octave lift in the busiest bars took it to C#8. Under it, the
+orchestra laid a choir triad on top of the strings - entering exactly when
+the flute did - and the flute sat 12 dB under them.
+
+| MIDI quest | Before | After |
+|---|---|---|
+| Top note, range | C#8, 33 semitones | F#5, 12 |
+| Leaps past a third, past a sixth | 40%, 12% | 5%, 0% |
+| Held notes a chord tone, rubbing | 89%, 5% | 100%, 0% |
+| Phrases heard again | 18% | 40% |
+| Melody against the chords | -11.9 dB | -2.1 dB |
+| Speed on its slowest chip | 5.9x | 4.8 to 8.6x (two runs) |
+| Every check | 5 fail, 1 warn | all pass |
+
+The fix, by the style's own settings: the flute sings a line (`hook.line`),
+kept close, a little louder; and the choir stays out (`orch.noChoir`) - the
+strings hold the chord, the harp arpeggiates it, the flute has the air above.
+The orchestral style, which shares those chords, keeps its choir. One phrase
+of the new line (seed aurora, E mixolydian): F#5 D5 E5 D5 G#4 | B4 B4 C#5 |
+E5 C#5 B4 A4 | G#4 G#4 G#4 A4. Three passes: the line, the choir, the level.
+Every other style byte for byte as it was; `npm test` passes. Before and
+after: `out/midiquest-before-after.mp3`, two seeds on the OPL3.
+
+The owner listened: not yet - the melody, the flute's sound, and the tempo
+or the echo. Measured, each had a cause the audit does not look for:
+
+- **The flute's sound.** Held against a real flute's spectra (the University
+  of New South Wales's flute acoustics pages, a modern flute's G4 and A5),
+  ours was a whistle: at G4 the real flute's third harmonic is 3 dB under
+  its fundamental, ours 32 dB on the OPL3 and 55 on the synthesizer's own
+  voice. Exposed, now that the line sits on top of the mix, it sounded like
+  one. The quest has its own flute now: on the synthesizer and the AWE32 the
+  real flute's harmonics, sliding from G4's to A5's with the register; on the
+  OPL3 the nearest two operators come (a sweep of them, held against G4),
+  with the chip's key scaling making it purer as it climbs, as the real one
+  does, and a little chiff at the start.
+
+| Harmonics 2 to 6 at G4, dB | Real flute | Before | After |
+|---|---|---|---|
+| Synthesizer's own, AWE32 | -12 -3 -17 -21 -27 | -16 -55 -56 -58 -70 | -13 -7 -27 -49 -41 |
+| OPL3 | -12 -3 -17 -21 -27 | -16 -32 -48 -66 -92 | -5 -12 -19 -26 -35 |
+
+  (The higher harmonics of the synthesizer's flute measure lower than they
+  are made: its vibrato spreads them past the measuring window.)
+- **The echo.** On the dotted eighth, half of its repeats (47 to 63 of every
+  hundred, three seeds) landed a step from the note then sounding: a rub at
+  every turn of the line. It is on the beat now, and quieter (0.35 from 0.7).
+- **The melody.** The same eight bars ran the whole track, and at the bottom
+  of the register the line stood on one note three and four times running
+  (5, 6 and 13 times, three seeds). It now has an answer - a second eight
+  bars, so the tune goes A A B A - and keeps moving: at the edge of its
+  register a step turns back.
+- **The tempo** from 84-108 to 92-112, a little more walking pace.
+
+| MIDI quest, second pass | First pass | Now |
+|---|---|---|
+| Notes three in a row (three seeds) | 5, 6, 13 | 0, 0, 0 |
+| Echo landing a step from the note sounding | 51%, 58%, 47% | 35%, 37%, 25% |
+| Tempo, three seeds | 87, 91, 99 | 94, 98, 105 |
+| Phrases heard again | 40% | 73% |
+| Every check | all pass | all pass |
+
+The quest's flute is a kit of its own: tracker jazz's flute, the other style
+that plays one, is as it was. Every other style byte for byte as it was;
+`npm test` passes. Before and after: `out/midiquest-before-after.mp3`, the
+first pass then this one, two seeds on the OPL3.
+
+The owner listened and approved MIDI quest, put right in two passes, on 2026-10-31.
+
+### Arcade attract, through the audit
+
+The owner chose arcade next. Two faults: the shared hook again - each note
+from the chord's root, leaping with the chords, its octave reaching F7 - and
+the marching bass. That bass walks four steps down the scale, one a beat,
+whatever the chord: in a major key its second step is the seventh, a
+semitone under the chord's root; in a minor key its third is the sixth, a
+semitone over the fifth. A sixth of its notes rubbed against the arpeggio.
+
+| Arcade attract | Before | After |
+|---|---|---|
+| Bass notes rubbing a semitone | 17% | 0% |
+| Bass in the chord (a walk: noted, not judged) | 50% | 82% |
+| Top note, range | F7, 20 semitones | B5, 12 |
+| Leaps past a third | 29% | 1% |
+| Held notes a chord tone | 96% | 100% |
+| Phrases heard again | 85% | 91% |
+| Every check | 2 fail, 1 warn | all pass |
+
+The march still steps down a beat at a time, but a step that would land a
+semitone from the chord's notes goes on to the next: in C major C A G E,
+not C B A G. The pulse hook sings a line (`hook.line`), kept close and
+moving - MIDI quest's rule, no note three times running (aurora's line had
+seven such runs before it). Two passes. Every other style byte for byte as
+it was; `npm test` passes. Before and after:
+`out/arcade-before-after.mp3`, two seeds.
+
+The owner listened and approved arcade attract, put right, on 2026-10-31.
+
+### Cyborg pulse, through the audit
+
+The owner chose cyborg next, the machine score in thirteen. Its hook was the
+shared one - three or four brass notes a bar, each from the chord's root,
+leaping with the chords to D#6 - and under it the power chords: a brass
+triad struck on the odd metre's hits, entering only when the hook did, on
+the same instrument and in the same register.
+
+The fix, by the style's own settings: the brass sings a slow theme - a line
+on the style's own hits (`melody.hits`: three long notes a bar, now and
+then a pickup into the next phrase), chord tones on the hits, steps between,
+moving (no note three times running); a bar of thirteen ends a note with it.
+And the power chords are what their name says (`power.fifths`): the root
+and the fifth, a little back, so the theme has the top. Heroic, which shares
+those chords, keeps its triads.
+
+The audit learned one more thing. A third of the theme's notes fall on the
+same instant as a stab, on the same brass; the audit grouped notes struck
+together into a chord, so those notes were counted as harmony, and the leaps
+measured across the gaps they left. A chord is struck together *and held
+together*: a note struck with a chord but held its own length is another
+player. Measured with the corrected audit, before and after:
+
+| Cyborg pulse | Before | After |
+|---|---|---|
+| Top note, range | D#6, 21 semitones | E5, 11 |
+| Leaps past a third, past a sixth | 40%, 20% | 8%, 0% |
+| Held notes a chord tone, rubbing | 87%, 10% | 100%, 0% |
+| Melody against the chords | -4.7 dB | -0.6 dB |
+| Every check | 2 fail, 2 warn | all pass |
+
+The corrected audit moves three other styles' numbers without a note of
+theirs changing: star pilot still passes every check (its brass line, too,
+fell on its orchestra hits); trance (melody against the chords -13.2 to -4.2
+dB, leaps past a sixth 16% to 2%) and ambient (phrases heard again 33% to 8%)
+still fail, as before. Four passes. Every other style byte for byte as it
+was; `npm test` passes. Before and after: `out/cyborg-before-after.mp3`, two
+seeds.
+
+The owner listened: not yet - the brass theme, and the brass's sound.
+
+- **The brass's sound.** Held against a real trombone (the University of New
+  South Wales's brass acoustics pages: a crescendo, its soft start and its
+  loud end), ours was a synthesizer's saw: the same at every loudness, and
+  above a kilohertz far brighter than even the loud trombone. A real brass
+  instrument is mellow when soft and brightens as it grows louder, the high
+  harmonics rising far more than the low ones. The theme has a brass of its
+  own now (`kit: 'theme'`): its brightness follows its loudness and swells
+  over each long note, the harmonics above a kilohertz falling steeply, the
+  fundamental eased back as it grows loud. The stabs, and every other style's
+  brass, are as they were.
+
+| Harmonics at 0.25, 0.5, 1, 1.5, 2, 2.5 kHz, dB (A3, held) | Soft | Loud |
+|---|---|---|
+| Real trombone | -4 -16 -30 -40 -44 -48 | -4 0 -14 -22 -30 -40 |
+| Before (the same soft or loud) | 0 -15 -17 -19 -21 -23 | 0 -15 -17 -19 -21 -23 |
+| After | 0 -12 -32 -46 -56 -65 | 0 -9 -14 -21 -28 -35 |
+
+  (Above a kilohertz the loud brass is within 5 dB of the trombone; the
+  second harmonic stays under the first, where the trombone's is above it.)
+- **The theme.** Three long notes a bar, one length each, and the same note
+  struck twice running, again and again: it stood still. It has a shape now:
+  long, short, long in each bar of thirteen (six, two and five sixteenths),
+  the short note a step between two chord tones; no note struck twice
+  running; an answer phrase, so the tune goes A A B A; and each phrase comes
+  home to the tonic, in a register narrow enough that it can - the first try
+  left it a seventh above where the tune starts again, a leap at every turn.
+- **The echo.** The audit's new check (below) found what the ear had: on the
+  dotted eighth, 56% of the theme's echoes landed a step from its next note.
+  A beat on was no better (49%: the theme's short step lands there); two
+  beats on, 32%, and quieter (0.5 from 0.8).
+
+| Cyborg pulse, second pass | First pass | Now |
+|---|---|---|
+| Top note, range | E5, 11 semitones | C5, 8 |
+| Leaps past a third, past a sixth | 8%, 0% | 10%, 0% |
+| Phrases heard again | 69% | 57% |
+| Melody against the chords | -0.6 dB | -1.0 dB |
+| Echoes landing a step from the next note | 56% | 32% |
+| The brass against a trombone (worst point) | 11 dB (no brighter loud) | 5 dB |
+| Every check | all pass | all pass |
+
+The audit learned one more thing: in a bar of thirteen the beats are counted
+from the bar line, not on a grid of fours running across it (which had
+judged the short step between two chord tones as a wrong note on the beat,
+whenever the grid happened to fall there). Only cyborg plays in thirteen.
+Every other style byte for byte as it was; `npm test` passes. Before and
+after: `out/cyborg-before-after.mp3`, the first pass then this one, two
+seeds.
+
+The owner listened and approved cyborg pulse, put right in two passes, on 2026-11-01.
+
+### The audit learns to listen for the instrument
+
+The owner asked the audit to learn from this: twice now (MIDI quest's flute,
+cyborg's brass) a style passed every check and the ear still heard what was
+wrong, and the fault was found by holding the instrument against a real one.
+Three checks come from those two cases, each tried on the version the owner
+turned down (it should not pass) and on the one put right (it should):
+
+- **Sound against the real one.** The melody instrument, where it imitates a
+  real one, is rendered alone - a held note at a few pitches and loudnesses,
+  on every chip its style plays on - and its harmonics compared with a real
+  player's, in dB. The references (`tools/timbre-refs.js`) are read off
+  published measured spectra and name their source: a flute at G4 and A5,
+  and a trombone's crescendo, soft and loud - and how much brighter loud is
+  than soft, since that is what brass does. (Reading the soft trombone, past
+  a kilohertz the figure shows only its noise floor: those points are not
+  read.) Pass within 9 dB on average at the worst point, warn to 13.
+- **Echo rubs.** How many of the melody's echoes land a tone or a semitone
+  from the note then sounding.
+- **Stuck notes.** How many melody notes are one pitch struck a third time
+  running.
+
+| Check | MIDI quest turned down | MIDI quest approved | Cyborg turned down | Cyborg now |
+|---|---|---|---|---|
+| Sound against the real one | ✗ 25 dB (the flute a whistle, on the OPL3) | ✓ 6 dB | ⚠ 11 dB (no brighter loud) | ✓ 5 dB |
+| Echo rubs | 54% | 31% | 56% | 32% |
+| Stuck notes | 3.9% | 0% | 0% | 0% |
+
+The sound check separates what the owner turned down from what was put
+right. The other two do not stand on their own: the owner approved synth-pop
+with an echo that rubs more (68%, and louder) than MIDI quest's did, star
+pilot's fanfare repeats its notes (12%), skate punk chants on one. So those
+two only ever warn - something to listen for, not a fault - and say so.
+
+Run on every style, the sound check finds tracker jazz's flute - the old one,
+the whistle - 25 dB from the real flute (fail), and the brass of star pilot,
+the orchestral score and new beat (on Paula) 10 to 11 dB from the trombone,
+no brighter loud than soft (warn). Nothing in them is changed here: the
+owner chooses. With it, 9 of 28 styles pass every check (cyborg among them,
+awaiting the owner); tracker jazz, which passed, now fails on its flute.
+`docs/MUSIC-REVIEW.md` has the checks, the references and a seventh step to
+the loop: when the owner hears a fault the audit passed, find how to measure
+it, and try it on both versions.
+
+### Tracker jazz's flute
+
+The first thing the sound check found, and the owner chose it next: tracker
+jazz's flute was the old one, the whistle - on the Amiga, 25 dB from a real
+flute, its third harmonic 50 dB under the fundamental where a real flute's
+is 3. It now plays MIDI quest's flute, the one with a real flute's
+harmonics (the kit renamed from `quest` to `real`: it is no longer one
+style's). Nothing else in the style changed - its improvising line, its
+walking bass, its echo are as they were.
+
+On the Amiga it cannot match the real flute at both ends of its range: a
+tracker plays one sample of an instrument, transposed, and a real flute is
+rich low down and nearly a sine an octave and a half up. Sampled with C4's
+harmonics, its high notes measured 13 dB too bright; with D5's, its low ones
+16 dB too dull; taken at A4, between, it strays 10 dB at its worst - a
+warning, the least one sample can do.
+
+| Tracker jazz, on the Amiga | Before | After |
+|---|---|---|
+| The flute against a real one (worst point) | ✗ 25 dB | ⚠ 10 dB |
+| Melody against the chords | -1.0 dB | -2.4 dB |
+
+The style's other warnings (a top note of E6, leaps, notes repeated) are its
+improvising flute's, as before. MIDI quest's sound byte for byte as it was,
+and every other style's; `npm test` passes. Before and after:
+`out/modjazz-before-after.mp3`, two seeds on the Amiga.
+
+The owner listened and approved tracker jazz's flute on 2026-11-01.
+
+### The brass the sound check found
+
+Next, the owner chose the brass: star pilot's, the orchestral score's and new
+beat's, each warned by the sound check - no brighter played loud than soft,
+where a real trombone's high harmonics rise far more than its low ones.
+
+**Star pilot** plays on the AWE32, whose brass was three detuned saws through
+a filter barely moved by the velocity. Its melody now plays the real brass
+(cyborg's, the kit renamed from `theme` to `real`, as the flute's), made
+for the AWE32 as that card would: the EMU8000's filter opened by the note's
+velocity, as a SoundFont's velocity-to-cutoff modulator does, swelling over
+a long note. Its orchestra hits keep the old brass.
+
+| Star pilot's brass on the AWE32, dB at 0.25, 0.5, 1, 1.5, 2, 2.5 kHz (A3, held) | Soft | Loud |
+|---|---|---|
+| Real trombone | -4 -16 -30 | -4 0 -14 -22 -30 -40 |
+| Before (the same soft or loud) | 0 -27 -16 -20 -26 -30 | 0 -26 -15 -19 -25 -29 |
+| After | 0 -27 -34 -47 -61 -68 | 0 -23 -18 -26 -38 -43 |
+| Sound check, worst point | ⚠ 10 dB (no brighter loud) | ✓ 7 dB |
+
+(The second harmonic dips in both: the three detuned horns beat against each
+other there.)
+
+**The orchestral score and new beat** play on the Amiga, and there the
+warning is the tracker's own: one sample of the brass, played louder only by
+being played at a higher volume, cannot brighten. The real brass, sampled,
+was tried at three brightnesses: the worst point stays at 11 dB whatever the
+sample (the soft-to-loud change, which no sample has), and on average it
+came to 6.75 dB from the old brass's 6.9 - no change worth hearing. So both
+are left as they were, the warning standing for what Paula cannot do.
+
+Cyborg's sound byte for byte as it was, and every style's but star pilot's;
+`npm test` passes. Before and after: `out/starpilot-before-after.mp3`, two
+seeds on the AWE32.
+
+The owner listened and approved star pilot's brass on 2026-11-01.
+
+### Chip rock and roll, through the audit
+
+The owner chose rock and roll next. Four faults, one under another:
+
+- **The comp against the boogie bass.** The bass walks root, third, fifth,
+  sixth, flat seventh under every chord - a twelve-bar's chords are all
+  major with that flat seventh, whatever the key - but the piano comped the
+  key's own triads: in a mixolydian key the V a minor chord against the
+  bass's major third, the IV's added note a semitone from the bass's. 17% of
+  the bass's notes rubbed. Comping the dominant seventh itself did worse
+  (27%: its flat seventh against the bass's sixth, struck together). The
+  fifties' own comp moves with the bass instead: on each chord's root, the
+  major chord on the first and third beats and the sixth chord on the second
+  and fourth (C, C6, C, C6), on every eighth, chopped short. The key is
+  major now: the blues' V is a major chord, mixolydian's is minor.
+- **A twelve-bar melody on an eight-bar loop.** The sung line (`hook.line`,
+  as in the styles before) was eight bars long, so from the ninth bar it sang
+  over the wrong chords. It is as long as the chords go round now
+  (`hook.bars: 12`).
+- **The line's repeat.** Its third phrase is the first again - on the same
+  chords in a four-chord loop, but in a twelve-bar the fifth and sixth bars
+  are the IV: the I's phrase landed on the IV. A phrase comes back only
+  where its chords do.
+- **Its cost.** A comp on every eighth, each note ringing on for the piano's
+  long tail, rendered at 3 times real time. Chopped means the damper down at
+  once: the comp's notes now release fast and end there (a note can carry its
+  own tail), and the style renders faster than before.
+
+| Chip rock and roll | Before | After |
+|---|---|---|
+| Bass rubbing a semitone | 17% | 0% |
+| Bass in the chord (a boogie walk: noted, not judged) | 50% | 74% |
+| Top note, range | E7, 19 semitones | B5, 12 |
+| Leaps past a third, past a sixth | 34%, 12% | 2%, 0% |
+| Held notes a chord tone, rubbing | 94%, 0% | 100%, 0% |
+| Notes struck a third time running | 3.4% | 0% |
+| Speed on the AWE32, three seeds | 5.1 to 6.5x | 6.9 to 8.0x |
+| Every check | 3 fail, 2 warn | all pass |
+
+The echo is still a warning to listen for - 65% of its repeats land a step
+from the next note - but it is the eighth-note slapback of the records the
+style is after, kept.
+
+The audit learned one thing: where a style's bass walks (let off for it),
+its passing notes, under a whole chord sounding, imply no chord of their own
+- the bass on the sixth is not a chord on the sixth. It moves the derelict
+ship's numbers a little (its drone, a pedal, let off the same way); it still
+fails as before. Every other style byte for byte as it was; `npm test`
+passes. Before and after: `out/rocknroll-before-after.mp3`, two seeds on
+the AWE32.
+
+The owner listened and approved chip rock and roll, put right, on 2026-11-01.
+
+### Synthwave, through the audit
+
+Next, synthwave: one fail, the cause the first styles had. Its lead played
+the shared lead role - each note from the chord's root, leaping with the
+chords - and reached A#7. It sings a line now, as synth-pop does (`hook.line`,
+kept close, moving), on the same lead; one pass. The big dotted echo of the
+genre stays, as synth-pop's did: a warning to listen for (58% of its repeats
+land a step from the next note), not a fault.
+
+| Synthwave | Before | After |
+|---|---|---|
+| Top note, range | A#7, 21 semitones | C6, 12 |
+| Leaps past a third, past a sixth | 25%, 4% | 3%, 0% |
+| Held notes a chord tone, rubbing | 85%, 7% | 100%, 0% |
+| Phrases heard again | 29% | 61% |
+| Melody against the chords | -4.6 dB | -2.6 dB |
+| Every check | 1 fail, 6 warn | all pass |
+
+The shared lead role is as it was for the three other styles that play it
+(dreamwave, jungle, eurodance). Every other style byte for byte as it was;
+`npm test` passes. Before and after: `out/synthwave-before-after.mp3`, two
+seeds.
+
+The owner listened and approved synthwave, put right, on 2026-11-01.
+
+### Trance, through the audit
+
+Next, trance: its supersaw lead played the shared supersaw role - each note
+from the chord's root, an octave up in the loudest bars - and reached E8,
+spanning 30 semitones. It sings a line now on the same supersaw (`hook.line`,
+kept close, moving, a little louder); one pass.
+
+| Trance | Before | After |
+|---|---|---|
+| Top note, range | E8, 30 semitones | B5, 12 |
+| Melody on the beat a chord tone | 68% | 100% |
+| Leaps past a third | 27% | 2% |
+| Phrases heard again | 39% | 77% |
+| Melody against the chords | -4.2 dB | -2.0 dB |
+| Every check | 2 fail, 5 warn | all pass |
+
+The second fail was the echo: a dotted eighth between the eighths the lead
+sits on. That is the genre's own - the delay that fills the sixteenths
+between a trance lead's eighths - so it stays, let off by name in the audit
+(`EXEMPT`, as the derelict ship's half-step is), and still listed as a
+warning to listen for. Should the owner hear it as a fault, it goes to the
+eighths. Every other style byte for byte as it was; `npm test` passes.
+Before and after: `out/trance-before-after.mp3`, two seeds.
+
+The owner listened and approved trance, put right, its dotted delay kept, on 2026-11-01.
+| The logo, rendered as GitHub renders it | six lines of 74 characters, lined up |
+| The gallery, rendered again | 46 stills and animations; their scrollers read SCENE |
+| `npm test` | 17 checks pass |
+
 
 ## What went wrong before that
 

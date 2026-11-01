@@ -17,7 +17,7 @@ class SeedsceneProcessor extends AudioWorkletProcessor {
     this.kind = o.programme || null;
     this.startPart = o.startPart || 0;
     this.score = this.kind === 'journey' ? composeJourney(this.seed, Math.max(this.duration, 96))
-      : this.kind === 'autoplay' ? composeAutoplay(this.seed)
+      : this.kind === 'autoplay' ? composeAutoplay(this.seed, undefined, Number.isInteger(o.bornIn) ? o.bornIn : null)
         : composeScore(this.seed, this.duration, this.music, o.chip || null);
     this.synth = this.makeSynth();
     this.total = this.score.totalSamples;

@@ -14,6 +14,7 @@
     "test:quick": "node test/determinism.mjs --quick",
     "gallery": "node tools/gallery.js",
     "sampler": "node tools/sampler.js",
+    "audit:music": "node tools/music-audit.js",
     "build:web": "node tools/build-web.js"
   },
   "dependencies": {

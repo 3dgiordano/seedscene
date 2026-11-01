@@ -45,7 +45,7 @@ export function createMenu({ root, styles, musics, musicLabel, eras, eraLabel, g
       activate: () => actions.randomSeed(),
     },
     {
-      id: 'style', label: 'STYLE',
+      id: 'style', label: 'SCENE',
       value: (s) => `${styles.indexOf(s.style) + 1}. ${s.style}`,
       change: (s, d) => actions.setStyle(step(styles, s.style, d)),
     },

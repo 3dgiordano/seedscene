@@ -3,8 +3,8 @@
 <pre>
 ███████╗███████╗███████╗██████╗ ███████╗ ██████╗███████╗███╗   ██╗███████╗
 ██╔════╝██╔════╝██╔════╝██╔══██╗██╔════╝██╔════╝██╔════╝████╗  ██║██╔════╝
-███████╗█████╗  █████╗  ██║  ██║███████╗██║     █████╗  ██╔██╗ ██║█████╗
-╚════██║██╔══╝  ██╔══╝  ██║  ██║╚════██║██║     ██╔══╝  ██║╚██╗██║██╔══╝
+███████╗█████╗  █████╗  ██║  ██║███████╗██║     █████╗  ██╔██╗ ██║█████╗  
+╚════██║██╔══╝  ██╔══╝  ██║  ██║╚════██║██║     ██╔══╝  ██║╚██╗██║██╔══╝  
 ███████║███████╗███████╗██████╔╝███████║╚██████╗███████╗██║ ╚████║███████╗
 ╚══════╝╚══════╝╚══════╝╚═════╝ ╚══════╝ ╚═════╝╚══════╝╚═╝  ╚═══╝╚══════╝
 </pre>
@@ -16,7 +16,7 @@ Then ride it through forty-five years of machines, from the arcade cabinet to no
 
 ![THE JOURNEY: every era from the C64 to today, each with its own card, scene and music](docs/gallery/journey.gif)
 
-`v0.2` · 8 eras · 38 scenes · 24 music styles · 4 sound chips · endless autoplay · runs in your browser · renders to mp4 ·
+`v0.2` · 8 eras · 45 scenes · 28 music styles · 4 sound chips · endless autoplay · runs in your browser · renders to mp4 ·
 no assets, only maths · built with [3dgiordano/agent-plugins](https://github.com/3dgiordano/agent-plugins)
 
 </div>
@@ -53,6 +53,21 @@ the exact same one.
 
 ![LOAD, the striped border, READY., RUN — and the demo begins](docs/gallery/boot.gif)
 
+## Watch it online
+
+Nothing to install: open a link and press any key at `READY.` (the browser
+lets the sound start only after a key or a click). Then `H` shows every key.
+
+| | |
+|---|---|
+| **[AUTOPLAY](https://3dgiordano.github.io/seedscene/)** | the endless channel: a new track every forty seconds, era after era |
+| **[THE JOURNEY](https://3dgiordano.github.io/seedscene/?seed=seedscene&journey=1)** | every era in turn, 1979 to now |
+| **[Born in 1985](https://3dgiordano.github.io/seedscene/?seed=seedscene&autoplay=1&born=1985)** | AUTOPLAY from the era you were twelve in - change the year in the address, or press `B` |
+| **[Greetings](https://3dgiordano.github.io/seedscene/?seed=hyperspace&scene=cracktro&era=amiga#greets=ANA,LUIS,THE+3+A.M.+CODERS)** | the cracktro greeting your friends - press `G` for your own names |
+| **One era** | [Arcade 1979](https://3dgiordano.github.io/seedscene/?seed=insertcoin&era=arcade) · [C64 1982](https://3dgiordano.github.io/seedscene/?seed=readyrun&era=c64) · [Amiga 1990](https://3dgiordano.github.io/seedscene/?seed=disk2&era=amiga) · [DOS 1994](https://3dgiordano.github.io/seedscene/?seed=soundblaster&era=dos) · [32-bit console 1997](https://3dgiordano.github.io/seedscene/?seed=pressstart&era=console) · [Handheld 1998](https://3dgiordano.github.io/seedscene/?seed=poweron&era=handheld) · [Y2K 2002](https://3dgiordano.github.io/seedscene/?seed=precalc&era=y2k) · [Modern 2024](https://3dgiordano.github.io/seedscene/?seed=raymarch&era=modern) |
+| **Your own word** | `https://3dgiordano.github.io/seedscene/?seed=yourname` - the same word gives everyone the same demo |
+| **A screensaver** | `https://3dgiordano.github.io/seedscene/?saver=10` - ten seconds untouched and AUTOPLAY takes the screen |
+
 ## Try it
 
 ```bash
@@ -64,7 +79,7 @@ Or pick the word, the era, the music:
 
 ```bash
 node bin/seedscene.js live    --seed yourname --era amiga
-node bin/seedscene.js render  --seed yourname --style vectorballs --era dos --music gabber
+node bin/seedscene.js render  --seed yourname --scene vectorballs --era dos --music gabber
 node bin/seedscene.js journey  --seed yourname          # every era, 1979 to now → out/yourname-journey.mp4
 node bin/seedscene.js autoplay --seed yourname --duration 3600   # an hour of it → out/yourname-autoplay.mp4
 ```
@@ -76,6 +91,8 @@ on screen (and `H` again to hide it):
 |---|---|
 | `O` | **AUTOPLAY** — a new track every 40 seconds, scenes cut on the music, somewhere new each time |
 | `T` | **THE JOURNEY** — every era in turn, 1979 to now |
+| `B` | **BORN IN** — type the year you were born: AUTOPLAY opens in the era you were twelve in, and stays near it |
+| `G` | **GREETINGS** — type a few names: they scroll in the greetings, and stay on this screen |
 | `E` · `1` … `8` | travel to the next era, or jump to one: arcade, C64, Amiga, DOS, console, handheld, Y2K, modern |
 | `space` · `←` `→` | next / previous scene — in AUTOPLAY or THE JOURNEY, the next / previous track |
 | `↑` `↓` | change the music style |
@@ -96,17 +113,18 @@ give you the exact line to share it or render it to a video.
 
 An era is a screen, not a scene: any scene can be seen through any era. Leave
 it on `auto` and the seed picks an era the scene belongs to, then music of
-that era.
+that era; choose only the era, and the seed picks one of that era's own
+scenes.
 
 | | era | the screen | the music it brings |
 |---|---|---|---|
 | **1979** | `arcade` | the coin-op cabinet: a few hard, bright colours, heavy bloom, a curved tube | arcade attract, cyborg pulse, derelict ship, synth-pop |
 | **1982** | `c64` | 16 colours, fat double-wide pixels, a TV in the bedroom | SID chiptune, synth-pop |
 | **1990** | `amiga` | 4096-colour copper gradients with honest banding, PAL monitor | Amiga rave, New Beat, orchestral trackers, dreamwave, tracker jazz — on Paula's 8-bit samples |
-| **1994** | `dos` | VGA mode 13h: 320×200, 256 colours, ordered dither | ambient techno, acid, gabber, eurodance, jungle, FM metal, MIDI quest — on a Sound Blaster 16's FM or an AWE32's wavetable |
-| **1997** | `console` | 15-bit colour, the 32-bit consoles' dither, composite TV | heroic game soundtracks, eurodance, chip rock and roll, star pilot, MIDI quest — on wavetable |
+| **1994** | `dos` | VGA mode 13h: 320×200, 256 colours, ordered dither | ambient techno, acid, gabber, eurodance, jungle, FM metal, MIDI quest — on a Sound Blaster 16's FM or an AWE32's wavetable; and keygen, the party's tracker tunes, played from samples as a module player did; and trip-hop, its strings and Rhodes on the card |
+| **1997** | `console` | 15-bit colour, the 32-bit consoles' dither, composite TV | heroic game soundtracks, eurodance, chip rock and roll, star pilot, MIDI quest, the anime opening, skate punk — on wavetable |
 | **1998** | `handheld` | four shades of green on a reflective LCD, pixel grid and all | handheld chip, chip rock and roll |
-| **2002** | `y2k` | hi-res, glow on everything — the 64k intro | trance, happy hardcore |
+| **2002** | `y2k` | hi-res, glow on everything — the 64k intro | trance, happy hardcore, keygen, trip-hop |
 | **2024** | `modern` | shader art: neon, film grain, chromatic aberration | synthwave, dreamwave |
 
 ## THE JOURNEY
@@ -141,6 +159,54 @@ Live, AUTOPLAY drops in somewhere new in its channel every time you press
 `O`, so it never plays the same sequence twice. The rendered channel is
 still the seed's: `seedscene autoplay --duration 3600` puts an hour of it in
 an mp4, the same every time for the same word.
+
+### Between the tracks
+
+The programmes have their own sounds between the tracks, played over the mix:
+each era opens THE JOURNEY with a chime of its own, in the spirit of how its
+machines started - a coin and a credit for the arcade, a SID arpeggio for
+the C64, the floppy drive stepping for the Amiga, the beep of a PC that has
+checked itself, a deep swell for the 32-bit console, a two-note ping for
+the handheld, a soft bell for now - on the incoming track's key. A handheld
+track starts with its cartridge clicking in. And the way into the
+media-player years is a dial-up modem's handshake, as the riser of the mix:
+the dial tone, the number, the answer, the 2100 Hz tone and its snaps, the
+probing, the hiss - and silence, the line connected, on the drop.
+
+### Born in
+
+Press **`B`** and type the year you were born. AUTOPLAY opens in the era you
+were twelve in - born in 1985, the 32-bit console of 1997 - its card saying
+so (`BORN 1985   TWELVE IN 1997`), and keeps coming back to it every other
+block; the eras between are drawn from the ones nearest your year, so a 1985
+childhood hears mostly the console, the Y2K PC and DOS, the Amiga now and then.
+`B` again takes you back to your demo; the year stays in the page's address,
+so a reload comes back to it. Rendered:
+`seedscene autoplay --born 1985`.
+
+### Greetings
+
+Every demo greeted its friends. Press **`G`** and type a few names, between
+commas - up to eight, twenty letters each, accents dropped as the old fonts
+dropped them. RETURN puts them in the greetings: first in the sine scroller of
+every scene (`GREETINGS TO JOSE - ANA MARIA - LUCIA`), in AUTOPLAY and THE
+JOURNEY too, in the About part's greetings, and on the cracktro's own pages,
+three names a page after its thanks. The names are kept after the `#` of the
+page's address, the part a browser never sends to any server: they stay on
+this screen, and a reload brings them back. For a video:
+`seedscene render --scene cracktro --greets "Jose, Ana Maria"`.
+
+### Screensaver
+
+Leave it alone for a minute - no key, no click, no mouse moving - and
+SEEDSCENE turns into a screensaver: AUTOPLAY takes the screen, with nothing
+on it but the picture, not even the pointer. Any key, a click or a touch
+brings your own demo back (the key does nothing else). It waits while the
+demo is paused, while a menu or a box is open, and over a programme or the
+About part. A browser lets a page go full screen only right after a key or a
+click, never after a minute of nothing: in full screen (`F`) the screensaver
+stays full screen; in a window it fills the window. `saver=<seconds>` in
+the page's address changes the wait, `saver=0` turns it off.
 
 ## The arcade
 
@@ -194,36 +260,40 @@ character and no tune is copied from any game. The creatures in the
 formation, the mazes, the rocks and the challenger robot are all made up by
 the seed.
 
-## Thirty-eight scenes, straight out of the scene
+## Forty-five scenes, straight out of the scene
 
 | | | |
 |---|---|---|
 | ![plasma](docs/gallery/plasma.png) | ![dottunnel](docs/gallery/dottunnel.png) | ![copper](docs/gallery/copper.png) |
-| **plasma** — sine waves melting through a palette. *Handheld,* `--seed 1989` | **dottunnel** — rings of dots rushing down a snaking tunnel. *C64,* `--seed warpspeed` | **copper** — copper bars glowing over an endless checkerboard. *Amiga,* `--seed copperlist` |
+| **plasma** — sine waves melting through a palette. *Handheld,* `--scene plasma --era handheld --seed 1989` | **dottunnel** — rings of dots rushing down a snaking tunnel. *C64,* `--scene dottunnel --era c64 --seed warpspeed` | **copper** — copper bars glowing over an endless checkerboard. *Amiga,* `--scene copper --era amiga --seed copperlist` |
 | ![shadebobs](docs/gallery/shadebobs.png) | ![vectorballs](docs/gallery/vectorballs.png) | ![ripple](docs/gallery/ripple.png) |
-| **shadebobs** — glowing trails that wrap round the palette. *Amiga,* `--seed shadebob` | **vectorballs** — shaded spheres morphing between shapes every two bars. *Amiga,* `--seed vectorballs` | **ripple** — drops landing on the beat across a pool floor. *Amiga,* `--seed raindrops` |
+| **shadebobs** — glowing trails that wrap round the palette. *Amiga,* `--scene shadebobs --era amiga --seed shadebob` | **vectorballs** — shaded spheres morphing between shapes every two bars. *Amiga,* `--scene vectorballs --era amiga --seed vectorballs` | **ripple** — drops landing on the beat across a pool floor. *Amiga,* `--scene ripple --era amiga --seed raindrops` |
 | ![tunnel](docs/gallery/tunnel.png) | ![metaballs](docs/gallery/metaballs.png) | ![fractal](docs/gallery/fractal.png) |
-| **tunnel** — a twisting, texture-mapped tunnel punched by the kick. *DOS,* `--seed insertdisk2` | **metaballs** — liquid blobs that merge and split. *DOS,* `--seed lavalamp` | **fractal** — an orbiting Julia set, the classic end-part. *DOS,* `--seed julia` |
+| **tunnel** — a twisting, texture-mapped tunnel punched by the kick. *DOS,* `--scene tunnel --era dos --seed insertdisk2` | **metaballs** — liquid blobs that merge and split. *DOS,* `--scene metaballs --era dos --seed lavalamp` | **fractal** — an orbiting Julia set, the classic end-part. *DOS,* `--scene fractal --era dos --seed julia` |
 | ![fireworks](docs/gallery/fireworks.png) | ![starfield](docs/gallery/starfield.png) | ![morph](docs/gallery/morph.png) |
-| **fireworks** — a burst on every backbeat, streaks falling to earth. *Console,* `--seed newyear` | **starfield** — warp speed around a drilled glenz-vector solid. *Console,* `--seed hyperspace` | **morph** — a raymarched solid melting between shapes on the bar. *Y2K,* `--seed liquidmetal` |
+| **fireworks** — a burst on every backbeat, streaks falling to earth. *Console,* `--scene fireworks --era console --seed newyear` | **starfield** — warp speed around a drilled glenz-vector solid. *Console,* `--scene starfield --era console --seed hyperspace` | **morph** — a raymarched solid melting between shapes on the bar. *Y2K,* `--scene morph --era y2k --seed liquidmetal` |
 | ![outrun](docs/gallery/outrun.png) | ![paddles](docs/gallery/paddles.png) | ![invaders](docs/gallery/invaders.png) |
-| **outrun** — the synthwave sunset: striped sun, neon grid, mountains. *Modern,* `--seed nightdrive` | **paddles** — the first video game in neon: a return on every beat, and on an accent a paddle misses and is blown apart. *Modern,* `--seed rally` | **invaders** — a formation the seed invents, a step per beat; each shot lands on a beat and the alien bursts on the kick. *Arcade,* `--seed formation` |
+| **outrun** — the synthwave sunset: striped sun, neon grid, mountains. *Modern,* `--scene outrun --era modern --seed nightdrive` | **paddles** — the first video game in neon: a return on every beat, and on an accent a paddle misses and is blown apart. *Modern,* `--scene paddles --era modern --seed rally` | **invaders** — a formation the seed invents, a step per beat; each shot lands on a beat and the alien bursts on the kick. *Arcade,* `--scene invaders --era arcade --seed formation` |
 | ![rocks](docs/gallery/rocks.png) | ![maze](docs/gallery/maze.png) | ![bricks](docs/gallery/bricks.png) |
-| **rocks** — a ship that flies, dodges and fires on the eighths; hit rocks break in two, in glowing phosphor lines. *Arcade,* `--seed vectorscope` | **maze** — a chomper hunting dots round a mirrored neon maze, three wisps on the chase, a new maze each time it is cleared. *Arcade,* `--seed powerpill` | **bricks** — a neon wall broken on the rhythm by a ball that goes somewhere new each return. *Arcade,* `--seed brickwall` |
+| **rocks** — a ship that flies, dodges and fires on the eighths; hit rocks break in two, in glowing phosphor lines. *Arcade,* `--scene rocks --era arcade --seed vectorscope` | **maze** — a chomper hunting dots round a mirrored neon maze, three wisps on the chase, a new maze each time it is cleared. *Arcade,* `--scene maze --era arcade --seed powerpill` | **bricks** — a neon wall broken on the rhythm by a ball that goes somewhere new each return. *Arcade,* `--scene bricks --era arcade --seed brickwall` |
 | ![lightcycles](docs/gallery/lightcycles.png) | ![snake](docs/gallery/snake.png) | ![boxer](docs/gallery/boxer.png) |
-| **lightcycles** — four riders flying on a neon grid trailing walls of light, turning on the beat; on the downbeat that opens a phrase, one is sent into another's wall and blows up. *Modern,* `--seed neongrid` | **snake** — a neon snake that hunts its food, grows, and bursts when it boxes itself in. *Modern,* `--seed longsnake` | **boxer** — a title fight between two robots, staged like the console classics: hooks, jab flurries, uppercuts and showboating on the beat; yours, see-through, slips and punishes; on the crash a star punch switches him off, he crumples and the count goes up. *Arcade,* `--seed titlefight` |
+| **lightcycles** — four riders flying on a neon grid trailing walls of light, turning on the beat; on the downbeat that opens a phrase, one is sent into another's wall and blows up. *Modern,* `--scene lightcycles --era modern --seed neongrid` | **snake** — a neon snake that hunts its food, grows, and bursts when it boxes itself in. *Modern,* `--scene snake --era modern --seed longsnake` | **boxer** — a title fight between two robots, staged like the console classics: hooks, jab flurries, uppercuts and showboating on the beat; yours, see-through, slips and punishes; on the crash a star punch switches him off, he crumples and the count goes up. *Arcade,* `--scene boxer --era arcade --seed titlefight` |
 | ![starfighter](docs/gallery/starfighter.png) | ![fire](docs/gallery/fire.png) | ![kefrens](docs/gallery/kefrens.png) |
-| **starfighter** — an on-rails run in flat-shaded polygons, after the 16-bit console classic: a white fighter with tall blue fins turns its nose and sights onto a red delta-wing, fires along them and bursts it; the drones come in from the horizon or the far distance, their shots come back, the ship slides out of their way, and one that lands shakes it and flashes the screen once. Space of points of light that stretch into a warp at each new sector; a planet of snowy mountains, clouds and stone arches, the ship's shadow running on the ground; a red shield bar. *Console,* `--seed hyperdrive` | **fire** — the classic 256-colour fire of the DOS demos: tongues of flame leaping on the kick, sparks flying up on the snare, and at the peak of the music a seed-made emblem catching fire. *DOS,* `--seed inferno` | **kefrens** — the Amiga classic: a shaded bar on every raster line, never cleared, piling up into a ribbon that weaves wider on the bass, fattens on the kick and turns colour with the bars of the music. *Amiga,* `--seed copperwave` |
+| **starfighter** — an on-rails run in flat-shaded polygons, after the 16-bit console classic: a white fighter with tall blue fins turns its nose and sights onto a red delta-wing, fires along them and bursts it; the drones come in from the horizon or the far distance, their shots come back, the ship slides out of their way, and one that lands shakes it and flashes the screen once. Space of points of light that stretch into a warp at each new sector; a planet of snowy mountains, clouds and stone arches, the ship's shadow running on the ground; a red shield bar. *Console,* `--scene starfighter --era console --seed hyperdrive` | **fire** — the classic 256-colour fire of the DOS demos: tongues of flame leaping on the kick, sparks flying up on the snare, and at the peak of the music a seed-made emblem catching fire. *DOS,* `--scene fire --era dos --seed inferno` | **kefrens** — the Amiga classic: a shaded bar on every raster line, never cleared, piling up into a ribbon that weaves wider on the bass, fattens on the kick and turns colour with the bars of the music. *Amiga,* `--scene kefrens --era amiga --seed copperwave` |
 | ![ball](docs/gallery/ball.png) | ![rings](docs/gallery/rings.png) | ![lcd](docs/gallery/lcd.png) |
-| **ball** — the Amiga's first and most famous demo: the red and white ball spinning on its tilted axis, bouncing from wall to wall of a grid room with its shadow behind it — landing on every beat, spinning faster as the music builds. *Amiga,* `--seed boing` | **rings** — interference rings: two sets of rings drifting through each other, every crossing flipping the colour into a moiré that seems to move on its own; they run outward on the kick, tighten on the bass, and a third set joins in at the peak. *Amiga,* `--seed moire` | **lcd** — the juggling LCD handheld of 1980, the whole device: brushed silver in a maroon case, two big round red buttons, the grey screen in its red border; on it a juggler in black segments, arms straight out, balls hopping cell by cell and landing in a hand on the beat, the side button going down for each catch, the score counting them. The whole device floats in space, punching in on the kick. *Arcade,* `--seed juggler` |
+| **ball** — the Amiga's first and most famous demo: the red and white ball spinning on its tilted axis, bouncing from wall to wall of a grid room with its shadow behind it — landing on every beat, spinning faster as the music builds. *Amiga,* `--scene ball --era amiga --seed boing` | **rings** — interference rings: two sets of rings drifting through each other, every crossing flipping the colour into a moiré that seems to move on its own; they run outward on the kick, tighten on the bass, and a third set joins in at the peak. *Amiga,* `--scene rings --era amiga --seed moire` | **lcd** — the juggling LCD handheld of 1980, the whole device: brushed silver in a maroon case, two big round red buttons, the grey screen in its red border; on it a juggler in black segments, arms straight out, balls hopping cell by cell and landing in a hand on the beat, the side button going down for each catch, the score counting them. The whole device floats in space, punching in on the kick. *Arcade,* `--scene lcd --era arcade --seed juggler` |
 | ![scanner](docs/gallery/scanner.png) | ![footsteps](docs/gallery/footsteps.png) | ![twister](docs/gallery/twister.png) |
-| **scanner** — the talking car of 80s television, as an idea: a long, low black car coming down a night road straight at you, the red light in its nose sweeping left and right, one pass on every beat, a trail fading behind it; the road rushes faster as the music builds. *Arcade,* `--seed redsweep` | **footsteps** — the dinosaur films' most famous warning, as an idea: two plastic cups of water on a car's dashboard, at night in the rain, the water trembling into rings with every footstep — the left cup on the kick, the right on the snare — until, at the peak, the light drops as something huge goes by. Nothing of the animal is shown. *Console,* `--seed impact` | **twister** — the twisted bar of the Amiga and Atari ST demos: a square column of block-textured faces, each lit by the angle it turns to you, twisting up the screen; the twist winds up as the music builds, the bar snaps a quarter turn on the kick, and at the peak two more join it. *Amiga,* `--seed stonebar` |
+| **scanner** — the talking car of 80s television, as an idea: a long, low black car coming down a night road straight at you, the red light in its nose sweeping left and right, one pass on every beat, a trail fading behind it; the road rushes faster as the music builds. *Arcade,* `--scene scanner --era arcade --seed redsweep` | **footsteps** — the dinosaur films' most famous warning, as an idea: two plastic cups of water on a car's dashboard, at night in the rain, the water trembling into rings with every footstep — the left cup on the kick, the right on the snare — until, at the peak, the light drops as something huge goes by. Nothing of the animal is shown. *Console,* `--scene footsteps --era console --seed impact` | **twister** — the twisted bar of the Amiga and Atari ST demos: a square column of block-textured faces, each lit by the angle it turns to you, twisting up the screen; the twist winds up as the music builds, the bar snaps a quarter turn on the kick, and at the peak two more join it. *Amiga,* `--scene twister --era amiga --seed stonebar` |
 | ![pyramid](docs/gallery/pyramid.png) | ![pipes](docs/gallery/pipes.png) | ![bobs](docs/gallery/bobs.png) |
-| **pyramid** — the cube-pyramid hopper of the 1982 arcades, played, on a board floating in space: a round green hopper of its own hops a cube a beat to turn every top, while the game's enemies come down between the beats — red balls dropping onto the second row and bouncing down at random, a purple egg that hatches into a coiled snake and chases. A ball or the snake on its cube and it stops and swears in a balloon; with the snake close behind it rides a disc to the top and the snake, following, falls. Each round the pyramid builds itself a row an eighth note, every landing ripples through the cubes, and a won round is a wave of jumping cubes before it falls away. *Arcade,* `--seed cubes` | **pipes** — the 3D pipes screensaver of the mid-90s office PC, seen from above: shiny pipes of solid colours growing cell by cell through a deep grid, never into a cell another holds, turning on the eighth notes with a smooth elbow (now and then a ball joint). The tangle fills from the distance forwards for sixteen bars until the screen is saturated, then dissolves in blocks through the last bar; the camera punches in on the kick. *DOS,* `--seed screensaver` | **bobs** — unlimited bobs, the Amiga and Atari ST trick: a few screens shown in turn and never cleared, one shaded ball drawn each frame, so a chain of balls seems to slide along behind its head, tracing its path. Ours runs on the music's clock: it surges ahead on the kick and on the pitched hits — stabs, lead, arpeggio — and glides between them; older balls recede into the distance and fade, so the chain flows away into the depth. On the kick it swells and settles back, on the snare it lightens, each bar draws its colour, and the screen punches in on the kick and shakes with the bass. A twin chain runs the figure the other way in the other colours, and the two weave a knot as they cross. *Amiga,* `--seed copperlist` |
+| **pyramid** — the cube-pyramid hopper of the 1982 arcades, played, on a board floating in space: a round green hopper of its own hops a cube a beat to turn every top, while the game's enemies come down between the beats — red balls dropping onto the second row and bouncing down at random, a purple egg that hatches into a coiled snake and chases. A ball or the snake on its cube and it stops and swears in a balloon; with the snake close behind it rides a disc to the top and the snake, following, falls. Each round the pyramid builds itself a row an eighth note, every landing ripples through the cubes, and a won round is a wave of jumping cubes before it falls away. *Arcade,* `--scene pyramid --era arcade --seed cubes` | **pipes** — the 3D pipes screensaver of the mid-90s office PC, seen from above: shiny pipes of solid colours growing cell by cell through a deep grid, never into a cell another holds, turning on the eighth notes with a smooth elbow (now and then a ball joint). The tangle fills from the distance forwards for sixteen bars until the screen is saturated, then dissolves in blocks through the last bar; the camera punches in on the kick. *DOS,* `--scene pipes --era dos --seed screensaver` | **bobs** — unlimited bobs, the Amiga and Atari ST trick: a few screens shown in turn and never cleared, one shaded ball drawn each frame, so a chain of balls seems to slide along behind its head, tracing its path. Ours runs on the music's clock: it surges ahead on the kick and on the pitched hits — stabs, lead, arpeggio — and glides between them; older balls recede into the distance and fade, so the chain flows away into the depth. On the kick it swells and settles back, on the snare it lightens, each bar draws its colour, and the screen punches in on the kick and shakes with the bass. A twin chain runs the figure the other way in the other colours, and the two weave a knot as they cross. *Amiga,* `--scene bobs --era amiga --seed copperlist` |
 | ![dualchess](docs/gallery/dualchess.png) | ![chessfloor](docs/gallery/chessfloor.png) | ![rubber](docs/gallery/rubber.png) |
-| **dualchess** — the dual chessboard of the Amiga intros: a chessboard on each bitplane, each zooming slowly between big squares and small ones, the palette giving every overlap its own shade. Two modes, a phrase each: the layers sliding sideways past each other at their own speeds; then the boards turning slowly on their own axes against each other, a quarter turn, breaking into moiré, square again for the next. The first board's squares punch in on the kick; the second breathes on the snare and slides with the bass; a third fades in for the second half of each phrase. *Amiga,* `--seed zoomboard` | **chessfloor** — the chessboard floor of the Amiga intros, with its cube: a board seen from above in perspective, turning beneath you, and a red cube bouncing on it. The board waves in 3D — a slow swell that grows with the bass, and every time the cube lands, on the beat, the board gives under it and a ring of waves runs out and dies away. The cube moves smoothly: its spin speeds up as the rhythm gets busy and slows as it thins, each hop set as it leaves. And the touches of the time: the cube mirrored in the board, glints on the wave crests, a glow round the cube, a bright copper line at the horizon. *Amiga,* `--seed sunnfun` | **rubber** — the rubber vector of the Amiga demos: a flat-shaded cube turning, its lower part lagging behind its top, so it bends and wobbles like jelly — each line of the screen shows the cube as it was a moment before, as the demos did with copies of the cube. Each kick gives the spin a shove that dies away, so the jolt runs down the cube like a wave through jelly; the snare tips it on a spring; the screen punches in on the kick and shakes with the bass, the copper bars behind flaring on the kick, a third joining them at the peak. *Amiga,* `--seed jelly` |
-| ![bumplogo](docs/gallery/bumplogo.png) | ![cracktro](docs/gallery/cracktro.png) | |
-| **bumplogo** — the bump-mapped logo of the mid-90s PC demos: an emblem raised out of rough stone, lit by moving coloured lights so it reads as embossed metal — done in 2D, as the demos did, each pixel's slope shifting where the light is looked up — on a plate seen at an angle, the camera leaning slowly round it. The lights circle the emblem and flare wider on the snare; the relief deepens on the kick, the screen punching in with it; a third light joins them in the second half of each phrase. *DOS,* `--seed emboss` | **cracktro** — the crack intro of the Amiga years and its starfield: a field of stars in depth that you fly through — drifting sideways, the near stars sliding past faster than the far ones, then diving forward or pulling back — steered by the music, a new heading every two bars, faster as it builds, a surge on each kick, and in the last two bars of each phrase a warp into the next — forward, the stars stretching into lines out of the middle as the jump to hyperspace did, or sideways into long streaks, each star glowing. It opens with the intro: a chrome SEEDSCENE logo bouncing on the beat over rainbow copper lines, and pages typing in, in a 5×7 bitmap font — what this is, and thanks to 3dgiordano and the SEEDSCENE community — which then fade away and leave the stars. *Amiga,* `--seed warez` | |
+| **dualchess** — the dual chessboard of the Amiga intros: a chessboard on each bitplane, each zooming slowly between big squares and small ones, the palette giving every overlap its own shade. Two modes, a phrase each: the layers sliding sideways past each other at their own speeds; then the boards turning slowly on their own axes against each other, a quarter turn, breaking into moiré, square again for the next. The first board's squares punch in on the kick; the second breathes on the snare and slides with the bass; a third fades in for the second half of each phrase. *Amiga,* `--scene dualchess --era amiga --seed zoomboard` | **chessfloor** — the chessboard floor of the Amiga intros, with its cube: a board seen from above in perspective, turning beneath you, and a red cube bouncing on it. The board waves in 3D — a slow swell that grows with the bass, and every time the cube lands, on the beat, the board gives under it and a ring of waves runs out and dies away. The cube moves smoothly: its spin speeds up as the rhythm gets busy and slows as it thins, each hop set as it leaves. And the touches of the time: the cube mirrored in the board, glints on the wave crests, a glow round the cube, a bright copper line at the horizon. *Amiga,* `--scene chessfloor --era amiga --seed sunnfun` | **rubber** — the rubber vector of the Amiga demos: a flat-shaded cube turning, its lower part lagging behind its top, so it bends and wobbles like jelly — each line of the screen shows the cube as it was a moment before, as the demos did with copies of the cube. Each kick gives the spin a shove that dies away, so the jolt runs down the cube like a wave through jelly; the snare tips it on a spring; the screen punches in on the kick and shakes with the bass, the copper bars behind flaring on the kick, a third joining them at the peak. *Amiga,* `--scene rubber --era amiga --seed jelly` |
+| ![bumplogo](docs/gallery/bumplogo.png) | ![cracktro](docs/gallery/cracktro.png) | ![cascade](docs/gallery/cascade.png) |
+| **bumplogo** — the bump-mapped logo of the mid-90s PC demos: an emblem raised out of rough stone, lit by moving coloured lights so it reads as embossed metal — done in 2D, as the demos did, each pixel's slope shifting where the light is looked up — on a plate seen at an angle, the camera leaning slowly round it. The lights circle the emblem and flare wider on the snare; the relief deepens on the kick, the screen punching in with it; a third light joins them in the second half of each phrase. *DOS,* `--scene bumplogo --era dos --seed emboss` | **cracktro** — the crack intro of the Amiga years and its starfield: a field of stars in depth that you fly through — drifting sideways, the near stars sliding past faster than the far ones, then diving forward or pulling back — steered by the music, a new heading every two bars, faster as it builds, a surge on each kick, and in the last two bars of each phrase a warp into the next — forward, the stars stretching into lines out of the middle as the jump to hyperspace did, or sideways into long streaks, each star glowing. It opens with the intro: a chrome SEEDSCENE logo bouncing on the beat over rainbow copper lines, and pages typing in, in a 5×7 bitmap font — what this is, and thanks to 3dgiordano and the SEEDSCENE community — which then fade away and leave the stars. *Amiga,* `--scene cracktro --era amiga --seed hyperspace` | **cascade** — the card game won, as the desktop of the 90s showed it: the four foundations empty one card at a time, kings first, and each card falls off its pile and bounces down the green table, leaving a copy of itself at every step because the game never cleared the screen — fast cards as fans of white edges with their red and black indices, slow ones piling their borders into black arches, a card that has stopped bouncing sliding along the bottom. A card leaves the piles on each bar, and another halfway through the bar when the music is busy; each is thrown so that it first lands on the beat, on the "and" or on the sixteenth between, and bounces livelier the busier the music; the trails keep the music - the copies drawn just after a kick are warm, after a snare cool, so each hit is a band of colour down the trail - and older copies sink into the table while the newest arcs stand out; each card casts its shadow, and its first landing throws up sparks and a flash along the floor. The table floats on the stage like the game scenes, the camera riding the music, punching in on the kick; in the last bar of each phrase colour runs through every trail, and the next phrase deals a new game, the table cleared and the piles full again. *Y2K,* `--scene cascade --era y2k --seed cascade` |
+| ![ansi](docs/gallery/ansi.png) | ![echolines](docs/gallery/echolines.png) | ![maze3d](docs/gallery/maze3d.png) |
+| **ansi** — the art of the bulletin boards, arriving over the modem: VGA text mode in its sixteen colours, pictures and big block-letter logos built from full and half blocks and the three shades, the gradients run down the artists' ramps from white through yellow to brown or light blue to blue, grey outlines, a sparkle of stars. A line of the file arrives each beat, the cursor sweeping it at about the speed of a 2400-baud modem, and the screen scrolls smoothly up as it fills; each phrase brings a part of the file — a spaced-out header, a sunset or a night sky with its moon over a shaded land, a line about the music, and a logo (SEEDSCENE, the seed, the music) whose last line lands as the next phrase opens. The camera shows the whole screen on the drop, then draws slowly nearer as the picture arrives, keeping the lines already drawn in view above the cursor, and eases back out over the logo so the drop shows it whole; the kick lights the letters as they arrive and punches the screen in, the snare sets the stars twinkling, and on the drop the finished logo cycles its colours. *DOS,* `--scene ansi --era dos --seed colorbars` || **echolines** — the bouncing lines of the screensavers of the early 90s: two figures of four corners, each corner flying in a straight line and bouncing off the edges of the screen, each figure drawn again at the moments just behind it in thin lines of one colour, so it trails a fan of echoes. The music sets the pace: the figures fly faster as it builds, get a shove on each kick and a burst as each phrase opens; the kick stretches the echoes apart like a spring and punches the screen, each snare hit moves the colours on, and the busier the music, the more echoes — six when it is quiet, up to fourteen. *DOS,* `--scene echolines --era dos --seed nightshift` | **maze3d** — the 3D maze of the screensavers of the mid-90s, walked in first person: corridors of dark red bricks with pale mortar, a tan floor, a ceiling of white tiles, a maze of the seed's own, walked with a hand on the wall so it never ends. A move every two beats — a step down the corridor, or a corner taken walking — so the steps land on the first and third beats of the bar; each kick is a footfall that dips the view and punches the screen, the snare brightens the ceiling, and as each phrase ends a grey stone spins on the path ahead: the walk goes through it on the drop and the world turns upside down, until the next. *DOS,* `--scene maze3d --era dos --seed corridors` |
+| ![moonbike](docs/gallery/moonbike.png) | ![timecar](docs/gallery/timecar.png) | ![animeop](docs/gallery/animeop.png) |
+| **moonbike** — the boy and his friend from the stars, as an idea: a deep blue night, a huge pale moon with its seas and a wisp of cloud, pines black at the corners, and a bicycle crossing the moon in silhouette — the rider hunched over the bars, hood up, cape flying, a bundle in a blanket sitting up in the basket. It always opens with the bicycle riding in; it crosses for four bars, is gone for two — turning round somewhere past the edge of the frame while the camera settles — and comes back the way it went, near and through the moon, then far and high. The camera pans after it and draws in as it crosses the moon, each layer moving less the farther it is — the stars, the moon, a forest far off, the pines in the corners — and the halo opens as it crosses; the wheels turn a turn a beat, the pedals with them, the cape streams and ripples on the eighths, the kick lights the moon and punches the screen, the hats set the stars twinkling and the snare sends a shooting star every other bar. *Modern,* `--scene moonbike --era modern --seed moonride` || **timecar** — the time-travel car of the 80s, as an idea, on the night of its first run: a wet parking lot lit orange by its lamps, a long low building beyond, two onlookers — one with the remote and its aerial, one filming — swaying to the music with their backs to us. A stainless wedge in 3D - the low nose, the steep windscreen, the louvred fastback - laps the lot fast, passing close in front of them, swings round at the far end and charges at them, between them, its readout climbing to 88 on the next big moment of the music — the bars where a crash or the drop falls — the light gathering at its nose and lightning crawling round it on the sixteenths; they brace as it comes. At 88 the light bursts, they shield their faces, and it is gone; only then the fire: the cut goes to the reverse, the two of them from the front hopping from foot to foot on the beat as two trails of fire race down its tracks and between their legs, and then close on the plate it left - SEEDSCENE on it - standing on its edge and spinning like a coin, wobbling faster as it tilts, until it falls flat. *Arcade,* `--scene timecar --era arcade --seed gigawatts` | **animeop** — the anime openings the 90s brought to Latin America, as an idea: a cut on every bar, as those openings cut on the music — the team in a row against a flat red sunburst, three of them against a sunset, a power-up over two bars — the charge, crouched, the ground cracking; bolts of lightning out of the sky, and on the downbeat a white flash, a column of fire bursting up and a ring of dust; then the energized state that stays, a tall serrated aura with lightning crawling round it, the hair spiked up gold and the muscles swollen — a flight in formation across a sky rushing right to left, a charge out of black speed lines — silhouettes of their own, striking a new pose on every beat; the kick punches the picture and bursts the lines, the last bar of each phrase cuts on every beat into a white flash, and on the drop the title card slams in: the seed as the show's name in thick outlined letters, yellow into orange over rushing blue streaks, SEEDSCENE above it and a star glinting at its corner. *32-bit console,* `--scene animeop --era console --seed hikari` |
 
 Every scene carries the two things no demo went without: a title plate and a
 sine scroller that opens with **SEEDSCENE PRESENTS…** — and every scene is an
@@ -261,6 +331,10 @@ plays, or in the menu:
 | `modjazz` | **tracker jazz**: the demo-party jazz tune — a walking slap bass, electric-piano comping on the off-beats, a flute that improvises, the ride swinging | 100–126 |
 | `fmmetal` | **FM metal**: a DOS shooter at full tilt — palm-muted power chords, a double kick when it peaks, a guitar that solos | 150–178 |
 | `midiquest` | **MIDI quest**: an adventure on a sound card — strings and choir, a harp running up and down, a flute, the timpani of a long road | 84–108 |
+| `keygen` | **keygen**: the crack intros' tracker tunes, from the patterns of forty real ones — chords arpeggiated on the tracker's tick, a squelchy lead sliding into its notes with an echo channel a few rows behind, a bouncing bass, drum samples; 125 bpm most often, the tracker's default | 120–140 |
+| `triphop` | **trip-hop**: the 90s Bristol sound — a slow break pitched down and shuffled like an MPC, the kick leading into the beats, a big roomy snare and a side-stick, the ride on the upbeats; a deep sliding bass, dark film-score strings, a Rhodes, a theremin, a record scratched at the end of a phrase, the crackle under it all | 68–90 |
+| `animeop` | **anime opening**: the 90s anime opening, in the anison's form — an intro, a verse, a prechorus climbing into a chorus you could sing - mostly steps, an arch to each phrase, the same tune every time it returns, the brass joining it in the last one - the Royal Road progression under it, often a minor third up from the verse, and the last chorus a step higher still; J-rock drums, driving bass, palm-muted then open guitars, brass stabs | 140–170 |
+| `skatepunk` | **skate punk**: the skateboarding games' punk — ska verses, the guitar chopping on the off-beats over a backbeat and the bass walking; punk choruses, the snare on every "and", the kick on the beat and the sixteenth after (or doubled before the snare), the hats open, power chords hammered on the eighths; a synth chorus shouted like a gang, a few notes, the same each time | 180–200 |
 
 Each one is arranged like a real piece — intro, build, main part, a breakdown
 with a riser, a crash into the drop, an outro. The newest five are built
@@ -286,10 +360,18 @@ their machine:
 | `dos` | **Sound Blaster 16 (OPL3)** or **AWE32**, by the seed | OPL3: two-operator FM with the chip's seven waveforms and operator feedback, FM drums, and dry, like a DOS game. AWE32: wavetable instruments — a grand piano, string and brass sections, a choir, plucked bass and guitar, an acoustic kit — with the card's chorus and reverb. |
 | `console` | **AWE32-style wavetable** | the sampled sound of the CD-era consoles |
 
-Hear all twenty-four back to back, each on the chips of its eras:
+Hear all twenty-eight back to back, each on the chips of its eras:
 
 ```bash
 npm run sampler        # → out/music-sampler.mp3
+```
+
+And check them as music, from their scores - the harmony, the melody, the
+grid, the mix - all of them or one at a time ([the review](docs/MUSIC-REVIEW.md),
+[the latest audit](docs/MUSIC-AUDIT.md)):
+
+```bash
+npm run audit:music -- keygen
 ```
 
 ## The About part
@@ -336,18 +418,20 @@ seedscene live    [options]     run it in a browser, in real time
 seedscene render  [options]     render a demo to an mp4 file
 seedscene journey [options]     render THE JOURNEY to an mp4 file
 seedscene autoplay [options]    render AUTOPLAY to an mp4 file, as long as you like
-seedscene styles                list the eras, scenes and music styles
+seedscene scenes                list the eras, scenes and music styles
 seedscene info    [options]     show what a seed composes
 ```
 
 | option | meaning | default |
 |---|---|---|
 | `--seed <word>` | anything at all; the same word always gives the same demo | random |
-| `--style <name>` | one of the thirty-eight scenes | chosen by the seed |
+| `--scene <name>` | one of the forty-five scenes (`--style`, its old name, works too) | chosen by the seed - one of the era's, if the era is given |
 | `--era <name>` | `auto` `arcade` `c64` `amiga` `dos` `console` `handheld` `y2k` `modern` | an era the scene belongs to |
-| `--music <name>` | `auto` or one of the twenty-four styles | music of the era |
+| `--music <name>` | `auto` or one of the twenty-eight styles | music of the era |
 | `--res <WxH\|preset>` | `854x480`, or `240p` `360p` `480p` `576p` `720p` `1080p` | `480p` |
 | `--duration <seconds>` | length | 30 render, 180 live, 128 journey, 600 autoplay |
+| `--born <year>` | autoplay: open in the era you were twelve in, and stay near it | — |
+| `--greets "A, B"` | names to greet in the scroller and the cracktro, up to eight | — |
 | `--fps <n>` | frames per second | 30 |
 | `--out <file.mp4>` | output path | `out/<seed>-<scene>.mp4` |
 | `--crf <n>` | h.264 quality, lower is better | 18 |
@@ -377,8 +461,9 @@ That writes `dist/` (about 500 KB, no build step, no dependencies). Its
 `index.html` opens the live page: a visitor arriving with no seed of their own
 gets the seed `seedscene`, straight into AUTOPLAY. A link with a seed opens
 that seed's demo instead, and every setting of the live page works in the
-address the same way (`?seed=aurora&style=cracktro`, `&autoplay=1` to start in
-AUTOPLAY, `&sound=0` to start silent); the address keeps what the viewer
+address the same way (`?seed=aurora&scene=cracktro`, `&autoplay=1` to start in
+AUTOPLAY, `&journey=1` in THE JOURNEY, `&born=1985` born in a year,
+`#greets=ANA,LUIS` with greetings, `&sound=0` to start silent); the address keeps what the viewer
 changes, so a reload or a shared link brings back the same demo.
 
 On GitHub, publishing a release does all of it: a workflow checks the
@@ -399,11 +484,11 @@ src/core/choose.js    what 'auto' means: scene, then era, then music
 src/core/journey.js   THE JOURNEY and AUTOPLAY: tracks mixed beat on beat
 src/core/sims.js      the games under the game scenes, and the scenes that move with the music
 src/core/rng.js       seeded random streams
-src/core/music.js     composer, twenty-four styles, synthesizer, feature track
+src/core/music.js     composer, twenty-eight styles, synthesizer, feature track
 src/core/chips.js     the sound chips: Paula, OPL3, AWE32
 src/core/visual.js    renderer, palette, title plate, scroller, era cards
 src/core/gl.js        WebGL2 helpers
-src/styles/index.js   the thirty-eight scenes, the 3D stage, the About part, the era screen
+src/styles/index.js   the forty-five scenes, the 3D stage, the About part, the era screen
 src/app.js            ties the music and the picture together
 web/index.html        the live page
 web/boot.js           the C64 boot screen
@@ -414,6 +499,7 @@ web/render.html       the page headless Chrome draws into
 tools/render.js       audio + frames + ffmpeg → mp4
 tools/gallery.js      regenerates the images on this page (npm run gallery)
 tools/sampler.js      every music style in one mp3 (npm run sampler)
+tools/music-audit.js  every music style checked as music (npm run audit:music)
 tools/server.js       local static server
 tools/build-web.js    the live demo as a static site (npm run build:web)
 .github/workflows/    publishing the site to GitHub Pages on each release

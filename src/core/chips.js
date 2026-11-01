@@ -107,7 +107,7 @@ export const NEW_INSTR = {
       const t = v.age / SR;
       const vib = 1 + 0.006 * Math.sin(TAU * 5 * t) * Math.min(1, Math.max(0, t - 0.15) * 3);
       const p = osc(v, 0, midiToFreq(v.ev.note) * vib);
-      const tone = Math.sin(TAU * p) + 0.18 * Math.sin(2 * TAU * p);
+      const tone = v.ev.kit === 'real' ? fluteTone(v, p) : Math.sin(TAU * p) + 0.18 * Math.sin(2 * TAU * p);
       const breath = onePole(v, 'br', v.noise(), 2500) * (0.25 + 0.6 * Math.exp(-t * 12));
       const amp = envAt(t, v.ev.dur / SR, 0.06, 0.4, 0.85, 0.08);
       const sig = (tone * 0.8 + breath * 0.5) * amp * v.ev.vel * 0.38;
@@ -195,11 +195,31 @@ function fm2(v, P, note, t, dur, vel) {
   const fbk = P.fb ? (v.ph[2] + v.ph[3]) * 0.5 * P.fb : 0;
   const m = WAVES[P.wave[0]](pm + fbk / TAU);
   v.ph[3] = v.ph[2]; v.ph[2] = m;
-  const idx = P.index * menv * (P.velIndex ? 0.5 + vel : 1);
+  let idx = P.index * menv * (P.velIndex ? 0.5 + vel : 1);
+  if (P.ksl) idx *= Math.pow(2, (-(P.ksl / 6) * Math.max(-12, note - 67)) / 12);   // dB an octave, from G4
   const c = P.add ? WAVES[P.wave[1]](pc) + m * menv * P.add : WAVES[P.wave[1]](pc + (idx * m) / TAU);
   const amp = envAt(t, dur, ce[0], ce[1], ce[2], ce[3]);
   // the chip's DAC: 16 bits, but the operators work in coarse steps
   return Math.round(c * amp * 1024) / 1024;
+}
+
+// A real flute's harmonics 2 to 6 against its fundamental, in dB (the University of New South Wales's
+// flute acoustics pages, a modern flute's G4 and A5): rich low down - the third nearly as loud as the
+// fundamental - and nearly a sine in the second octave. Between the two, the levels slide.
+const FLUTE_G4 = [-12, -3, -17, -21, -27], FLUTE_A5 = [-24, -29, -40, -42, -44];
+function fluteTone(v, p) {
+  if (!v.fh) {
+    // (a tracker's flute is one sample, transposed: its harmonics taken at A4, between the flute's rich low notes and
+    // its pure high ones - no one sample can be both)
+    const x = Math.min(1, Math.max(0, ((v.ev.sampled ? 69 : v.ev.note) - 67) / 14));
+    v.fh = FLUTE_G4.map((g, i) => Math.pow(10, (g + (FLUTE_A5[i] - g) * x) / 20));
+    const top = Math.floor(18000 / midiToFreq(v.ev.note));            // (nothing past the top of the hearing)
+    v.fh = v.fh.map((a, i) => (i + 2 <= top ? a : 0));
+    v.fn = 1 / (1 + v.fh.reduce((s, a) => s + a, 0) * 0.5);
+  }
+  let s = Math.sin(TAU * p);
+  for (let i = 0; i < 5; i++) if (v.fh[i]) s += v.fh[i] * Math.sin((i + 2) * TAU * p);
+  return s * v.fn;
 }
 
 const OPL = {
@@ -219,6 +239,8 @@ const OPL = {
   hoover: { mul: [1, 1], wave: [0, 0], index: 4.6, fb: 2.2, menv: [0.01, 0.5, 0.7, 0.12], cenv: [0.01, 0.4, 0.8, 0.12], sweep: [-5, 26] },
   guitar: { mul: [1, 1], wave: [0, 6], index: 5.5, fb: 2.4, menv: [0.002, 0.6, 0.7, 0.05], cenv: [0.002, 0.8, 0.8, 0.05] },
   flute: { mul: [1, 1], wave: [0, 0], index: 0.5, fb: 0.2, menv: [0.05, 0.5, 0.6, 0.08], cenv: [0.06, 0.6, 0.85, 0.08], vib: 0.006 },
+  // (the real flute's way - brighter low down, a sine up high - a little chiff at the start)
+  'flute:real': { mul: [1, 1], wave: [0, 0], index: 1.4, fb: 0.6, ksl: 6, menv: [0.02, 0.15, 0.85, 0.08], cenv: [0.05, 0.6, 0.9, 0.1], vib: 0.005 },
   harp: { mul: [1, 2], wave: [0, 0], index: 2, fb: 0.3, menv: [0.001, 0.25, 0, 0.3], cenv: [0.001, 1.2, 0, 0.6] },
   ep: { mul: [1, 1], wave: [0, 0], index: 2.4, fb: 0.2, menv: [0.001, 0.3, 0.1, 0.2], cenv: [0.001, 1.2, 0.3, 0.2] },
   slap: { mul: [1, 1], wave: [0, 1], index: 4, fb: 0.6, menv: [0.001, 0.05, 0.3, 0.03], cenv: [0.001, 0.3, 0.6, 0.04] },
@@ -232,8 +254,8 @@ function oplMelodic(name, tail, gain, spread) {
     tail,
     render(v, out) {
       const t = v.age / SR;
-      const P = OPL[name];
       const kit = v.ev.kit;
+      const P = (kit && OPL[name + ':' + kit]) || OPL[name];
       // a sub-bass asks for a purer tone; a palm mute for a shorter one
       let s = fm2(v, kit === 'sub' && name === 'bass' ? OPL_SUB : P, v.ev.note, t, v.ev.dur / SR, v.ev.vel);
       if (kit === 'mute') s *= Math.exp(-t * 18);
@@ -373,7 +395,7 @@ function aweChip() {
         }
         const hammer = onePole(v, 'hm', v.noise(), 3000) * Math.exp(-t * 120) * 0.6;
         const dur = v.ev.dur / SR;
-        const rel = t > dur ? Math.exp(-(t - dur) * 8) : 1;
+        const rel = t > dur ? Math.exp(-(t - dur) * (v.ev.kit === 'chop' ? 40 : 8)) : 1;   // (chopped: the damper down at once)
         const sig = v.ev.vel * rel * 0.3;
         out[0] = (L + hammer) * sig; out[1] = (R + hammer) * sig;
       },
@@ -421,6 +443,18 @@ function aweChip() {
         const f = midiToFreq(v.ev.note) * (1 + 0.003 * Math.sin(TAU * 5 * t) * Math.min(1, t * 3));
         let s = 0;
         for (let i = 0; i < 3; i++) s += saw(osc(v, i, f * (1 + (i - 1) * 0.004)));
+        if (v.ev.kit === 'real') {
+          // (a real trombone's way: mellow soft, brighter loud - the EMU8000's filter opened by the velocity,
+          // as a SoundFont's velocity-to-cutoff modulator does - and swelling over a long note)
+          const level = Math.min(1, v.ev.vel * (0.6 + 0.4 * Math.min(1, t / 0.35) + 0.15 * Math.min(1, t / 1.5)));
+          const cut = 300 + 1100 * level;
+          const lo = onePole(v, 'r4', onePole(v, 'r3', onePole(v, 'r2', onePole(v, 'r1', s, cut), cut), cut), cut);
+          const hp = lo - onePole(v, 'rh', lo, 120 + 320 * level);
+          const amp = envAt(t, v.ev.dur / SR, 0.05, 0.35, 0.85, 0.15);
+          const sig = hp * amp * v.ev.vel * 0.5;
+          out[0] = sig * 0.95; out[1] = sig;
+          return;
+        }
         const open = 900 + 5200 * Math.min(1, t * 10) * (0.55 + 0.45 * Math.exp(-t * 2.5)) * (0.6 + 0.5 * v.ev.vel);
         const o = onePole(v, 'b2', onePole(v, 'b1', s, open), open);
         const amp = envAt(t, v.ev.dur / SR, 0.03, 0.35, 0.75, 0.12);
@@ -557,7 +591,7 @@ function paulaChip(native) {
     const fake = {
       t: 0, instr: ev.instr, note: pitched ? PAULA_REF : ev.note, vel: 1,
       dur: Math.round((SUSTAINED.has(ev.instr) ? 1.0 : 0.25) * SR),
-      kit: ev.kit, open: ev.open, chord: [PAULA_REF, PAULA_REF + 4, PAULA_REF + 7], cut: 0.5,
+      kit: ev.kit, open: ev.open, chord: [PAULA_REF, PAULA_REF + 4, PAULA_REF + 7], cut: 0.5, sampled: true,
     };
     const voice = new native.Voice(fake, 12345);
     const n = Math.round(len * SR);

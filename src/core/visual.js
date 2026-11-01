@@ -3,7 +3,7 @@
 // uploaded as a texture, which is how a demo would have blitted its font.
 
 import { Rng } from './rng.js';
-import { program, quad, createTarget } from './gl.js';
+import { program, quad, createTarget, startProgram, programDone, finishProgram } from './gl.js';
 import { styleSource, POST, STYLE_FX } from '../styles/index.js';
 import { SIMS } from './sims.js';
 import { ABOUT_PAGES, ABOUT_STORY, ABOUT_GREETS } from '../brand.js';
@@ -64,7 +64,12 @@ export class Renderer {
 
     this.vao = quad(gl);
     this.programs = new Map();             // compiled once, reused on every switch
-    this.style = this.programFor(opts.style);
+    this.started = new Map();              // handed to the driver, compiling in the background
+    this.warmQueue = [];                   // scenes to compile in the background, in turn
+    this.parallel = gl.getExtension('KHR_parallel_shader_compile');
+    // the first scene too: started now, waited for only when its first frame is drawn
+    if (this.parallel) this.started.set(opts.style, startProgram(gl, styleSource(opts.style)));
+    this.style = this.parallel ? null : this.programFor(opts.style);
     this.post = program(gl, POST);
 
     // one texture, two ways to read it: hard pixels for the picture, filtered
@@ -108,7 +113,7 @@ export class Renderer {
     const Sim = SIMS[style];
     // (games that play on the music's grid read its bars and accents from the score's meta;
     // a scene that moves with the notes reads the music's feature tracks)
-    this.sim = Sim ? new Sim(seed, (this.opts.meta && this.opts.meta.spb) || 0.5, this.opts.meta, this.opts.features) : null;
+    this.sim = Sim ? new Sim(seed, (this.opts.meta && this.opts.meta.spb) || 0.5, this.opts.meta, this.opts.features, this.opts.greets || []) : null;
   }
 
   /**
@@ -118,14 +123,64 @@ export class Renderer {
   setStyle(name) {
     this.style = this.programFor(name);
     this.opts.style = name;
+    // when the scene came on, on the score's clock: a scene that opens with an
+    // entrance starts it there (the caller sets it after a cut; 0 otherwise)
+    this.sceneStart = 0;
     this.deriveLook();
   }
 
   /** A scene's compiled program, compiled the first time it is asked for. */
   programFor(name) {
+    if (!this.programs.has(name) && this.started.has(name)) {
+      // compiling in the background already: only the rest of it is waited for
+      this.programs.set(name, finishProgram(this.gl, this.started.get(name)));
+      this.started.delete(name);
+    }
     if (!this.programs.has(name)) this.programs.set(name, program(this.gl, styleSource(name)));
     return this.programs.get(name);
   }
+  /**
+   * Compile scenes in the background before they are needed, so that showing one
+   * for the first time does not stop the picture while the driver works on it
+   * (the heaviest takes seconds). Two at a time, in the order given; only where
+   * the driver can say when one is done - elsewhere scenes compile when first shown.
+   */
+  /** A promise kept when a scene's program is ready to draw with (at once where the driver cannot tell). */
+  whenReady(name = this.opts.style) {
+    return new Promise((resolve) => {
+      const check = () => {
+        const st = this.started.get(name);
+        if (!st || !this.parallel || programDone(this.gl, st, this.parallel)) resolve();
+        else setTimeout(check, 30);
+      };
+      check();
+    });
+  }
+
+  warm(names) {
+    if (!this.parallel) return;
+    for (const n of names) if (!this.programs.has(n) && !this.started.has(n) && !this.warmQueue.includes(n)) this.warmQueue.push(n);
+    if (this.warming) return;
+    this.warming = true;
+    const step = () => {
+      // collect what the driver has finished, then start the next while two are not running
+      for (const [n, st] of this.started) {
+        if (!programDone(this.gl, st, this.parallel)) continue;
+        try { this.programs.set(n, finishProgram(this.gl, st)); } catch (e) { console.error(e); }
+        this.started.delete(n);
+      }
+      // nothing else starts while the scene on screen is still compiling: it would only slow it
+      const first = this.started.has(this.opts.style) && !this.programs.has(this.opts.style);
+      while (!first && this.started.size < 2 && this.warmQueue.length) {
+        const n = this.warmQueue.shift();
+        if (!this.programs.has(n)) this.started.set(n, startProgram(this.gl, styleSource(n)));
+      }
+      if (this.started.size || this.warmQueue.length) setTimeout(step, 16);   // a timer: it keeps on in a background tab
+      else this.warming = false;
+    };
+    step();
+  }
+
 
   /** The scene is drawn at the era's own resolution. */
   buildSceneTarget() {
@@ -155,6 +210,12 @@ export class Renderer {
     this.about = on;
   }
 
+  /** The viewer's greetings: in the scroller, the About part's greetings and the cracktro's pages. */
+  setGreets(names) {
+    this.opts.greets = names;
+    this.deriveLook();
+  }
+
   /** Point the renderer at a different seed (and its freshly composed score and features). */
   setSeed(seed, meta, features) {
     this.opts.seed = seed;
@@ -166,11 +227,12 @@ export class Renderer {
   buildScrollText() {
     const { seed, style, meta } = this.opts;
     const r = new Rng(seed, 'scroller');
-    const head = `SEEDSCENE PRESENTS ...   ${meta.title}   ***   STYLE: ${style.toUpperCase()}   SEED: ${String(seed).toUpperCase()}   `
+    const head = `SEEDSCENE PRESENTS ...   ${meta.title}   ***   SCENE: ${style.toUpperCase()}   SEED: ${String(seed).toUpperCase()}   `
       + `${meta.musicLabel.toUpperCase()}   ${meta.bpm} BPM   ${meta.rootName} ${meta.scaleLabel.toUpperCase()}   ***   `;
     const words = r.shuffle(SCROLL_WORDS);
-    // the key hints go first in live mode, where a viewer can act on them
-    const body = (this.opts.live ? [...KEY_WORDS, ...words] : words).join('   ...   ');
+    // the viewer's own greetings first, as a demo greeted its friends; then, live, the keys
+    const greets = this.opts.greets && this.opts.greets.length ? [`GREETINGS TO ${this.opts.greets.join(' - ')}`] : [];
+    const body = [...greets, ...(this.opts.live ? KEY_WORDS : []), ...words].join('   ...   ');
     return (head + body + '   ...   ').replace(/\s+/g, ' ');
   }
 
@@ -201,12 +263,14 @@ export class Renderer {
     ctx.save();
     ctx.font = `bold ${Math.round(11 * s)}px Consolas, "Courier New", monospace`;
     ctx.textBaseline = 'middle';
-    const gw = ctx.measureText(ABOUT_GREETS + '     ').width;
+    const greets = this.opts.greets && this.opts.greets.length
+      ? ABOUT_GREETS.replace('GREETINGS TO  -  ', `GREETINGS TO  -  ${this.opts.greets.join('  -  ')}  -  `) : ABOUT_GREETS;
+    const gw = ctx.measureText(greets + '     ').width;
     const gx = ((t * 230 * s) % gw) - gw;
     ctx.fillStyle = 'rgba(0,0,0,0.45)';
     ctx.fillRect(0, 6 * s, W, 16 * s);
     ctx.fillStyle = `hsl(${(t * 200) % 360},90%,75%)`;
-    for (let x = gx; x < W; x += gw) ctx.fillText(ABOUT_GREETS, x, 14 * s);
+    for (let x = gx; x < W; x += gw) ctx.fillText(greets, x, 14 * s);
     ctx.restore();
 
     // ---- the logo, every letter on its own sine, scale-punched by the kick
@@ -518,7 +582,7 @@ export class Renderer {
     set1('uBar', f.bar); set1('uBarIndex', f.barIndex);
     if (this.sim) {
       const SET = { '1f': 'uniform1f', '4f': 'uniform4f', '1fv': 'uniform1fv', '2fv': 'uniform2fv', '4fv': 'uniform4fv' };
-      for (const [name, { v, kind }] of Object.entries(this.sim.uniforms(t))) {
+      for (const [name, { v, kind }] of Object.entries(this.sim.uniforms(t, this.sceneStart || 0))) {
         if (!u[name]) continue;
         if (kind === '1f') gl.uniform1f(u[name], v);
         else if (kind === '4f') gl.uniform4f(u[name], v[0], v[1], v[2], v[3]);
@@ -535,6 +599,7 @@ export class Renderer {
     // 1. style pass into the offscreen target
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.scene.fbo);
     gl.viewport(0, 0, this.scene.w, this.scene.h);
+    if (!this.style) this.style = this.programFor(this.opts.style);
     gl.useProgram(this.style.p);
     this.setStyleUniforms(this.style.uniforms, t, f);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
@@ -572,11 +637,14 @@ export class Renderer {
     if (u.uPalMode) gl.uniform1i(u.uPalMode, e.palMode);
     if (u.uDisplay) gl.uniform1i(u.uDisplay, e.display);
     p1('uLevels', e.levels); p1('uDither', e.dither);
-    p1('uBloom', e.bloom); p1('uScan', e.scan); p1('uBarrel', e.barrel);
-    p1('uAberr', e.aberr); p1('uGrain', e.grain); p1('uVignette', e.vignette);
+    // a scene drawn in fine lines can ask for less of the era's glow and colour fringes
+    const fx = STYLE_FX[this.opts.style] || {};
+    const glow = fx.glow === undefined ? 1 : fx.glow;
+    p1('uBloom', e.bloom * glow); p1('uScan', e.scan); p1('uBarrel', e.barrel);
+    p1('uAberr', e.aberr * glow); p1('uGrain', e.grain); p1('uVignette', e.vignette);
     p1('uFade', this.fade);
     // scenes that ask for it get a zoom blur on the kick
-    p1('uImpact', (STYLE_FX[this.opts.style] || {}).impact || 0);
+    p1('uImpact', fx.impact || 0);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     gl.bindSampler(0, null);
     gl.bindSampler(2, null);
