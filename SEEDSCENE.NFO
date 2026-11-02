@@ -9,7 +9,7 @@
                        · One seed. One demo. Forever. ·
 
  ════════════════════════════════════════════════════════════════════════════
-                       SEEDSCENE v0.2  ·  october 2026
+                       SEEDSCENE v0.2  ·  november 2026
           generative demoscene  ·  music + motion from a single seed
  ════════════════════════════════════════════════════════════════════════════
 
@@ -26,40 +26,52 @@
    browser. Type the same word tomorrow and you get the very same demo,
    down to the last pixel. Like a game world seed, but for a 90s intro.
 
-   And then it takes you travelling: from the arcade in 1979 and the C64
-   in 1982, through the Amiga, DOS and VGA, the 32-bit consoles, the
-   handheld and the 64k intros of the 2000s, to the shader art of today.
+   And then it takes you travelling: from the first arcades of the 70s
+   and the C64 in 1982, through the Amiga, DOS and VGA, the 32-bit
+   consoles and the pocket screens, the 64k intros of the 2000s, to the
+   shader art of today.
 
  ┌──────────────────────────────────────────────────────────────────────────┐
  │                               WHAT'S INSIDE                              │
  └──────────────────────────────────────────────────────────────────────────┘
 
-   ▪ eight eras, each with its own screen: arcade · C64 · Amiga
-        DOS/VGA · 32-bit console · handheld · Y2K · modern
-   ▪ THE JOURNEY: a trackmo through all eight, 1979 to now
+   ▪ seven eras, spans of years, each with its scenes, its music, its
+        screens and its sound boards: 1972-1981 the first video games
+        1982-1989 home computers · 1990-1993 the demoscene's golden years
+        1994-1996 the PC demos · 1997-1999 3D consoles and pocket screens
+        2000-2009 the 64k intro · 2010-now shader art
+   ▪ THE JOURNEY: a trackmo through the eras, oldest first
    ▪ AUTOPLAY: an endless channel, a new track every 40 seconds
         and the scenes cut on the music -- never the same sequence
         each track mixed into the next, beat on beat, like a DJ set
-   ▪ thirty-eight scenes: plasma · tunnel · metaballs · starfield · copper
+   ▪ forty-five scenes: plasma · tunnel · metaballs · starfield · copper
         fractal · shadebobs · vector balls · dot tunnel · fireworks · fire
         kefrens bars · the bouncing checkered ball · interference rings
         a twister · unlimited bobs · a dual chessboard
         a chessboard floor with its bouncing cube · a rubber cube
-        a bump-mapped logo · a cracktro
+        a bump-mapped logo · a cracktro · the card cascade
+        the ANSI board · the bouncing lines · the 3D maze · the 3D pipes
         an LCD juggler · a car with a red scanner · footsteps in a cup
-        a hopper on a pyramid of cubes · the 3D pipes
-        water ripple · outrun sunset · raymarched morph -- and from
-        the arcade: paddles · invaders · rocks · maze · bricks
-        light riders · snake · a robot title fight · a starfighter run
+        a hopper on a pyramid of cubes · the time car · the moon bike
+        water ripple · outrun sunset · raymarched morph
+        an anime opening -- and from the arcade: paddles · invaders
+        rocks · maze · bricks · light riders · snake
+        a robot title fight · a starfighter run
         -- the games on a 3D stage that rides the music
-   ▪ twenty-four music styles: SID chiptune · new beat · amiga rave
-        orchestral tracker · gabber · jungle · acid · ambient · trance
-        eurodance · heroic game · handheld chip · happy hardcore
-        dreamwave · synthwave · arcade attract · cyborg pulse
-        derelict ship · synth-pop · chip rock and roll · star pilot
-        tracker jazz · FM metal · MIDI quest
-   ▪ the sound chips of the eras: Paula samples on the Amiga, the
-        Sound Blaster 16 FM or the AWE32 wavetable in DOS
+   ▪ thirty-five music styles: SID chiptune · italo disco · ST buzz
+        synth-pop · arcade attract · cyborg pulse · derelict ship
+        new beat · amiga rave · orchestral tracker · dreamwave
+        tracker jazz · beast lands · lament · musicdisk ballad
+        jolly march · hip-hop blaster · acid · ambient · gabber · jungle
+        eurodance · FM metal · MIDI quest · keygen · trip-hop
+        heroic game · star pilot · handheld chip · chip rock and roll
+        the anime opening · skate punk · happy hardcore · trance
+        synthwave
+   ▪ the sound chips of the eras: the Atari ST's YM2149, Paula's
+        samples on the Amiga, the Sound Blaster 16's FM and the AWE32's
+        wavetable -- or the synthesizer's own voices
+   ▪ fourteen displays: from the black-and-white set and the C64 to
+        the Amiga, VGA, the composite TV, the Game Boy and today's screen
    ▪ a real C64 boot screen -- LOAD, the striped border, READY., RUN
    ▪ press A for the about part -- SEEDSCENE's own demo about itself
    ▪ live in the browser, or rendered to an mp4 you can share
@@ -76,7 +88,7 @@
    node bin/seedscene.js autoplay --seed yourname --duration 3600
 
    In live mode press H to see every key. O autoplay · T the journey
-   E or 1-8 era
+   E or 1-7 era
    SPACE scene · UP/DOWN music · S seed · M menu · A about · F full
 
  ┌──────────────────────────────────────────────────────────────────────────┐
