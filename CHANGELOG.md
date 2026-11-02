@@ -327,6 +327,20 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   the time car's, the boxing match's and the card cascade's shaders compile in
   a third of the time or less, with the same pictures; and the live page
   starts loading the first scene as soon as its boot screen is up.
+- **Happy hardcore, gabber, ambient techno and dreamwave, put right**
+  through the music audit, the last four: each lead played its chord's own
+  steps, up to C9, G8, E8 and A7, leaping about; each sings a line of its own
+  now, chord tones on the beats and steps between, up to the octave, its echo
+  on the beat - on the same supersaw for hardcore and gabber (gabber's in half
+  time over its kick, both raised out from under the piano and the hoovers),
+  on a bell of its own for ambient, apart from the bells of its arpeggio, and
+  on the same lead for dreamwave. Hardcore's plucks, ambient's bells and
+  dreamwave's arpeggio stay under C6, where they climbed to F#8, C8 and C7.
+  Gabber's off-beat hat is closed and short, and its clap softer, where an
+  open hat hissed over every off-beat at 180; dreamwave's rolls and fills
+  play straight on the grid under its swing, where they limped and fell a
+  thirty-second late. Every check passes but dreamwave's walking bass, as
+  before. All twenty-eight styles now pass the audit.
 - **C64 chiptune, put right** through the music audit: its pulse lead ran
   sixteenths off each chord, leaping an octave on every beat's last one, up
   to B8 over three octaves, half its notes on the beat off the chord; it

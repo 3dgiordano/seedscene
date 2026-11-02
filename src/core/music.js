@@ -59,8 +59,13 @@ export const MUSIC_PRESETS = {
   dreamwave: {
     label: 'Dreamwave', blurb: 'mellow cracktro synths and lush pads',
     bpm: [84, 118], scales: ['minor', 'dorian', 'lydian', 'phrygian'],
-    drums: 'classic', bass: 'walk', chords: 'pad', lead: 'lead', arp: 'arp',
-    swing: 0.4, intro: 0.12, fx: { reverb: 1.15, delay: 1, delayBeats: 0.75 },
+    drums: 'classic', bass: 'walk', chords: 'pad', lead: 'hook', arp: 'arp',
+    // (the lead sings a line - chord tones on the beats, steps between - where it played the chord's own steps to
+    //  A7; the arpeggio kept under C6; its echo on the beat)
+    hook: { instr: 'lead', oct: 72, vel: 0.75, line: true },
+    melody: { free: [0, 7], dense: [0.5, 0.5, 0.5], close: true, moving: true },
+    arpTop: 84,
+    swing: 0.4, intro: 0.12, fx: { reverb: 1.15, delay: 1, delayBeats: 1 },
   },
   chiptune: {
     label: 'C64 Chiptune', blurb: 'SID-style pulse leads and 50 Hz arpeggio chords',
@@ -110,8 +115,13 @@ export const MUSIC_PRESETS = {
   hardcore: {
     label: 'Happy Hardcore', blurb: '175 bpm, piano stabs and screaming leads',
     bpm: [168, 180], scales: ['major', 'lydian', 'minor'], progressions: ANTHEM,
-    drums: 'hardcore', bass: 'offbeat', chords: 'piano', lead: 'supersaw', arp: 'pluck16',
-    swing: 0, intro: 0.04, fx: { reverb: 1, delay: 0.9, delayBeats: 0.75 },
+    drums: 'hardcore', bass: 'offbeat', chords: 'piano', lead: 'hook', arp: 'pluck16',
+    // (the supersaw sings a line - chord tones on the beats, steps between - where it played the chord's own steps
+    //  to C9, buried under the piano; the plucks kept under C6, where they climbed to F#8; its echo on the beat)
+    hook: { instr: 'supersaw', oct: 72, vel: 0.8, line: true },
+    melody: { free: [0, 7], dense: [0.55, 0.55, 0.55], close: true, moving: true },
+    arpTop: 84,
+    swing: 0, intro: 0.04, fx: { reverb: 1, delay: 0.9, delayBeats: 1 },
   },
   newbeat: {
     label: 'New Beat', blurb: 'slow and heavy Belgian EBM: sequenced bass, big claps',
@@ -138,14 +148,23 @@ export const MUSIC_PRESETS = {
   gabber: {
     label: 'Gabber', blurb: 'Rotterdam, 1993: a distorted kick and nothing to hide behind',
     bpm: [175, 190], scales: ['phrygian', 'minor', 'harmonicMinor'],
-    drums: 'gabber', bass: null, chords: 'hoover', lead: 'supersaw', arp: null,
-    swing: 0, intro: 0.03, fx: { reverb: 0.8, delay: 0.7, delayBeats: 0.75 },
+    drums: 'gabber', bass: null, chords: 'hoover', lead: 'hook', arp: null,
+    // (the supersaw sings a line in half time over the kick - three long notes a bar - where it played the chord's
+    //  own steps to G8, buried eleven decibels under the hoovers; its echo on the beat)
+    hook: { instr: 'supersaw', oct: 72, vel: 1.6, line: true },
+    melody: { free: [0, 7], dense: [0.5, 0.5, 0.5], hits: [0, 6, 10], pickup: 14, close: true, moving: true },
+    swing: 0, intro: 0.03, fx: { reverb: 0.8, delay: 0.7, delayBeats: 1 },
   },
   ambient: {
     label: 'Ambient Techno', blurb: 'deep pads, FM bells, a heartbeat kick: the chill-out room',
     bpm: [92, 110], scales: ['dorian', 'lydian', 'minor'],
-    drums: 'ambient', bass: 'sub', chords: 'ambientpad', lead: 'fmbell', arp: 'bell',
-    swing: 0.2, intro: 0.15, fx: { reverb: 1.6, delay: 1.4, delayBeats: 0.75 },
+    drums: 'ambient', bass: 'sub', chords: 'ambientpad', lead: 'hook', arp: 'bell',
+    // (a bell sings a slow line of its own - three long notes a bar - where it rang the chord's own steps to E8
+    //  among the bells of the arpeggio, which now stay under C6; its echo on the beat)
+    hook: { instr: 'fmbell', kit: 'lead', oct: 72, vel: 0.5, line: true },
+    melody: { free: [0, 7], dense: [0.5, 0.5, 0.5], hits: [0, 6, 10], close: true, moving: true },
+    arpTop: 84,
+    swing: 0.2, intro: 0.15, fx: { reverb: 1.6, delay: 1.4, delayBeats: 1 },
   },
   orchestral: {
     label: 'Orchestral Tracker', blurb: 'strings, choir, timpani and brass, squeezed into four channels',
@@ -878,8 +897,9 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
           break;
         case 'gabber':
           if (a.kick && step % 4 === 0) push(t, 'kick', 0, 1, 0.35, { kit: 'gabber' });
-          if (a.hat && step % 4 === 2) push(t, 'hat', 0, 0.3, 0.1, { open: true });
-          if (a.snare && a.intensity > 0.7 && (step === 4 || step === 12)) push(t, 'clap', 0, 0.6, 0.15);
+          // (a short closed hat on the off-beat and a softer clap: the open hat hissed over every off-beat at 180)
+          if (a.hat && step % 4 === 2) push(t, 'hat', 0, 0.2, 0.05);
+          if (a.snare && a.intensity > 0.7 && (step === 4 || step === 12)) push(t, 'clap', 0, 0.45, 0.15);
           break;
         case 'ambient':
           if (a.kick && (step === 0 || step === 10)) push(t, 'kick', 0, 0.7, 0.4);
@@ -1038,9 +1058,12 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
         // no rolls in the dark: only the riser before the drop
       } else if (a.build) {
         const every = step < 8 ? 2 : 1;
-        if (step % every === 0) push(t, rollInstr, 0, 0.2 + 0.045 * step, 0.08, { kit: rollKit });
+        // (the classic kit rolls straight, on the grid, under its swing: a swung roll limped)
+        const tr0 = P.drums === 'classic' ? barT + (step / 4) * spb : t;
+        if (step % every === 0) push(tr0, rollInstr, 0, 0.2 + 0.045 * step, 0.08, { kit: rollKit });
       } else if (a.fill && step >= 12) {
-        push(t + (P.drums === 'classic' ? spb / 8 : 0), rollInstr, 0, 0.34 + 0.1 * (step - 12), 0.08, { kit: rollKit });
+        // (the classic kit's fill on the grid, straight: it fell a thirty-second late, between the sixteenths)
+        push(P.drums === 'classic' ? barT + (step / 4) * spb : t, rollInstr, 0, 0.34 + 0.1 * (step - 12), 0.08, { kit: rollKit });
       }
 
       // ---- bass ----
@@ -1302,7 +1325,9 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
       }
       if (a.arp && P.arp === 'bell' && step % 3 === 0) {
         const deg = chordDeg + arpShape[(step / 3) % arpShape.length] + 7;
-        push(t, 'fmbell', noteOf(72, deg), 0.18 + 0.08 * accent, spb * 0.8);
+        let an = noteOf(72, deg);
+        if (P.arpTop) while (an >= P.arpTop) an -= 12;     // (a style can keep its bells under a ceiling)
+        push(t, 'fmbell', an, 0.18 + 0.08 * accent, spb * 0.8);
       }
       if (a.arp && P.arp === 'harp') {
         // a harp running up two octaves of the chord, and back down
