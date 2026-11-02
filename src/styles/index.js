@@ -23,6 +23,9 @@ uniform float uPixAspect;  // 2.0 for fat-pixel eras, so shapes stay round
 const float PI = 3.14159265;
 
 vec3 pal(float t) { return uPalA + uPalB * cos(6.28318 * (uPalC * t + uPalD)); }
+// the palette can dip below zero: a colour about to be brought to full brightness is clipped there, and lifted
+// only where it would otherwise be black, so every other colour keeps the seed's own hue and strength
+vec3 unblack(vec3 c) { c = max(c, vec3(0.0)); return c + max(0.0, 0.15 - max(max(c.r, c.g), c.b)); }
 
 mat2 rot(float a) { float c = cos(a), s = sin(a); return mat2(c, -s, s, c); }
 
@@ -2131,6 +2134,7 @@ vec3 render(vec2 p, vec2 uv) {
   // each colour set to a brightness of its own, whatever the palette gives: the light
   // one always light, the dark one never black - a little less contrast, kinder to the eyes
   vec3 a = pal(fract(hue)), b = pal(fract(hue + 0.45));
+  a = unblack(a); b = unblack(b);                     // (the palette can dip below zero: never black)
   const vec3 LUMA = vec3(0.3, 0.59, 0.11);
   a *= (0.2 + 0.06 * uPad) / max(dot(a, LUMA), 0.05);
   b *= (0.72 + 0.15 * uPad) / max(dot(b, LUMA), 0.05);
@@ -2274,6 +2278,7 @@ vec3 render(vec2 p, vec2 uv) {
     vec2 o = vec2((h - 0.5) * 1.3, 0.05 + 0.25 * hash11(bi * 2.11));
     // fireworks are light: keep the palette's hue, push it to full brightness
     vec3 c = pal(fract(h * 3.7 + uSeed.y));
+    c = unblack(c);                                   // (the palette can dip below zero: never black)
     c /= max(max(c.r, c.g), max(c.b, 0.2));
     float life = 1.0 - age / 2.4;
     for (int i = 0; i < 36; i++) {
@@ -2786,6 +2791,7 @@ vec3 render(vec2 p, vec2 uv) {
     vec2 d = p - wp;
     vec2 hd = headingOf(w.w);
     vec3 wc = pal(fract(0.2 + float(i) * 0.27 + uSeed.z));
+    wc = unblack(wc);                                 // (the palette can dip below zero: never black)
     wc /= max(max(wc.r, wc.g), max(wc.b, 0.3));
     if (w.z > 0.5 && w.z < 1.5) {
       wc = vec3(0.25, 0.35, 1.0);
@@ -2837,6 +2843,7 @@ uniform vec4 uPaddle;       // x, since the last return, since the wall went up
 uniform vec4 uBooms[6];     // x, y, since it broke, row
 vec3 rowColour(float row) {
   vec3 c = pal(fract(row / 6.0 * 0.8 + uSeed.y));
+  c = unblack(c);                                     // (the palette can dip below zero: never black)
   return c / max(max(c.r, c.g), max(c.b, 0.25));
 }
 vec3 render(vec2 p, vec2 uv) {
@@ -3032,6 +3039,7 @@ vec3 render(vec2 p, vec2 uv) {
   if (best < rad) {
     float nz = sqrt(max(0.0, 1.0 - (best / rad) * (best / rad)));      // a round tube, lit from above
     vec3 hue = pal(fract(bi / max(n, 1.0) * 0.6 + uTime * 0.05 + uSeed.x));
+    hue = unblack(hue);                               // (the palette can dip below zero: never black)
     hue /= max(max(hue.r, hue.g), max(hue.b, 0.3));
     float pulse = exp(-abs(bi - uBeat * n) * 0.5) * (0.4 + uKick);
     col = hue * (0.35 + 0.75 * nz) + vec3(1.0) * pow(nz, 8.0) * 0.4 + hue * pulse;
@@ -3447,8 +3455,9 @@ vec3 render(vec2 p, vec2 uv) {
 
   vec3 key = vec3(1.0, 0.95, 0.88);
   vec3 lampK = vec3(0.4, 6.0, -1.2);
-  vec3 rimC = pal(0.7); rimC /= max(max(rimC.r, rimC.g), max(rimC.b, 0.3));
-  vec3 hue = pal(0.08); hue /= max(max(hue.r, hue.g), max(hue.b, 0.3));
+  // (the palette can dip below zero: never black)
+  vec3 rimC = unblack(pal(0.7)); rimC /= max(max(rimC.r, rimC.g), max(rimC.b, 0.3));
+  vec3 hue = unblack(pal(0.08)); hue /= max(max(hue.r, hue.g), max(hue.b, 0.3));
   vec3 col;
   if (found) {
     vec3 pos = posA;
@@ -3917,6 +3926,7 @@ vec3 render(vec2 p, vec2 uv) {
   }
 #ifndef STAGE_OBJECT
   vec3 rim = pal(0.55 + 0.1 * sin(uTime * 0.2));
+  rim = unblack(rim);                                 // (the palette can dip below zero: never black)
   rim /= max(max(rim.r, rim.g), max(rim.b, 0.3));
   col += rim * (1.0 - smoothstep(0.0, 0.007, abs(de - 0.004))) * (0.8 + uBass);
   if (de > 0.0) col += rim * exp(-de * 8.0) * 0.22 * (0.5 + uBass);    // light spilling past the frame

@@ -327,6 +327,14 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   the time car's, the boxing match's and the card cascade's shaders compile in
   a third of the time or less, with the same pictures; and the live page
   starts loading the first scene as soon as its boot screen is up.
+- **No colour goes black any more in the rings, the fireworks, the maze, the
+  bricks, the snake, the boxing match and the stage's rim.** Each brought a
+  colour of the seed's palette to full brightness, and the palette can dip
+  below zero, so for about one seed in fifty a row of bricks, a wisp, a burst
+  or the stage's rim went black for a while - the fault that once blacked
+  out the chess scenes. The colour is now clipped at zero first and lifted
+  only where it would otherwise be black, so every other colour keeps the
+  seed's own hue and strength (the gallery's seeds look the same).
 - **Happy hardcore, gabber, ambient techno and dreamwave, put right**
   through the music audit, the last four: each lead played its chord's own
   steps, up to C9, G8, E8 and A7, leaping about; each sings a line of its own
