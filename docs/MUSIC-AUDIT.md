@@ -1,13 +1,13 @@
 # Music audit
 
-Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ fail, ~ let off by the style, · not measured; off grid is measured on the seeds that do not swing; speed is wall-clock time on the machine that ran it. Run `npm run audit:music -- <style>` for one style. Jungle, keygen, derelict, triphop, rave, eurodance, gameboy, newbeat, orchestral and heroic re-audited on 2026-11-02, after they were put right (their rows and sections; their speed on another machine).
+Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ fail, ~ let off by the style, · not measured; off grid is measured on the seeds that do not swing; speed is wall-clock time on the machine that ran it. Run `npm run audit:music -- <style>` for one style. Jungle, keygen, derelict, triphop, rave, eurodance, gameboy, newbeat, orchestral, heroic and chiptune re-audited on 2026-11-02, after they were put right (their rows and sections; their speed on another machine).
 
-**23 of 28 styles pass** (no ✗ anywhere); failing: dreamwave, chiptune, hardcore, gabber, ambient.
+**24 of 28 styles pass** (no ✗ anywhere); failing: dreamwave, hardcore, gabber, ambient.
 
 | style | bass in chord | bass rubs | melody on beat | held | held rubs | top | range | leaps >3rd | >6th | repeats | stuck | off grid | echo rubs | melody vs chords | sound vs real | peak | speed |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | `dreamwave` | ⚠ 78% | ✓ 3% | ✗ 54% | ✗ 54% | ✗ 22% | ✗ A7 | ✓ 24 | ✗ 44% | ✗ 9% | ⚠ 11% | ✓ 0.6% | ⚠ 1.5% | ✓ 34% | ⚠ -5.8 dB | · - | ✓ -1.9 | ✓ 8.0x |
-| `chiptune` | ✓ 99% | ✓ 0% | ✗ 48% | · - | · - | ✗ B8 | ✗ 36 | ✗ 58% | ✗ 44% | ✓ 66% | ⚠ 3.9% | ✓ 0.0% | ✓ 18% | ✓ -2.1 dB | · - | ✓ -2.0 | ✓ 7.8x |
+| `chiptune` | ✓ 99% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ B5 | ✓ 12 | ✓ 3% | ✓ 0% | ✓ 57% | ✓ 0.0% | ✓ 0.0% | ✓ 17% | ✓ -1.9 dB | · - | ✓ -2.1 | ✓ 16.0x |
 | `acid` | ✓ 96% | ✓ 1% | · - | · - | · - | · - | · - | · - | · - | · - | · - | ✓ 0.0% | · - | · - | · - | ✓ -2.0 | ✓ 4.6x |
 | `trance` | ✓ 87% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ B5 | ✓ 12 | ✓ 2% | ✓ 0% | ✓ 77% | ✓ 0.8% | ✓ 0.0% | ⚠ 58% | ✓ -2.0 dB | · - | ✓ -1.9 | ✓ 5.7x |
 | `rave` | ✓ 100% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ A5 | ✓ 10 | ✓ 3% | ✓ 0% | ✓ 65% | ✓ 0.0% | ✓ 0.0% | ✓ 0% | ⚠ -3.5 dB | · - | ✓ -1.8 | ✓ 10.3x |
@@ -52,14 +52,9 @@ Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ 
 
 ## C64 Chiptune (`chiptune`)
 
-134, 134, 148 bpm; D harmonicMinor, B minor, B harmonicMinor. Layers: 338 bass, 95 chord, 272 melody notes.
+134, 134, 148 bpm; D harmonicMinor, B minor, B harmonicMinor. Layers: 338 bass, 95 chord, 110 melody notes.
 
-- ✗ only 48% of melody notes on the beat are chord tones
-- ✗ the melody reaches B8 - shrill on a sustained lead
-- ✗ the melody spans 36 semitones - more than a singer's line
-- ✗ 44% of melodic moves leap wider than a sixth
-- ✗ 58% of melodic moves leap wider than a third
-- ⚠ 3.9% of melody notes are struck a third time running on one pitch - listen: a line standing still, or a fanfare or a chant meaning it
+- nothing stands out
 
 ## Acid (`acid`)
 

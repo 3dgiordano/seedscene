@@ -65,8 +65,12 @@ export const MUSIC_PRESETS = {
   chiptune: {
     label: 'C64 Chiptune', blurb: 'SID-style pulse leads and 50 Hz arpeggio chords',
     bpm: [132, 158], scales: ['minor', 'harmonicMinor', 'dorian'],
-    drums: 'chip', bass: 'octave', chords: 'chiparp', lead: 'chip', arp: null,
-    swing: 0, intro: 0.04, fx: { reverb: 0.3, delay: 0.7, delayBeats: 0.5 },
+    drums: 'chip', bass: 'octave', chords: 'chiparp', lead: 'hook', arp: null,
+    // (the SID's pulse sings a line - chord tones on the beats, steps between - where it ran sixteenths off each
+    //  chord, leaping an octave on every beat's last one, to B8; its echo on the beat)
+    hook: { instr: 'chip', oct: 72, vel: 0.5, line: true },
+    melody: { free: [0, 7], dense: [0.65, 0.65, 0.65], close: true, moving: true },
+    swing: 0, intro: 0.04, fx: { reverb: 0.3, delay: 0.7, delayBeats: 1 },
   },
   acid: {
     label: 'Acid', blurb: 'squelching 303 lines over a 909',

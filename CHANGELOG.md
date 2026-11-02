@@ -327,6 +327,11 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   the time car's, the boxing match's and the card cascade's shaders compile in
   a third of the time or less, with the same pictures; and the live page
   starts loading the first scene as soon as its boot screen is up.
+- **C64 chiptune, put right** through the music audit: its pulse lead ran
+  sixteenths off each chord, leaping an octave on every beat's last one, up
+  to B8 over three octaves, half its notes on the beat off the chord; it
+  sings a line now on the same pulse, chord tones on the beats and steps
+  between, up to the octave, its echo on the beat. Every check passes.
 - **Heroic game, put right** through the music audit: its lead played the
   chord's own steps with fills leaping an octave, up to D#8 over more than
   two octaves, nearly half its notes on the beat off the chord; it sings a
