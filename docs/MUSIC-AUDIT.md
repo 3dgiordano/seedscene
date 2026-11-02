@@ -1,29 +1,29 @@
 # Music audit
 
-Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ fail, ~ let off by the style, · not measured; off grid is measured on the seeds that do not swing; speed is wall-clock time on the machine that ran it. Run `npm run audit:music -- <style>` for one style. Jungle and keygen re-audited on 2026-11-02, after they were put right (their rows and sections; their speed on another machine).
+Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ fail, ~ let off by the style, · not measured; off grid is measured on the seeds that do not swing; speed is wall-clock time on the machine that ran it. Run `npm run audit:music -- <style>` for one style. Jungle, keygen, derelict, triphop, rave, eurodance, gameboy, newbeat, orchestral, heroic, chiptune, hardcore, gabber, ambient and dreamwave re-audited on 2026-11-02, after they were put right (their rows and sections; their speed on another machine).
 
-**15 of 28 styles pass** (no ✗ anywhere); failing: dreamwave, chiptune, rave, hardcore, newbeat, eurodance, gabber, ambient, orchestral, gameboy, heroic, derelict, triphop.
+**28 of 28 styles pass** (no ✗ anywhere).
 
 | style | bass in chord | bass rubs | melody on beat | held | held rubs | top | range | leaps >3rd | >6th | repeats | stuck | off grid | echo rubs | melody vs chords | sound vs real | peak | speed |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `dreamwave` | ⚠ 78% | ✓ 3% | ✗ 54% | ✗ 54% | ✗ 22% | ✗ A7 | ✓ 24 | ✗ 44% | ✗ 9% | ⚠ 11% | ✓ 0.6% | ⚠ 1.5% | ✓ 34% | ⚠ -5.8 dB | · - | ✓ -1.9 | ✓ 8.0x |
-| `chiptune` | ✓ 99% | ✓ 0% | ✗ 48% | · - | · - | ✗ B8 | ✗ 36 | ✗ 58% | ✗ 44% | ✓ 66% | ⚠ 3.9% | ✓ 0.0% | ✓ 18% | ✓ -2.1 dB | · - | ✓ -2.0 | ✓ 7.8x |
+| `dreamwave` | ⚠ 78% | ✓ 3% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ A#5 | ✓ 12 | ✓ 3% | ✓ 0% | ✓ 36% | ✓ 0.0% | ✓ 0.0% | ✓ 39% | ✓ -1.2 dB | · - | ✓ -1.9 | ✓ 9.9x |
+| `chiptune` | ✓ 99% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ B5 | ✓ 12 | ✓ 3% | ✓ 0% | ✓ 57% | ✓ 0.0% | ✓ 0.0% | ✓ 17% | ✓ -1.9 dB | · - | ✓ -2.1 | ✓ 16.0x |
 | `acid` | ✓ 96% | ✓ 1% | · - | · - | · - | · - | · - | · - | · - | · - | · - | ✓ 0.0% | · - | · - | · - | ✓ -2.0 | ✓ 4.6x |
 | `trance` | ✓ 87% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ B5 | ✓ 12 | ✓ 2% | ✓ 0% | ✓ 77% | ✓ 0.8% | ✓ 0.0% | ⚠ 58% | ✓ -2.0 dB | · - | ✓ -1.9 | ✓ 5.7x |
-| `rave` | ✓ 100% | ✓ 0% | ✗ 20% | · - | · - | ✗ G7 | ✓ 17 | ⚠ 28% | ✓ 3% | ✓ 64% | ✓ 0.0% | ✓ 0.0% | ⚠ 42% | ✗ -12.4 dB | · - | ✓ -1.9 | ✓ 4.3x |
+| `rave` | ✓ 100% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ A5 | ✓ 10 | ✓ 3% | ✓ 0% | ✓ 65% | ✓ 0.0% | ✓ 0.0% | ✓ 0% | ⚠ -3.5 dB | · - | ✓ -1.8 | ✓ 10.3x |
 | `jungle` | ✓ 99% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ B5 | ✓ 9 | ✓ 8% | ✓ 0% | ✓ 73% | ✓ 0.0% | ✓ 0.0% | ✓ 0% | ✓ -2.0 dB | · - | ✓ -2.1 | ✓ 9.8x |
-| `hardcore` | ✓ 87% | ✓ 0% | ⚠ 73% | · - | · - | ✗ C9 | ✗ 35 | ✗ 38% | ✗ 10% | ✓ 76% | ✓ 0.0% | ✓ 0.0% | ✓ 37% | ✗ -9.7 dB | · - | ✓ -1.8 | ✓ 3.6x |
-| `newbeat` | ✓ 95% | ⚠ 4% | ✗ 58% | ✗ 54% | ✗ 33% | ⚠ C#6 | ✓ 19 | ⚠ 27% | ✗ 8% | ✓ 69% | ✓ 0.0% | ✓ 0.0% | ⚠ 61% | ✓ -0.1 dB | ⚠ 11 dB brass | ✓ -1.9 | ✓ 3.8x |
-| `eurodance` | ⚠ 75% | ✓ 0% | ⚠ 63% | ✗ 63% | ⚠ 9% | ✗ C#8 | ✓ 22 | ⚠ 30% | ⚠ 8% | ✓ 50% | ⚠ 9.5% | ✓ 0.0% | ✓ 29% | ✗ -14.0 dB | · - | ✓ -1.9 | ✓ 4.7x |
-| `gabber` | · - | · - | ✗ 42% | · - | · - | ✗ G8 | ⚠ 31 | ✗ 38% | ✗ 11% | ✓ 64% | ⚠ 3.8% | ✓ 0.0% | ✓ 37% | ✗ -11.4 dB | · - | ✓ -2.0 | ✓ 8.2x |
-| `ambient` | ✓ 99% | ✓ 0% | ⚠ 77% | ⚠ 80% | ⚠ 9% | ✗ E8 | ✗ 34 | ✗ 65% | ✗ 42% | ✗ 8% | ✓ 0.0% | ✓ 0.0% | ✓ 30% | ✓ 1.2 dB | · - | ✓ -2.9 | ✓ 4.1x |
-| `orchestral` | ✓ 92% | ✓ 0% | ⚠ 70% | ✗ 62% | ⚠ 11% | ✗ B6 | ⚠ 26 | ⚠ 35% | ✗ 11% | ✓ 42% | ⚠ 6.8% | ✓ 0.0% | ✓ 19% | ✗ -9.3 dB | ⚠ 11 dB brass | ✓ -2.2 | ✓ 4.3x |
-| `gameboy` | ✓ 98% | ✓ 2% | ✓ 80% | · - | · - | ✗ F#8 | ✗ 34 | ✗ 59% | ✗ 34% | ✓ 84% | ⚠ 3.0% | ✓ 0.0% | ✓ 24% | ✓ -0.9 dB | · - | ✓ -2.2 | ✓ 13.7x |
-| `heroic` | ✓ 99% | ✓ 0% | ✗ 56% | · - | · - | ✗ D#8 | ✗ 32 | ✗ 37% | ✗ 16% | ✓ 63% | ✓ 1.1% | ✓ 0.0% | ✓ 20% | ✓ 0.0 dB | · - | ✓ -2.1 | ✓ 4.5x |
+| `hardcore` | ✓ 87% | ✓ 0% | ✓ 98% | ✓ 95% | ✓ 5% | ✓ A#5 | ✓ 11 | ✓ 6% | ✓ 0% | ✓ 88% | ✓ 0.0% | ✓ 0.0% | ✓ 18% | ✓ -1.7 dB | · - | ✓ -1.8 | ✓ 6.0x |
+| `newbeat` | ✓ 95% | ⚠ 4% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ C#5 | ✓ 12 | ✓ 1% | ✓ 0% | ✓ 75% | ✓ 0.0% | ✓ 0.0% | ✓ 34% | ✓ -1.3 dB | ⚠ 11 dB brass | ✓ -1.9 | ✓ 6.0x |
+| `eurodance` | ⚠ 75% | ✓ 0% | ✓ 96% | · - | · - | ✓ B4 | ✓ 11 | ✓ 7% | ✓ 0% | ✓ 64% | ✓ 0.0% | ✓ 0.0% | ✓ 34% | ✓ -1.6 dB | · - | ✓ -1.8 | ✓ 5.5x |
+| `gabber` | · - | · - | ✓ 100% | ✓ 100% | ✓ 0% | ✓ A5 | ✓ 11 | ✓ 7% | ✓ 0% | ✓ 81% | ✓ 0.0% | ✓ 0.0% | ✓ 0% | ✓ -1.2 dB | · - | ✓ -2.1 | ✓ 9.8x |
+| `ambient` | ✓ 99% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ G#5 | ✓ 11 | ✓ 7% | ✓ 0% | ✓ 32% | ✓ 0.0% | ✓ 0.0% | ✓ 0% | ✓ -1.8 dB | · - | ✓ -2.8 | ✓ 9.4x |
+| `orchestral` | ✓ 92% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ G#5 | ✓ 10 | ✓ 3% | ✓ 0% | ✓ 69% | ✓ 0.0% | ✓ 0.0% | · - | ✓ -1.6 dB | · - | ✓ -2.6 | ✓ 8.5x |
+| `gameboy` | ✓ 98% | ✓ 2% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ A5 | ✓ 12 | ✓ 3% | ✓ 0% | ✓ 71% | ✓ 0.0% | ✓ 0.0% | ✓ 36% | ✓ 0.0 dB | · - | ✓ -2.1 | ✓ 18.7x |
+| `heroic` | ✓ 99% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ A#5 | ✓ 10 | ✓ 3% | ✓ 0% | ✓ 75% | ✓ 0.0% | ✓ 0.0% | ✓ 19% | ✓ 0.7 dB | · - | ✓ -2.1 | ✓ 7.9x |
 | `synthwave` | ✓ 98% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ C6 | ✓ 12 | ✓ 3% | ✓ 0% | ✓ 61% | ✓ 0.0% | ✓ 0.0% | ⚠ 58% | ✓ -2.6 dB | · - | ✓ -2.4 | ✓ 7.0x |
 | `arcade` | ~ 82% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ B5 | ✓ 12 | ✓ 1% | ✓ 0% | ✓ 91% | ✓ 0.0% | ✓ 0.0% | ⚠ 66% | ✓ -0.4 dB | · - | ✓ -2.3 | ✓ 21.7x |
 | `cyborg` | ✓ 99% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ C5 | ✓ 8 | ✓ 10% | ✓ 0% | ✓ 57% | ✓ 0.0% | ✓ 0.0% | ✓ 32% | ✓ -1.0 dB | ✓ 5 dB brass | ✓ -2.1 | ✓ 8.0x |
-| `derelict` | ~ 12% | ~ 41% | ⚠ 68% | ✗ 62% | ~ 23% | ✗ G7 | ✓ 20 | ⚠ 33% | ✓ 3% | ✓ 33% | ⚠ 2.4% | ✓ 0.0% | ✓ 24% | ⚠ -7.0 dB | · - | ✓ -2.8 | ✓ 12.1x |
+| `derelict` | ~ 12% | ~ 41% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ F#5 | ✓ 12 | ✓ 3% | ✓ 0% | ✓ 38% | ✓ 2.0% | ✓ 0.0% | ✓ 10% | ✓ -1.9 dB | · - | ✓ -2.5 | ✓ 24.6x |
 | `synthpop` | ✓ 100% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ G#5 | ✓ 13 | ✓ 15% | ✓ 0% | ✓ 80% | ✓ 0.0% | ✓ 0.0% | ⚠ 68% | ✓ -2.3 dB | · - | ✓ -2.3 | ✓ 4.2x |
 | `starpilot` | ✓ 99% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ G5 | ✓ 12 | ✓ 5% | ✓ 0% | ✓ 82% | ⚠ 11.7% | ✓ 0.0% | ⚠ 50% | ✓ 1.6 dB | ✓ 7 dB brass | ✓ -2.0 | ✓ 3.8x |
 | `modjazz` | ~ 77% | ~ 30% | ✓ 100% | ✓ 89% | ✓ 5% | ⚠ E6 | ✓ 15 | ⚠ 26% | ✓ 0% | ✓ 58% | ⚠ 4.7% | · swung | ✓ 17% | ✓ -2.4 dB | ⚠ 10 dB flute | ✓ -2.1 | ✓ 5.9x |
@@ -31,35 +31,21 @@ Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ 
 | `midiquest` | ✓ 88% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ G#5 | ✓ 12 | ✓ 6% | ✓ 1% | ✓ 73% | ✓ 0.0% | ✓ 0.0% | ✓ 31% | ✓ -2.6 dB | ✓ 6 dB flute | ✓ -2.4 | ✓ 3.8x |
 | `rocknroll` | ~ 74% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ B5 | ✓ 12 | ✓ 2% | ✓ 0% | ✓ 82% | ✓ 0.0% | · swung | ⚠ 65% | ✓ 1.6 dB | · - | ✓ -1.9 | ✓ 5.3x |
 | `keygen` | ✓ 98% | ⚠ 3% | ✓ 98% | ✓ 100% | ✓ 0% | ✓ G5 | ✓ 10 | ✓ 3% | ✓ 0% | ✓ 91% | ✓ 0.0% | ✓ 0.0% | · - | ✓ -1.9 dB | · - | ✓ -2.1 | ✓ 22.9x |
-| `triphop` | ✓ 97% | ⚠ 4% | ✓ 100% | ⚠ 68% | ✗ 26% | ⚠ G6 | ✓ 19 | ✗ 39% | ✓ 2% | ✓ 34% | ✓ 0.0% | · swung | ⚠ 54% | ✓ 3.3 dB | · - | ✓ -2.5 | ✓ 5.6x |
+| `triphop` | ✓ 97% | ⚠ 4% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ F5 | ✓ 9 | ✓ 4% | ✓ 0% | ✓ 35% | ✓ 0.0% | · swung | · - | ✓ 0.3 dB | · - | ✓ -2.7 | ✓ 11.6x |
 | `animeop` | ✓ 98% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ G#5 | ✓ 22 | ✓ 10% | ✓ 1% | ✓ 43% | ✓ 0.2% | ✓ 0.0% | ⚠ 68% | ✓ -2.8 dB | · - | ✓ -1.9 | ✓ 4.5x |
 | `skatepunk` | ✓ 92% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ D5 | ✓ 8 | ✓ 1% | ✓ 0% | ⚠ 30% | ⚠ 23.8% | ✓ 0.0% | ✓ 3% | ⚠ -5.6 dB | · - | ✓ -1.9 | ✓ 4.1x |
 
 ## Dreamwave (`dreamwave`)
 
-91, 113, 97 bpm; F phrygian, A# lydian, C# phrygian. Layers: 169 bass, 341 chord, 120 melody notes.
+91, 113, 97 bpm; F phrygian, A# lydian, C# phrygian. Layers: 169 bass, 341 chord, 87 melody notes.
 
-- ✗ only 54% of melody notes on the beat are chord tones
-- ✗ only 54% of held melody notes are chord tones
-- ✗ 22% of held melody notes rub a semitone against the harmony
-- ✗ the melody reaches A7 - shrill on a sustained lead
-- ✗ 9% of melodic moves leap wider than a sixth
-- ✗ 44% of melodic moves leap wider than a third
 - ⚠ the bass's note is in the chord at 78% of chord changes - a chord instrument may stand on the wrong root
-- ⚠ only 11% of its two-bar phrases come back - little to remember
-- ⚠ 1.5% of onsets fall off the sixteenth grid
-- ⚠ the melody sits -5.8 dB against the chords - buried
 
 ## C64 Chiptune (`chiptune`)
 
-134, 134, 148 bpm; D harmonicMinor, B minor, B harmonicMinor. Layers: 338 bass, 95 chord, 272 melody notes.
+134, 134, 148 bpm; D harmonicMinor, B minor, B harmonicMinor. Layers: 338 bass, 95 chord, 110 melody notes.
 
-- ✗ only 48% of melody notes on the beat are chord tones
-- ✗ the melody reaches B8 - shrill on a sustained lead
-- ✗ the melody spans 36 semitones - more than a singer's line
-- ✗ 44% of melodic moves leap wider than a sixth
-- ✗ 58% of melodic moves leap wider than a third
-- ⚠ 3.9% of melody notes are struck a third time running on one pitch - listen: a line standing still, or a fanfare or a chant meaning it
+- nothing stands out
 
 ## Acid (`acid`)
 
@@ -77,14 +63,9 @@ Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ 
 
 ## Amiga Rave (`rave`)
 
-139, 146, 149 bpm; G phrygian, A phrygian, C minor. Layers: 133 bass, 751 chord, 116 melody notes.
+139, 146, 149 bpm; G phrygian, A phrygian, C minor. Layers: 133 bass, 751 chord, 117 melody notes.
 
-- ✗ only 20% of melody notes on the beat are chord tones
-- ✗ the melody reaches G7 - shrill on a sustained lead
-- ✗ the melody sits -12.4 dB against the chords - buried
-- ✗ the echo (3 sixteenths, level 0.144) falls between the eighths the melody sits on
-- ⚠ 28% of melodic moves leap wider than a third
-- ⚠ 42% of the melody's echoes land a step from the note then sounding - listen: a rub at every turn, or the genre's own echo
+- ⚠ the melody sits -3.5 dB against the chords - buried
 
 ## Jungle (`jungle`)
 
@@ -94,106 +75,52 @@ Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ 
 
 ## Happy Hardcore (`hardcore`)
 
-180, 171, 177 bpm; A lydian, A# minor, F# major. Layers: 226 bass, 1665 chord, 183 melody notes.
+180, 171, 177 bpm; A lydian, A# minor, F# major. Layers: 226 bass, 1665 chord, 220 melody notes.
 
-- ✗ the melody reaches C9 - shrill on a sustained lead
-- ✗ the melody spans 35 semitones - more than a singer's line
-- ✗ 10% of melodic moves leap wider than a sixth
-- ✗ 38% of melodic moves leap wider than a third
-- ✗ the melody sits -9.7 dB against the chords - buried
-- ✗ the echo (3 sixteenths, level 0.198) falls between the eighths the melody sits on
-- ⚠ only 73% of melody notes on the beat are chord tones
+- nothing stands out
 
 ## New Beat (`newbeat`)
 
-112, 108, 108 bpm; F# phrygian, C phrygian, C# phrygian. Layers: 544 bass, 389 chord, 154 melody notes.
+112, 108, 108 bpm; F# phrygian, C phrygian, C# phrygian. Layers: 544 bass, 389 chord, 110 melody notes.
 
-- ✗ only 58% of melody notes on the beat are chord tones
-- ✗ only 54% of held melody notes are chord tones
-- ✗ 33% of held melody notes rub a semitone against the harmony
-- ✗ 8% of melodic moves leap wider than a sixth
-- ✗ the echo (3 sixteenths, level 0.15) falls between the eighths the melody sits on
 - ⚠ 4% of bass notes rub a minor second against a chord tone sounding
-- ⚠ the melody reaches C#6 - shrill on a sustained lead
-- ⚠ 27% of melodic moves leap wider than a third
-- ⚠ 61% of the melody's echoes land a step from the note then sounding - listen: a rub at every turn, or the genre's own echo
-- ⚠ the brass strays 11 dB on average from a trombone (soft to loud, on opl3): 0 0 0 0 0 0 where the real one has 0 16 16 - - - - UNSW Music Acoustics, brass acoustics (a trombone crescendo, soft and loud)
+- ⚠ the brass:real strays 11 dB on average from a trombone (soft to loud, on paula): 0 0 0 0 0 1 where the real one has 0 16 16 - - - - UNSW Music Acoustics, brass acoustics (a trombone crescendo, soft and loud)
 
 ## Eurodance (`eurodance`)
 
-130, 131, 126 bpm; C major, B major, B dorian. Layers: 199 bass, 1257 chord, 134 melody notes.
+130, 131, 126 bpm; C major, B major, B dorian. Layers: 199 bass, 1257 chord, 161 melody notes.
 
-- ✗ only 63% of held melody notes are chord tones
-- ✗ the melody reaches C#8 - shrill on a sustained lead
-- ✗ the melody sits -14.0 dB against the chords - buried
 - ⚠ the bass's note is in the chord at 75% of chord changes - a chord instrument may stand on the wrong root
-- ⚠ only 63% of melody notes on the beat are chord tones
-- ⚠ 9% of held melody notes rub a semitone against the harmony
-- ⚠ 8% of melodic moves leap wider than a sixth
-- ⚠ 30% of melodic moves leap wider than a third
-- ⚠ 9.5% of melody notes are struck a third time running on one pitch - listen: a line standing still, or a fanfare or a chant meaning it
 
 ## Gabber (`gabber`)
 
-176, 179, 179 bpm; A minor, D harmonicMinor, C minor. Layers: 0 bass, 297 chord, 245 melody notes.
+176, 179, 179 bpm; A minor, D harmonicMinor, C minor. Layers: 0 bass, 297 chord, 105 melody notes.
 
-- ✗ only 42% of melody notes on the beat are chord tones
-- ✗ the melody reaches G8 - shrill on a sustained lead
-- ✗ 11% of melodic moves leap wider than a sixth
-- ✗ 38% of melodic moves leap wider than a third
-- ✗ the melody sits -11.4 dB against the chords - buried
-- ✗ the echo (3 sixteenths, level 0.154) falls between the eighths the melody sits on
-- ⚠ the melody spans 31 semitones - more than a singer's line
-- ⚠ 3.8% of melody notes are struck a third time running on one pitch - listen: a line standing still, or a fanfare or a chant meaning it
+- nothing stands out
 
 ## Ambient Techno (`ambient`)
 
-97, 95, 103 bpm; D# dorian, F dorian, A lydian. Layers: 79 bass, 133 chord, 224 melody notes.
+97, 95, 103 bpm; D# dorian, F dorian, A lydian. Layers: 79 bass, 279 chord, 58 melody notes.
 
-- ✗ the melody reaches E8 - shrill on a sustained lead
-- ✗ the melody spans 34 semitones - more than a singer's line
-- ✗ 42% of melodic moves leap wider than a sixth
-- ✗ 65% of melodic moves leap wider than a third
-- ✗ only 8% of its two-bar phrases come back - little to remember
-- ⚠ only 77% of melody notes on the beat are chord tones
-- ⚠ only 80% of held melody notes are chord tones
-- ⚠ 9% of held melody notes rub a semitone against the harmony
+- nothing stands out
 
 ## Orchestral Tracker (`orchestral`)
 
-112, 118, 113 bpm; F# minor, G# minor, A dorian. Layers: 17 bass, 672 chord, 154 melody notes.
+112, 118, 113 bpm; F# minor, G# minor, A dorian. Layers: 17 bass, 674 chord, 91 melody notes.
 
-- ✗ only 62% of held melody notes are chord tones
-- ✗ the melody reaches B6 - shrill on a sustained lead
-- ✗ 11% of melodic moves leap wider than a sixth
-- ✗ the melody sits -9.3 dB against the chords - buried
-- ✗ the echo (3 sixteenths, level 0.105) falls between the eighths the melody sits on
-- ⚠ only 70% of melody notes on the beat are chord tones
-- ⚠ 11% of held melody notes rub a semitone against the harmony
-- ⚠ the melody spans 26 semitones - more than a singer's line
-- ⚠ 35% of melodic moves leap wider than a third
-- ⚠ 6.8% of melody notes are struck a third time running on one pitch - listen: a line standing still, or a fanfare or a chant meaning it
-- ⚠ the brass strays 11 dB on average from a trombone (soft to loud, on opl3): 0 0 0 0 0 0 where the real one has 0 16 16 - - - - UNSW Music Acoustics, brass acoustics (a trombone crescendo, soft and loud)
+- nothing stands out
 
 ## Handheld Chip (`gameboy`)
 
-128, 134, 133 bpm; G# minor, A dorian, D# major. Layers: 328 bass, 92 chord, 270 melody notes.
+128, 134, 133 bpm; G# minor, A dorian, D# major. Layers: 328 bass, 92 chord, 111 melody notes.
 
-- ✗ the melody reaches F#8 - shrill on a sustained lead
-- ✗ the melody spans 34 semitones - more than a singer's line
-- ✗ 34% of melodic moves leap wider than a sixth
-- ✗ 59% of melodic moves leap wider than a third
-- ⚠ 3.0% of melody notes are struck a third time running on one pitch - listen: a line standing still, or a fanfare or a chant meaning it
+- nothing stands out
 
 ## Heroic Game (`heroic`)
 
-148, 145, 151 bpm; C dorian, A# harmonicMinor, A# dorian. Layers: 380 bass, 604 chord, 204 melody notes.
+148, 145, 151 bpm; C dorian, A# harmonicMinor, A# dorian. Layers: 380 bass, 604 chord, 149 melody notes.
 
-- ✗ only 56% of melody notes on the beat are chord tones
-- ✗ the melody reaches D#8 - shrill on a sustained lead
-- ✗ the melody spans 32 semitones - more than a singer's line
-- ✗ 16% of melodic moves leap wider than a sixth
-- ✗ 37% of melodic moves leap wider than a third
+- nothing stands out
 
 ## Synthwave (`synthwave`)
 
@@ -216,14 +143,8 @@ Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ 
 
 ## Derelict Ship (`derelict`)
 
-67, 72, 70 bpm; F# phrygian, D# harmonicMinor, F# harmonicMinor. Layers: 17 bass, 94 chord, 85 melody notes.
+67, 72, 70 bpm; F# phrygian, D# harmonicMinor, F# harmonicMinor. Layers: 17 bass, 94 chord, 48 melody notes.
 
-- ✗ only 62% of held melody notes are chord tones
-- ✗ the melody reaches G7 - shrill on a sustained lead
-- ⚠ only 68% of melody notes on the beat are chord tones
-- ⚠ 33% of melodic moves leap wider than a third
-- ⚠ the melody sits -7.0 dB against the chords - buried
-- ⚠ 2.4% of melody notes are struck a third time running on one pitch - listen: a line standing still, or a fanfare or a chant meaning it
 - ~ clashes let off: the half-step above the root is the dread it is built on
 - ~ the bass let off the chord: a drone holds the tonic under the moving chords (a pedal)
 
@@ -278,14 +199,9 @@ Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ 
 
 ## Trip-Hop (`triphop`)
 
-82, 81, 69 bpm; F# harmonicMinor, D phrygian, C# minor. Layers: 71 bass, 319 chord, 76 melody notes.
+82, 81, 69 bpm; F# harmonicMinor, D phrygian, C# minor. Layers: 71 bass, 319 chord, 33 melody notes.
 
-- ✗ 26% of held melody notes rub a semitone against the harmony
-- ✗ 39% of melodic moves leap wider than a third
 - ⚠ 4% of bass notes rub a minor second against a chord tone sounding
-- ⚠ only 68% of held melody notes are chord tones
-- ⚠ the melody reaches G6 - shrill on a sustained lead
-- ⚠ 54% of the melody's echoes land a step from the note then sounding - listen: a rub at every turn, or the genre's own echo
 
 ## Anime Opening (`animeop`)
 

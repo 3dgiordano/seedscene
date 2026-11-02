@@ -327,6 +327,97 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   the time car's, the boxing match's and the card cascade's shaders compile in
   a third of the time or less, with the same pictures; and the live page
   starts loading the first scene as soon as its boot screen is up.
+- **Happy hardcore, gabber, ambient techno and dreamwave, put right**
+  through the music audit, the last four: each lead played its chord's own
+  steps, up to C9, G8, E8 and A7, leaping about; each sings a line of its own
+  now, chord tones on the beats and steps between, up to the octave, its echo
+  on the beat - on the same supersaw for hardcore and gabber (gabber's in half
+  time over its kick, both raised out from under the piano and the hoovers),
+  on a bell of its own for ambient, apart from the bells of its arpeggio, and
+  on the same lead for dreamwave. Hardcore's plucks, ambient's bells and
+  dreamwave's arpeggio stay under C6, where they climbed to F#8, C8 and C7.
+  Gabber's off-beat hat is closed and short, and its clap softer, where an
+  open hat hissed over every off-beat at 180; dreamwave's rolls and fills
+  play straight on the grid under its swing, where they limped and fell a
+  thirty-second late. Every check passes but dreamwave's walking bass, as
+  before. All twenty-eight styles now pass the audit.
+- **C64 chiptune, put right** through the music audit: its pulse lead ran
+  sixteenths off each chord, leaping an octave on every beat's last one, up
+  to B8 over three octaves, half its notes on the beat off the chord; it
+  sings a line now on the same pulse, chord tones on the beats and steps
+  between, up to the octave, its echo on the beat. Every check passes.
+- **Heroic game, put right** through the music audit: its lead played the
+  chord's own steps with fills leaping an octave, up to D#8 over more than
+  two octaves, nearly half its notes on the beat off the chord; it sings a
+  line now on the same soaring lead, chord tones on the beats and steps
+  between, up to the octave, its echo on the beat. Every check passes.
+- **Orchestral tracker, laid out as an orchestra** through the music audit
+  and the principles of orchestration: the first violins sing the melody on
+  top, a line of its own, chord tones on the beats and steps between; the
+  brass doubles it an octave below at the climax; the rest of the strings
+  sit under it, spaced as a section is, wide below and closer above; the
+  choir comes in only at the climax, softly; the timpani mark the accents;
+  the pizzicato stays under C6. It was a choir wall and organ-like string
+  blocks over a brass line buried nine decibels among them up to B6, the
+  timpani loudest of all and the pizzicato ringing up to D7. Every check
+  passes. The audit now takes a melody played by a variant of its own
+  instrument (the violins among the strings) as that variant alone, and
+  leaves out a section doubling it, which it took for chords.
+- **New beat, put right** through the music audit: its brass played the
+  chord's own steps, two of five notes on the beat off the chord and a third
+  of its long notes a semitone from the harmony, its dotted echo between its
+  eighths; it sings a line now on the real brass, as cyborg's and star
+  pilot's, chord tones on the beats and steps between, up to the octave, its
+  echo on the beat. Every check passes but two warnings: the EBM bass's
+  passing notes, and the brass on the Amiga, which one sample cannot brighten.
+- **Handheld chip, put right** through the music audit: its pulse lead ran
+  sixteenths off each chord, leaping an octave on every beat's last one, up
+  to F#8 over nearly three octaves; it sings a line now on the same pulse
+  channel, chord tones on the beats and steps between, up to the octave, its
+  echo on the beat. Every check passes.
+- **Eurodance, put right** through the music audit: its anthem lead sang
+  high in a singer's place, the chord's own steps up to C#8, buried fourteen
+  decibels under the house piano, and its plucks climbed to G#8; it plays a
+  synth riff now, as the genre's records do - short, syncopated, played
+  again every four bars, in the middle of the keyboard, cutting through the
+  piano - and the plucks stay under C6, the same sixteenths as before. Its
+  echo is on the beat. Every check passes but one warning, the organ bass's
+  note under some chord changes.
+- **Amiga rave, put right** through the music audit: its piano played the
+  chord's own steps up to G7, four of five notes on the beat off the chord,
+  buried twelve decibels under the hoovers, its dotted echo between its
+  eighths; it plays a riff of its own now in the rave piano's syncopation -
+  on the one, the "a" of one, the "and" of two and of three - chord tones on
+  the beats, as loud as the Amiga plays a sample, its echo on the beat.
+  Every check passes but one warning: the piano still sits 3.5 dB under the
+  hoovers, all the Amiga's volume gives it.
+- **Trip-hop, put right** through the music audit: its theremin sang the
+  hook a chord's step above each new root, leaping with every chord, a
+  quarter of its long notes a semitone from the harmony; it sings a line now
+  over its four-bar progression - two notes a bar, on the one and on four,
+  clear of the Rhodes, swooping into each new pitch, one note at a time as a
+  theremin plays, within a sixth - its echo on the beat. Every check passes
+  but one warning, the bass's chromatic approach notes into the next chord.
+- **Trip-hop's scratches, rebuilt** from measurements of real turntable
+  scratching (Hansen, Bresin and Fabiani at KTH) and played as a DJ plays
+  them: the record carries a sung "aaah", held and fading slowly, at a pitch
+  of its own - the key's tonic where a man's voice speaks; the hand moves it
+  back and forth, each move gathering speed, fastest halfway and slowing to
+  nothing where it turns, so the pitch rises and falls with it and a pull
+  plays the voice backwards; how far the hand pushes is how much of the
+  voice comes out; the record turns on the grid, a sixteenth or an eighth a
+  move; a whole bar closes each four-bar phrase, a routine of one or two
+  beats - baby scratches, forwards, backwards, chirps, tears - played again
+  and varied at the end, from one mark on the record at one speed; up front
+  in the mix, where four identical short strokes ran in a row sixteen
+  decibels under it, wandering in pitch with the chords; the stylus hisses
+  as fast as the record goes, and nothing clicks.
+- **Derelict ship, put right** through the music audit: its FM bell rang the
+  chord's own steps, up to G7, a third of its long notes off the harmony and
+  buried under the pads; it sings a slow line now, chord tones on the beats
+  and steps between, up to the octave, up front as a ping off the hull, its
+  echo on the beat. Every check passes; its half-step and its drone stay,
+  let off by name as before.
 - **Keygen, put right** through the music audit: its squelchy lead played
   the hook a chord's step above each new root, leaping with every chord to
   G7; it sings a line now, chord tones on the beats and steps between, up to

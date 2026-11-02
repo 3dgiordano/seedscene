@@ -29,7 +29,10 @@ the report; `--json` prints the numbers.
 It splits the score into its layers - the bass, the chords (notes struck
 and held together, and arpeggios), the melody (the lead role's single notes,
 a note struck with a chord but held its own length among them) - and
-measures:
+measures. A style whose melody plays a variant of its own (the first
+violins among the strings) has only that variant for its melody, and a
+section doubling the melody an octave below is left out rather than taken
+for a chord (2026-11-02, for the orchestral tracker). It then measures:
 
 | Check | What it catches | Pass | Warn |
 |---|---|---|---|

@@ -6,6 +6,12 @@ when docs/PLAN-v0.2.md is closed. Claude does not commit or push.
 Owner, 2026-11-02: never commit or push without the owner's review first; the
 commit title and description are reviewed by the owner too; Claude never
 appears as a co-author (no Co-Authored-By or session trailer in any commit).
+Owner, 2026-11-02: each change starts from a branch made from the latest
+`main`; the owner squash-merges each PR into `main`, so a branch already
+merged is not reused without being rebuilt from `main`. Branches are named
+for the change, plainly (e.g. `melody-lines`), never with a `claude/` prefix. Commits are made in
+the owner's name (git -c user.name/user.email), since the container's git
+identity is Claude's.
 
 Where it stands (2026-11-01): the owner committed this session's work as
 23fe562 (eras, displays and sound boards apart) and 2485742 (the screen kept
