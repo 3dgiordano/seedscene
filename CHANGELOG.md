@@ -4,7 +4,7 @@
 
 The release that turns the tool into **SEEDSCENE**: a name, a personality,
 a Commodore 64 front door, seven eras of computing from 1972 to now,
-forty-five scenes, twenty-eight styles of music, fourteen displays and four
+forty-five scenes, twenty-nine styles of music, fourteen displays and five
 sound boards, an endless AUTOPLAY channel, and a live mode you
 can drive entirely from the keyboard.
 
@@ -327,6 +327,23 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   the time car's, the boxing match's and the card cascade's shaders compile in
   a third of the time or less, with the same pictures; and the live page
   starts loading the first scene as soon as its boot screen is up.
+- **The Atari ST's sound chip, the YM2149**, a fifth sound board: three
+  square channels, a noise generator and the hardware envelope on the ST's
+  2 MHz clock, from the chip's datasheet - pitches at what its 12-bit periods
+  allow, a logarithmic volume 3 dB a step, written once a frame as the 50 Hz
+  music player wrote it; the envelope run at audio rate as a buzzing bass,
+  chords stepped as 50 Hz arpeggios on one channel, hats from the noise
+  channel - a closed one a tick of a frame, as the players wrote it - and the
+  drums as digi-drums played through the volume register, their quiet tails
+  trimmed; a gated snare is played as the plain one (the ST had no gated
+  reverb, and its long burst of noise came out as static on the chip). It is one of
+  the 1982–1989 era's boards, with the synthesizer's own voices, by the seed;
+  `--board ym`, `C` live.
+- **ST Buzz** (`stchip`), the ST demos' music: the buzzer bass in a rhythm of
+  the seed's, an octave up now and then, 50 Hz arpeggio chords, a square lead
+  singing a line, digi-drums and the noise channel's hats, at 125 bpm most
+  often; in the 1982–1989 era. It passes every check of the music audit, and
+  the full audit, run again on a free machine, passes all twenty-nine styles.
 - **No colour goes black any more in the rings, the fireworks, the maze, the
   bricks, the snake, the boxing match and the stage's rim.** Each brought a
   colour of the seed's palette to full brightness, and the palette can dip
@@ -599,7 +616,7 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   allocations, cached pitches and filter coefficients), and the next track is
   composed a slice per audio block while only one track plays, never all at
   once in the middle of a mix. The sound is the same, bit for bit.
-- **Music styles**, chosen by the era or with `--music` - twenty-eight in all, these and the ones below:
+- **Music styles**, chosen by the era or with `--music` - twenty-nine in all, these and the ones below:
   `chiptune` (C64 SID), `newbeat`, `rave` (Amiga, 1992), `orchestral`
   (tracker strings, choir, timpani, brass), `dreamwave`, `acid` (303),
   `gabber`, `ambient`, `eurodance`, `jungle`, `heroic` (game soundtrack),

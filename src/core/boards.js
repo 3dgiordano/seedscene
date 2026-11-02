@@ -28,6 +28,10 @@ export const BOARDS = {
     name: 'AWE32', label: 'Wavetable sound card', chip: 'awe32',
     blurb: 'sampled instruments on a 90s wavetable card, with its chorus and reverb',
   },
+  ym: {
+    name: 'YM2149', label: 'Atari ST sound chip', chip: 'ym',
+    blurb: 'three square channels, noise and the envelope buzzer, written 50 times a second, with digi-drums',
+  },
 };
 
 /** The boards in the order a viewer steps through them. */

@@ -22,7 +22,7 @@ export const ERAS = {
     blurb: 'the 8-bit home, the arcade hits of the decade, and the films and series on tape',
     display: 'c64',
     scenes: ['lightcycles', 'pyramid', 'boxer', 'bricks', 'outrun', 'scanner', 'timecar', 'moonbike', 'dottunnel', 'plasma', 'ball'],
-    music: ['chiptune', 'synthpop'],
+    music: ['chiptune', 'synthpop', 'stchip'],
   },
   1990: {
     label: '1990–1993', year: 1990, to: 1993, title: 'The demoscene\'s golden years',

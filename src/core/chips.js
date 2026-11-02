@@ -664,13 +664,174 @@ function paulaChip(native) {
   };
 }
 
+// ---------------------------------------------------------------------------
+// YM2149: the Atari ST's sound chip
+// ---------------------------------------------------------------------------
+//
+// Three square-wave channels, one noise generator and one hardware envelope, on a 2 MHz clock
+// (the ST's 8 MHz divided by four). From the chip's datasheet: a tone is the clock over 16 times a
+// 12-bit period, so high notes come out a little off; the noise is the clock over 16 times a 5-bit
+// period, from a 17-bit shift register; the envelope steps through its shape at the clock over 256
+// times a 16-bit period. The DAC is logarithmic, 1.5 dB a step over 32 levels: the envelope uses
+// them all, the 4-bit volume register every other one. The music player wrote the registers once a
+// frame, 50 times a second - its volume curves, arpeggios and vibrato move in those steps - and the
+// demo musicians' tricks are here: the envelope run at audio rate as a buzzing bass, a chord played
+// as a 50 Hz arpeggio on one channel, and drums played as samples through the volume register (the
+// digi-drums). Mono, and dry.
+
+const YM_CLOCK = 2000000;
+const YM_FRAME = SR / 50;
+const YM_LEVEL = Float64Array.from({ length: 32 }, (_, i) => (i === 0 ? 0 : Math.pow(10, -1.5 * (31 - i) / 20)));
+const ymAmp = (reg) => YM_LEVEL[reg > 0 ? 2 * reg + 1 : 0];                 // a volume register value (0-15)
+const ymReg = (amp) => (amp <= 0 ? 0 : Math.max(0, Math.min(15, Math.round(15 + 20 * Math.log10(amp) / 3))));
+const ymTone = (f) => YM_CLOCK / (16 * Math.max(1, Math.min(4095, Math.round(YM_CLOCK / (16 * f)))));
+const ymEnvF = (f) => YM_CLOCK / (256 * Math.max(1, Math.min(65535, Math.round(YM_CLOCK / (256 * f)))));
+// a digi-drum's nearest level: the volume register is unsigned, so the sample rides on half the range
+const YM_DIGI = Float64Array.from({ length: 16 }, (_, r) => ymAmp(r));
+function ymDigi(s) {
+  const u = Math.max(0, Math.min(1, 0.5 + 0.5 * s));
+  let best = 0, err = 2;
+  for (let r = 0; r < 16; r++) { const e = Math.abs(YM_DIGI[r] - u); if (e < err) { err = e; best = r; } }
+  return YM_DIGI[best] * 2 - 1;
+}
+
+// what each of the synthesizer's instruments becomes on the chip
+const YM_BUZZ = new Set(['bass', 'chipbass', 'reese', 'slap', 'xmbass', 'thbass', 'acid', 'drone']);
+const YM_NOISE = new Set(['hat', 'crash', 'xmhat', 'thride', 'thshaker', 'riser', 'vinyl']);
+const YM_DIGIS = new Set(['kick', 'snare', 'clap', 'timpani', 'anvil', 'boom', 'xmkick', 'xmsnare', 'thkick', 'thsnare', 'scratch']);
+const YM_PLUCK = new Set(['piano', 'harp', 'arp', 'ep', 'guitar', 'fmbell', 'stab', 'zap', 'blip', 'xmarp']);
+const YM_PAD = new Set(['pad', 'strings', 'choir', 'organ', 'hoover', 'supersaw']);
+
+/** The music player's volume curve for a note, sampled once a frame: what it wrote to the register. */
+function ymCurve(kind, t, dur) {
+  let a;
+  if (kind === 'pluck') a = Math.exp(-t * 5.5);
+  else if (kind === 'pad') a = Math.min(1, t / 0.12) * (0.75 + 0.25 * Math.exp(-t * 2));
+  else a = t < 0.02 ? 1 : 0.85 + 0.15 * Math.exp(-t * 6);              // a lead: on at once, settling
+  if (t > dur) a *= Math.exp(-(t - dur) / (kind === 'pad' ? 0.15 : 0.04));
+  return a;
+}
+
+function ymChip(native) {
+  // chords struck together on one instrument: on the chip, one channel stepping through them at 50 Hz
+  const arpOf = new WeakMap();
+  const silent = new WeakSet();
+  function prepare(events) {
+    const groups = new Map();
+    for (const e of events) {
+      if (!(e.note > 0) || YM_BUZZ.has(e.instr) || YM_NOISE.has(e.instr) || YM_DIGIS.has(e.instr)) continue;
+      const k = e.instr + '|' + (e.kit || '') + '|' + e.t + '|' + e.dur;
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push(e);
+    }
+    for (const g of groups.values()) {
+      if (g.length < 2) continue;
+      g.sort((x, y) => x.note - y.note);
+      arpOf.set(g[0], g.map((e) => e.note));
+      for (let i = 1; i < g.length; i++) silent.add(g[i]);
+    }
+  }
+
+  const tone = (kind, gain) => ({
+    tail: kind === 'pad' ? 0.5 : 0.15,
+    render(v, out) {
+      if (silent.has(v.ev)) { out[0] = out[1] = 0; return; }
+      const t = v.age / SR, dur = v.ev.dur / SR;
+      const frame = Math.floor(v.age / YM_FRAME);
+      // the arpeggio (a chord, or the C64-style chip chord) and the vibrato move a frame at a time
+      const notes = arpOf.get(v.ev) || (v.ev.chord && v.ev.chord.length ? v.ev.chord : null);
+      let n = notes ? notes[frame % notes.length] : v.ev.note;
+      if (!notes && kind === 'lead' && t > 0.2) n += 0.12 * Math.sin(TAU * 6 * frame / 50);
+      const vol = ymAmp(ymReg(ymCurve(kind, Math.floor(v.age / YM_FRAME) * YM_FRAME / SR, dur)));
+      const p = osc(v, 0, ymTone(midiToFreq(n)));
+      // (a chord stepped as an arpeggio sat under the tune, on a channel of its own)
+      const s = (p < 0.5 ? 0.5 : -0.5) * vol * Math.min(1, v.ev.vel * 1.4) * gain * (notes ? 0.72 : 1);
+      out[0] = out[1] = s;
+    },
+  });
+
+  // the buzzer: the envelope stepping down its 32 levels, over and over, at the bass note's pitch
+  const buzz = {
+    tail: 0.03,
+    render(v, out) {
+      const t = v.age / SR, dur = v.ev.dur / SR;
+      if (t > dur + 0.02) { out[0] = out[1] = 0; return; }
+      const p = osc(v, 0, ymEnvF(midiToFreq(v.ev.note)));
+      const step = 31 - Math.floor(p * 32);
+      let s = YM_LEVEL[step];
+      s -= onePole(v, 'dc', s, 20);                         // the chip's output sits above zero
+      out[0] = out[1] = s * Math.min(1, v.ev.vel * 1.3) * 0.88;
+    },
+  };
+
+  // the noise channel: the 17-bit register, its rate set by the noise period, the volume a frame at a time
+  const noise = {
+    tail: 0.4,
+    render(v, out) {
+      const t = v.age / SR, dur = v.ev.dur / SR, name = v.ev.instr;
+      if (!v.lfsr) { v.lfsr = 1; v.nacc = 0; v.nbit = 1; }
+      const np = name === 'riser' ? Math.max(1, Math.round(31 - 30 * Math.min(1, t / Math.max(dur, 0.05))))
+        : name === 'crash' ? 4 : name === 'vinyl' ? 24 : 1;
+      v.nacc += YM_CLOCK / (16 * np) / SR;
+      while (v.nacc >= 1) { v.nacc -= 1; const b = (v.lfsr ^ (v.lfsr >> 3)) & 1; v.lfsr = (v.lfsr >> 1) | (b << 16); v.nbit = v.lfsr & 1; }
+      const ft = Math.floor(v.age / YM_FRAME) * YM_FRAME / SR;
+      const decay = name === 'crash' ? 4.5 : name === 'riser' ? 0 : name === 'vinyl' ? 0 : v.ev.open ? 7 : 30;
+      let a = name === 'riser' ? Math.min(1, ft / Math.max(dur, 0.05)) : name === 'vinyl' ? 0.08 : Math.exp(-ft * decay);
+      // (a closed hat is a tick, as the players wrote it: a frame of noise and a little after, then off -
+      //  stepped down a frame at a time it hissed on and on under a hat on every sixteenth)
+      const closed = (name === 'hat' || name === 'xmhat' || name === 'thshaker') && !v.ev.open;
+      if (closed) a = ft < YM_FRAME / SR ? 1 : ft < 2 * YM_FRAME / SR ? 0.25 : 0;
+      if (t > dur && name !== 'hat' && name !== 'xmhat') a *= Math.exp(-(t - dur) / 0.05);
+      const s = (v.nbit ? 0.5 : -0.5) * ymAmp(ymReg(a)) * Math.min(1, v.ev.vel * 1.4) * 0.5;
+      out[0] = out[1] = s;
+    },
+  };
+
+  // the digi-drums: the synthesizer's own drum, played as a sample through the volume register at ~10 kHz
+  const DIGI_RATE = 10000;
+  const digi = (name) => ({
+    tail: (native.INSTR[name] && native.INSTR[name].tail) || 0.4,
+    render(v, out) {
+      if (!v.nat) {
+        // (a gated snare is played as the plain one: the ST had no gated reverb, and its long burst of noise
+        //  came out as static, through the volume register or on the noise channel alike)
+        const ev = v.ev.kit === 'gated' ? { ...v.ev, kit: undefined } : v.ev;
+        v.nat = new native.Voice(ev, 12345); v.held = 0; v.next = 0;
+      }
+      const tmp = [0, 0];
+      native.INSTR[name].render(v.nat, tmp); v.nat.age++;
+      if (v.age >= v.next) {
+        // (a tail too quiet for the register's steps is cut, as a sample was trimmed: it only flickered, a hiss)
+        const x = Math.max(-1, Math.min(1, (tmp[0] + tmp[1]) * 0.9));
+        v.held = Math.abs(x) < 0.06 ? ymDigi(0) : ymDigi(x);
+        v.next += SR / DIGI_RATE;
+      }
+      v.held2 = onePole(v, 'dc', v.held, 15);
+      const s = (v.held - v.held2) * 0.55;
+      out[0] = out[1] = s;
+    },
+  });
+
+  const instr = {};
+  for (const name of Object.keys(native.INSTR)) {
+    if (YM_BUZZ.has(name)) instr[name] = buzz;
+    else if (YM_NOISE.has(name)) instr[name] = noise;
+    else if (YM_DIGIS.has(name)) instr[name] = digi(name);
+    else instr[name] = tone(YM_PLUCK.has(name) ? 'pluck' : YM_PAD.has(name) ? 'pad' : 'lead', YM_PAD.has(name) ? 0.42 : 0.55);
+  }
+  for (const name of Object.keys(NEW_INSTR)) if (!instr[name]) instr[name] = tone(YM_PLUCK.has(name) ? 'pluck' : 'lead', 0.55);
+
+  return { name: 'ym', instr, prepare, sendScale: { reverb: 0.15, delay: 0.5 } };
+}
+
 /** The chips, built against the synthesizer's own instruments (for Paula to sample). */
 export function buildChips(native) {
-  return { paula: paulaChip(native), opl3: oplChip(), awe32: aweChip() };
+  return { paula: paulaChip(native), opl3: oplChip(), awe32: aweChip(), ym: ymChip(native) };
 }
 
 /** Which chip an era's music plays on: none for the eras that keep the synthesizer's own voices. */
 export const ERA_CHIPS = {
+  1982: ['ym', null],             // (the Atari ST's chip, or the synthesizer's own voices for the C64 and the rest)
   1990: ['paula'],                // (the years of the Amiga's samples)
   1994: ['opl3', 'awe32'],        // (the sound card's FM, or its wavetable)
   1997: ['awe32'],                // (the wavetable of the late 90s)
