@@ -136,7 +136,7 @@ check('THE JOURNEY sounds the same every time, whatever the block size', jh === 
   // board wins; and THE JOURNEY with a board forced is made with it, the same on the page and in the worklet
   const ok = boardFor('moonbike', '1982', 'aurora') === 'hifi' && boardFor('ball', '1982', 'aurora') === 'paula'
     && boardFor('kefrens', '1990', 'aurora') === 'paula' && boardFor('invaders', '1972', 'aurora') === 'hifi'
-    && boardFor('moonbike', '1982', 'aurora', 'opl3') === 'opl3' && BOARD_NAMES.every((b) => BOARDS[b].chip === null || ['paula', 'opl3', 'awe32'].includes(BOARDS[b].chip));
+    && boardFor('moonbike', '1982', 'aurora', 'opl3') === 'opl3' && BOARD_NAMES.every((b) => BOARDS[b].chip === null || ['paula', 'opl3', 'awe32', 'ym'].includes(BOARDS[b].chip));
   const forced = () => composeJourney('aurora', 84, 1, 'awe32');
   const fh = programmeHash(forced, 4096);
   check('A scene\'s music plays on its own sound board, or its era\'s, unless one is forced; a forced board sounds the same every time',

@@ -16,7 +16,7 @@ Then ride it through half a century, from 1972 to now.**
 
 ![THE JOURNEY: every era from the arcade to the 64k intro, each with its own card, scenes and music](docs/gallery/journey.gif)
 
-`v0.2` · 7 eras · 45 scenes · 28 music styles · 14 displays · 4 sound boards · endless autoplay · runs in your browser · renders to mp4 ·
+`v0.2` · 7 eras · 45 scenes · 29 music styles · 14 displays · 5 sound boards · endless autoplay · runs in your browser · renders to mp4 ·
 no assets, only maths · built with [3dgiordano/agent-plugins](https://github.com/3dgiordano/agent-plugins)
 
 </div>
@@ -95,7 +95,7 @@ on screen (and `H` again to hide it):
 | `G` | **GREETINGS** — type a few names: they scroll in the greetings, and stay on this screen |
 | `E` · `1` … `7` | travel to the next era (`E` passes through AUTO too), or jump to one: 1972–1981, 1982–1989, 1990–1993, 1994–1996, 1997–1999, 2000–2009, 2010–now - and to its first scene in your seed's order (2010–now, with none yet, keeps the scene) |
 | `D` | display: AUTO (each scene its own screen), or force one screen on everything - B/W, MONO, C64, VHS, EGA, SNES, GAME BOY… |
-| `C` | sound board: AUTO (each scene its own), or force one on all the music - HI-FI, PAULA, OPL3 FM, AWE32 |
+| `C` | sound board: AUTO (each scene its own), or force one on all the music - HI-FI, PAULA, OPL3 FM, AWE32, YM2149 |
 | `space` · `←` `→` | next / previous scene — era by era, oldest first, each era's scenes in the order your seed deals them; in AUTOPLAY or THE JOURNEY, the next / previous track |
 | `↑` `↓` | change the music style — the era's own first, in your seed's order, then the other eras' |
 | `S` | a brand-new random seed |
@@ -134,7 +134,7 @@ it has some.
 | years | | its display (scenes may have their own) | its scenes | the music it brings |
 |---|---|---|---|---|
 | **1972–1981** | the first video games | ARCADE | paddles, invaders, rocks, maze, lcd | arcade attract, cyborg pulse, derelict ship, synth-pop |
-| **1982–1989** | home computers, arcades and the video shop | C64 | lightcycles, pyramid, boxer, bricks, outrun, scanner, timecar, moonbike, dottunnel, plasma, ball | SID chiptune, synth-pop |
+| **1982–1989** | home computers, arcades and the video shop | C64 | lightcycles, pyramid, boxer, bricks, outrun, scanner, timecar, moonbike, dottunnel, plasma, ball | SID chiptune, synth-pop, ST buzz — on the Atari ST's YM2149 or the synthesizer's own voices, by the seed |
 | **1990–1993** | the demoscene's golden years | AMIGA | the Amiga effects - copper, kefrens, vector balls, the chessboards, the cracktro and more - plasma, metaballs, tunnel, fractal, bumplogo, fireworks, morph; footsteps, starfighter, cascade, echolines | Amiga rave, New Beat, orchestral trackers, dreamwave, tracker jazz — on Paula's 8-bit samples |
 | **1994–1996** | the PC demos and the multimedia years | VGA | fire, pipes, ansi, maze3d; fractal, tunnel, metaballs, plasma, bumplogo | ambient techno, acid, gabber, eurodance, jungle, FM metal, MIDI quest — on a Sound Blaster 16's FM or an AWE32's wavetable; and keygen, the party's tracker tunes, played from samples as a module player did; and trip-hop, its strings and Rhodes on the card |
 | **1997–1999** | 3D consoles and pocket screens | COMPOSITE TV | snake, animeop | heroic game soundtracks, eurodance, chip rock and roll, star pilot, MIDI quest, the anime opening, skate punk, handheld chip — on wavetable |
@@ -186,7 +186,8 @@ music came out of. On **AUTO** (the default) each scene plays on its own: a
 film or a series always on the studio's full quality, and so a game whose machine has
 no board here (the 16-bit space shooter, the phone's snake, the LCD game); the
 Amiga's ball on its sample chip, the PC desktop's card game and screensaver on
-the sound card; every other scene on its era's (the Amiga's samples in
+the sound card; every other scene on its era's (the Atari ST's chip or the
+synthesizer's own voices in 1982–1989, by the seed; the Amiga's samples in
 1990–1993, the PC's FM or wavetable card in 1994–1996, wavetable in 1997–1999 -
 though both of that era's scenes have boards of their own, so on AUTO it is heard
 there only when forced - the synthesizer's own voices elsewhere). The style of music stays the seed's and the era's: the
@@ -201,6 +202,7 @@ cannot change in the middle of a tune.
 | `paula` **PAULA** | the Amiga's sample chip: 8-bit samples on four channels, as a tracker played them |
 | `opl3` **OPL3 FM** | a 90s PC sound card's FM synthesis |
 | `awe32` **AWE32** | a 90s wavetable card: sampled instruments, its chorus and reverb |
+| `ym` **YM2149** | the Atari ST's sound chip: three square channels, noise and the envelope buzzer, written 50 times a second, with digi-drums |
 
 ## THE JOURNEY
 
@@ -387,7 +389,7 @@ Every scene carries the two things no demo went without: a title plate and a
 sine scroller that opens with **SEEDSCENE PRESENTS…** — and every scene is an
 homage, written from scratch, to an effect the scene made famous.
 
-## Twenty-eight music styles, on the sound chips of their eras
+## Twenty-nine music styles, on the sound chips of their eras
 
 Every seed composes its own track, like a tracker module that writes itself.
 Let the era pick the style, or choose with `--music`, with `↑` `↓` while it
@@ -422,6 +424,7 @@ plays, or in the menu:
 | `keygen` | **keygen**: the crack intros' tracker tunes, from the patterns of forty real ones — chords arpeggiated on the tracker's tick, a squelchy lead sliding into its notes with an echo channel a few rows behind, a bouncing bass, drum samples; 125 bpm most often, the tracker's default | 120–140 |
 | `triphop` | **trip-hop**: the 90s Bristol sound — a slow break pitched down and shuffled like an MPC, the kick leading into the beats, a big roomy snare and a side-stick, the ride on the upbeats; a deep sliding bass, dark film-score strings, a Rhodes, a theremin, a record scratched at the end of a phrase, the crackle under it all | 68–90 |
 | `animeop` | **anime opening**: the 90s anime opening, in the anison's form — an intro, a verse, a prechorus climbing into a chorus you could sing - mostly steps, an arch to each phrase, the same tune every time it returns, the brass joining it in the last one - the Royal Road progression under it, often a minor third up from the verse, and the last chorus a step higher still; J-rock drums, driving bass, palm-muted then open guitars, brass stabs | 140–170 |
+| `stchip` | **ST buzz**: the Atari ST demos — the YM2149's envelope run at audio rate as a buzzing bass, chords stepped as 50 Hz arpeggios, a square lead, digi-drums and the noise channel's hats; 125 bpm most often, where a 50 Hz player falls | 118–140 |
 | `skatepunk` | **skate punk**: the skateboarding games' punk — ska verses, the guitar chopping on the off-beats over a backbeat and the bass walking; punk choruses, the snare on every "and", the kick on the beat and the sixteenth after (or doubled before the snare), the hats open, power chords hammered on the eighths; a synth chorus shouted like a gang, a few notes, the same each time | 180–200 |
 
 Each one is arranged like a real piece — intro, build, main part, a breakdown
@@ -440,16 +443,17 @@ charts are homages to sounds, not copies of songs. The chord loops are the
 public-domain kind every pop song shares; every tune on top is the seed's.
 
 **The sound chips.** A score says which notes to play; the sound board says what
-plays them (see **Sound boards**). Three boards are chips, each playing the same
+plays them (see **Sound boards**). Four boards are chips, each playing the same
 score on the sound of its machine:
 
 | board | eras | how it sounds |
 |---|---|---|
+| `ym` **YM2149** | 1982–1989, by the seed | the Atari ST's chip on its 2 MHz clock: square waves at the pitch its 12-bit periods allow (high notes a little off), a 4-bit volume 3 dB a step written once a frame (the music player's 50 Hz), the hardware envelope run at audio rate as a buzzing sawtooth bass, chords stepped as 50 Hz arpeggios on one channel, the noise channel's hats, and digi-drums - drums played as samples through the volume register. Mono and dry. |
 | `paula` **Paula** | 1990–1993 | every instrument sampled once, as a tracker musician would, cut to 8 bits at about 16.7 kHz (the drums at 28 kHz) and played back by stepping through the sample faster or slower with no smoothing — the grain and the aliasing of a MOD. Sustained sounds loop. Drums and lead hard left, bass and chords hard right, through the A500's output filter, almost dry. |
 | `opl3` **Sound Blaster 16 (OPL3)** or `awe32` **AWE32** | 1994–1996, by the seed | OPL3: two-operator FM with the chip's seven waveforms and operator feedback, FM drums, and dry, like a DOS game. AWE32: wavetable instruments — a grand piano, string and brass sections, a choir, plucked bass and guitar, an acoustic kit — with the card's chorus and reverb. |
 | `awe32` **AWE32-style wavetable** | 1997–1999 | the sampled sound of the CD-era consoles |
 
-Hear all twenty-eight back to back, each on the boards of its eras:
+Hear all twenty-nine back to back, each on the boards of its eras:
 
 ```bash
 npm run sampler        # → out/music-sampler.mp3
@@ -517,8 +521,8 @@ seedscene info    [options]     show what a seed composes
 | `--scene <name>` | one of the forty-five scenes (`--style`, its old name, works too) | chosen by the seed - one of the era's, if the era is given |
 | `--era <name>` | `auto` `1972` `1982` `1990` `1994` `1997` `2000` `2010` — or any year inside one, or its old name (`arcade` `c64` `amiga` `dos` `console` `handheld` `y2k` `modern`) | an era the scene belongs to |
 | `--display <name>` | `auto` `bw` `arcade` `mono` `c64` `vhs` `ega` `amiga` `vga` `snes` `composite` `gameboy` `nokia` `svga` `modern` | the screen: on `auto` each scene its own, or its era's |
-| `--board <name>` | `auto` `hifi` `paula` `opl3` `awe32` | the sound board: on `auto` each scene its own, or its era's |
-| `--music <name>` | `auto` or one of the twenty-eight styles | music of the era |
+| `--board <name>` | `auto` `hifi` `paula` `opl3` `awe32` `ym` | the sound board: on `auto` each scene its own, or its era's |
+| `--music <name>` | `auto` or one of the twenty-nine styles | music of the era |
 | `--res <WxH\|preset>` | `854x480`, or `240p` `360p` `480p` `576p` `720p` `1080p` (or `--width` and `--height`) | `480p` |
 | `--duration <seconds>` | length | 30 render, 180 live, 126 journey (21 s an era, three scenes each), 600 autoplay |
 | `--born <year>` | autoplay only: open in the era you were twelve in, and stay near it | — |
@@ -580,8 +584,8 @@ src/core/choose.js    what 'auto' means: scene, then era, then music
 src/core/journey.js   THE JOURNEY and AUTOPLAY: tracks mixed beat on beat
 src/core/sims.js      the games under the game scenes, and the scenes that move with the music
 src/core/rng.js       seeded random streams
-src/core/music.js     composer, twenty-eight styles, synthesizer, feature track
-src/core/chips.js     the sound chips: Paula, OPL3, AWE32
+src/core/music.js     composer, twenty-nine styles, synthesizer, feature track
+src/core/chips.js     the sound chips: Paula, OPL3, AWE32, YM2149
 src/core/visual.js    renderer, palette, title plate, scroller, era cards
 src/core/gl.js        WebGL2 helpers
 src/styles/index.js   the forty-five scenes, the 3D stage, the About part, the display's screen

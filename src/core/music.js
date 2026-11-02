@@ -288,6 +288,17 @@ export const MUSIC_PRESETS = {
     melody: { free: [0, 8], dense: [0.6, 0.6, 0.6], close: true, moving: true },
     swing: 0, intro: 0.03, fx: { reverb: 0.7, delay: 0.6, delayBeats: 0.5 },
   },
+  // --- the Atari ST demos (1987 on): the YM2149's squares, its envelope run as a buzzing bass, chords as
+  //     50 Hz arpeggios, a square lead and digi-drums, at the 125 bpm a 50 Hz player falls on
+  stchip: {
+    label: 'ST Buzz', blurb: 'the Atari ST demos: a buzzing envelope bass, 50 Hz arpeggio chords, a square lead, digi-drums',
+    bpm: [118, 140], bpmPick: [125, 125, 125, 125, 120, 128, 128, 132, 136],
+    scales: ['minor', 'harmonicMinor', 'dorian'],
+    drums: 'st', bass: 'buzz', chords: 'chiparp', lead: 'hook', arp: null,
+    hook: { instr: 'chip', oct: 72, vel: 0.75, line: true },
+    melody: { free: [0, 7], dense: [0.65, 0.65, 0.65], close: true, moving: true },
+    swing: 0, intro: 0.04, fx: { reverb: 0.2, delay: 0.5, delayBeats: 1 },
+  },
   // --- the crack intros' tracker music, from the pattern data of forty keygen
   //     modules: 125 bpm (the tracker's default) in most, the arpeggio effect's
   //     chords stepping on the tick, slides and vibrato on the lead, and in half
@@ -537,6 +548,11 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
   const kgTick = bpm * 2 / 5;                 // the tracker's tick: 50 a second at 125 bpm
   let kgLast = null;
 
+  // --- the ST's material, from a stream of its own ----------------------------
+  const stR = new Rng(seed, 'st:' + style);
+  const stBass = stR.pick([[0, 3, 6, 8, 11, 14], [0, 2, 4, 6, 8, 10, 12, 14], [0, 6, 8, 14], [0, 3, 8, 11]]);   // the buzzer's rhythm
+  const stUp = stR.pick([[], [6, 14], [3, 11], [2, 10]]);                    // where it jumps an octave
+  const stKick = stR.pick([[0, 8], [0, 8, 10], [0, 6, 8], [0, 3, 8]]);
   // --- trip-hop's material, from a stream of its own --------------------------
   const tr = new Rng(seed, 'triphop:' + style);
   const thLead = tr.pick([[3, 7, 11], [7, 11], [3, 11], [11], [7, 10]]);   // the kicks leading into the beats
@@ -895,6 +911,12 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
           }
           if (a.hat && step % 2 === 1) push(t, 'hat', 0, 0.12 * accent, 0.04);
           break;
+        case 'st':
+          // digi-drums: a sampled kick and snare played through the volume register, the noise channel's hats
+          if (a.kick && stKick.includes(step)) push(t, 'kick', 0, step % 8 === 0 ? 0.95 : 0.7, 0.3);
+          if (a.snare && (step === 4 || step === 12)) push(t, 'snare', 0, 0.8, 0.25);
+          if (a.hat && step % 2 === 0) push(t, 'hat', 0, (step % 4 === 2 ? 0.22 : 0.14) * accent, 0.04);
+          break;
         case 'gabber':
           if (a.kick && step % 4 === 0) push(t, 'kick', 0, 1, 0.35, { kit: 'gabber' });
           // (a short closed hat on the off-beat and a softer clap: the open hat hissed over every off-beat at 180)
@@ -1049,7 +1071,7 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
 
       // ---- rolls: fills at phrase ends, a full roll into the drop ----
       const SNARE_ROLLS = ['classic', 'chip', 'break', 'amen', 'gb', 'ambient', 'orchestral', 'heroic', 'synthwave', 'jrock', 'skate',
-        'arcade', 'cyborg', 'rock', 'jazz', 'metal'];
+        'arcade', 'cyborg', 'rock', 'jazz', 'metal', 'st'];
       const rollInstr = P.drums === 'keygen' ? 'xmsnare' : SNARE_ROLLS.includes(P.drums) ? 'snare' : 'clap';
       const rollKit = (P.drums === 'chip' || P.drums === 'gb' || P.drums === 'arcade') ? 'chip'
         : (P.drums === 'break' || P.drums === 'amen' || P.drums === 'heroic' || P.drums === 'rock' || P.drums === 'jrock' || P.drums === 'skate') ? 'break'
@@ -1073,6 +1095,13 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
             if (bassPat[step]) {
               const walk = step === 0 ? 0 : rng.weighted([0, 2, -2, 4], [7, 2, 2, 1]);
               push(t, 'bass', noteOf(bassOct, chordDeg + walk), 0.6 * accent + 0.15, sixteenth * 0.9);
+            }
+            break;
+          case 'buzz':
+            // the buzzer: the envelope at the bass note's pitch, in the tune's own rhythm, an octave up now and then
+            if (stBass.includes(step)) {
+              let next = 16; for (const x of stBass) if (x > step) { next = x; break; }
+              push(t, 'bass', noteOf(36, chordDeg) + (stUp.includes(step) ? 12 : 0), 0.85, sixteenth * Math.max(1, next - step) * 0.9, { kit: 'buzz' });
             }
             break;
           case 'octave':
