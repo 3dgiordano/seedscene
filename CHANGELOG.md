@@ -327,6 +327,14 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   the time car's, the boxing match's and the card cascade's shaders compile in
   a third of the time or less, with the same pictures; and the live page
   starts loading the first scene as soon as its boot screen is up.
+- **Amiga rave, put right** through the music audit: its piano played the
+  chord's own steps up to G7, four of five notes on the beat off the chord,
+  buried twelve decibels under the hoovers, its dotted echo between its
+  eighths; it plays a riff of its own now in the rave piano's syncopation -
+  on the one, the "a" of one, the "and" of two and of three - chord tones on
+  the beats, as loud as the Amiga plays a sample, its echo on the beat.
+  Every check passes but one warning: the piano still sits 3.5 dB under the
+  hoovers, all the Amiga's volume gives it.
 - **Trip-hop, put right** through the music audit: its theremin sang the
   hook a chord's step above each new root, leaping with every chord, a
   quarter of its long notes a semitone from the harmony; it sings a line now

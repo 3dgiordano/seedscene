@@ -85,8 +85,13 @@ export const MUSIC_PRESETS = {
   rave: {
     label: 'Amiga Rave', blurb: '1992: breakbeats, hoovers and rave piano',
     bpm: [138, 150], scales: ['minor', 'phrygian', 'harmonicMinor'],
-    drums: 'break', bass: 'sub', chords: 'hoover', lead: 'pianolead', arp: 'arp',
-    swing: 0, intro: 0.04, fx: { reverb: 0.9, delay: 0.9, delayBeats: 0.75 },
+    drums: 'break', bass: 'sub', chords: 'hoover', lead: 'hook', arp: 'arp',
+    // (the piano plays a riff of its own in the rave piano's syncopation - on the one, the 'a' of one, the 'and'
+    //  of two and of three - chord tones on the beats, where it played the chord's own steps to G7; as loud as
+    //  Paula plays a sample, which leaves it 3.5 dB under the hoovers; its echo on the beat)
+    hook: { instr: 'piano', oct: 72, vel: 1, line: true },
+    melody: { free: [0, 7], dense: [0.6, 0.6, 0.6], hits: [0, 3, 6, 10], close: true, moving: true },
+    swing: 0, intro: 0.04, fx: { reverb: 0.9, delay: 0.9, delayBeats: 1 },
   },
   jungle: {
     label: 'Jungle', blurb: 'chopped amen breaks over a rolling reese',

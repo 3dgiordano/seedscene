@@ -1,8 +1,8 @@
 # Music audit
 
-Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ fail, ~ let off by the style, · not measured; off grid is measured on the seeds that do not swing; speed is wall-clock time on the machine that ran it. Run `npm run audit:music -- <style>` for one style. Jungle, keygen, derelict and triphop re-audited on 2026-11-02, after they were put right (their rows and sections; their speed on another machine).
+Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ fail, ~ let off by the style, · not measured; off grid is measured on the seeds that do not swing; speed is wall-clock time on the machine that ran it. Run `npm run audit:music -- <style>` for one style. Jungle, keygen, derelict, triphop and rave re-audited on 2026-11-02, after they were put right (their rows and sections; their speed on another machine).
 
-**17 of 28 styles pass** (no ✗ anywhere); failing: dreamwave, chiptune, rave, hardcore, newbeat, eurodance, gabber, ambient, orchestral, gameboy, heroic.
+**18 of 28 styles pass** (no ✗ anywhere); failing: dreamwave, chiptune, hardcore, newbeat, eurodance, gabber, ambient, orchestral, gameboy, heroic.
 
 | style | bass in chord | bass rubs | melody on beat | held | held rubs | top | range | leaps >3rd | >6th | repeats | stuck | off grid | echo rubs | melody vs chords | sound vs real | peak | speed |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -10,7 +10,7 @@ Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ 
 | `chiptune` | ✓ 99% | ✓ 0% | ✗ 48% | · - | · - | ✗ B8 | ✗ 36 | ✗ 58% | ✗ 44% | ✓ 66% | ⚠ 3.9% | ✓ 0.0% | ✓ 18% | ✓ -2.1 dB | · - | ✓ -2.0 | ✓ 7.8x |
 | `acid` | ✓ 96% | ✓ 1% | · - | · - | · - | · - | · - | · - | · - | · - | · - | ✓ 0.0% | · - | · - | · - | ✓ -2.0 | ✓ 4.6x |
 | `trance` | ✓ 87% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ B5 | ✓ 12 | ✓ 2% | ✓ 0% | ✓ 77% | ✓ 0.8% | ✓ 0.0% | ⚠ 58% | ✓ -2.0 dB | · - | ✓ -1.9 | ✓ 5.7x |
-| `rave` | ✓ 100% | ✓ 0% | ✗ 20% | · - | · - | ✗ G7 | ✓ 17 | ⚠ 28% | ✓ 3% | ✓ 64% | ✓ 0.0% | ✓ 0.0% | ⚠ 42% | ✗ -12.4 dB | · - | ✓ -1.9 | ✓ 4.3x |
+| `rave` | ✓ 100% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ A5 | ✓ 10 | ✓ 3% | ✓ 0% | ✓ 65% | ✓ 0.0% | ✓ 0.0% | ✓ 0% | ⚠ -3.5 dB | · - | ✓ -1.8 | ✓ 10.3x |
 | `jungle` | ✓ 99% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ B5 | ✓ 9 | ✓ 8% | ✓ 0% | ✓ 73% | ✓ 0.0% | ✓ 0.0% | ✓ 0% | ✓ -2.0 dB | · - | ✓ -2.1 | ✓ 9.8x |
 | `hardcore` | ✓ 87% | ✓ 0% | ⚠ 73% | · - | · - | ✗ C9 | ✗ 35 | ✗ 38% | ✗ 10% | ✓ 76% | ✓ 0.0% | ✓ 0.0% | ✓ 37% | ✗ -9.7 dB | · - | ✓ -1.8 | ✓ 3.6x |
 | `newbeat` | ✓ 95% | ⚠ 4% | ✗ 58% | ✗ 54% | ✗ 33% | ⚠ C#6 | ✓ 19 | ⚠ 27% | ✗ 8% | ✓ 69% | ✓ 0.0% | ✓ 0.0% | ⚠ 61% | ✓ -0.1 dB | ⚠ 11 dB brass | ✓ -1.9 | ✓ 3.8x |
@@ -77,14 +77,9 @@ Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ 
 
 ## Amiga Rave (`rave`)
 
-139, 146, 149 bpm; G phrygian, A phrygian, C minor. Layers: 133 bass, 751 chord, 116 melody notes.
+139, 146, 149 bpm; G phrygian, A phrygian, C minor. Layers: 133 bass, 751 chord, 117 melody notes.
 
-- ✗ only 20% of melody notes on the beat are chord tones
-- ✗ the melody reaches G7 - shrill on a sustained lead
-- ✗ the melody sits -12.4 dB against the chords - buried
-- ✗ the echo (3 sixteenths, level 0.144) falls between the eighths the melody sits on
-- ⚠ 28% of melodic moves leap wider than a third
-- ⚠ 42% of the melody's echoes land a step from the note then sounding - listen: a rub at every turn, or the genre's own echo
+- ⚠ the melody sits -3.5 dB against the chords - buried
 
 ## Jungle (`jungle`)
 
