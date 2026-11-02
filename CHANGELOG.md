@@ -327,6 +327,27 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   the time car's, the boxing match's and the card cascade's shaders compile in
   a third of the time or less, with the same pictures; and the live page
   starts loading the first scene as soon as its boot screen is up.
+- **Trip-hop, put right** through the music audit: its theremin sang the
+  hook a chord's step above each new root, leaping with every chord, a
+  quarter of its long notes a semitone from the harmony; it sings a line now
+  over its four-bar progression - two notes a bar, on the one and on four,
+  clear of the Rhodes, swooping into each new pitch, one note at a time as a
+  theremin plays, within a sixth - its echo on the beat. Every check passes
+  but one warning, the bass's chromatic approach notes into the next chord.
+- **Trip-hop's scratches, rebuilt** from measurements of real turntable
+  scratching (Hansen, Bresin and Fabiani at KTH) and played as a DJ plays
+  them: the record carries a sung "aaah", held and fading slowly, at a pitch
+  of its own - the key's tonic where a man's voice speaks; the hand moves it
+  back and forth, each move gathering speed, fastest halfway and slowing to
+  nothing where it turns, so the pitch rises and falls with it and a pull
+  plays the voice backwards; how far the hand pushes is how much of the
+  voice comes out; the record turns on the grid, a sixteenth or an eighth a
+  move; a whole bar closes each four-bar phrase, a routine of one or two
+  beats - baby scratches, forwards, backwards, chirps, tears - played again
+  and varied at the end, from one mark on the record at one speed; up front
+  in the mix, where four identical short strokes ran in a row sixteen
+  decibels under it, wandering in pitch with the chords; the stylus hisses
+  as fast as the record goes, and nothing clicks.
 - **Derelict ship, put right** through the music audit: its FM bell rang the
   chord's own steps, up to G7, a third of its long notes off the harmony and
   buried under the pads; it sings a slow line now, chord tones on the beats

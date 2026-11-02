@@ -257,8 +257,13 @@ export const MUSIC_PRESETS = {
     label: 'Trip-Hop', blurb: 'the Bristol sound: a slow, shuffled break in a big room, a deep bass, dark strings, a Rhodes, a theremin, scratches, the crackle of the record',
     bpm: [68, 90], scales: ['minor', 'harmonicMinor', 'phrygian', 'dorian'], progressions: NOIR, mpc: 0.15,
     drums: 'triphop', bass: 'deep', chords: 'noir', lead: 'noir', arp: null,
-    hook: { hits: [3, 5] }, leadFrom: 0.35,
-    swing: 0, intro: 0.06, fx: { reverb: 1.5, delay: 1.0, delayBeats: 0.75 },
+    hook: { hits: [3, 5], line: true, bars: 4 }, leadFrom: 0.35,
+    // (the theremin sings a line over its four-bar progression, where it leapt with every chord: two notes a bar,
+    //  on the one and on four, clear of the Rhodes' stabs; a new pitch each time, swooping in; within a sixth, so
+    //  the line comes round without a leap; its echo on the beat. Three long notes a bar, gliding into each and
+    //  overlapping, sounded messy (owner, 2026-11-02))
+    melody: { free: [2, 7], dense: [0.5, 0.5, 0.5], hits: [0, 12], close: true, moving: 'always' },
+    swing: 0, intro: 0.06, fx: { reverb: 1.5, delay: 1.0, delayBeats: 1 },
   },
   // --- the 90s anime opening: J-rock with brass in the anison's form - intro, verse,
   //     prechorus, chorus (a corpus study of openings finds almost all of them so,
@@ -486,6 +491,33 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
   const thScratch = tr.pick(['baby', 'chirp', 'tear']);
   const thBass = tr.pick([[0, 10], [0, 7, 10], [0, 11, 14]]);
   const thComp = tr.pick([[0, 7], [0, 10], [3, 10]]);
+  // the scratches: a phrase of strokes in the scratch bar's second half, a new one each time, from a stream
+  // of their own; the seed's favourite technique (thScratch) comes up more often
+  const sr = new Rng(seed, 'scratch:' + style);
+  // the voice on the record keeps its own pitch whatever the chords do: the key's tonic, where a man's voice
+  // speaks (G2 to F#3, 98-185 Hz); the hand's speed bends it
+  let scNote = 36 + root; while (scNote < 43) scNote += 12;
+  let scPhrase = null;
+  const scratchPhrase = () => {
+    // a routine: the seed's favourite technique leads it when it can, the same motif over the bar, the last
+    // beat varied; one mark on the record and one speed for the phrase, as a hand that knows the move
+    const withFav = SCRATCH_MOTIFS.filter((m) => m.some((x) => x[2] === thScratch));
+    const motif = sr.bool(0.6) && withFav.length ? sr.pick(withFav) : sr.pick(SCRATCH_MOTIFS);
+    const span = Math.max(4, ...motif.map((x) => x[0] + x[1]));
+    const len = span <= 4 ? 4 : 8;
+    const speed = sr.float(0.9, 1.3);
+    const from = sr.float(0, 0.006);
+    const out = [];
+    for (let at = 0; at < 16; at += len) {
+      const last = at + len >= 16;
+      const cells = last && sr.bool(0.7) ? [...motif.filter((x) => x[0] < len - 4), ...sr.pick(SCRATCH_ENDS).map((x) => [x[0] + len - 4, x[1], x[2]])] : motif;
+      for (const [st, n, tech] of cells) {
+        if (at + st + n > 16) continue;
+        out.push({ step: at + st, len: n, tech, speed: speed * (1 + sr.float(-0.04, 0.04)), from, vel: (st % 4 === 0 ? 1 : 0.88) * (0.9 + sr.float(0, 0.06)) });
+      }
+    }
+    return out;
+  };
   let thPrevBass = null;
   let thLast = null;
 
@@ -923,8 +955,14 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
           if (a.hat && step % 4 === 2) push(t, 'thride', 0, 0.3, 0.6);
           if (a.hat && a.intensity > 0.5) push(t, 'thshaker', 0, thShake[step] ? 0.16 : 0.07, 0.06);
           if (step === 0) push(t, 'vinyl', 0, 0.5, barSec);
-          if (a.kick && bar % thEvery === thEvery - 1 && step >= 8 && step % 2 === 0) {
-            push(t, 'scratch', noteOf(48, chordDeg), step === 8 ? 0.6 : 0.5, sixteenth * 2, { kit: thScratch });
+          // the scratches: a whole bar closing each four-bar phrase, and where the seed scratches every other
+          // bar, the second half of the bar between
+          const scBar = bar % 4 === 3 ? 0 : thEvery === 2 && bar % 4 === 1 ? 8 : -1;
+          if (a.kick && scBar >= 0) {
+            if (step === 0) scPhrase = scratchPhrase();
+            for (const k of scPhrase) {
+              if (k.step === step && k.step >= scBar) push(t, 'scratch', scNote, k.vel, k.len * sixteenth, { kit: k.tech, speed: k.speed, from: k.from });
+            }
           }
           break;
         case 'keygen':
@@ -1337,6 +1375,20 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
           }
           case 'noir': {
             // a theremin singing the hook, sparse, gliding from one note to the next
+            if (hookLine) {
+              // the line, sung on the theremin: chord tones on the beats, steps between, the glide kept
+              const tune = hookAnswer && Math.floor(bar / hookBars) % 4 === 2 ? hookAnswer : hookLine;
+              const nt = tune[bar % hookBars].find((x) => x.step === step);
+              if (!nt) break;
+              // (one note at a time, as a theremin has one antenna: each ends its 0.25 s release before the
+              //  next begins; and it swoops into a note only from another pitch)
+              const n = noteOf(anBase, nt.deg) + (anBase < 60 ? 12 : 0);
+              const at = bar * STEPS + step;
+              const dur = Math.max(sixteenth, Math.min(nt.len * sixteenth, spb * 2) - 0.25);
+              push(t, 'theremin', n, 0.4, dur, { slideFrom: thLast && at - thLast.at <= STEPS && thLast.n !== n ? thLast.n : null });
+              thLast = { n, at };
+              break;
+            }
             const half = bar % 2;
             const rh = hookRhythm[half];
             if (!rh[step]) break;
@@ -1553,6 +1605,64 @@ class Voice {
 
 // the scratched record's "ah": the voice's harmonics, two formants
 const SCRATCH_W = [0.5, 0.7, 0.9, 1.0, 0.8, 0.5, 0.55, 0.4, 0.2, 0.1];
+// the scratch routines: a motif of one or two beats, [step, sixteenths, technique], played again and again
+// and varied in the bar's last beat, as a DJ builds a phrase; every move of the hand, push or pull, lasts a
+// sixteenth or an eighth, so the record turns on the grid (a baby scratch's push and pull, about 0.4 s at
+// 75 bpm, Hansen)
+const SCRATCH_MOTIFS = [
+  [[0, 2, 'baby'], [2, 2, 'baby']],
+  [[0, 2, 'baby'], [2, 2, 'forward']],
+  [[0, 2, 'chirp'], [2, 2, 'chirp']],
+  [[0, 2, 'forward'], [2, 2, 'forward'], [4, 4, 'baby']],
+  [[0, 3, 'tear'], [4, 2, 'chirp'], [6, 2, 'chirp']],
+  [[0, 2, 'baby'], [2, 2, 'forward'], [4, 2, 'baby'], [6, 2, 'backward']],
+  [[0, 4, 'baby'], [4, 3, 'tear']],
+];
+const SCRATCH_ENDS = [[[0, 2, 'forward'], [2, 2, 'forward']], [[0, 3, 'tear']], [[0, 4, 'baby']], [[0, 2, 'chirp']], []];
+// what is on the record, as a function of the position in it (seconds): a sung "aaah", as the records DJs
+// scratch carry - a soft breath, the voice coming in and held, fading only slowly. The hand's speed is its
+// pitch and its loudness; how far the hand pushes is how much of it comes out: a short stroke the voice's
+// start, a long one its held tone. Played backwards the stroke meets it the other way round
+const SCRATCH_LEN = 1.4;
+function scratchNoise(x) {
+  // noise written on the record: its grain moves with the record, so a slow stroke is dull, a fast one bright
+  const g = x * 9000, i = Math.floor(g), f = g - i;
+  const h = (n) => { const r = Math.sin(n * 12.9898 + 78.233) * 43758.5453; return 2 * (r - Math.floor(r)) - 1; };
+  return h(i) * (1 - f) + h(i + 1) * f;
+}
+function scratchRecord(x, f0) {
+  if (x < 0 || x > SCRATCH_LEN) return 0;
+  const cons = x < 0.02 ? (1 - x / 0.02) * 0.3 * scratchNoise(x) : 0;
+  const xv = x - 0.008;
+  if (xv < 0) return cons;
+  const env = Math.min(1, xv / 0.03) * Math.exp(-xv * 0.4) * Math.min(1, (SCRATCH_LEN - x) * 10);
+  // the vowel's colour opens a little as the voice settles, then holds
+  const open = Math.min(1, 0.6 + xv * 4);
+  let v = 0;
+  for (let k = 0; k < SCRATCH_W.length; k++) v += SCRATCH_W[k] * (k < 3 ? 1 : open) * Math.sin(TAU * (k + 1) * f0 * xv);
+  return cons + v * env * 0.5 + 0.04 * env * scratchNoise(x + 0.5);
+}
+// a stroke's shape: the record's place (0 at the cue, 1 at the far end of the push) and the fader, for u from
+// 0 to 1 over the stroke. The hand moves the record back and forth: each move gathers speed, is fastest
+// halfway and slows to nothing where it turns - so the pitch rises and falls with it, the scratch's
+// zig-zag - and it turns on the grid: halfway through a stroke of two or four sixteenths, after each third
+// of a tear. A chirp shuts the fader before each turn: two short blips
+const scEase = (z) => (1 - Math.cos(Math.PI * Math.max(0, Math.min(1, z)))) / 2;
+function scratchStroke(tech, u) {
+  if (tech === 'tear') {
+    // pushed in one move, pulled back in two
+    if (u < 1 / 3) return [scEase(u * 3), 1];
+    if (u < 2 / 3) return [1 - 0.5 * scEase((u - 1 / 3) * 3), 1];
+    return [0.5 - 0.5 * scEase((u - 2 / 3) * 3), 1];
+  }
+  const push = u < 0.5, z = push ? u * 2 : (u - 0.5) * 2;
+  const pos = push ? scEase(z) : 1 - scEase(z);
+  let fader = 1;
+  if (tech === 'forward') fader = push ? 1 : 0;                  // the push heard, the pull cut
+  else if (tech === 'backward') fader = push ? 0 : 1;            // the pull heard
+  else if (tech === 'chirp') fader = z < 0.7 ? 1 : 0;           // each move cut as it slows into the turn
+  return [pos, fader];
+}
 const SUPERSAW = [-0.03, -0.018, -0.008, 0, 0.009, 0.019, 0.031];
 const ORGAN_H = [1, 2, 3, 4, 6];               // the organ's drawbars
 const ORGAN_A = [1, 0.7, 0.45, 0.3, 0.18];
@@ -2051,22 +2161,29 @@ const INSTR = {
   scratch: {
     tail: 0.03,
     render(v, out) {
-      const t = v.age / SR;
-      const dur = v.ev.dur / SR;
-      // a record pushed forward and pulled back once in the note's length: the hand's speed is the
-      // pitch; a chirp cuts the fader on the way back, a tear stutters the push
-      const u = Math.min(1, t / dur);
-      let rate = 2.4 * Math.sin(TAU * u);
-      if (v.ev.kit === 'tear' && u < 0.5) rate *= 0.6 + 0.4 * Math.sign(Math.sin(TAU * u * 6));
-      v.phase += rate / SR;
-      const pos = v.phase;
-      // the sound on the record: a voice's "ah" on the chord's root, as a few harmonics
+      // a hand on the record: the stroke's shape sets where the stylus is in the sound written there,
+      // and the speed it passes is its pitch and its loudness (the cartridge gives out what moves it)
+      const D = v.ev.dur / SR;
+      const tech = v.ev.kit || 'baby';
+      const pushT = tech === 'tear' ? 1 / 3 : 0.5;
+      // the push's reach, so that its fastest - halfway - is the stroke's speed (a half-sine of speed covers 2/pi of its peak)
+      const reach = (v.ev.speed || 1) * (2 * pushT * D) / Math.PI;
+      const from = v.ev.from || 0;
+      const at = (age) => { const [p, g] = scratchStroke(tech, Math.min(1, age / SR / D)); return [from + p * reach, g]; };
+      const [x, g] = at(v.age);
+      const [xp] = at(v.age - 1);
+      const rate = (x - xp) * SR;                                    // the record's speed, 1 its own
+      // the fader, moved fast but not in no time (no click)
+      v.fd = v.fd === undefined ? g : v.fd + (g - v.fd) * 0.02;
       const f0 = midiToFreq(v.ev.note);
-      let src = 0;
-      for (let k = 0; k < SCRATCH_W.length; k++) src += SCRATCH_W[k] * Math.sin(TAU * (k + 1) * f0 * pos);
-      const gate = v.ev.kit === 'chirp' && rate < 0 ? 0 : 1;
-      const level = Math.min(1, Math.abs(rate) * 0.8) * gate * Math.max(0, Math.min(1, (dur - t) * 200));
-      const s = Math.tanh(src * 0.9) * level * v.ev.vel * 0.35;
+      const sound = scratchRecord(x, f0);
+      // the stylus rubbing the groove: a hiss as fast as the record goes
+      const rub = 0.05 * scratchNoise(x * 3.7 + 0.2);
+      // (the hand takes a couple of milliseconds to get the record going: the level follows the speed that fast, no faster)
+      const lv = Math.min(1.2, Math.abs(rate));
+      v.lv = v.lv === undefined ? 0 : v.lv + (lv - v.lv) * 0.012;
+      const level = v.lv * v.fd;
+      const s = Math.tanh((sound + rub) * 1.1) * level * v.ev.vel * 1.1;
       out[0] = s * 0.85; out[1] = s;
     },
   },
