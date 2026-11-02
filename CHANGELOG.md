@@ -358,15 +358,21 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   toms; the march's kick with the tuba, softer, no riser before its drop; the
   ballad's and the rap's lead the soft FM patch on the Sound Blaster, where it
   fizzed; the ballad's arpeggio under its tune; the rap resting while the
-  record is scratched; the lament's rain heard under the music.
+  record is scratched; the lament's rain heard under the music. And the rap's
+  dead air, heard by the owner - an empty first bar and eight seconds near
+  silence in its breakdown, where every part stopped with the kick - filled by
+  the DJ scratching alone before the beat and through the breakdown, softer
+  than over the beat and a longer move each bar, never the last one again,
+  with the last beat left open every other bar; over strings holding the
+  chord in the middle of the keyboard.
 - **The reviewer**: a subagent (`.claude/agents/music-reviewer.md`) that
   reviews every new or changed style from its score and its rendered audio
   before the owner listens, with a checklist of what the owner has heard by
-  ear; and its tools, `npm run review:music -- layers|stack|spectrum|fills|probe
+  ear; and its tools, `npm run review:music -- layers|stack|spectrum|fills|probe|gaps
   <style>` - each part's register, density and grid, each layer's level,
   highs and time sounding, the lead in its own band, the accompaniment over
   the lead, an instrument's spectrum, the fills and how far off the grid,
-  one event alone. Its first review found everything the owner heard in the
+  one event alone, the dead air where everything stops at once. Its first review found everything the owner heard in the
   five styles above. The music audit can now hold a style to a grid of
   thirty-seconds where its rolls mean it.
 - **Italo disco** (`italo`), the 80s Italian dance floor next to synth-pop,

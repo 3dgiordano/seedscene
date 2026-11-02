@@ -19,6 +19,8 @@
 //             the grid (a swung roll limps)
 //   probe     one event of an instrument alone: how long it lasts, whether it pulses or clicks (a chip's sample
 //             cut short, a loop swelling, a scratch that ignores its stroke)
+//   gaps      the dead air: every stretch of 0.4 s or more where the mix falls 24 dB under its own level, by bar,
+//             and what is still sounding there (a breakdown where everything stops - the owner heard it in bomb)
 //
 // Without --chip each command runs on every chip of the style's eras (the synthesizer's own voices for an era
 // with none); without --seeds on the audit's three seeds. It changes nothing and writes nothing.
@@ -32,7 +34,7 @@ const args = process.argv.slice(2);
 const opt = (k, d) => { const i = args.indexOf('--' + k); return i >= 0 ? args[i + 1] : d; };
 const positional = args.filter((a, i) => !a.startsWith('--') && !(i > 0 && args[i - 1].startsWith('--')));
 const [cmd, style] = positional;
-const COMMANDS = ['layers', 'stack', 'spectrum', 'fills', 'probe'];
+const COMMANDS = ['layers', 'stack', 'spectrum', 'fills', 'probe', 'gaps'];
 if (!COMMANDS.includes(cmd) || !MUSIC_PRESETS[style]) {
   console.log(`usage: npm run review:music -- <${COMMANDS.join('|')}> <style> [--chip c] [--seeds a,b] [--instr name] [--which n]\nstyles: ${MUSIC_NAMES.join(' ')}`);
   process.exit(cmd ? 1 : 0);
@@ -239,5 +241,28 @@ function probe(seed, chip) {
   }
 }
 
-const RUN = { layers, stack, spectrum, fills, probe }[cmd];
+function gaps(seed, chip) {
+  const full = render(seed, chip);
+  const { bar } = head(seed, chip, full.sc);
+  const { L, R, sc } = full, W = Math.round(0.1 * SR);
+  let s2 = 0; for (let i = 0; i < L.length; i++) s2 += (L[i] ** 2 + R[i] ** 2) / 2;
+  const mix = Math.sqrt(s2 / L.length);
+  const found = []; let start = -1;
+  for (let i = 0; i + W <= L.length; i += W) {
+    let e = 0; for (let k = 0; k < W; k++) e += (L[i + k] ** 2 + R[i + k] ** 2) / 2;
+    const quiet = 20 * Math.log10(Math.sqrt(e / W) / mix + 1e-9) < -24;
+    if (quiet && start < 0) start = i;
+    if ((!quiet || i + 2 * W > L.length) && start >= 0) { if ((i - start) / SR >= 0.4) found.push([start, i]); start = -1; }
+  }
+  if (!found.length) { console.log('  no dead air (nothing 24 dB under the mix for 0.4 s or more)'); return; }
+  let total = 0;
+  for (const [a, b] of found) {
+    total += (b - a) / SR;
+    const there = [...new Set(sc.events.filter((e) => e.t < b && e.t + e.dur > a).map((e) => e.instr))];
+    console.log(`  bars ${(a / bar).toFixed(1)}-${(b / bar).toFixed(1)}: ${((b - a) / SR).toFixed(1)} s, sounding: ${there.join(', ') || 'nothing'}`);
+  }
+  console.log(`  dead air in all: ${total.toFixed(1)} s of ${(L.length / SR).toFixed(0)}`);
+}
+
+const RUN = { layers, stack, spectrum, fills, probe, gaps }[cmd];
 for (const chip of CHIPS) for (const seed of SEEDS) RUN(seed, chip);

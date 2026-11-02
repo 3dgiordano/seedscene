@@ -641,20 +641,25 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
   // the voice on the record keeps its own pitch whatever the chords do: the key's tonic, where a man's voice
   // speaks (G2 to F#3, 98-185 Hz); the hand's speed bends it
   let scNote = 36 + root; while (scNote < 43) scNote += 12;
-  let scPhrase = null;
+  let scPhrase = null, scSolos = 0, scLastMotif = null;
   // the scratches: a whole bar closing each four-bar phrase, and where the seed scratches every other bar, the
   // second half of the bar between (trip-hop's, and the boom-bap's)
-  const scratchAt = (bar, step, t, a) => {
-    const scBar = bar % 4 === 3 ? 0 : thEvery === 2 && bar % 4 === 1 ? 8 : -1;
-    if (!a.kick || scBar < 0) return;
-    if (step === 0) scPhrase = scratchPhrase();
+  const scratchAt = (bar, step, t, a, solo) => {
+    // (solo: the DJ alone - cutting in before the beat, and through the breakdown - a phrase every bar)
+    const scBar = solo ? 0 : bar % 4 === 3 ? 0 : thEvery === 2 && bar % 4 === 1 ? 8 : -1;
+    if ((!a.kick && !solo) || scBar < 0) return;
+    // (alone it plays softer: at the beat's level it was louder than the band, and a breakdown with no drop;
+    // softer still cutting in before the beat, which was louder than the beat coming in)
+    if (step === 0) scPhrase = scratchPhrase(solo);
+    const soft = !solo ? 1 : bar < totalBars / 4 ? 0.5 : 0.7;
     for (const k of scPhrase) {
-      if (k.step === step && k.step >= scBar) push(t, 'scratch', scNote, k.vel, k.len * (spb / 4), { kit: k.tech, speed: k.speed, from: k.from });
+      if (k.step === step && k.step >= scBar) push(t, 'scratch', scNote, k.vel * soft, k.len * (spb / 4), { kit: k.tech, speed: k.speed, from: k.from });
     }
   };
-  const scratchPhrase = () => {
+  const scratchPhrase = (solo) => {
     // a routine: the seed's favourite technique leads it when it can, the same motif over the bar, the last
     // beat varied; one mark on the record and one speed for the phrase, as a hand that knows the move
+    if (solo) return scratchSolo();
     const withFav = SCRATCH_MOTIFS.filter((m) => m.some((x) => x[2] === thScratch));
     const motif = sr.bool(0.6) && withFav.length ? sr.pick(withFav) : sr.pick(SCRATCH_MOTIFS);
     const span = Math.max(4, ...motif.map((x) => x[0] + x[1]));
@@ -667,6 +672,24 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
       const cells = last && sr.bool(0.7) ? [...motif.filter((x) => x[0] < len - 4), ...sr.pick(SCRATCH_ENDS).map((x) => [x[0] + len - 4, x[1], x[2]])] : motif;
       for (const [st, n, tech] of cells) {
         if (at + st + n > 16) continue;
+        out.push({ step: at + st, len: n, tech, speed: speed * (1 + sr.float(-0.04, 0.04)), from, vel: (st % 4 === 0 ? 1 : 0.88) * (0.9 + sr.float(0, 0.06)) });
+      }
+    }
+    return out;
+  };
+  const scratchSolo = () => {
+    // the DJ alone, bar after bar: the longer moves only (a two-stroke motif four times over was one technique
+    // firing on and on), never the last bar's move again, and every other bar the last beat left open, as a
+    // call and its answer
+    const motifs = SCRATCH_MOTIFS.filter((m) => m !== scLastMotif && Math.max(...m.map((x) => x[0] + x[1])) > 4);
+    const motif = scLastMotif = sr.pick(motifs);
+    const open = scSolos++ % 2 === 1;
+    const speed = sr.float(0.9, 1.3), from = sr.float(0, 0.006);
+    const out = [];
+    for (let at = 0; at < 16; at += 8) {
+      const cells = at === 8 && !open && sr.bool(0.6) ? [...motif.filter((x) => x[0] < 4), ...sr.pick(SCRATCH_ENDS).map((x) => [x[0] + 4, x[1], x[2]])] : motif;
+      for (const [st, n, tech] of cells) {
+        if (at + st + n > 16 || (open && at + st >= 12)) continue;
         out.push({ step: at + st, len: n, tech, speed: speed * (1 + sr.float(-0.04, 0.04)), from, vel: (st % 4 === 0 ? 1 : 0.88) * (0.9 + sr.float(0, 0.06)) });
       }
     }
@@ -1049,7 +1072,9 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
           if (a.kick && (step === 0 || step === 10 || (bar % 2 === 1 && step === 7))) push(t, 'kick', 0, step === 0 ? 0.95 : 0.75, 0.35, { kit: 'break' });
           if (a.snare && (step === 4 || step === 12)) push(t, 'snare', 0, 0.85, 0.25, { kit: 'break' });
           if (a.hat && step % 2 === 0) push(t, 'hat', 0, step % 4 === 0 ? 0.16 : 0.1, 0.04);
-          scratchAt(bar, step, t, a);
+          // the DJ: a phrase now and then over the beat; alone when the beat is out - cutting in before it starts,
+          // and all through the breakdown, where the beat, the bass and the rap stop (it was near silence there)
+          scratchAt(bar, step, t, a, !a.kick && !(bar >= totalBars - 1));
           break;
         case 'gabber':
           if (a.kick && step % 4 === 0) push(t, 'kick', 0, 1, 0.35, { kit: 'gabber' });
@@ -1414,6 +1439,15 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
           // (where the style asks, a power chord as its name says - the root and the fifth - under the line)
           const pv = P.power && P.power.fifths ? [chordDeg, chordDeg + 4] : triad;
           for (const d of pv) push(t, 'brass', noteOf(48, d), P.power && P.power.vel ? P.power.vel : 0.4, spb * 0.4);
+        }
+        if (P.chords === 'blast' && step === 0 && !a.kick && a.stab && bar < totalBars - 1) {
+          // through the breakdown the strings hold the chord under the scratching, voiced inside C4-B4 (the
+          // nearest inversion: root position from the key's own octave sat on the scratch's pitch in some keys
+          // and leapt a sixth in others)
+          for (const d of [chordDeg, chordDeg + 2, chordDeg + 4]) {
+            let n = noteOf(48, d); while (n < 60) n += 12; while (n >= 72) n -= 12;
+            push(t, 'strings', n, 0.42, barSec * 1.02);
+          }
         }
         if (P.chords === 'blast' && ((bar % 2 === 0 && step === 0) || (bar % 4 === 3 && step === 10))) {
           // the orchestra stab as an accent, not a riff: once every two bars and before the phrase turns, voiced under

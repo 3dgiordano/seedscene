@@ -107,7 +107,7 @@ changed style is also reviewed by a subagent, `music-reviewer`
 so it reads the score and measures the rendered audio, against a checklist of
 what the owner has heard by ear - a messy line, a whistle up high, a hiss, a
 part buried or swamping, a genre missed, a roll limping, a phrase that never
-changes, what a chip drops. Its first review, of round 5's five styles, found
+changes, dead air, what a chip drops. Its first review, of round 5's five styles, found
 everything the owner heard. Its tools are the project's, so no review starts
 from nothing:
 
@@ -117,6 +117,7 @@ npm run review:music -- stack <style>      # how often the accompaniment sits at
 npm run review:music -- spectrum <style> --instr <name>   # an instrument's energy by band
 npm run review:music -- fills <style>      # fills, rolls, risers, crashes: where, how loud, how far off the grid
 npm run review:music -- probe <style> --instr <name>      # one event alone: how long, whether it swells or clicks
+npm run review:music -- gaps <style>       # dead air: stretches where everything stops, and what still sounds
 ```
 
 Each runs on every chip of the style's eras and the audit's three seeds unless

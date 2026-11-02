@@ -34,6 +34,8 @@ Run from the repository root:
   what the score asked, whether it swells or clicks. Compare a chip with `--chip hifi` (the synthesizer's own
   voices): Paula plays every instrument from one sample, so what the score asks (a length, a vibrato, a stroke)
   can be lost there.
+- `npm run review:music -- gaps <style>` - the dead air: stretches where the mix falls 24 dB under its level for
+  0.4 s or more, by bar, and what still sounds there (an intro or a breakdown where everything stops).
 
 Each command runs on every chip of the style's eras and on the audit's three seeds unless given `--chip` or
 `--seeds`. The code is in `src/core/music.js` (the styles in `MUSIC_PRESETS`, their roles in `composeScore`'s
@@ -55,13 +57,15 @@ style's own roles when a number needs explaining.
 6. **Rhythm**: rolls and fills off the grid or limping because swing reached them; a "roll" that is a run of
    sixteenths; parts doubling each other's hits.
 7. **Monotony**: the same rhythm in every bar, a phrase that never comes back, a line standing still.
-8. **Lost on a chip**: what the score asks that the chip drops - a vibrato, a stroke's length, a drone's sustain,
+8. **Dead air**: an intro, a breakdown or a phrase where every part stops at once and nothing carries the piece
+   (the owner heard it in bomb's breakdown: eight seconds near silence).
+9. **Lost on a chip**: what the score asks that the chip drops - a vibrato, a stroke's length, a drone's sustain,
    a part panned hard to one side with everything else.
 
 ## How to work
 
 1. Read the style's entry and its roles in the code, and what it claims to be (its label, blurb and comment).
-2. Run `audit:music`, then `layers`, `stack` and `fills` for the style; `spectrum` and `probe` where a number
+2. Run `audit:music`, then `layers`, `stack`, `fills` and `gaps` for the style; `spectrum` and `probe` where a number
    asks for it (a high highs index, a part that sounds too long or too often, a chip-only difference).
 3. Judge the genre against what the style claims, and against its references if the code's comment names them.
 4. When the owner names a fault you cannot see, look for the measurement that would show it, and say which.
