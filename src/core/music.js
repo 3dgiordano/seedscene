@@ -176,8 +176,12 @@ export const MUSIC_PRESETS = {
   derelict: {
     label: 'Derelict Ship', blurb: 'deep-space dread: drones, pings off the hull, a slow heartbeat',
     bpm: [64, 76], scales: ['phrygian', 'harmonicMinor'], progressions: DREAD,
-    drums: 'heartbeat', bass: 'drone', chords: 'ambientpad', lead: 'fmbell', arp: null,
-    swing: 0, intro: 0.15, fx: { reverb: 1.7, delay: 1.5, delayBeats: 0.75 },
+    drums: 'heartbeat', bass: 'drone', chords: 'ambientpad', lead: 'hook', arp: null,
+    // (the bell sings a slow line - chord tones on the beats, steps between - where it rang the chord's
+    //  own steps to G7; up front, as a ping off the hull is, and its echo on the beat, between the eighths no more)
+    hook: { instr: 'fmbell', oct: 72, vel: 0.9, line: true },
+    melody: { free: [0, 7], dense: [0.5, 0.5, 0.5], close: true, moving: true },
+    swing: 0, intro: 0.15, fx: { reverb: 1.7, delay: 1.5, delayBeats: 1 },
   },
   synthpop: {
     label: 'Synth-Pop', blurb: 'the 80s chart single: gated drums, octave bass, a chorus you hum all day',

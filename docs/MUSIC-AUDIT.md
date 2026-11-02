@@ -1,8 +1,8 @@
 # Music audit
 
-Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ fail, ~ let off by the style, · not measured; off grid is measured on the seeds that do not swing; speed is wall-clock time on the machine that ran it. Run `npm run audit:music -- <style>` for one style. Jungle and keygen re-audited on 2026-11-02, after they were put right (their rows and sections; their speed on another machine).
+Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ fail, ~ let off by the style, · not measured; off grid is measured on the seeds that do not swing; speed is wall-clock time on the machine that ran it. Run `npm run audit:music -- <style>` for one style. Jungle, keygen and derelict re-audited on 2026-11-02, after they were put right (their rows and sections; their speed on another machine).
 
-**15 of 28 styles pass** (no ✗ anywhere); failing: dreamwave, chiptune, rave, hardcore, newbeat, eurodance, gabber, ambient, orchestral, gameboy, heroic, derelict, triphop.
+**16 of 28 styles pass** (no ✗ anywhere); failing: dreamwave, chiptune, rave, hardcore, newbeat, eurodance, gabber, ambient, orchestral, gameboy, heroic, triphop.
 
 | style | bass in chord | bass rubs | melody on beat | held | held rubs | top | range | leaps >3rd | >6th | repeats | stuck | off grid | echo rubs | melody vs chords | sound vs real | peak | speed |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -23,7 +23,7 @@ Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ 
 | `synthwave` | ✓ 98% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ C6 | ✓ 12 | ✓ 3% | ✓ 0% | ✓ 61% | ✓ 0.0% | ✓ 0.0% | ⚠ 58% | ✓ -2.6 dB | · - | ✓ -2.4 | ✓ 7.0x |
 | `arcade` | ~ 82% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ B5 | ✓ 12 | ✓ 1% | ✓ 0% | ✓ 91% | ✓ 0.0% | ✓ 0.0% | ⚠ 66% | ✓ -0.4 dB | · - | ✓ -2.3 | ✓ 21.7x |
 | `cyborg` | ✓ 99% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ C5 | ✓ 8 | ✓ 10% | ✓ 0% | ✓ 57% | ✓ 0.0% | ✓ 0.0% | ✓ 32% | ✓ -1.0 dB | ✓ 5 dB brass | ✓ -2.1 | ✓ 8.0x |
-| `derelict` | ~ 12% | ~ 41% | ⚠ 68% | ✗ 62% | ~ 23% | ✗ G7 | ✓ 20 | ⚠ 33% | ✓ 3% | ✓ 33% | ⚠ 2.4% | ✓ 0.0% | ✓ 24% | ⚠ -7.0 dB | · - | ✓ -2.8 | ✓ 12.1x |
+| `derelict` | ~ 12% | ~ 41% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ F#5 | ✓ 12 | ✓ 3% | ✓ 0% | ✓ 38% | ✓ 2.0% | ✓ 0.0% | ✓ 10% | ✓ -1.9 dB | · - | ✓ -2.5 | ✓ 24.6x |
 | `synthpop` | ✓ 100% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ G#5 | ✓ 13 | ✓ 15% | ✓ 0% | ✓ 80% | ✓ 0.0% | ✓ 0.0% | ⚠ 68% | ✓ -2.3 dB | · - | ✓ -2.3 | ✓ 4.2x |
 | `starpilot` | ✓ 99% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ G5 | ✓ 12 | ✓ 5% | ✓ 0% | ✓ 82% | ⚠ 11.7% | ✓ 0.0% | ⚠ 50% | ✓ 1.6 dB | ✓ 7 dB brass | ✓ -2.0 | ✓ 3.8x |
 | `modjazz` | ~ 77% | ~ 30% | ✓ 100% | ✓ 89% | ✓ 5% | ⚠ E6 | ✓ 15 | ⚠ 26% | ✓ 0% | ✓ 58% | ⚠ 4.7% | · swung | ✓ 17% | ✓ -2.4 dB | ⚠ 10 dB flute | ✓ -2.1 | ✓ 5.9x |
@@ -216,14 +216,8 @@ Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ 
 
 ## Derelict Ship (`derelict`)
 
-67, 72, 70 bpm; F# phrygian, D# harmonicMinor, F# harmonicMinor. Layers: 17 bass, 94 chord, 85 melody notes.
+67, 72, 70 bpm; F# phrygian, D# harmonicMinor, F# harmonicMinor. Layers: 17 bass, 94 chord, 48 melody notes.
 
-- ✗ only 62% of held melody notes are chord tones
-- ✗ the melody reaches G7 - shrill on a sustained lead
-- ⚠ only 68% of melody notes on the beat are chord tones
-- ⚠ 33% of melodic moves leap wider than a third
-- ⚠ the melody sits -7.0 dB against the chords - buried
-- ⚠ 2.4% of melody notes are struck a third time running on one pitch - listen: a line standing still, or a fanfare or a chant meaning it
 - ~ clashes let off: the half-step above the root is the dread it is built on
 - ~ the bass let off the chord: a drone holds the tonic under the moving chords (a pedal)
 

@@ -327,6 +327,12 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   the time car's, the boxing match's and the card cascade's shaders compile in
   a third of the time or less, with the same pictures; and the live page
   starts loading the first scene as soon as its boot screen is up.
+- **Derelict ship, put right** through the music audit: its FM bell rang the
+  chord's own steps, up to G7, a third of its long notes off the harmony and
+  buried under the pads; it sings a slow line now, chord tones on the beats
+  and steps between, up to the octave, up front as a ping off the hull, its
+  echo on the beat. Every check passes; its half-step and its drone stay,
+  let off by name as before.
 - **Keygen, put right** through the music audit: its squelchy lead played
   the hook a chord's step above each new root, leaping with every chord to
   G7; it sings a line now, chord tones on the beats and steps between, up to
