@@ -327,6 +327,14 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   the time car's, the boxing match's and the card cascade's shaders compile in
   a third of the time or less, with the same pictures; and the live page
   starts loading the first scene as soon as its boot screen is up.
+- **Eurodance, put right** through the music audit: its anthem lead sang
+  high in a singer's place, the chord's own steps up to C#8, buried fourteen
+  decibels under the house piano, and its plucks climbed to G#8; it plays a
+  synth riff now, as the genre's records do - short, syncopated, played
+  again every four bars, in the middle of the keyboard, cutting through the
+  piano - and the plucks stay under C6, the same sixteenths as before. Its
+  echo is on the beat. Every check passes but one warning, the organ bass's
+  note under some chord changes.
 - **Amiga rave, put right** through the music audit: its piano played the
   chord's own steps up to G7, four of five notes on the beat off the chord,
   buried twelve decibels under the hoovers, its dotted echo between its

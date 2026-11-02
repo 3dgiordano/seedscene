@@ -118,8 +118,14 @@ export const MUSIC_PRESETS = {
   eurodance: {
     label: 'Eurodance', blurb: 'hip-house organ bass, house piano, an anthem on top',
     bpm: [126, 136], scales: ['minor', 'dorian', 'major'], progressions: ANTHEM,
-    drums: 'four', bass: 'organ', chords: 'piano', lead: 'lead', arp: 'pluck16',
-    swing: 0, intro: 0.04, fx: { reverb: 1, delay: 0.9, delayBeats: 0.75 },
+    drums: 'four', bass: 'organ', chords: 'piano', lead: 'hook', arp: 'pluck16',
+    // (a synth riff - short, syncopated, played again every four bars, in the middle of the keyboard, loud enough to
+    //  cut through the house piano - where the lead sang high in a singer's place; the plucks kept under C6, where
+    //  they climbed to G#8)
+    hook: { instr: 'lead', oct: 60, vel: 1.8, line: true, bars: 4, gate: 0.6 },
+    melody: { free: [0, 7], dense: [0.6, 0.6, 0.6], hits: [0, 3, 6, 8, 11, 14], close: true, moving: true },
+    arpTop: 84,
+    swing: 0, intro: 0.04, fx: { reverb: 1, delay: 0.9, delayBeats: 1 },
   },
   gabber: {
     label: 'Gabber', blurb: 'Rotterdam, 1993: a distorted kick and nothing to hide behind',
@@ -1266,7 +1272,9 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
       }
       if (a.arp && P.arp === 'pluck16') {
         const deg = chordDeg + arpShape[step % arpShape.length] + 7 * (Math.floor(step / 8) % 2);
-        push(t, 'arp', noteOf(72, deg), 0.13 + 0.06 * accent, sixteenth * 0.8);
+        let an = noteOf(72, deg);
+        if (P.arpTop) while (an >= P.arpTop) an -= 12;     // (a style can keep its plucks under a ceiling, an octave down)
+        push(t, 'arp', an, 0.13 + 0.06 * accent, sixteenth * 0.8);
       }
 
       // ---- arcade sound effects, played in time and in key ----
@@ -1329,7 +1337,7 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
               const lift = 0;                      // (a line keeps one register: no octave leap at the peak)
               const len = STEPS < 16 ? Math.min(nt.len, STEPS - step) : nt.len;   // (an odd metre's bar ends early)
               push(t, P.hook.instr, noteOf(anBase + lift, nt.deg) + (P.hook.oct >= 64 && anBase < 60 ? 12 : 0), P.hook.vel * (step % 4 === 0 ? 1 : 0.9),
-                len * sixteenth * 0.95, P.hook.kit ? { kit: P.hook.kit } : undefined);
+                len * sixteenth * (P.hook.gate || 0.95), P.hook.kit ? { kit: P.hook.kit } : undefined);   // (a riff can be played short: its gate)
               break;
             }
             const half = bar % 2;
