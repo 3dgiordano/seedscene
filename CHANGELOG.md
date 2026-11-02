@@ -4,7 +4,7 @@
 
 The release that turns the tool into **SEEDSCENE**: a name, a personality,
 a Commodore 64 front door, seven eras of computing from 1972 to now,
-forty-five scenes, thirty styles of music, fourteen displays and five
+forty-five scenes, thirty-five styles of music, fourteen displays and five
 sound boards, an endless AUTOPLAY channel, and a live mode you
 can drive entirely from the keyboard.
 
@@ -327,6 +327,48 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   the time car's, the boxing match's and the card cascade's shaders compile in
   a third of the time or less, with the same pictures; and the live page
   starts loading the first scene as soon as its boot screen is up.
+- **Five more styles of the Amiga years**, homages to moods, never to tunes:
+  `beast` (beast lands - tribal toms in a slow 6/8, a pan flute, a bowed drone
+  on the tonic, a mysterious minor), `agony` (lament - a slow piano broken in
+  eighths over strings, a lonely lead, the rain, a slow pulse), `ballad`
+  (musicdisk ballad - a four-channel ballad, a lead singing with vibrato
+  under A5 as a tracker's did, an arpeggio, a soft beat), `march` (jolly
+  march - at 120, rudimental snare drags and rolls, an oom-pah tuba, a
+  whistled tune, a dance beat under it when it gets going) and `bomb`
+  (hip-hop blaster - a boom-bap break at 88-100, scratches, orchestra stabs,
+  a lead chopped like a rap). All five play in 1990–1993; lament and the
+  march in 1994–1996 too, and the march in 1997–1999. Each passes the music
+  audit, the march's and the beast's flute with the warning the Amiga's one
+  flute sample has had before; trip-hop's scratches are shared with the
+  hip-hop blaster, and trip-hop stays note for note as it was. Put right
+  after the first review by the reviewer below, which found what the owner
+  heard: no dance-floor claps, riser or crash in the lament, the ballad or the
+  tribal piece (the beast rolls on its toms; the march rolls its own snare in
+  thirty-seconds; the hip-hop's rolls play straight on the grid); on the
+  Amiga a tom sampled at its own pitch, a drone looped past its swell, the
+  ballad's vibrato kept, the scratches played by hand rather than from one
+  sample, and the march's tuba and chords on the right; the lament's lead a
+  softer FM patch on the Sound Blaster, its piano an Alberti bass under it,
+  the rain a steady wash; the oom-pah chords under the tune; the hip-hop's
+  stab an accent every two bars, under the lead; a second rhythm for the
+  beast's, the lament's and the rap's tunes. And after a second review, made
+  with the reviewer's tools: that second rhythm given to the answering phrases
+  (a coin each phrase left half the seeds with one rhythm); the beast's tune on
+  the 6/8's eighths, its toms on the left, its tom rolls between the groove's
+  toms; the march's kick with the tuba, softer, no riser before its drop; the
+  ballad's and the rap's lead the soft FM patch on the Sound Blaster, where it
+  fizzed; the ballad's arpeggio under its tune; the rap resting while the
+  record is scratched; the lament's rain heard under the music.
+- **The reviewer**: a subagent (`.claude/agents/music-reviewer.md`) that
+  reviews every new or changed style from its score and its rendered audio
+  before the owner listens, with a checklist of what the owner has heard by
+  ear; and its tools, `npm run review:music -- layers|stack|spectrum|fills|probe
+  <style>` - each part's register, density and grid, each layer's level,
+  highs and time sounding, the lead in its own band, the accompaniment over
+  the lead, an instrument's spectrum, the fills and how far off the grid,
+  one event alone. Its first review found everything the owner heard in the
+  five styles above. The music audit can now hold a style to a grid of
+  thirty-seconds where its rolls mean it.
 - **Italo disco** (`italo`), the 80s Italian dance floor next to synth-pop,
   from the genre's own guides: 115-125 bpm in a minor key, its i, VI and VII;
   an octave bass in sixteenths, the root and its octave in turn; an
@@ -624,7 +666,7 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   allocations, cached pitches and filter coefficients), and the next track is
   composed a slice per audio block while only one track plays, never all at
   once in the middle of a mix. The sound is the same, bit for bit.
-- **Music styles**, chosen by the era or with `--music` - thirty in all, these and the ones below:
+- **Music styles**, chosen by the era or with `--music` - thirty-five in all, these and the ones below:
   `chiptune` (C64 SID), `newbeat`, `rave` (Amiga, 1992), `orchestral`
   (tracker strings, choir, timpani, brass), `dreamwave`, `acid` (303),
   `gabber`, `ambient`, `eurodance`, `jungle`, `heroic` (game soundtrack),

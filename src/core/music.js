@@ -49,6 +49,12 @@ const PUNK = [[0, 4, 5, 3], [0, 3, 4, 3], [4, 0, 1, 3], [0, 5, 3, 4]];
 const ROYAL = [[3, 4, 2, 5], [3, 4, 2, 5], [3, 4, 0, 5], [0, 4, 5, 3]];
 // noir: the minor i that will not move, the VI, the iv, a half-step of the spy films
 const NOIR = [[0, 0, 5, 5], [0, 3, 0, 4], [0, 5, 3, 4], [0, 0, 1, 1]];
+// a march: the major key's I, IV and V, home on the strong bar
+const MARCH = [[0, 3, 4, 0], [0, 0, 4, 4], [0, 3, 0, 4], [0, 4, 0, 4]];
+// a lament: the harmonic minor's i, iv and V, and the VI that darkens it
+const LAMENT = [[0, 3, 4, 0], [0, 5, 3, 4], [0, 5, 6, 4], [0, 3, 0, 4]];
+// a mysterious minor: i held, the VI and VII around it
+const MYSTERY = [[0, 0, 5, 6], [0, 6, 5, 0], [0, 3, 0, 6], [0, 5, 0, 6]];
 // italo disco: the minor key's i, VI and VII (i-VI-VII, i-VI-III-VII), as the genre's own guides give them
 const ITALO = [[0, 5, 6, 0], [0, 5, 2, 6], [0, 5, 6, 6], [0, 3, 5, 6]];
 
@@ -289,6 +295,61 @@ export const MUSIC_PRESETS = {
     hook: { instr: 'lead', kit: 'hero', oct: 72, vel: 0.46, line: true, bars: 12 }, leadFrom: 0.15,
     melody: { free: [0, 8], dense: [0.6, 0.6, 0.6], close: true, moving: true },
     swing: 0, intro: 0.03, fx: { reverb: 0.7, delay: 0.6, delayBeats: 0.5 },
+  },
+  // --- round 5's Amiga styles. Homages to moods, never to tunes: every melody is the seed's.
+  // the long walk under a purple sky: tribal toms in a slow 6/8, a pan flute, a bowed drone, a mysterious minor
+  // (the Amiga's atmospheric game scores, played from a few sampled instruments)
+  beast: {
+    label: 'Beast Lands', blurb: 'tribal toms in a slow 6/8, a pan flute over a bowed drone, a mysterious minor',
+    bpm: [96, 114], steps: 12, scales: ['minor', 'phrygian'], progressions: MYSTERY,
+    drums: 'tribal', bass: 'bowed', chords: 'ambientpad', lead: 'hook', arp: null,
+    hook: { instr: 'flute', kit: 'real', oct: 72, vel: 0.6, line: true, answer: true }, leadFrom: 0.2,
+    melody: { free: [0, 7], dense: [0.5, 0.5, 0.5], hits: [0, 4, 6, 10], hitsAlt: [0, 6, 10], close: true, moving: true },   // (long-short, on the 6/8's eighths)
+    noDrop: true,
+    swing: 0, intro: 0.1, fx: { reverb: 1.5, delay: 0.5, delayBeats: 1.5 },
+  },
+  // the quiet part of the demo: a slow piano over strings, a lonely lead, rain on the window, a slow pulse
+  // (the Amiga's classical piano themes)
+  agony: {
+    label: 'Lament', blurb: 'a slow piano over strings, a lonely lead, the rain, a slow pulse',
+    bpm: [66, 80], scales: ['harmonicMinor', 'minor'], progressions: LAMENT,
+    drums: 'rain', bass: 'strings', chords: 'lament', lead: 'hook', arp: null,
+    hook: { instr: 'lead', kit: 'soft', oct: 72, vel: 0.6, line: true }, leadFrom: 0.25,
+    melody: { free: [0, 7], dense: [0.5, 0.5, 0.5], hits: [0, 6, 10], hitsAlt: [0, 4, 8, 12], close: true, moving: true },
+    noDrop: true,
+    swing: 0, intro: 0.12, fx: { reverb: 1.6, delay: 0.6, delayBeats: 1 },
+  },
+  // the musicdisk you kept: a slow four-channel ballad, a vibrato lead, an arpeggio, a soft beat - the tune you
+  // play twice (a tracker's lead stays under A5, where a real Amiga's notes start to distort)
+  ballad: {
+    label: 'Musicdisk Ballad', blurb: 'a slow four-channel ballad: a vibrato lead, an arpeggio, a soft beat',
+    bpm: [80, 96], scales: ['major', 'minor', 'dorian'], progressions: POP,
+    drums: 'soft', bass: 'ballad', chords: 'pad', lead: 'hook', arp: 'arp',
+    hook: { instr: 'lead', kit: 'soft', oct: 72, vel: 0.6, line: true, vibrato: true }, leadFrom: 0.15,
+    melody: { free: [0, 6], dense: [0.55, 0.55, 0.55], close: true, moving: true },
+    arpTop: 72, arpVel: 2, noDrop: true,   // (the arpeggio under C5, under the tune)
+    swing: 0, intro: 0.08, fx: { reverb: 1.2, delay: 0.7, delayBeats: 1 },
+  },
+  // a column of little soldiers on the hill: a march at 120, rudimental snare rolls, an oom-pah tuba, a whistled
+  // tune, and when it gets going, a dance beat under it
+  march: {
+    label: 'Jolly March', blurb: 'a march: snare rolls, an oom-pah tuba, a whistled tune, then a dance beat under it',
+    bpm: [112, 124], scales: ['major'], progressions: MARCH,
+    drums: 'march', bass: 'tuba', chords: 'oompah', lead: 'hook', arp: null, noDrop: 'riser',   // (a cymbal for the cadences, no riser)
+    hook: { instr: 'flute', kit: 'real', oct: 72, vel: 0.6, line: true }, leadFrom: 0.12,
+    melody: { free: [0, 7], dense: [0.6, 0.6, 0.6], close: true, moving: true },
+    swing: 0, intro: 0.05, fx: { reverb: 0.6, delay: 0.4, delayBeats: 1 },
+  },
+  // the shooter with a beat: a slow hip-hop break, scratches, an orchestra stab, a lead chopped like a rap (no
+  // voice) - at the 86-100 bpm of the late 80s, the kicks off the beat a little behind like a sampler's swing
+  bomb: {
+    label: 'Hip-Hop Blaster', blurb: 'a slow hip-hop break, scratches, an orchestra stab, a lead chopped like a rap',
+    bpm: [88, 100], scales: ['minor', 'dorian'], progressions: NOIR, mpc: 0.12,
+    drums: 'boombap', bass: 'bomb', chords: 'blast', lead: 'hook', arp: null,
+    hook: { instr: 'lead', kit: 'soft', oct: 72, vel: 0.6, line: true, gate: 0.5, answer: true, yield: 'scratch' }, leadFrom: 0.2,
+    noDrop: true,
+    melody: { free: [0, 5], dense: [0.7, 0.7, 0.7], hits: [0, 3, 6, 8, 10, 14], hitsAlt: [0, 2, 4, 8, 11, 12], close: true, moving: 'always' },
+    swing: 0, intro: 0.04, fx: { reverb: 0.7, delay: 0.5, delayBeats: 1 },
   },
   // --- italo disco: the 80s Italian dance hits - an octave bass in sixteenths, an arpeggiator, a drum machine
   //     with hand claps and an open hat on the off-beat, a vocoder-like lead, a minor key at 115-125 bpm
@@ -581,6 +642,16 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
   // speaks (G2 to F#3, 98-185 Hz); the hand's speed bends it
   let scNote = 36 + root; while (scNote < 43) scNote += 12;
   let scPhrase = null;
+  // the scratches: a whole bar closing each four-bar phrase, and where the seed scratches every other bar, the
+  // second half of the bar between (trip-hop's, and the boom-bap's)
+  const scratchAt = (bar, step, t, a) => {
+    const scBar = bar % 4 === 3 ? 0 : thEvery === 2 && bar % 4 === 1 ? 8 : -1;
+    if (!a.kick || scBar < 0) return;
+    if (step === 0) scPhrase = scratchPhrase();
+    for (const k of scPhrase) {
+      if (k.step === step && k.step >= scBar) push(t, 'scratch', scNote, k.vel, k.len * (spb / 4), { kit: k.tech, speed: k.speed, from: k.from });
+    }
+  };
   const scratchPhrase = () => {
     // a routine: the seed's favourite technique leads it when it can, the same motif over the bar, the last
     // beat varied; one mark on the record and one speed for the phrase, as a hand that knows the move
@@ -642,11 +713,14 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
   };
   const isChordTone = (d, c) => [0, 2, 4].includes((((d - c) % 7) + 7) % 7);
   // a two-bar phrase's rhythm: on the eighths, a sixteenth now and then, a long last note and a breath
-  const anRhythm = (density, pickup) => {
+  const anRhythm = (density, pickup, alt) => {
     const on = [];
     // (a theme of long notes on the style's own hits, two bars a phrase; now and then a pickup into the second)
     if (P.melody && P.melody.hits) {
-      for (const b of [0, 16]) for (const h of P.melody.hits) on.push(b + h);
+      // (a style can give its tune a second rhythm: the answering phrase takes it - a coin for each phrase gave half
+      //  the seeds the same rhythm twice)
+      const hits = alt && P.melody.hitsAlt ? P.melody.hitsAlt : P.melody.hits;
+      for (const b of [0, 16]) for (const h of hits) on.push(b + h);
       if (P.melody.pickup && ar.bool(density)) on.push(16 + P.melody.pickup);
       return [...new Set(on)].sort((x, y) => x - y);
     }
@@ -718,7 +792,7 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
       return bars;
     }
     const rA = anRhythm(name === 'chorus' ? dense[2] : name === 'pre' ? dense[1] : dense[0], ar.bool(0.4) && !(P.melody && P.melody.square));
-    const rB = anRhythm(name === 'chorus' ? 0.6 : 0.5, false);
+    const rB = anRhythm(name === 'chorus' ? 0.6 : 0.5, false, true);
     const phrases = [];
     const start = name === 'chorus' ? reg[0] + 3 : reg[0] + 2;
     for (let ph = 0; ph * 2 < nBars; ph++) {
@@ -731,7 +805,7 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
         const lift = ph * 2;
         notes = anWalk(rA, phraseAt(b), start + lift, reg[0] + lift, Math.min(reg[1] + 2, reg[1] + lift), reg[1], null);
       } else {
-        notes = anWalk(lastPh && ph > 0 ? rB : rA, phraseAt(b), phrases.length ? phrases[phrases.length - 1].at(-1).deg : start,
+        notes = anWalk(lastPh && ph > 0 ? rB : P.melody && P.melody.hitsAlt && ph % 2 === 1 ? rB : rA, phraseAt(b), phrases.length ? phrases[phrases.length - 1].at(-1).deg : start,
           reg[0], reg[1], reg[1] - (ph % 2) - (name === 'verse' ? 1 : 0), lastPh && (name === 'chorus' || name === 'free') ? (P.melody && P.melody.home !== undefined ? P.melody.home : 7) : null);   // (home: the octave, or where the style says)
       }
       phrases.push(notes);
@@ -823,8 +897,10 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
     const acidPhrase = acidPhrases[Math.floor(bar / 4)];
     const acidCut = 0.5 + 0.5 * Math.sin(bar * 0.37 + root);   // the knob someone keeps turning
 
-    if (a.crash) push(barT, 'crash', 0, 0.55, 0.01);
-    if (a.build) push(barT, 'riser', 0, 0.75, barSec);
+    // (a style can do without the dance floor's drop: a crash and a white-noise riser have no place in a lament or a
+    //  tribal piece)
+    if (a.crash && P.noDrop !== true) push(barT, 'crash', 0, 0.55, 0.01);
+    if (a.build && !P.noDrop) push(barT, 'riser', 0, 0.75, barSec);
 
     // ---- chords held for the bar ----
     if (['pad', 'gated', 'dubstab', 'ambientpad', 'synthpad'].includes(P.chords)) {
@@ -929,6 +1005,51 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
           if (a.kick && stKick.includes(step)) push(t, 'kick', 0, step % 8 === 0 ? 0.95 : 0.7, 0.3);
           if (a.snare && (step === 4 || step === 12)) push(t, 'snare', 0, 0.8, 0.25);
           if (a.hat && step % 2 === 0) push(t, 'hat', 0, (step % 4 === 2 ? 0.22 : 0.14) * accent, 0.04);
+          break;
+        case 'tribal':
+          // toms in 6/8 (the timpani, tuned low as toms): the low one on the two pulses, the higher ones between,
+          // a shaker on the eighths
+          // (the toms on the left with the flute, the pad and the drone on the right; in a bar that rolls, the groove's
+          //  toms keep to its first half)
+          const rolls = a.fill || a.build;
+          if (a.kick && (step === 0 || (step === 6 && !rolls))) push(t, 'timpani', noteOf(36, 0), step === 0 ? 0.55 : 0.45, 0.3, { kit: 'tom', pan: 'left' });
+          if (a.snare && !rolls && (step === 4 || step === 10 || (bar % 2 === 1 && step === 8))) push(t, 'timpani', noteOf(36, 4), 0.32, 0.25, { kit: 'tom', pan: 'left' });
+          if (a.snare && rolls && step === 4) push(t, 'timpani', noteOf(36, 4), 0.32, 0.25, { kit: 'tom', pan: 'left' });
+          if (a.hat && step % 2 === 0) push(t, 'hat', 0, step % 6 === 0 ? 0.1 : 0.06, 0.04);
+          break;
+        case 'rain':
+          // rain on the window, all the way through, and a slow pulse when the piece is under way
+          if (step === 0) push(t, 'vinyl', 0, 0.6, barSec * 1.02, { kit: 'rain' });
+          if (a.kick && step === 0) push(t, 'kick', 0, 0.24, 0.4);
+          break;
+        case 'soft':
+          // a soft beat: the kick on one and three, a light snare on two and four, quiet hats
+          if (a.kick && (step === 0 || step === 8)) push(t, 'kick', 0, 0.6, 0.35);
+          if (a.snare && (step === 4 || step === 12)) push(t, 'snare', 0, 0.42, 0.2);
+          if (a.hat && step % 2 === 0) push(t, 'hat', 0, 0.08 * accent, 0.03);
+          break;
+        case 'march':
+          // a march: the bass drum on the strong beats, the snare on the off-beats with a drag before the bar
+          // turns and a roll at the end of a phrase; when it gets going, a dance beat under it
+          if (a.kick && (step === 0 || step === 8)) push(t, 'kick', 0, 0.65, 0.3, { pan: 'right' });
+          if (a.snare && (step === 4 || step === 12)) push(t, 'snare', 0, 0.5, 0.15);
+          if (a.snare && bar % 4 !== 3 && (step === 14 || step === 15)) push(t, 'snare', 0, 0.38, 0.08);
+          if (a.snare && bar % 4 === 3 && step >= 8) {
+            // a roll: thirty-seconds, swelling into the next phrase (sixteenths were a run, not a roll)
+            for (const h of [0, 0.5]) push(t + h * sixteenth, 'snare', 0, 0.26 + 0.035 * (step - 8 + h), 0.06);
+          }
+          if (a.intensity > 0.85) {
+            if (a.kick && step % 4 === 0 && step !== 0 && step !== 8) push(t, 'kick', 0, 0.75, 0.3, { kit: '909' });
+            if (a.hat && step % 4 === 2) push(t, 'hat', 0, 0.18, 0.05);
+          }
+          break;
+        case 'boombap':
+          // boom-bap: the kick on one and the "and" of three, the snare on two and four, the hats on the eighths
+          // (a little late on the "and", as the sampler swung them); a scratch phrase now and then
+          if (a.kick && (step === 0 || step === 10 || (bar % 2 === 1 && step === 7))) push(t, 'kick', 0, step === 0 ? 0.95 : 0.75, 0.35, { kit: 'break' });
+          if (a.snare && (step === 4 || step === 12)) push(t, 'snare', 0, 0.85, 0.25, { kit: 'break' });
+          if (a.hat && step % 2 === 0) push(t, 'hat', 0, step % 4 === 0 ? 0.16 : 0.1, 0.04);
+          scratchAt(bar, step, t, a);
           break;
         case 'gabber':
           if (a.kick && step % 4 === 0) push(t, 'kick', 0, 1, 0.35, { kit: 'gabber' });
@@ -1059,15 +1180,7 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
           if (a.hat && step % 4 === 2) push(t, 'thride', 0, 0.3, 0.6);
           if (a.hat && a.intensity > 0.5) push(t, 'thshaker', 0, thShake[step] ? 0.16 : 0.07, 0.06);
           if (step === 0) push(t, 'vinyl', 0, 0.5, barSec);
-          // the scratches: a whole bar closing each four-bar phrase, and where the seed scratches every other
-          // bar, the second half of the bar between
-          const scBar = bar % 4 === 3 ? 0 : thEvery === 2 && bar % 4 === 1 ? 8 : -1;
-          if (a.kick && scBar >= 0) {
-            if (step === 0) scPhrase = scratchPhrase();
-            for (const k of scPhrase) {
-              if (k.step === step && k.step >= scBar) push(t, 'scratch', scNote, k.vel, k.len * sixteenth, { kit: k.tech, speed: k.speed, from: k.from });
-            }
-          }
+          scratchAt(bar, step, t, a);
           break;
         case 'keygen':
           // a tracker's drum samples: a kick and a snare cut from records, the hat on the eighths
@@ -1084,21 +1197,25 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
 
       // ---- rolls: fills at phrase ends, a full roll into the drop ----
       const SNARE_ROLLS = ['classic', 'chip', 'break', 'amen', 'gb', 'ambient', 'orchestral', 'heroic', 'synthwave', 'jrock', 'skate',
-        'arcade', 'cyborg', 'rock', 'jazz', 'metal', 'st'];
+        'arcade', 'cyborg', 'rock', 'jazz', 'metal', 'st', 'boombap'];
       const rollInstr = P.drums === 'keygen' ? 'xmsnare' : SNARE_ROLLS.includes(P.drums) ? 'snare' : 'clap';
       const rollKit = (P.drums === 'chip' || P.drums === 'gb' || P.drums === 'arcade') ? 'chip'
-        : (P.drums === 'break' || P.drums === 'amen' || P.drums === 'heroic' || P.drums === 'rock' || P.drums === 'jrock' || P.drums === 'skate') ? 'break'
+        : (P.drums === 'break' || P.drums === 'amen' || P.drums === 'heroic' || P.drums === 'rock' || P.drums === 'jrock' || P.drums === 'skate' || P.drums === 'boombap') ? 'break'
           : P.drums === 'cyborg' ? 'gated' : undefined;
-      if (P.drums === 'heartbeat' || P.drums === 'triphop') {
-        // no rolls in the dark: only the riser before the drop
-      } else if (a.build) {
+      if (P.drums === 'heartbeat' || P.drums === 'triphop' || P.drums === 'rain' || P.drums === 'soft' || P.drums === 'march') {
+        // no rolls in the dark: only the riser before the drop (the lament's rain, the ballad's soft beat and the
+        // march, which rolls its own snare, take no claps either)
+      } else if (P.drums === 'tribal') {
+        // the tribal piece rolls on its toms: the high one, then the low, into the next phrase
+        if ((a.build || a.fill) && step >= STEPS / 2) push(t, 'timpani', noteOf(36, step >= STEPS - 2 ? 0 : step >= STEPS - 4 ? 2 : 4), 0.2 + 0.025 * (step - STEPS / 2), 0.25, { kit: 'tom', pan: 'left' });
+      } else if (a.build && !P.noDrop) {
         const every = step < 8 ? 2 : 1;
         // (the classic kit rolls straight, on the grid, under its swing: a swung roll limped)
-        const tr0 = P.drums === 'classic' ? barT + (step / 4) * spb : t;
+        const tr0 = P.drums === 'classic' || P.drums === 'boombap' ? barT + (step / 4) * spb : t;
         if (step % every === 0) push(tr0, rollInstr, 0, 0.2 + 0.045 * step, 0.08, { kit: rollKit });
       } else if (a.fill && step >= 12) {
         // (the classic kit's fill on the grid, straight: it fell a thirty-second late, between the sixteenths)
-        push(P.drums === 'classic' ? barT + (step / 4) * spb : t, rollInstr, 0, 0.34 + 0.1 * (step - 12), 0.08, { kit: rollKit });
+        push(P.drums === 'classic' || P.drums === 'boombap' ? barT + (step / 4) * spb : t, rollInstr, 0, 0.34 + 0.1 * (step - 12), 0.08, { kit: rollKit });
       }
 
       // ---- bass ----
@@ -1109,6 +1226,26 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
               const walk = step === 0 ? 0 : rng.weighted([0, 2, -2, 4], [7, 2, 2, 1]);
               push(t, 'bass', noteOf(bassOct, chordDeg + walk), 0.6 * accent + 0.15, sixteenth * 0.9);
             }
+            break;
+          case 'bowed':
+            // a bowed drone: the tonic held under everything, an octave doubling it, drawn again every two bars
+            // (a fifth held as well rubbed the minor's sixth under the VI chord)
+            if (step === 0 && bar % 2 === 0) {
+              push(t, 'drone', noteOf(36, 0), 0.7, barSec * 2.05);
+              push(t, 'drone', noteOf(48, 0), 0.3, barSec * 2.05);
+            }
+            break;
+          case 'tuba':
+            // the oom-pah's oom: a tuba on the strong beats, the root, then the fifth below
+            if (step === 0 || step === 8) push(t, 'brass', noteOf(36, chordDeg + (step === 8 ? -3 : 0)), 0.75, spb * 0.8, { pan: 'right' });
+            break;
+          case 'ballad':
+            // a tracker ballad's bass: the root held on one, the fifth on three
+            if (step === 0 || step === 8) push(t, 'bass', noteOf(36, chordDeg + (step === 8 ? 4 : 0)), 0.5, spb * 1.8);
+            break;
+          case 'bomb':
+            // the bass on the kick: a deep note with every kick, the root, the fifth on the "and" of three
+            if (step === 0 || step === 10 || (bar % 2 === 1 && step === 7)) push(t, 'bass', noteOf(36, chordDeg + (step === 10 ? 4 : 0)), 0.8, spb * 0.7, { kit: 'sub' });
             break;
           case 'italo':
             // the octave bass: every sixteenth, the root and its octave in turn, short, the downbeat leaned on
@@ -1278,6 +1415,23 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
           const pv = P.power && P.power.fifths ? [chordDeg, chordDeg + 4] : triad;
           for (const d of pv) push(t, 'brass', noteOf(48, d), P.power && P.power.vel ? P.power.vel : 0.4, spb * 0.4);
         }
+        if (P.chords === 'blast' && ((bar % 2 === 0 && step === 0) || (bar % 4 === 3 && step === 10))) {
+          // the orchestra stab as an accent, not a riff: once every two bars and before the phrase turns, voiced under
+          // the lead
+          for (const d of [chordDeg, chordDeg + 4]) push(t, 'brass', noteOf(48, d), 0.42, spb * 0.3);
+          for (const d of [chordDeg, chordDeg + 2]) push(t, 'strings', noteOf(48, d), 0.5, spb * 0.35);
+        }
+        if (P.chords === 'oompah' && (step === 4 || step === 12)) {
+          // the oom-pah's pah: the chord short on the off-beats, brass
+          for (const d of triad) push(t, 'brass', noteOf(48, d), 0.32, spb * 0.3, { pan: 'right' });   // (under the tune, on the right)
+        }
+        if (P.chords === 'lament' && step % 2 === 0) {
+          // a slow piano: the chord broken upwards in eighths, the strings holding it underneath
+          // (an Alberti bass - root, fifth, third, fifth - kept under the lead, where the broken chord climbed past it)
+          const up = [0, 4, 2, 4][(step / 2) % 4];
+          push(t, 'piano', noteOf(48, chordDeg + up), 0.4 + (step === 0 ? 0.08 : 0), spb * 0.9);
+          if (step === 0) for (const d of [0, 2, 4]) push(t, 'strings', noteOf(48, chordDeg + d), 0.2, barSec * 1.02);
+        }
         if (P.chords === 'piano' && pianoRhythm.includes(step)) {
           for (const d of triad) push(t, 'piano', noteOf(60, d), 0.5, spb * 0.35);
         }
@@ -1367,7 +1521,7 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
         const deg = chordDeg + arpShape[idx % arpShape.length] + 7 * octave;
         let an = noteOf(60, deg);
         if (P.arpTop) while (an >= P.arpTop) an -= 12;     // (a style can keep its arpeggio under a ceiling)
-        push(t, 'arp', an, 0.22 * accent + 0.08, spb / 6);
+        push(t, 'arp', an, (0.22 * accent + 0.08) * (P.arpVel || 1), spb / 6);
       }
       if (a.arp && P.arp === 'bell' && step % 3 === 0) {
         const deg = chordDeg + arpShape[(step / 3) % arpShape.length] + 7;
@@ -1445,10 +1599,12 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
               const tune = hookAnswer && Math.floor(bar / hookBars) % 4 === 2 ? hookAnswer : hookLine;
               const nt = tune[bar % hookBars].find((x) => x.step === step);
               if (!nt) break;
+              // (a lead that yields to the scratches rests in their bars)
+              if (P.hook.yield === 'scratch' && (bar % 4 === 3 || (thEvery === 2 && bar % 4 === 1 && step >= 8))) break;
               const lift = 0;                      // (a line keeps one register: no octave leap at the peak)
               const len = STEPS < 16 ? Math.min(nt.len, STEPS - step) : nt.len;   // (an odd metre's bar ends early)
               push(t, P.hook.instr, noteOf(anBase + lift, nt.deg) + (P.hook.oct >= 64 && anBase < 60 ? 12 : 0), P.hook.vel * (step % 4 === 0 ? 1 : 0.9),
-                len * sixteenth * (P.hook.gate || 0.95), P.hook.kit ? { kit: P.hook.kit } : undefined);   // (a riff can be played short: its gate)
+                len * sixteenth * (P.hook.gate || 0.95), P.hook.kit || P.hook.vibrato ? { kit: P.hook.kit, vibrato: P.hook.vibrato || undefined } : undefined);   // (a riff can be played short: its gate; a tracker's lead can sing with vibrato)
               // (a section doubling the line an octave below at the climax: the brass under the violins in a tutti)
               const dbl = P.hook.double;
               if (dbl && a.intensity > dbl.from) push(t, dbl.instr, noteOf(anBase + lift, nt.deg) + (P.hook.oct >= 64 && anBase < 60 ? 12 : 0) - 12, dbl.vel, len * sixteenth * 0.95, dbl.kit ? { kit: dbl.kit } : undefined);
@@ -2260,6 +2416,17 @@ const INSTR = {
     tail: 0.02,
     render(v, out) {
       const t = v.age / SR;
+      if (v.ev.kit === 'rain') {
+        // rain on the window: a steady wash of soft noise, darker than the record's hiss, and a drop now and then
+        const wash = v.filt.process(v.noise(), 2600, 0.7).low * 0.14;
+        if (v.noise() > 0.9985) v.phase = 1;
+        v.phase *= 0.97;
+        const drop = v.filt2.process(v.noise(), 4200, 2).band * v.phase * 0.12;
+        const fr = Math.min(1, t * 8, Math.max(0, (v.ev.dur / SR - t) * 8));
+        const sr = (wash + drop) * fr * v.ev.vel;
+        out[0] = sr * 0.9; out[1] = sr;
+        return;
+      }
       // the record: a soft hiss, and a pop now and then
       const hiss = v.filt.process(v.noise(), 3000, 0.8).band * 0.012;
       if (v.noise() > 0.9993) v.phase = 1;
@@ -2416,7 +2583,8 @@ const INSTR = {
     render(v, out) {
       const t = v.age / SR;
       const hero = v.ev.kit === 'hero';
-      const vib = 1 + (hero ? 0.009 : 0.004) * Math.sin(TAU * 5.4 * t) * Math.min(1, t * 3);
+      // (a tracker's singing lead: a wider vibrato, coming in after the note's start, as the 4xy effect did)
+      const vib = 1 + (hero ? 0.009 : v.ev.vibrato ? 0.012 * Math.min(1, Math.max(0, t - 0.12) * 4) : 0.004) * Math.sin(TAU * 5.4 * t) * Math.min(1, t * 3);
       const f = midiToFreq(v.ev.note) * vib;
       const d1 = f / SR, d2 = f * 1.007 / SR;
       v.phase += d1; if (v.phase >= 1) v.phase -= 1;
@@ -2548,8 +2716,10 @@ const INSTR = {
       const t = v.age / SR;
       const f = midiToFreq(v.ev.note) * (1 + 0.15 * Math.exp(-t * 20));
       const body = sineAt(v, 0, f / SR) + 0.4 * sineAt(v, 1, (f * 1.5) / SR) * Math.exp(-t * 6);
+      // (a tom: the same drum, shorter - a tribal piece's toms ring a beat, not a bar)
+      const tom = v.ev.kit === 'tom';
       const thump = v.filt.process(v.noise(), 300, 0.8).low * Math.exp(-t * 40);
-      const sig = Math.tanh((body * Math.exp(-t * 3) + thump * 2.5) * 1.1) * v.ev.vel * 0.85;
+      const sig = Math.tanh((body * Math.exp(-t * (tom ? 7 : 3)) + thump * 2.5) * 1.1) * v.ev.vel * 0.85;
       out[0] = out[1] = sig;
     },
   },

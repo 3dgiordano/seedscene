@@ -230,6 +230,9 @@ const OPL = {
   choir: { mul: [2, 1], wave: [0, 0], index: 1.6, fb: 0.3, menv: [0.25, 1, 0.8, 0.6], cenv: [0.3, 1.2, 0.9, 0.6], vib: 0.006 },
   brass: { mul: [1, 1], wave: [0, 0], index: 4.6, fb: 1.3, menv: [0.04, 0.4, 0.6, 0.1], cenv: [0.015, 0.4, 0.75, 0.12], vib: 0.004 },
   lead: { mul: [1, 1], wave: [0, 1], index: 3.4, fb: 1.9, menv: [0.01, 0.6, 0.7, 0.1], cenv: [0.01, 0.5, 0.8, 0.1], vib: 0.007 },
+  // (a softer lead for a lament: less feedback, so it sings rather than fizzes - two thirds of the plain one's energy
+  //  was above 10 kHz)
+  'lead:soft': { mul: [1, 1], wave: [0, 0], index: 2.2, fb: 0.6, menv: [0.02, 0.6, 0.7, 0.15], cenv: [0.02, 0.5, 0.8, 0.15], vib: 0.006 },
   chip: { mul: [1, 1], wave: [6, 6], index: 0.8, fb: 0, menv: [0.002, 0.2, 0.5, 0.02], cenv: [0.002, 0.2, 0.7, 0.02], vib: 0.006 },
   arp: { mul: [3, 1], wave: [0, 0], index: 3.2, fb: 0.5, menv: [0.001, 0.06, 0, 0.03], cenv: [0.001, 0.12, 0, 0.04] },
   stab: { mul: [1, 1], wave: [1, 0], index: 4, fb: 1.2, menv: [0.001, 0.08, 0.1, 0.04], cenv: [0.002, 0.15, 0, 0.05] },
@@ -582,16 +585,20 @@ function paulaChip(native) {
 
   /** Record an instrument once, at C-3, and cut it down to an 8-bit sample. */
   function sampleOf(ev) {
-    const key = `${ev.instr}|${ev.kit || ''}|${ev.open ? 1 : 0}`;
+    // (a tom is sampled at its own note - pitched down from C-3 it rang for seconds; a vibrato asked for is kept)
+    const own = ev.kit === 'tom';
+    const key = `${ev.instr}|${ev.kit || ''}|${ev.open ? 1 : 0}|${ev.vibrato ? 'v' : ''}|${own ? ev.note : ''}`;
     if (bank.has(key)) return bank.get(key);
     const spec = native.INSTR[ev.instr];
     const drum = !SUSTAINED.has(ev.instr) && !['piano', 'arp', 'stab', 'fmbell', 'harp', 'ep', 'slap', 'zap', 'blip', 'chiparp'].includes(ev.instr);
     const pitched = !drum || PITCHED_DRUMS.has(ev.instr);
-    const len = SUSTAINED.has(ev.instr) ? 1.0 : Math.min(1.2, (spec.tail || 0.5) + 0.25);
+    // (a drone swells for a second and a half: sampled for three and looped after its swell; rain is looped too)
+    const loopy = SUSTAINED.has(ev.instr) || ev.kit === 'rain';
+    const len = ev.instr === 'drone' ? 3.0 : loopy ? 1.0 : Math.min(1.2, (spec.tail || 0.5) + 0.25);
     const fake = {
-      t: 0, instr: ev.instr, note: pitched ? PAULA_REF : ev.note, vel: 1,
-      dur: Math.round((SUSTAINED.has(ev.instr) ? 1.0 : 0.25) * SR),
-      kit: ev.kit, open: ev.open, chord: [PAULA_REF, PAULA_REF + 4, PAULA_REF + 7], cut: 0.5, sampled: true,
+      t: 0, instr: ev.instr, note: pitched && !own ? PAULA_REF : ev.note, vel: 1,
+      dur: Math.round((ev.instr === 'drone' ? 3.0 : loopy ? 1.0 : 0.25) * SR),
+      kit: ev.kit, open: ev.open, vibrato: ev.vibrato, chord: [PAULA_REF, PAULA_REF + 4, PAULA_REF + 7], cut: 0.5, sampled: true,
     };
     const voice = new native.Voice(fake, 12345);
     const n = Math.round(len * SR);
@@ -618,8 +625,8 @@ function paulaChip(native) {
     }
     const norm = 0.98 / peak;
     for (let j = 0; j < m; j++) data[j] = Math.max(-128, Math.min(127, Math.round(down[j] * norm * 127)));
-    const loop = SUSTAINED.has(ev.instr) ? [Math.floor(m * 0.45), m] : null;
-    const smp = { data, norm, loop, pitched, rate };
+    const loop = ev.instr === 'drone' ? [Math.floor(m * 0.6), m] : loopy ? [Math.floor(m * 0.45), m] : null;
+    const smp = { data, norm, loop, pitched, rate, ref: own ? ev.note : PAULA_REF };
     bank.set(key, smp);
     return smp;
   }
@@ -629,7 +636,7 @@ function paulaChip(native) {
     render(v, out) {
       if (!v.smp) { v.smp = sampleOf(v.ev); v.pos = 0; }
       const smp = v.smp;
-      const step = (smp.pitched && v.ev.note ? Math.pow(2, (v.ev.note - PAULA_REF) / 12) : 1) * smp.rate / SR;
+      const step = (smp.pitched && v.ev.note ? Math.pow(2, (v.ev.note - smp.ref) / 12) : 1) * smp.rate / SR;
       let i = Math.floor(v.pos);
       if (i >= smp.data.length) {
         if (!smp.loop) { out[0] = out[1] = 0; return; }
@@ -645,7 +652,8 @@ function paulaChip(native) {
       let s = (smp.data[i] / 127) / smp.norm * vol * 1.26;
       // the A500's fixed output filter: a gentle slope, so the stepping still shows
       s = onePole(v, 'led', s, 6800);
-      const left = PAULA_LEFT.has(v.ev.instr);
+      // (a style can put a part on the other side, as a tracker musician chose a channel for it)
+      const left = v.ev.pan === 'right' ? false : v.ev.pan === 'left' ? true : PAULA_LEFT.has(v.ev.instr);
       out[0] = s * (left ? 1 : 0.25); out[1] = s * (left ? 0.25 : 1);
     },
   };
@@ -653,6 +661,8 @@ function paulaChip(native) {
   for (const name of Object.keys(native.INSTR)) {
     // the 50 Hz chip chords stay what they are: a C64 trick, not a sample
     if (name === 'chiparp') continue;
+    // (nor a scratch: a hand on the record is not one sample - its stroke, its speed and its length are the sound)
+    if (name === 'scratch') continue;
     instr[name] = player;
   }
   return {

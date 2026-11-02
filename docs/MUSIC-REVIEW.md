@@ -88,13 +88,43 @@ it, add it, and let the audit catch the next one.
 3. Fix it, in the style's own code; a shared change is checked against every
    other style (their sound byte for byte, hashed before and after).
 4. Audit again; repeat until nothing fails that the style does not mean.
-5. Hand over with a table, before and after, and a taste to listen to.
-6. The owner listens. The audit finds what can be measured; whether it sounds
+5. **The reviewer** (below) reviews it - every new style and every change -
+   and what it finds is fixed, or handed over as a question, before the owner
+   hears it.
+6. Hand over with a table, before and after, and a taste to listen to.
+7. The owner listens. The audit finds what can be measured; whether it sounds
    like its genre and is good to listen to is the owner's ear.
-7. When the owner hears a fault the audit passed, find how to measure it and
+8. When the owner hears a fault the audit passed, find how to measure it and
    add the check - tried on the version the owner turned down (it must
    fail) and on the one put right (it must pass) - so the next style is
    caught before it reaches the owner.
+
+## The reviewer
+
+The audit checks rules; a listener hears more. Since 2026-11-02 every new or
+changed style is also reviewed by a subagent, `music-reviewer`
+(`.claude/agents/music-reviewer.md`), before the owner listens: it cannot hear,
+so it reads the score and measures the rendered audio, against a checklist of
+what the owner has heard by ear - a messy line, a whistle up high, a hiss, a
+part buried or swamping, a genre missed, a roll limping, a phrase that never
+changes, what a chip drops. Its first review, of round 5's five styles, found
+everything the owner heard. Its tools are the project's, so no review starts
+from nothing:
+
+```bash
+npm run review:music -- layers <style>     # each part: register, density, grid; each layer's level, highs, time sounding; the lead in its own band
+npm run review:music -- stack <style>      # how often the accompaniment sits at or above the lead
+npm run review:music -- spectrum <style> --instr <name>   # an instrument's energy by band
+npm run review:music -- fills <style>      # fills, rolls, risers, crashes: where, how loud, how far off the grid
+npm run review:music -- probe <style> --instr <name>      # one event alone: how long, whether it swells or clicks
+```
+
+Each runs on every chip of the style's eras and the audit's three seeds unless
+given `--chip` (`hifi` for the synthesizer's own voices) or `--seeds`. The
+reviewer reports, per style, the likely audible problems with their evidence,
+its confidence and a one-line fix, and what it could not judge without ears.
+When the owner hears something it missed, the measurement that would have shown
+it goes into the tools and the fault into its checklist.
 
 ## What it cannot judge
 
