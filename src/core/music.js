@@ -49,6 +49,8 @@ const PUNK = [[0, 4, 5, 3], [0, 3, 4, 3], [4, 0, 1, 3], [0, 5, 3, 4]];
 const ROYAL = [[3, 4, 2, 5], [3, 4, 2, 5], [3, 4, 0, 5], [0, 4, 5, 3]];
 // noir: the minor i that will not move, the VI, the iv, a half-step of the spy films
 const NOIR = [[0, 0, 5, 5], [0, 3, 0, 4], [0, 5, 3, 4], [0, 0, 1, 1]];
+// italo disco: the minor key's i, VI and VII (i-VI-VII, i-VI-III-VII), as the genre's own guides give them
+const ITALO = [[0, 5, 6, 0], [0, 5, 2, 6], [0, 5, 6, 6], [0, 3, 5, 6]];
 
 /**
  * Music styles. Each one picks its own drums, bass, chords, lead and arp
@@ -287,6 +289,17 @@ export const MUSIC_PRESETS = {
     hook: { instr: 'lead', kit: 'hero', oct: 72, vel: 0.46, line: true, bars: 12 }, leadFrom: 0.15,
     melody: { free: [0, 8], dense: [0.6, 0.6, 0.6], close: true, moving: true },
     swing: 0, intro: 0.03, fx: { reverb: 0.7, delay: 0.6, delayBeats: 0.5 },
+  },
+  // --- italo disco: the 80s Italian dance hits - an octave bass in sixteenths, an arpeggiator, a drum machine
+  //     with hand claps and an open hat on the off-beat, a vocoder-like lead, a minor key at 115-125 bpm
+  italo: {
+    label: 'Italo Disco', blurb: 'the 80s Italian dance floor: an octave bass in sixteenths, an arpeggiator, hand claps, a vocoder singing the tune',
+    bpm: [115, 125], scales: ['minor', 'harmonicMinor'], progressions: ITALO,
+    drums: 'four', bass: 'italo', chords: 'synthpad', lead: 'hook', arp: 'arp',
+    hook: { instr: 'choir', kit: 'vocoder', oct: 72, vel: 0.55, line: true },
+    melody: { free: [0, 7], dense: [0.6, 0.6, 0.6], close: true, moving: true },
+    arpTop: 84,
+    swing: 0, intro: 0.04, fx: { reverb: 1.1, delay: 1, delayBeats: 1 },
   },
   // --- the Atari ST demos (1987 on): the YM2149's squares, its envelope run as a buzzing bass, chords as
   //     50 Hz arpeggios, a square lead and digi-drums, at the 125 bpm a 50 Hz player falls on
@@ -1096,6 +1109,10 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
               const walk = step === 0 ? 0 : rng.weighted([0, 2, -2, 4], [7, 2, 2, 1]);
               push(t, 'bass', noteOf(bassOct, chordDeg + walk), 0.6 * accent + 0.15, sixteenth * 0.9);
             }
+            break;
+          case 'italo':
+            // the octave bass: every sixteenth, the root and its octave in turn, short, the downbeat leaned on
+            push(t, 'bass', noteOf(36, chordDeg) + (step % 2 === 1 ? 12 : 0), step % 4 === 0 ? 0.85 : 0.68, sixteenth * 0.6);
             break;
           case 'buzz':
             // the buzzer: the envelope at the bass note's pitch, in the tune's own rhythm, an octave up now and then
@@ -2502,6 +2519,19 @@ const INSTR = {
     tail: 0.7,
     render(v, out) {
       const t = v.age / SR;
+      if (v.ev.kit === 'vocoder') {
+        // a vocoder singing the tune: a buzzing carrier through the vowel's formants, steady as a machine's
+        // voice (no vibrato), there at once and gone at the note's end
+        const fv = midiToFreq(v.ev.note);
+        const cv = sawAt(v, 0, fv / SR) * 0.7 + sawAt(v, 1, (fv * 2.002) / SR) * 0.3 + v.noise() * 0.05;
+        const b1 = v.filt.process(cv, 650, 6).band, b2 = v.filt2.process(cv, 1100, 6).band;
+        if (!v.filt3) v.filt3 = new SVF();
+        const b3 = v.filt3.process(cv, 2500, 7).band;
+        const av = envAt(t, v.ev.dur / SR, 0.012, 0.3, 0.9, 0.06);
+        const sv = (b1 + b2 * 0.8 + b3 * 0.35) * av * v.ev.vel * 0.42;
+        out[0] = sv; out[1] = sv * 0.95;
+        return;
+      }
       // "aah": bright sources through two vowel formants
       const f = midiToFreq(v.ev.note) * (1 + 0.004 * Math.sin(TAU * 4.8 * t));
       const src = sawAt(v, 0, f / SR) + sawAt(v, 1, (f * 1.005) / SR) + v.noise() * 0.08;

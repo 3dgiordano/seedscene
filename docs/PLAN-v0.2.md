@@ -826,7 +826,7 @@ computer screens, which completes its screensavers); the moon bike and the time 
 between the tracks - round 12 done (2026-10-31). From round 5, the YM2149 - a sound board of the 1982–1989 era,
 not an era of its own, since the eras became spans of years - and its style
 `stchip` (2026-11-02, at the owner's word: the chip and its own style first; the
-round's Amiga and C64 styles later).
+round's Amiga and C64 styles later); then `italo` (2026-11-02), in 1982–1989.
 
 **When a round is done** — the same gates as before:
 

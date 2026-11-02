@@ -4,7 +4,7 @@
 
 The release that turns the tool into **SEEDSCENE**: a name, a personality,
 a Commodore 64 front door, seven eras of computing from 1972 to now,
-forty-five scenes, twenty-nine styles of music, fourteen displays and five
+forty-five scenes, thirty styles of music, fourteen displays and five
 sound boards, an endless AUTOPLAY channel, and a live mode you
 can drive entirely from the keyboard.
 
@@ -327,6 +327,14 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   the time car's, the boxing match's and the card cascade's shaders compile in
   a third of the time or less, with the same pictures; and the live page
   starts loading the first scene as soon as its boot screen is up.
+- **Italo disco** (`italo`), the 80s Italian dance floor next to synth-pop,
+  from the genre's own guides: 115-125 bpm in a minor key, its i, VI and VII;
+  an octave bass in sixteenths, the root and its octave in turn; an
+  arpeggiator; a drum machine with hand claps on two and four and an open hat
+  on the off-beat; a vocoder singing the tune - a buzzing carrier through a
+  vowel's formants, steady as a machine's voice - over synth pads. In the
+  1982–1989 era, on the synthesizer's own voices or the Atari ST's chip. It
+  passes every check of the music audit.
 - **The Atari ST's sound chip, the YM2149**, a fifth sound board: three
   square channels, a noise generator and the hardware envelope on the ST's
   2 MHz clock, from the chip's datasheet - pitches at what its 12-bit periods
@@ -616,7 +624,7 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   allocations, cached pitches and filter coefficients), and the next track is
   composed a slice per audio block while only one track plays, never all at
   once in the middle of a mix. The sound is the same, bit for bit.
-- **Music styles**, chosen by the era or with `--music` - twenty-nine in all, these and the ones below:
+- **Music styles**, chosen by the era or with `--music` - thirty in all, these and the ones below:
   `chiptune` (C64 SID), `newbeat`, `rave` (Amiga, 1992), `orchestral`
   (tracker strings, choir, timpani, brass), `dreamwave`, `acid` (303),
   `gabber`, `ambient`, `eurodance`, `jungle`, `heroic` (game soundtrack),
