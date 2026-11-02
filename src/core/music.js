@@ -146,8 +146,16 @@ export const MUSIC_PRESETS = {
   orchestral: {
     label: 'Orchestral Tracker', blurb: 'strings, choir, timpani and brass, squeezed into four channels',
     bpm: [96, 120], scales: ['minor', 'harmonicMinor', 'dorian'], progressions: ANTHEM,
-    drums: 'orchestral', bass: 'strings', chords: 'orchestra', lead: 'brass', arp: 'arp',
-    swing: 0, intro: 0.08, fx: { reverb: 1.5, delay: 0.7, delayBeats: 0.75 },
+    drums: 'orchestral', bass: 'strings', chords: 'orchestra', lead: 'hook', arp: 'arp',
+    // (laid out as an orchestra is: the first violins sing the melody on top, the brass doubling it an octave
+    //  below at the climax; the rest of the strings spaced under it; the choir only at the climax, softly; the
+    //  timpani for accents; the pizzicato under C6. It was a choir wall and organ-like string blocks over a brass
+    //  line buried among them, the timpani loudest of all and the pizzicato ringing up to D7)
+    hook: { instr: 'strings', kit: 'violins', oct: 72, vel: 1, line: true, double: { instr: 'brass', kit: 'real', vel: 0.6, from: 0.85 } },
+    melody: { free: [0, 7], dense: [0.45, 0.45, 0.45], close: true, moving: true },
+    orch: { open: true, choir: 'climax', timpani: 0.4 },
+    arpTop: 84,
+    swing: 0, intro: 0.08, fx: { reverb: 1.5, delay: 0.7, delayBeats: 1 },
   },
   gameboy: {
     label: 'Handheld Chip', blurb: 'two pulse channels, a 4-bit wave and noise',
@@ -773,8 +781,22 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
       for (const d of triad) push(barT, 'supersaw', noteOf(60, d), 0.07 + 0.04 * a.intensity, barSec * 0.98);
     }
     if (P.chords === 'orchestra' && a.chords) {
-      for (const d of triad) push(barT, 'strings', noteOf(60, d), 0.5 + 0.2 * a.intensity, barSec * 1.02);
-      if ((a.lead || a.stab) && !(P.orch && P.orch.noChoir)) for (const d of triad) push(barT, 'choir', noteOf(48, d), 0.45, barSec * 1.02);
+      if (P.orch && P.orch.open) {
+        // the strings as a section, spaced as an orchestra spaces them - wide below, closer above: the cellos
+        // on the root and the fifth, the violas and second violins on the third and the fifth an octave up -
+        // all under the melody, which the first violins play
+        const v = 0.15 + 0.07 * a.intensity;
+        for (const [base, d] of [[48, 0], [48, 4], [60, 2], [60, 4]]) {
+          let n = noteOf(base, chordDeg + d);
+          if (base === 60 && n >= 70) n -= 12;          // (under the violins' line, whatever the chord)
+          push(barT, 'strings', n, v, barSec * 1.02);
+        }
+      } else {
+        for (const d of triad) push(barT, 'strings', noteOf(60, d), 0.5 + 0.2 * a.intensity, barSec * 1.02);
+      }
+      // the choir: where the style keeps it for the climax, only there and softly
+      const choir = P.orch && P.orch.choir === 'climax' ? a.intensity > 0.85 : (a.lead || a.stab) && !(P.orch && P.orch.noChoir);
+      if (choir) for (const d of triad) push(barT, 'choir', noteOf(48, d), P.orch && P.orch.choir === 'climax' ? 0.16 : 0.45, barSec * 1.02);
     }
     if (P.chords === 'power' && a.chords) {
       for (const d of [0, 4]) push(barT, 'strings', noteOf(48, chordDeg + d), 0.35, barSec * 1.02);
@@ -858,7 +880,7 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
           break;
         case 'orchestral':
           if (a.kick && (step === 0 || (step === 8 && bar % 2 === 1))) {
-            push(t, 'timpani', noteOf(36, chordDeg), 0.85, 0.8);
+            push(t, 'timpani', noteOf(36, chordDeg), 0.85 * (P.orch && P.orch.timpani !== undefined ? P.orch.timpani : 1), 0.8);
           }
           if (a.snare && a.intensity > 0.6 && (step === 4 || step === 12)) push(t, 'snare', 0, 0.45, 0.2);
           break;
@@ -1266,7 +1288,9 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
         const idx = step / arpStride;
         const octave = Math.floor(idx / arpShape.length) % 2;
         const deg = chordDeg + arpShape[idx % arpShape.length] + 7 * octave;
-        push(t, 'arp', noteOf(60, deg), 0.22 * accent + 0.08, spb / 6);
+        let an = noteOf(60, deg);
+        if (P.arpTop) while (an >= P.arpTop) an -= 12;     // (a style can keep its arpeggio under a ceiling)
+        push(t, 'arp', an, 0.22 * accent + 0.08, spb / 6);
       }
       if (a.arp && P.arp === 'bell' && step % 3 === 0) {
         const deg = chordDeg + arpShape[(step / 3) % arpShape.length] + 7;
@@ -1346,6 +1370,9 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
               const len = STEPS < 16 ? Math.min(nt.len, STEPS - step) : nt.len;   // (an odd metre's bar ends early)
               push(t, P.hook.instr, noteOf(anBase + lift, nt.deg) + (P.hook.oct >= 64 && anBase < 60 ? 12 : 0), P.hook.vel * (step % 4 === 0 ? 1 : 0.9),
                 len * sixteenth * (P.hook.gate || 0.95), P.hook.kit ? { kit: P.hook.kit } : undefined);   // (a riff can be played short: its gate)
+              // (a section doubling the line an octave below at the climax: the brass under the violins in a tutti)
+              const dbl = P.hook.double;
+              if (dbl && a.intensity > dbl.from) push(t, dbl.instr, noteOf(anBase + lift, nt.deg) + (P.hook.oct >= 64 && anBase < 60 ? 12 : 0) - 12, dbl.vel, len * sixteenth * 0.95, dbl.kit ? { kit: dbl.kit } : undefined);
               break;
             }
             const half = bar % 2;

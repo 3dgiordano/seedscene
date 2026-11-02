@@ -91,10 +91,16 @@ function layers(score, style) {
   const key = (e) => e.instr + '|' + (e.kit || '') + '|' + e.t + '|' + e.dur;
   for (const e of pitched) together.set(key(e), (together.get(key(e)) || 0) + 1);
   const isBass = (e) => BASS.has(e.instr) || (e.instr === 'organ' && e.note < 50) || (e.instr === 'strings' && e.note < 48);
+  // (a style whose melody plays a variant of its own - the first violins among the strings - has only that
+  // variant for its melody: the same instrument's bass and chords stay what they are)
+  const leadKit = P.lead === 'hook' && P.hook.kit ? P.hook.kit : null;
+  // (a section doubling the melody an octave below is the melody again, not a chord: left out, counted once)
+  const dbl = P.lead === 'hook' && P.hook.double ? P.hook.double : null;
   const bass = [], melody = [], chords = [];
   for (const e of pitched) {
+    if (dbl && e.instr === dbl.instr && (e.kit || null) === (dbl.kit || null)) continue;
     if (isBass(e)) bass.push(e);
-    else if (leadInstr.includes(e.instr) && together.get(key(e)) === 1 && e.kit !== 'echo' && !e.chord) melody.push(e);
+    else if (leadInstr.includes(e.instr) && together.get(key(e)) === 1 && e.kit !== 'echo' && !e.chord && (!leadKit || e.kit === leadKit)) melody.push(e);
     else chords.push(e);
   }
   return { bass, melody, chords, leadInstr };

@@ -1,8 +1,8 @@
 # Music audit
 
-Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ fail, ~ let off by the style, · not measured; off grid is measured on the seeds that do not swing; speed is wall-clock time on the machine that ran it. Run `npm run audit:music -- <style>` for one style. Jungle, keygen, derelict, triphop, rave, eurodance, gameboy and newbeat re-audited on 2026-11-02, after they were put right (their rows and sections; their speed on another machine).
+Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ fail, ~ let off by the style, · not measured; off grid is measured on the seeds that do not swing; speed is wall-clock time on the machine that ran it. Run `npm run audit:music -- <style>` for one style. Jungle, keygen, derelict, triphop, rave, eurodance, gameboy, newbeat and orchestral re-audited on 2026-11-02, after they were put right (their rows and sections; their speed on another machine).
 
-**21 of 28 styles pass** (no ✗ anywhere); failing: dreamwave, chiptune, hardcore, gabber, ambient, orchestral, heroic.
+**22 of 28 styles pass** (no ✗ anywhere); failing: dreamwave, chiptune, hardcore, gabber, ambient, heroic.
 
 | style | bass in chord | bass rubs | melody on beat | held | held rubs | top | range | leaps >3rd | >6th | repeats | stuck | off grid | echo rubs | melody vs chords | sound vs real | peak | speed |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -17,7 +17,7 @@ Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ 
 | `eurodance` | ⚠ 75% | ✓ 0% | ✓ 96% | · - | · - | ✓ B4 | ✓ 11 | ✓ 7% | ✓ 0% | ✓ 64% | ✓ 0.0% | ✓ 0.0% | ✓ 34% | ✓ -1.6 dB | · - | ✓ -1.8 | ✓ 5.5x |
 | `gabber` | · - | · - | ✗ 42% | · - | · - | ✗ G8 | ⚠ 31 | ✗ 38% | ✗ 11% | ✓ 64% | ⚠ 3.8% | ✓ 0.0% | ✓ 37% | ✗ -11.4 dB | · - | ✓ -2.0 | ✓ 8.2x |
 | `ambient` | ✓ 99% | ✓ 0% | ⚠ 77% | ⚠ 80% | ⚠ 9% | ✗ E8 | ✗ 34 | ✗ 65% | ✗ 42% | ✗ 8% | ✓ 0.0% | ✓ 0.0% | ✓ 30% | ✓ 1.2 dB | · - | ✓ -2.9 | ✓ 4.1x |
-| `orchestral` | ✓ 92% | ✓ 0% | ⚠ 70% | ✗ 62% | ⚠ 11% | ✗ B6 | ⚠ 26 | ⚠ 35% | ✗ 11% | ✓ 42% | ⚠ 6.8% | ✓ 0.0% | ✓ 19% | ✗ -9.3 dB | ⚠ 11 dB brass | ✓ -2.2 | ✓ 4.3x |
+| `orchestral` | ✓ 92% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ G#5 | ✓ 10 | ✓ 3% | ✓ 0% | ✓ 69% | ✓ 0.0% | ✓ 0.0% | · - | ✓ -1.6 dB | · - | ✓ -2.6 | ✓ 8.5x |
 | `gameboy` | ✓ 98% | ✓ 2% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ A5 | ✓ 12 | ✓ 3% | ✓ 0% | ✓ 71% | ✓ 0.0% | ✓ 0.0% | ✓ 36% | ✓ 0.0 dB | · - | ✓ -2.1 | ✓ 18.7x |
 | `heroic` | ✓ 99% | ✓ 0% | ✗ 56% | · - | · - | ✗ D#8 | ✗ 32 | ✗ 37% | ✗ 16% | ✓ 63% | ✓ 1.1% | ✓ 0.0% | ✓ 20% | ✓ 0.0 dB | · - | ✓ -2.1 | ✓ 4.5x |
 | `synthwave` | ✓ 98% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ C6 | ✓ 12 | ✓ 3% | ✓ 0% | ✓ 61% | ✓ 0.0% | ✓ 0.0% | ⚠ 58% | ✓ -2.6 dB | · - | ✓ -2.4 | ✓ 7.0x |
@@ -140,19 +140,9 @@ Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ 
 
 ## Orchestral Tracker (`orchestral`)
 
-112, 118, 113 bpm; F# minor, G# minor, A dorian. Layers: 17 bass, 672 chord, 154 melody notes.
+112, 118, 113 bpm; F# minor, G# minor, A dorian. Layers: 17 bass, 674 chord, 91 melody notes.
 
-- ✗ only 62% of held melody notes are chord tones
-- ✗ the melody reaches B6 - shrill on a sustained lead
-- ✗ 11% of melodic moves leap wider than a sixth
-- ✗ the melody sits -9.3 dB against the chords - buried
-- ✗ the echo (3 sixteenths, level 0.105) falls between the eighths the melody sits on
-- ⚠ only 70% of melody notes on the beat are chord tones
-- ⚠ 11% of held melody notes rub a semitone against the harmony
-- ⚠ the melody spans 26 semitones - more than a singer's line
-- ⚠ 35% of melodic moves leap wider than a third
-- ⚠ 6.8% of melody notes are struck a third time running on one pitch - listen: a line standing still, or a fanfare or a chant meaning it
-- ⚠ the brass strays 11 dB on average from a trombone (soft to loud, on opl3): 0 0 0 0 0 0 where the real one has 0 16 16 - - - - UNSW Music Acoustics, brass acoustics (a trombone crescendo, soft and loud)
+- nothing stands out
 
 ## Handheld Chip (`gameboy`)
 

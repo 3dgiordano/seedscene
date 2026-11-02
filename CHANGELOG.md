@@ -327,6 +327,18 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   the time car's, the boxing match's and the card cascade's shaders compile in
   a third of the time or less, with the same pictures; and the live page
   starts loading the first scene as soon as its boot screen is up.
+- **Orchestral tracker, laid out as an orchestra** through the music audit
+  and the principles of orchestration: the first violins sing the melody on
+  top, a line of its own, chord tones on the beats and steps between; the
+  brass doubles it an octave below at the climax; the rest of the strings
+  sit under it, spaced as a section is, wide below and closer above; the
+  choir comes in only at the climax, softly; the timpani mark the accents;
+  the pizzicato stays under C6. It was a choir wall and organ-like string
+  blocks over a brass line buried nine decibels among them up to B6, the
+  timpani loudest of all and the pizzicato ringing up to D7. Every check
+  passes. The audit now takes a melody played by a variant of its own
+  instrument (the violins among the strings) as that variant alone, and
+  leaves out a section doubling it, which it took for chords.
 - **New beat, put right** through the music audit: its brass played the
   chord's own steps, two of five notes on the beat off the chord and a third
   of its long notes a semitone from the harmony, its dotted echo between its
