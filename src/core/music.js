@@ -91,8 +91,12 @@ export const MUSIC_PRESETS = {
   jungle: {
     label: 'Jungle', blurb: 'chopped amen breaks over a rolling reese',
     bpm: [164, 174], scales: ['minor', 'dorian'],
-    drums: 'amen', bass: 'reese', chords: 'pad', lead: 'lead', arp: null,
-    swing: 0, intro: 0.05, fx: { reverb: 1.25, delay: 1, delayBeats: 0.75 },
+    drums: 'amen', bass: 'reese', chords: 'pad', lead: 'hook', arp: null,
+    hook: { instr: 'lead', oct: 72, vel: 0.5, line: true },
+    // (a line in half time, floating over the break: three long notes a bar - on the one, the 'and' of two
+    //  and of three - where eighths and sixteenth runs at 170 under a full echo sounded messy (owner, 2026-11-02))
+    melody: { free: [1, 7], dense: [0.5, 0.5, 0.5], hits: [0, 6, 10], pickup: 14, close: true, moving: true },
+    swing: 0, intro: 0.05, fx: { reverb: 1.25, delay: 0.5, delayBeats: 1 },   // (a quieter echo, on the beat: a dotted one landed a step from the line's next note)
   },
   hardcore: {
     label: 'Happy Hardcore', blurb: '175 bpm, piano stabs and screaming leads',

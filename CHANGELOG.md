@@ -327,6 +327,12 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   the time car's, the boxing match's and the card cascade's shaders compile in
   a third of the time or less, with the same pictures; and the live page
   starts loading the first scene as soon as its boot screen is up.
+- **Jungle, put right** through the music audit: its lead played the shared
+  motif on every chord, up to D7, a third of its notes off the harmony; it
+  sings a line now, in half time over the break - three long notes a bar, on
+  the one and the "ands" of two and three, B5 at most - where a first line of
+  eighths and sixteenth runs sounded messy at 170; its echo is quieter and on
+  the beat. Every check passes.
 - **Cyborg pulse, put right** through the music audit: its brass hook leapt
   with every chord to D#6, under brass triads struck on the same hits; the
   brass sings a slow theme now, long, short, long in each bar of thirteen,

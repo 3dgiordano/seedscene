@@ -3,6 +3,10 @@
 Owner, 2026-10-29: a 0.2.0 WIP on GitHub now; the official 0.2.0 release only
 when docs/PLAN-v0.2.md is closed. Claude does not commit or push.
 
+Owner, 2026-11-02: never commit or push without the owner's review first; the
+commit title and description are reviewed by the owner too; Claude never
+appears as a co-author (no Co-Authored-By or session trailer in any commit).
+
 Where it stands (2026-11-01): the owner committed this session's work as
 23fe562 (eras, displays and sound boards apart) and 2485742 (the screen kept
 on in a programme); `main` was one commit ahead of `origin/main` when checked.
