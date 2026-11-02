@@ -49,4 +49,6 @@ Reworked at the owner's request on 2026-10-29, each confirmed by the owner live:
 
 Still to build, by round of the plan (section 8): round 5 - the YM2149 chip, seven styles, glenz, landscape, the musicdisk player and mode; round 11 - terrace and ten scenes (animeop and skatepunk built) (vector tube, wireframe tank, road crossing, behind-view shooter, cartoon castle, artillery, skate park, football match, kart race, DJ decks); round 12 - done (2026-10-31); rounds 1-4, 6-10, 13, 14 not started.
 
+Outside the plan, at the owner's word (2026-11-01), each checked live and approved: one era per scene and the catalogue in era and seed order (not the order written); eras as spans of years; THE JOURNEY three scenes an era, going on through the lists over replays; displays apart from eras (a named, switchable screen per technology, full resolution, CRT effects only for CRTs); sound boards per scene; the VHS display rebuilt (no tracking band, no snow); the screen kept on in AUTOPLAY and THE JOURNEY.
+
 The next piece is the owner's pick, or Claude's if they leave it open.

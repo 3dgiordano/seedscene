@@ -6,5 +6,6 @@ Put right through the loop and approved by the owner (2026-10-31): fmmetal, anim
 Passing without changes: acid, modjazz, skatepunk.
 
 Still failing (15): dreamwave, chiptune, rave, jungle, hardcore, newbeat, eurodance, gabber, ambient, orchestral, gameboy, heroic, derelict, keygen, triphop.
-Most share the shared lead roles' melody (register, leaps, off the chord); several have a buried lead; arcade and rocknroll a bass rubbing.
+Most share the shared lead roles' melody (register, leaps, off the chord); several have a buried lead (rave, hardcore, eurodance, gabber, orchestral below -9 dB). Latest full run 2026-11-01: docs/MUSIC-AUDIT.md.
 The fix that works: the line (hook.line, or the singer's line) in the style's own settings, one style at a time, with its audit before and after.
+The speed column of docs/MUSIC-AUDIT.md is the idle run of 2026-11-01; a run on 2026-11-02 under the owner's Python jobs measured every style at half speed - run the full audit again (npm run audit:music -- --out docs/MUSIC-AUDIT.md) on a free machine.

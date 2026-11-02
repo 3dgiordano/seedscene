@@ -3,14 +3,18 @@
 Owner, 2026-10-29: a 0.2.0 WIP on GitHub now; the official 0.2.0 release only
 when docs/PLAN-v0.2.md is closed. Claude does not commit or push.
 
-Where it stands (2026-10-30):
+Where it stands (2026-11-01): the owner committed this session's work as
+23fe562 (eras, displays and sound boards apart) and 2485742 (the screen kept
+on in a programme); `main` was one commit ahead of `origin/main` when checked.
+
+Before that (2026-10-30):
 - https://github.com/3dgiordano/seedscene, `main` pushed by the owner (the WIP,
   the MIT license, the repository's preparation)
 - GitHub Pages on, source "GitHub Actions"; the workflow run by hand deployed
   the WIP to https://3dgiordano.github.io/seedscene/ - checked: it opens in
   AUTOPLAY with the seed seedscene, draws, no console errors
 - the `state/` rule in .gitignore, the error text in docs/DEPLOY.md and these
-  notes were committed by the owner (e2ad4a9, 0b2be4b); the tree is clean
+  notes were committed by the owner (e2ad4a9, 0b2be4b); then 74e5d55 (the new scenes and music)
 - the project folder was renamed to C:/David/seedscene on 2026-10-30; the
   remote is unchanged, nothing in the repository refers to the folder path
 

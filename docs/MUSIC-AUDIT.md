@@ -1,10 +1,12 @@
 # Music audit
 
-Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ fail, ~ let off by the style, · not measured. Run `npm run audit:music -- <style>` for one style.
+Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ fail, ~ let off by the style, · not measured; off grid is measured on the seeds that do not swing; speed is wall-clock time on the machine that ran it. Run `npm run audit:music -- <style>` for one style.
+
+**13 of 28 styles pass** (no ✗ anywhere); failing: dreamwave, chiptune, rave, jungle, hardcore, newbeat, eurodance, gabber, ambient, orchestral, gameboy, heroic, derelict, keygen, triphop.
 
 | style | bass in chord | bass rubs | melody on beat | held | held rubs | top | range | leaps >3rd | >6th | repeats | stuck | off grid | echo rubs | melody vs chords | sound vs real | peak | speed |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `dreamwave` | ⚠ 78% | ✓ 3% | ✗ 54% | ✗ 54% | ✗ 22% | ✗ A7 | ✓ 24 | ✗ 44% | ✗ 9% | ⚠ 11% | ✓ 0.6% | · swung | ✓ 34% | ⚠ -5.8 dB | · - | ✓ -1.9 | ✓ 8.0x |
+| `dreamwave` | ⚠ 78% | ✓ 3% | ✗ 54% | ✗ 54% | ✗ 22% | ✗ A7 | ✓ 24 | ✗ 44% | ✗ 9% | ⚠ 11% | ✓ 0.6% | ⚠ 1.5% | ✓ 34% | ⚠ -5.8 dB | · - | ✓ -1.9 | ✓ 8.0x |
 | `chiptune` | ✓ 99% | ✓ 0% | ✗ 48% | · - | · - | ✗ B8 | ✗ 36 | ✗ 58% | ✗ 44% | ✓ 66% | ⚠ 3.9% | ✓ 0.0% | ✓ 18% | ✓ -2.1 dB | · - | ✓ -2.0 | ✓ 7.8x |
 | `acid` | ✓ 96% | ✓ 1% | · - | · - | · - | · - | · - | · - | · - | · - | · - | ✓ 0.0% | · - | · - | · - | ✓ -2.0 | ✓ 4.6x |
 | `trance` | ✓ 87% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ B5 | ✓ 12 | ✓ 2% | ✓ 0% | ✓ 77% | ✓ 0.8% | ✓ 0.0% | ⚠ 58% | ✓ -2.0 dB | · - | ✓ -1.9 | ✓ 5.7x |

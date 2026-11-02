@@ -435,12 +435,14 @@ function markdown(results, opts) {
   const lines = [];
   lines.push('# Music audit', '');
   lines.push(`Seeds ${opts.seeds.join(', ')}; ${opts.duration} s each; ${new Date().toISOString().slice(0, 10)}. ` +
-    '✓ pass, ⚠ warn, ✗ fail, ~ let off by the style, · not measured. Run `npm run audit:music -- <style>` for one style.', '');
+    '✓ pass, ⚠ warn, ✗ fail, ~ let off by the style, · not measured; off grid is measured on the seeds that do not swing; speed is wall-clock time on the machine that ran it. Run `npm run audit:music -- <style>` for one style.', '');
+  const failing = results.filter((r) => Object.values(r.g).includes('✗') || r.say.some((x) => x[0] === '✗'));
+  lines.push(`**${results.length - failing.length} of ${results.length} styles pass** (no ✗ anywhere)${failing.length ? `; failing: ${failing.map((r) => r.style).join(', ')}` : ''}.`, '');
   lines.push('| style | bass in chord | bass rubs | melody on beat | held | held rubs | top | range | leaps >3rd | >6th | repeats | stuck | off grid | echo rubs | melody vs chords | sound vs real | peak | speed |');
   lines.push('|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|');
   for (const r of results) {
     const { m, g } = r;
-    lines.push(`| \`${r.style}\` | ${g.bassInChord} ${fmt(m.bassInChord, 0, '%')} | ${g.bassRub} ${fmt(m.bassRub, 0, '%')} | ${g.melBeat} ${fmt(m.melBeat, 0, '%')} | ${g.melHeld} ${fmt(m.melHeld, 0, '%')} | ${g.melRub} ${fmt(m.melRub, 0, '%')} | ${g.top} ${m.top !== null && m.top !== undefined ? noteName(m.top) : '-'} | ${g.range} ${fmt(m.range)} | ${g.leap} ${fmt(m.leap, 0, '%')} | ${g.leapBig} ${fmt(m.leapBig, 0, '%')} | ${g.repeat} ${fmt(m.repeat, 0, '%')} | ${g.stuck} ${fmt(m.stuck, 1, '%')} | ${r.swung ? '· swung' : g.offGrid + ' ' + fmt(m.offGrid, 1, '%')} | ${g.echoRub} ${fmt(m.echoRub, 0, '%')} | ${g.melMix || '·'} ${fmt(m.melMix, 1, ' dB')} | ${g.timbre} ${r.timbre ? fmt(m.timbre, 0, ' dB') + ' ' + r.timbre.instr : '-'} | ${g.peak || '·'} ${fmt(m.peak, 1)} | ${g.speed || '·'} ${fmt(m.speed, 1, 'x')} |`);
+    lines.push(`| \`${r.style}\` | ${g.bassInChord} ${fmt(m.bassInChord, 0, '%')} | ${g.bassRub} ${fmt(m.bassRub, 0, '%')} | ${g.melBeat} ${fmt(m.melBeat, 0, '%')} | ${g.melHeld} ${fmt(m.melHeld, 0, '%')} | ${g.melRub} ${fmt(m.melRub, 0, '%')} | ${g.top} ${m.top !== null && m.top !== undefined ? noteName(m.top) : '-'} | ${g.range} ${fmt(m.range)} | ${g.leap} ${fmt(m.leap, 0, '%')} | ${g.leapBig} ${fmt(m.leapBig, 0, '%')} | ${g.repeat} ${fmt(m.repeat, 0, '%')} | ${g.stuck} ${fmt(m.stuck, 1, '%')} | ${m.offGrid === null || m.offGrid === undefined ? '· swung' : g.offGrid + ' ' + fmt(m.offGrid, 1, '%')} | ${g.echoRub} ${fmt(m.echoRub, 0, '%')} | ${g.melMix || '·'} ${fmt(m.melMix, 1, ' dB')} | ${g.timbre} ${r.timbre ? fmt(m.timbre, 0, ' dB') + ' ' + r.timbre.instr : '-'} | ${g.peak || '·'} ${fmt(m.peak, 1)} | ${g.speed || '·'} ${fmt(m.speed, 1, 'x')} |`);
   }
   lines.push('');
   for (const r of results) {

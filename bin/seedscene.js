@@ -14,7 +14,7 @@ import { composeScore, MUSIC_PRESETS, MUSIC_NAMES } from '../src/core/music.js';
 import { byEra } from '../src/core/catalogue.js';
 import { DISPLAYS, DISPLAY_NAMES } from '../src/core/displays.js';
 import { BOARDS, BOARD_NAMES } from '../src/core/boards.js';
-import { ERAS, ERA_NAMES, erasForScene } from '../src/core/eras.js';
+import { ERAS, ERA_NAMES, SCENE_ERAS, erasForScene } from '../src/core/eras.js';
 import { resolveChoices, checkChoice } from '../src/core/choose.js';
 import { composeJourney, composeAutoplay, AUTOPLAY_PART } from '../src/core/journey.js';
 import { startServer } from '../tools/server.js';
@@ -114,7 +114,7 @@ ${banner(!!C.b)}
 ${C.b}usage${C.r}
   seedscene live    [options]     run it live in a browser, in real time
   seedscene render  [options]     render a demo to an mp4 file
-  seedscene journey [options]     render THE JOURNEY - every era, ${ERAS[ERA_NAMES[0]].year} to now - to mp4
+  seedscene journey [options]     render THE JOURNEY - every era with scenes, ${ERAS[SCENE_ERAS[0]].year} on - to mp4
   seedscene autoplay [options]    render AUTOPLAY - era after era, ${AUTOPLAY_PART}s a track - to mp4
   seedscene scenes                list the eras, scenes and music styles
   seedscene info    [options]     print what a seed composes, without rendering
@@ -125,7 +125,7 @@ ${C.b}options${C.r}
   --era <name>             auto | ${ERA_NAMES.join(' | ')}   ${C.dim}(default: an era the scene belongs to)${C.r}
   --music <name>           auto | a music style                                 ${C.dim}(default: music of the era)${C.r}
   --res <WxH|preset>       854x480, or 240p 360p 480p 576p 720p 1080p           ${C.dim}(default: 480p)${C.r}
-  --duration <seconds>     length                                ${C.dim}(default: 30 render, 180 live, ${16 * ERA_NAMES.length} journey, 600 autoplay)${C.r}
+  --duration <seconds>     length                                ${C.dim}(default: 30 render, 180 live, ${21 * SCENE_ERAS.length} journey, 600 autoplay)${C.r}
   --born <year>            autoplay: open in the era you were twelve in, and stay near it
   --display <name>         auto | ${DISPLAY_NAMES.join(' | ')}   ${C.dim}(default: each scene its own screen, or its era's)${C.r}
   --board <name>           auto | ${BOARD_NAMES.join(' | ')}   ${C.dim}(default: each scene its own sound board, or its era's)${C.r}
@@ -197,8 +197,8 @@ async function main() {
   if (cmd === 'render' || cmd === 'journey' || cmd === 'autoplay') {
     const programme = cmd === 'render' ? null : cmd;
     const journey = programme === 'journey';
-    const minDur = journey ? 12 * ERA_NAMES.length : 0.5;
-    const dflt = journey ? 16 * ERA_NAMES.length : programme ? 600 : 30;
+    const minDur = journey ? 12 * SCENE_ERAS.length : 0.5;
+    const dflt = journey ? 21 * SCENE_ERAS.length : programme ? 600 : 30;   // 21 s a part: three scenes of seven
     const duration = num(args.duration, dflt, 'duration', minDur, programme ? 36000 : 3600);
     const fps = num(args.fps, 30, 'fps', 1, 120);
     const crf = num(args.crf, 18, 'crf', 0, 51);

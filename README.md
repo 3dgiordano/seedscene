@@ -14,9 +14,9 @@
 **Type a word. Get a demoscene production — music and motion — made just for it.
 Then ride it through half a century, from 1972 to now.**
 
-![THE JOURNEY: every era from the C64 to today, each with its own card, scene and music](docs/gallery/journey.gif)
+![THE JOURNEY: every era from the arcade to the 64k intro, each with its own card, scenes and music](docs/gallery/journey.gif)
 
-`v0.2` · 8 eras · 45 scenes · 28 music styles · 4 sound chips · endless autoplay · runs in your browser · renders to mp4 ·
+`v0.2` · 7 eras · 45 scenes · 28 music styles · 14 displays · 4 sound boards · endless autoplay · runs in your browser · renders to mp4 ·
 no assets, only maths · built with [3dgiordano/agent-plugins](https://github.com/3dgiordano/agent-plugins)
 
 </div>
@@ -32,11 +32,11 @@ shades of green. And the intros — before the game, sometimes better than the
 game: copper bars, a sine scroller, a plasma melting through a palette, a tune
 you can still hum.
 
-SEEDSCENE brings all of it back. Every machine gets its **era**: its own
-resolution, its own palette, its own dither, its own screen — an arcade
-monitor glowing in a dark room, a C64 on a TV,
-an Amiga on a PAL monitor, VGA in mode 13h, a 32-bit console on composite, a
-handheld LCD, the glossy 64k intros of the 2000s, today's shader art. And every
+SEEDSCENE brings all of it back. Every stretch of years gets its **era** - its
+scenes and its music - and every scene the **screen** it was seen on: its
+palette, its dither, its glass - an arcade monitor glowing in a dark room, a C64
+on a TV, an Amiga on a PAL monitor, VGA in mode 13h, a phone's green LCD, a film
+on videotape, the glossy 64k intros of the 2000s. And every
 demo it plays has never been seen before — composed on the spot, from the word
 you gave it.
 
@@ -61,7 +61,7 @@ lets the sound start only after a key or a click). Then `H` shows every key.
 | | |
 |---|---|
 | **[AUTOPLAY](https://3dgiordano.github.io/seedscene/)** | the endless channel: a new track every forty seconds, era after era |
-| **[THE JOURNEY](https://3dgiordano.github.io/seedscene/?seed=seedscene&journey=1)** | every era in turn, 1972 to now |
+| **[THE JOURNEY](https://3dgiordano.github.io/seedscene/?seed=seedscene&journey=1)** | every era with scenes of its own in turn, 1972 to the 2000s |
 | **[Born in 1985](https://3dgiordano.github.io/seedscene/?seed=seedscene&autoplay=1&born=1985)** | AUTOPLAY from the era you were twelve in - change the year in the address, or press `B` |
 | **[Greetings](https://3dgiordano.github.io/seedscene/?seed=hyperspace&scene=cracktro&era=amiga#greets=ANA,LUIS,THE+3+A.M.+CODERS)** | the cracktro greeting your friends - press `G` for your own names |
 | **One era** | [1972–1981](https://3dgiordano.github.io/seedscene/?seed=insertcoin&era=1972) · [1982–1989](https://3dgiordano.github.io/seedscene/?seed=readyrun&era=1982) · [1990–1993](https://3dgiordano.github.io/seedscene/?seed=disk2&era=1990) · [1994–1996](https://3dgiordano.github.io/seedscene/?seed=soundblaster&era=1994) · [1997–1999](https://3dgiordano.github.io/seedscene/?seed=pressstart&era=1997) · [2000–2009](https://3dgiordano.github.io/seedscene/?seed=precalc&era=2000) |
@@ -79,8 +79,8 @@ Or pick the word, the era, the music:
 
 ```bash
 node bin/seedscene.js live    --seed yourname --era amiga
-node bin/seedscene.js render  --seed yourname --scene vectorballs --era dos --music gabber
-node bin/seedscene.js journey  --seed yourname          # every era, 1972 to now → out/yourname-journey.mp4
+node bin/seedscene.js render  --seed yourname --scene vectorballs --era 1990 --music gabber
+node bin/seedscene.js journey  --seed yourname          # every era, 1972 to the 2000s → out/yourname-journey.mp4
 node bin/seedscene.js autoplay --seed yourname --duration 3600   # an hour of it → out/yourname-autoplay.mp4
 ```
 
@@ -90,26 +90,28 @@ on screen (and `H` again to hide it):
 | key | |
 |---|---|
 | `O` | **AUTOPLAY** — a new track every 40 seconds, scenes cut on the music, somewhere new each time |
-| `T` | **THE JOURNEY** — every era in turn, 1972 to now |
+| `T` | **THE JOURNEY** — every era with scenes of its own in turn, 1972 to the 2000s |
 | `B` | **BORN IN** — type the year you were born: AUTOPLAY opens in the era you were twelve in, and stays near it |
 | `G` | **GREETINGS** — type a few names: they scroll in the greetings, and stay on this screen |
-| `E` · `1` … `7` | travel to the next era, or jump to one: 1972–1981, 1982–1989, 1990–1993, 1994–1996, 1997–1999, 2000–2009, 2010–now |
+| `E` · `1` … `7` | travel to the next era (`E` passes through AUTO too), or jump to one: 1972–1981, 1982–1989, 1990–1993, 1994–1996, 1997–1999, 2000–2009, 2010–now - and to its first scene in your seed's order (2010–now, with none yet, keeps the scene) |
 | `D` | display: AUTO (each scene its own screen), or force one screen on everything - B/W, MONO, C64, VHS, EGA, SNES, GAME BOY… |
 | `C` | sound board: AUTO (each scene its own), or force one on all the music - HI-FI, PAULA, OPL3 FM, AWE32 |
 | `space` · `←` `→` | next / previous scene — era by era, oldest first, each era's scenes in the order your seed deals them; in AUTOPLAY or THE JOURNEY, the next / previous track |
 | `↑` `↓` | change the music style — the era's own first, in your seed's order, then the other eras' |
 | `S` | a brand-new random seed |
-| `M` | **the SETUP menu** — type your own seed; pick the scene, the era, the music, the resolution, the length, the sound; copy the command that reproduces it |
+| `M` | **the SETUP menu** — type your own seed; pick the scene, the era, the music, the display, the sound board, the resolution, the length, the titles, sound on or off; copy the command that reproduces it |
 | `A` | **the About part** |
 | `P` | pause |
 | `V` | sound on / off — off, the demo plays on in silence, the picture still on the beat |
 | `F` | fullscreen (do it) |
 | `I` | the info panel |
 | `H` | every key, on screen |
+| `Esc` | close what is open - the keys, the menu, About - or leave AUTOPLAY or THE JOURNEY |
 
 Everything you change is kept in the page address, so a reload brings back
 the same demo — and **COPY LIVE COMMAND** / **COPY MP4 COMMAND** in the menu
-give you the exact line to share it or render it to a video.
+give you the exact line to share it or render it to a video (greetings stay out
+of it: they are kept only in your address).
 
 ## Seven eras
 
@@ -117,16 +119,19 @@ An era is a span of years, not a machine: the scenes and the music that came
 out then, and the display most of its things were seen on (see **Displays**
 below). A scene belongs to the era of its year - a game or a film to the year
 it came out, a demo effect to the years the scene made it famous (a few to two
-or three, each seen through that era's display) - and is shown only there; a
-game or a film keeps its own screen whatever the era. Leave it on `auto` and
-the seed picks an era the scene belongs to, then music of that era; choose only
-the era, and the seed picks one of that era's own scenes. An era is chosen by
+or three, each seen through that era's display); a game or a film keeps its
+own screen whatever the era. Leave it on `auto` and the seed picks an era the
+scene belongs to, then music of that era; choose only the era, and the seed
+picks one of that era's own scenes. Live, choosing an era (`E`, `1`–`7`, the
+menu) goes to that era's first scene in the seed's order. On the command line
+or in the address, a scene you name yourself is shown in whatever era you name
+with it - its music and its display then the era's. An era is chosen by
 the year it starts (`--era 1990`), any year inside it (`--era 1995`), or the
 machine name it once had (`--era amiga`). The last one has no scenes of its own
 yet: its screen shows any scene, and THE JOURNEY and AUTOPLAY pass it by until
 it has some.
 
-| years | | its display | its scenes | the music it brings |
+| years | | its display (scenes may have their own) | its scenes | the music it brings |
 |---|---|---|---|---|
 | **1972–1981** | the first video games | ARCADE | paddles, invaders, rocks, maze, lcd | arcade attract, cyborg pulse, derelict ship, synth-pop |
 | **1982–1989** | home computers, arcades and the video shop | C64 | lightcycles, pyramid, boxer, bricks, outrun, scanner, timecar, moonbike, dottunnel, plasma, ball | SID chiptune, synth-pop |
@@ -149,7 +154,10 @@ default) every scene is seen through the screen it belongs to: a game through
 its own machine's (Pong on a black-and-white set, the arcade games on the
 arcade monitor, the phone's snake on the phone, the 16-bit space shooter on its
 console), a film or a television series
-through the videotape it was watched on, the demo effects through their era's.
+through the videotape it was watched on, the LCD game as it draws its own
+device (MODERN). The demo effects go through their era's, with three
+exceptions: the bouncing ball on the AMIGA it was made on, and the card cascade
+and the bouncing lines on the PC's VGA.
 Press **`D`** (or use the menu, `?display=` in the address, `--display` on the
 command line) to force one display on everything - today's scenes on
 yesterday's screens.
@@ -175,11 +183,13 @@ yesterday's screens.
 
 As a display is the screen a thing was seen on, a **sound board** is what its
 music came out of. On **AUTO** (the default) each scene plays on its own: a
-film or a series on the studio's full quality, the Amiga's ball on its sample
-chip, the PC desktop's card game and screensaver on the sound card; every
-other scene on its era's (the Amiga's samples in 1990–1993, the PC's FM or
-wavetable card in 1994–1996, wavetable in 1997–1999, the synthesizer's own
-voices elsewhere). The style of music stays the seed's and the era's: the
+film or a series always on the studio's full quality, and so a game whose machine has
+no board here (the 16-bit space shooter, the phone's snake, the LCD game); the
+Amiga's ball on its sample chip, the PC desktop's card game and screensaver on
+the sound card; every other scene on its era's (the Amiga's samples in
+1990–1993, the PC's FM or wavetable card in 1994–1996, wavetable in 1997–1999 -
+though both of that era's scenes have boards of their own, so on AUTO it is heard
+there only when forced - the synthesizer's own voices elsewhere). The style of music stays the seed's and the era's: the
 board is only what plays it. Press **`C`** (or use the menu, `?board=` in the
 address, `--board` on the command line) to force one board on all the music.
 In AUTOPLAY and THE JOURNEY a track plays on its first scene's board - a board
@@ -196,11 +206,14 @@ cannot change in the middle of a tune.
 
 Press **`T`** live, or run `seedscene journey`, and SEEDSCENE plays a trackmo
 through every era with scenes of its own, oldest first. Each part is its own little production
-— three of its era's scenes (fewer where it has fewer), cut where the music turns, and its own music at
+— up to three of its era's scenes (fewer where it has fewer, or where a short
+render leaves a part too short for them), cut where the music turns, and its own music at
 its own tempo — and each opens with the line
-its machine would have greeted you with: `INSERT COIN`, `LOAD "JOURNEY",8,1`,
-`INSERT DISK 2`, `C:\SEEDSCENE> JOURNEY.EXE`, `PRESS START`, `POWER ON`,
-`PRECALCULATING...`, `COMPILING SHADERS... DONE`. One seed, 1972 to now.
+its machines would have greeted you with: `INSERT COIN`, `LOAD "JOURNEY",8,1`,
+`INSERT DISK 2`, `C:\SEEDSCENE> JOURNEY.EXE`, `PRESS START`,
+`PRECALCULATING...`. One seed, 1972 to the 2000s. Left playing, it goes round
+again, each pass with the next scenes of every era's list and its next music,
+until all of them have come round.
 
 ## AUTOPLAY
 
@@ -231,23 +244,23 @@ an mp4, the same every time for the same word.
 ### Between the tracks
 
 The programmes have their own sounds between the tracks, played over the mix:
-each era opens THE JOURNEY with a chime of its own, in the spirit of how its
-machines started - a coin and a credit for the arcade, a SID arpeggio for
-the C64, the floppy drive stepping for the Amiga, the beep of a PC that has
-checked itself, a deep swell for the 32-bit console, a two-note ping for
-the handheld, a soft bell for now - on the incoming track's key. A handheld
-track starts with its cartridge clicking in. And the way into the
-media-player years is a dial-up modem's handshake, as the riser of the mix:
+each era opens THE JOURNEY with a chime of its own, in the spirit of how the
+screen it was seen on started - a coin and a credit for the arcade years, a SID
+arpeggio for the C64's, the floppy drive stepping for the Amiga's, the beep of a
+PC that has checked itself for the DOS years, a deep swell for the 3D
+consoles' - on the incoming track's key. A track whose scene is on the Game
+Boy's screen starts with its cartridge clicking in (none is yet). And the way into the
+2000s is a dial-up modem's handshake, as the riser of the mix:
 the dial tone, the number, the answer, the 2100 Hz tone and its snaps, the
 probing, the hiss - and silence, the line connected, on the drop.
 
 ### Born in
 
 Press **`B`** and type the year you were born. AUTOPLAY opens in the era you
-were twelve in - born in 1985, the 32-bit console of 1997 - its card saying
+were twelve in - born in 1985, 1997–1999 - its card saying
 so (`BORN 1985   TWELVE IN 1997`), and keeps coming back to it every other
 block; the eras between are drawn from the ones nearest your year, so a 1985
-childhood hears mostly the console, the Y2K PC and DOS, the Amiga now and then.
+childhood hears mostly 1994–1996 and 2000–2009, 1990–1993 now and then.
 `B` again takes you back to your demo; the year stays in the page's address,
 so a reload comes back to it. Rendered:
 `seedscene autoplay --born 1985`.
@@ -315,7 +328,7 @@ egg hatches into a snake that chases; a ball on its cube and it stops and
 swears in a balloon, and with the snake close behind it rides a disc to the
 top and the snake, following, falls.
 
-Four of them play on the music's own grid, so their big moments land on it.
+Four of those nine play on the music's own grid, so their big moments land on it.
 In **paddles** every return falls on a beat, and on an accent - the crash
 that opens a phrase, the drop - the paddle the ball is heading for misses
 and is blown apart on that very note; the other side scores. In **invaders**
@@ -405,15 +418,17 @@ plays, or in the menu:
 | `starpilot` | **star pilot**: 16-bit space opera — driving octave bass, a brass hook, orchestra hits, lasers in key, the minor sixth and seventh climbing home | 140–158 |
 | `modjazz` | **tracker jazz**: the demo-party jazz tune — a walking slap bass, electric-piano comping on the off-beats, a flute that improvises, the ride swinging | 100–126 |
 | `fmmetal` | **FM metal**: a DOS shooter at full tilt — palm-muted power chords, a double kick when it peaks, a guitar that solos | 150–178 |
-| `midiquest` | **MIDI quest**: an adventure on a sound card — strings and choir, a harp running up and down, a flute, the timpani of a long road | 84–108 |
+| `midiquest` | **MIDI quest**: an adventure on a sound card — strings and choir, a harp running up and down, a flute, the timpani of a long road | 92–112 |
 | `keygen` | **keygen**: the crack intros' tracker tunes, from the patterns of forty real ones — chords arpeggiated on the tracker's tick, a squelchy lead sliding into its notes with an echo channel a few rows behind, a bouncing bass, drum samples; 125 bpm most often, the tracker's default | 120–140 |
 | `triphop` | **trip-hop**: the 90s Bristol sound — a slow break pitched down and shuffled like an MPC, the kick leading into the beats, a big roomy snare and a side-stick, the ride on the upbeats; a deep sliding bass, dark film-score strings, a Rhodes, a theremin, a record scratched at the end of a phrase, the crackle under it all | 68–90 |
 | `animeop` | **anime opening**: the 90s anime opening, in the anison's form — an intro, a verse, a prechorus climbing into a chorus you could sing - mostly steps, an arch to each phrase, the same tune every time it returns, the brass joining it in the last one - the Royal Road progression under it, often a minor third up from the verse, and the last chorus a step higher still; J-rock drums, driving bass, palm-muted then open guitars, brass stabs | 140–170 |
 | `skatepunk` | **skate punk**: the skateboarding games' punk — ska verses, the guitar chopping on the off-beats over a backbeat and the bass walking; punk choruses, the snare on every "and", the kick on the beat and the sixteenth after (or doubled before the snare), the hats open, power chords hammered on the eighths; a synth chorus shouted like a gang, a few notes, the same each time | 180–200 |
 
 Each one is arranged like a real piece — intro, build, main part, a breakdown
-with a riser, a crash into the drop, an outro. The newest five are built
-around a **hook**: a two-bar call and answer the seed writes, landing on the
+with a riser, a crash into the drop, an outro. Many are built around a
+**hook** - trance, synthwave, arcade attract, cyborg pulse, synth-pop, star
+pilot, tracker jazz, FM metal, MIDI quest, chip rock and roll among them: a
+two-bar call and answer the seed writes, landing on the
 chord on the strong beats and coming home every fourth bar, so it sticks. Every sound is synthesized from
 scratch in plain JavaScript: 909, gabber and break kicks, claps, a 303, a reese,
 hoovers, supersaws, a rave piano, a house organ, strings, choir, timpani,
@@ -424,18 +439,17 @@ borrowed from anyone: the moods of the arcades, the sci-fi scores and the
 charts are homages to sounds, not copies of songs. The chord loops are the
 public-domain kind every pop song shares; every tune on top is the seed's.
 
-**The sound chips.** A score says which notes to play; the era says what plays
-them. The C64, the arcade, the handheld and the later eras use SEEDSCENE's
-own synthesizer, as before. The others play the same score on the sound of
-their machine:
+**The sound chips.** A score says which notes to play; the sound board says what
+plays them (see **Sound boards**). Three boards are chips, each playing the same
+score on the sound of its machine:
 
-| era | chip | how it sounds |
+| board | eras | how it sounds |
 |---|---|---|
-| `amiga` | **Paula** | every instrument sampled once, as a tracker musician would, cut to 8 bits at about 16.7 kHz (the drums at 28 kHz) and played back by stepping through the sample faster or slower with no smoothing — the grain and the aliasing of a MOD. Sustained sounds loop. Drums and lead hard left, bass and chords hard right, through the A500's output filter, almost dry. |
-| `dos` | **Sound Blaster 16 (OPL3)** or **AWE32**, by the seed | OPL3: two-operator FM with the chip's seven waveforms and operator feedback, FM drums, and dry, like a DOS game. AWE32: wavetable instruments — a grand piano, string and brass sections, a choir, plucked bass and guitar, an acoustic kit — with the card's chorus and reverb. |
-| `console` | **AWE32-style wavetable** | the sampled sound of the CD-era consoles |
+| `paula` **Paula** | 1990–1993 | every instrument sampled once, as a tracker musician would, cut to 8 bits at about 16.7 kHz (the drums at 28 kHz) and played back by stepping through the sample faster or slower with no smoothing — the grain and the aliasing of a MOD. Sustained sounds loop. Drums and lead hard left, bass and chords hard right, through the A500's output filter, almost dry. |
+| `opl3` **Sound Blaster 16 (OPL3)** or `awe32` **AWE32** | 1994–1996, by the seed | OPL3: two-operator FM with the chip's seven waveforms and operator feedback, FM drums, and dry, like a DOS game. AWE32: wavetable instruments — a grand piano, string and brass sections, a choir, plucked bass and guitar, an acoustic kit — with the card's chorus and reverb. |
+| `awe32` **AWE32-style wavetable** | 1997–1999 | the sampled sound of the CD-era consoles |
 
-Hear all twenty-eight back to back, each on the chips of its eras:
+Hear all twenty-eight back to back, each on the boards of its eras:
 
 ```bash
 npm run sampler        # → out/music-sampler.mp3
@@ -466,7 +480,7 @@ renderer steps frame by frame and draws in software, so your graphics card
 cannot change a pixel. THE JOURNEY and AUTOPLAY keep the same promise.
 
 ```bash
-npm test     # renders the same seed twice and compares the files
+npm test     # the score, the audio, the choices, the programmes, the displays and boards - and the same seed rendered twice, compared
 ```
 
 That is what makes a seed worth sharing.
@@ -474,15 +488,15 @@ That is what makes a seed worth sharing.
 ## For the tinkerers
 
 Everything is web technology: WebGL2 fragment shaders for the scenes, a post
-pass that draws each era's screen, an AudioWorklet for live sound, headless
+pass that draws each display's screen, an AudioWorklet for live sound, headless
 Chrome and ffmpeg for the mp4. The visuals never listen to the audio — the
 composer hands them each instrument's envelope directly — so the zoom lands on
 exactly the frame the kick does, live or rendered.
 
 ```
 seed ──> scene · era · music ──> composeScore ──┬──> Synth     ──> samples  ──> speakers / wav
-                                                └──> Features  ──> uniforms ──> scene at the era's resolution
-                                                                               ──> era screen ──> pixels
+                                                └──> Features  ──> uniforms ──> scene, full resolution
+                                                                               ──> display's screen ──> pixels
 ```
 
 <details>
@@ -505,12 +519,12 @@ seedscene info    [options]     show what a seed composes
 | `--display <name>` | `auto` `bw` `arcade` `mono` `c64` `vhs` `ega` `amiga` `vga` `snes` `composite` `gameboy` `nokia` `svga` `modern` | the screen: on `auto` each scene its own, or its era's |
 | `--board <name>` | `auto` `hifi` `paula` `opl3` `awe32` | the sound board: on `auto` each scene its own, or its era's |
 | `--music <name>` | `auto` or one of the twenty-eight styles | music of the era |
-| `--res <WxH\|preset>` | `854x480`, or `240p` `360p` `480p` `576p` `720p` `1080p` | `480p` |
-| `--duration <seconds>` | length | 30 render, 180 live, 128 journey, 600 autoplay |
-| `--born <year>` | autoplay: open in the era you were twelve in, and stay near it | — |
+| `--res <WxH\|preset>` | `854x480`, or `240p` `360p` `480p` `576p` `720p` `1080p` (or `--width` and `--height`) | `480p` |
+| `--duration <seconds>` | length | 30 render, 180 live, 126 journey (21 s an era, three scenes each), 600 autoplay |
+| `--born <year>` | autoplay only: open in the era you were twelve in, and stay near it | — |
 | `--greets "A, B"` | names to greet in the scroller and the cracktro, up to eight | — |
 | `--fps <n>` | frames per second | 30 |
-| `--out <file.mp4>` | output path | `out/<seed>-<scene>.mp4` |
+| `--out <file.mp4>` | output path | `out/<seed>-<scene>.mp4`; `out/<seed>-journey.mp4`, `out/<seed>-autoplay.mp4`, `out/<seed>-born<year>.mp4` |
 | `--crf <n>` | h.264 quality, lower is better | 18 |
 | `--format <png\|jpeg>` | frame transfer format; jpeg is faster | png |
 | `--gpu` | draw on the GPU: faster, but no longer identical across machines | off |
@@ -534,13 +548,15 @@ bucket, nginx — at its root or in a subfolder:
 npm run build:web
 ```
 
-That writes `dist/` (about 500 KB, no build step, no dependencies). Its
+That writes `dist/` (about 550 KB, no build step, no dependencies). Its
 `index.html` opens the live page: a visitor arriving with no seed of their own
 gets the seed `seedscene`, straight into AUTOPLAY. A link with a seed opens
 that seed's demo instead, and every setting of the live page works in the
 address the same way (`?seed=aurora&scene=cracktro`, `&autoplay=1` to start in
 AUTOPLAY, `&journey=1` in THE JOURNEY, `&born=1985` born in a year,
-`#greets=ANA,LUIS` with greetings, `&sound=0` to start silent); the address keeps what the viewer
+`#greets=ANA,LUIS` with greetings, `&sound=0` to start silent, `&display=` and
+`&board=` to force a screen or a sound board, `&saver=<seconds>` for the
+screensaver - 60 by default, 0 off); the address keeps what the viewer
 changes, so a reload or a shared link brings back the same demo.
 
 On GitHub, publishing a release does all of it: a workflow checks the
@@ -557,7 +573,9 @@ worklet only on secure pages (or on `localhost`).
 bin/seedscene.js      the command line
 src/brand.js          the logo, the name and the About part texts
 src/core/eras.js      the eras: spans of years, their scenes and music
-src/core/displays.js  the displays: resolution, palette, dither, screen
+src/core/displays.js  the displays: palette, dither, screen and signal, each scene's own
+src/core/boards.js    the sound boards, each scene's own
+src/core/catalogue.js the scenes and music in era order, dealt by the seed
 src/core/choose.js    what 'auto' means: scene, then era, then music
 src/core/journey.js   THE JOURNEY and AUTOPLAY: tracks mixed beat on beat
 src/core/sims.js      the games under the game scenes, and the scenes that move with the music
@@ -566,7 +584,7 @@ src/core/music.js     composer, twenty-eight styles, synthesizer, feature track
 src/core/chips.js     the sound chips: Paula, OPL3, AWE32
 src/core/visual.js    renderer, palette, title plate, scroller, era cards
 src/core/gl.js        WebGL2 helpers
-src/styles/index.js   the forty-five scenes, the 3D stage, the About part, the era screen
+src/styles/index.js   the forty-five scenes, the 3D stage, the About part, the display's screen
 src/app.js            ties the music and the picture together
 web/index.html        the live page
 web/boot.js           the C64 boot screen
@@ -574,10 +592,13 @@ web/menu.js           the SETUP menu
 web/live.js           real-time loop, locked to the synth clock
 web/worklet.js        AudioWorklet host for the synth
 web/render.html       the page headless Chrome draws into
+web/render.js         its script
 tools/render.js       audio + frames + ffmpeg → mp4
+tools/wav.js          the soundtrack as a WAV for ffmpeg
 tools/gallery.js      regenerates the images on this page (npm run gallery)
 tools/sampler.js      every music style in one mp3 (npm run sampler)
 tools/music-audit.js  every music style checked as music (npm run audit:music)
+tools/timbre-refs.js  real instruments' spectra the audit compares a sound with
 tools/server.js       local static server
 tools/build-web.js    the live demo as a static site (npm run build:web)
 .github/workflows/    publishing the site to GitHub Pages on each release

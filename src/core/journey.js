@@ -35,6 +35,7 @@ import { composeScore, scoreTempo, Features, Synth, SAMPLE_RATE, prepareChip } f
 import { ERAS, SCENE_ERAS as ERA_NAMES } from './eras.js';   // (the eras with scenes of their own)
 import { ERA_CHIPS } from './chips.js';
 import { boardFor, chipOfBoard } from './boards.js';
+import { SCENE_DISPLAY } from './displays.js';
 import { Rng } from './rng.js';
 
 /** How each era is announced: a nod to how it used to start. */
@@ -381,15 +382,15 @@ export class Programme {
   /**
    * The sounds between the tracks for a part, on the part's own clock (0 is where it starts
    * sounding, inSec where its slot opens): a modem's handshake through the mix into the
-   * media-player years (the Y2K PC stands in for them), the line connecting on the drop; a
-   * cartridge going in as a handheld track starts; and in THE JOURNEY, the era's chime as
-   * it opens, on the incoming track's key.
+   * years from 2000 (the Y2K PC stands in for the media-player years), the line connecting on
+   * the drop; a cartridge going in as a track starts whose scene is on the Game Boy's screen;
+   * and in THE JOURNEY, the era's chime as it opens, on the incoming track's key.
    */
   between(pl, inSec, audioSec, meta) {
     const events = [];
     const at = (sec) => Math.round(sec * SAMPLE_RATE);
-    if (pl.era === 'y2k' && pl.eraChanged && inSec > 0) events.push({ t: 0, instr: 'modem', note: 0, vel: 0.8, dur: at(inSec) });
-    if (pl.era === 'handheld') events.push({ t: 0, instr: 'cartridge', note: 0, vel: 0.8, dur: at(0.4) });
+    if (String(pl.era) === '2000' && pl.eraChanged && inSec > 0) events.push({ t: 0, instr: 'modem', note: 0, vel: 0.8, dur: at(inSec) });
+    if (SCENE_DISPLAY[pl.style] === 'gameboy') events.push({ t: 0, instr: 'cartridge', note: 0, vel: 0.8, dur: at(0.4) });
     if (this.kind === 'journey' && pl.eraChanged && ERAS[pl.era].display !== 'svga') {
       events.push({ t: at(inSec), instr: 'chime', kit: CHIME_OF[ERAS[pl.era].display] || 'bell', note: 60 + meta.root, vel: 0.55, dur: at(2.5) });
     }

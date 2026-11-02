@@ -3,6 +3,9 @@
 The live demo is a static site (`npm run build:web` → `dist/`). On GitHub it
 is published by a workflow, [.github/workflows/pages.yml](../.github/workflows/pages.yml):
 **every release published on GitHub builds the site and deploys it to Pages.**
+Until the first release, the site at https://3dgiordano.github.io/seedscene/
+serves the work in progress from `main`, deployed by running the workflow by
+hand (Actions → the workflow → Run workflow).
 
 ## How it is laid out
 
@@ -14,7 +17,8 @@ is published by a workflow, [.github/workflows/pages.yml](../.github/workflows/p
   the docs and their gallery, the release notes, the package files, this
   workflow, the agent's notes (`.agent/`, where the work stands, so it can
   be picked up from any clone) and `.claude/launch.json` (the live preview,
-  silent, for agent sessions) and the MIT `LICENSE` - 88 files, about 25 MB.
+  silent, for agent sessions) and the MIT `LICENSE` - about a hundred files,
+  some 28 MB, most of it the gallery.
   `.gitattributes` stores text with LF on every machine, so a clone is the
   same on Windows, Linux and macOS, and what the workflow builds is what was
   committed.
@@ -31,12 +35,14 @@ is published by a workflow, [.github/workflows/pages.yml](../.github/workflows/p
      not published;
   4. builds the site (`npm run build:web`) and deploys it.
 
-The site is served at `https://<owner>.github.io/<repository>/` - a
-subfolder, which the site handles (it was tested served under `/seedscene/`).
+The site is served at `https://<owner>.github.io/<repository>/` - here
+https://3dgiordano.github.io/seedscene/, a subfolder, which the site handles.
 It opens straight into AUTOPLAY with the seed `seedscene`; a link with a seed
 opens that seed's demo. Pages serves over HTTPS, which the sound needs.
 
 ## Once: setting it up
+
+Done for this repository (2026-10-29/30); kept for reference.
 
 1. Create the repository on GitHub (for example `3dgiordano/seedscene`) and
    push `main` to it:

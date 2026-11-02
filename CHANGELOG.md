@@ -3,25 +3,27 @@
 ## 0.2.0 — in development
 
 The release that turns the tool into **SEEDSCENE**: a name, a personality,
-a Commodore 64 front door, eight eras of computing from the 1979 arcade to
-now, twenty-eight styles of music, an endless AUTOPLAY channel, and a live mode you
+a Commodore 64 front door, seven eras of computing from 1972 to now,
+forty-five scenes, twenty-eight styles of music, fourteen displays and four
+sound boards, an endless AUTOPLAY channel, and a live mode you
 can drive entirely from the keyboard.
 
 ### Added
 
-- **Eras.** Eight screens a demo can be seen through — `arcade` (1979), `c64` (1982),
-  `amiga` (1990), `dos` (1994), `console` (1997), `handheld` (1998),
-  `y2k` (2002) and `modern` (2024) — each with its own resolution, palette,
-  dither and display: the arcade monitor's few bright colours and heavy
-  bloom, the C64's 16 colours and double-wide pixels, the
-  Amiga's 12-bit banding, VGA's 256-colour dither, the 32-bit consoles'
-  15-bit dither on composite, four LCD greens, the 64k-intro glow, modern
-  grain. `--era`, `E` and `1`–`8` live, or `auto`: the seed picks an era the
+The eras named in the entries below are where each scene was first put; each
+scene now has one era, a span of years (see **Eras are spans of years** and
+**One era per scene** under Changed, and the README's scene table).
+
+- **Eras.** Seven spans of years - 1972–1981, 1982–1989, 1990–1993,
+  1994–1996, 1997–1999, 2000–2009, 2010–now - each with its scenes, its music
+  and the display most of its things were seen on (see **Displays** under
+  Changed). `--era` (by the year it starts, any year inside it, or its old
+  machine name), `E` and `1`–`7` live, or `auto`: the seed picks an era the
   scene belongs to, then music of that era.
 - **THE JOURNEY** (`T` live, `seedscene journey` for an mp4): a trackmo
-  through all eight eras, oldest first — each part with its own scene and
-  music at its own tempo, opened by a card with the line its machine would
-  have greeted you with. Each era's music mixes into the next, deterministic like
+  through every era with scenes of its own, oldest first — each part with up
+  to three of its scenes and music at its own tempo, opened by a card with the
+  line its machines would have greeted you with. Each era's music mixes into the next, deterministic like
   everything else.
 - **AUTOPLAY** (`O` live, `seedscene autoplay` for an mp4 of any length up
   to ten hours): an endless channel — a new track every forty seconds, three
@@ -43,8 +45,8 @@ can drive entirely from the keyboard.
   turning ship in phosphor lines), `maze` (a chomper lapping a mirrored
   neon maze, wisps that flee after a power dot), `bricks` (a neon wall
   knocked down and rebuilt) and `lightcycles` (riders leaving walls of
-  light on a neon grid). They also appear in the C64, Amiga, console,
-  handheld, Y2K and modern eras.
+  light on a neon grid). `paddles`, `invaders`, `rocks` and `maze` are of
+  1972–1981; `bricks` and `lightcycles` of 1982–1989.
 - **The stage.** The flat game scenes now play on a board floating in
   space, with a camera that rides the music: a new angle every eight bars, a
   punch in on the kick, a lean on the snare, a neon frame that breathes with
@@ -101,12 +103,13 @@ can drive entirely from the keyboard.
   synthwave sunset) and `morph` (a raymarched solid melting between shapes).
 - **The name SEEDSCENE** (*seed* + *demoscene*) and its command,
   `seedscene`, replacing the working name `music-gen-video` and `mgv`.
-- **Sound chips by era.** The same score plays on the sound of its machine:
-  Paula's 8-bit samples on the Amiga (every instrument sampled once, played
-  back with no smoothing, hard-panned, almost dry), a Sound Blaster 16's
-  two-operator FM or an AWE32's wavetable with chorus and reverb in DOS (the
-  seed picks the card), wavetable on the 32-bit consoles. The C64, arcade,
-  handheld and later eras keep the synthesizer's own voices, note for note.
+- **Sound chips.** The same score plays on the sound of a machine: Paula's
+  8-bit samples (every instrument sampled once, played back with no
+  smoothing, hard-panned, almost dry) in 1990–1993, a Sound Blaster 16's
+  two-operator FM or an AWE32's wavetable with chorus and reverb in 1994–1996
+  (the seed picks the card), wavetable in 1997–1999; the other eras keep the
+  synthesizer's own voices, note for note. Which one a scene plays on is now
+  its sound board (see **Sound boards** under Changed).
 - **Three sound-card styles**: `modjazz` (tracker jazz: a walking slap bass,
   electric-piano comping, a flute, a swinging ride), `fmmetal` (palm-muted
   power chords, a double kick, a soloing guitar) and `midiquest` (strings, a
@@ -412,10 +415,10 @@ can drive entirely from the keyboard.
   last chorus pumped up a step or two; J-rock drums, a driving bass,
   palm-muted guitars in the verse and open power chords in the chorus.
 - **Between the tracks**: in THE JOURNEY each era opens on a chime of its
-  own, in the spirit of its machines' start-up (a coin, a SID arpeggio, the
-  floppy drive, the POST beep, a swell, a ping, a bell), on the incoming
-  track's key; a handheld track starts with a cartridge clicking in; and the
-  mix into the media-player years (Y2K) rises on a dial-up handshake, built
+  own, in the spirit of its screen's start-up (a coin, a SID arpeggio, the
+  floppy drive, the POST beep, a swell), on the incoming track's key; a track
+  whose scene is on the Game Boy's screen starts with a cartridge clicking in
+  (none is yet); and the mix into the 2000s rises on a dial-up handshake, built
   from an annotated spectrogram of one, the line connecting on the drop. They
   play over the mix, outside its fades and filters.
 - **Screensaver** (live): after a minute without input AUTOPLAY takes the
@@ -485,7 +488,7 @@ can drive entirely from the keyboard.
   allocations, cached pitches and filter coefficients), and the next track is
   composed a slice per audio block while only one track plays, never all at
   once in the middle of a mix. The sound is the same, bit for bit.
-- **Twenty-four music styles**, chosen by the era or with `--music`:
+- **Music styles**, chosen by the era or with `--music` - twenty-eight in all, these and the ones below:
   `chiptune` (C64 SID), `newbeat`, `rave` (Amiga, 1992), `orchestral`
   (tracker strings, choir, timpani, brass), `dreamwave`, `acid` (303),
   `gabber`, `ambient`, `eurodance`, `jungle`, `heroic` (game soundtrack),
@@ -513,11 +516,12 @@ can drive entirely from the keyboard.
   mirrored sine scroller, raster bars over a checkerboard tunnel, and its own
   soundtrack. `A` again returns to your demo untouched.
 - **A C64-style SETUP menu** (`M`): type any seed, and change the scene,
-  music, resolution, length and titles/scroller while the demo plays. It
+  era, music, display, sound board, resolution, length and titles/scroller
+  while the demo plays. It
   copies the live or mp4 command that reproduces what is on screen. Settings
   live in the page address, so a reload keeps them.
 - **New live keys**: `space` and `←` `→` for scenes, `↑` `↓` for the music,
-  `E` and `1`–`8` for eras, `O` for AUTOPLAY, `T` for THE JOURNEY, `S` new seed, `P` pause,
+  `E` and `1`–`7` for eras, `O` for AUTOPLAY, `T` for THE JOURNEY, `S` new seed, `P` pause,
   `F` fullscreen, `I` info panel — and `H` to see every key on screen. A short notice
   confirms each change; a corner reminder says where the keys are.
 - The scroller opens with "SEEDSCENE PRESENTS …" and names the music style;
@@ -553,6 +557,10 @@ can drive entirely from the keyboard.
 
 ### Changed
 
+- **An era key goes to that era's scenes.** `E`, `1`–`7` and the menu's ERA
+  used to change the era and keep the scene on screen, showing it in an era not
+  its own; now they go to the era's first scene in the seed's order (an era
+  with no scenes yet keeps the one on screen).
 - **The screen stays on in AUTOPLAY and THE JOURNEY.** While a programme plays
   (not paused, the page in view) the page holds the browser's Screen Wake
   Lock, so the computer's power settings don't turn the picture off under the
@@ -562,24 +570,23 @@ can drive entirely from the keyboard.
   the lines, colour noise and grain, the heads switching at the bottom. The rolling tracking band - a fault, not the format - is gone.
 - **Sound boards.** The music plays on a board as the picture on a display:
   HI-FI, PAULA, OPL3 FM, AWE32. On AUTO each scene its own (a film or a series
-  the studio's, the Amiga's ball the Amiga's chip, the PC desktop's things the
-  sound card) or its era's; `C` live, the menu, `?board=` and `--board` force
+  the studio's, and so a game whose machine has no board here - the 16-bit
+  space shooter, the phone's snake, the LCD game; the Amiga's ball the Amiga's
+  chip, the PC desktop's things the sound card) or its era's; `C` live, the menu, `?board=` and `--board` force
   one. A programme's track plays on its first scene's board.
 - **Eras are spans of years.** Seven, keyed by the year they start - 1972–1981,
   1982–1989, 1990–1993, 1994–1996, 1997–1999, 2000–2009, 2010–now - and a game
   or a film goes to the year it came out (Tron, Q*bert, the robot fight,
   Arkanoid and OutRun to the 1980s; the 16-bit space shooter and the dinosaur
-  film to 1990–1993). The machine names still find their era. The displays say
-  which screen: COMPOSITE TV, GAME BOY, SVGA, and new SNES and NOKIA (the
-  phone's dark pixels on a green backlight). Every display draws at full
-  resolution - a simulation, not an emulation - and only one that was a CRT
-  gets a CRT's scan lines, curvature and glow; an LCD gets its palette.
+  film to 1990–1993). The machine names still find their era.
 - **Displays.** The screens are their own catalogue, apart from the eras:
-  twelve, named - B/W, ARCADE, MONO, C64, VHS, EGA, AMIGA, VGA, 32-BIT, LCD,
-  HI-RES and MODERN (no filter); B/W, MONO, EGA and VHS are new. On AUTO every
-  scene is seen through its own (a game its machine's, a film or a series the
-  videotape's, an effect its era's); `D` live, the menu, `?display=` and
-  `--display` force one on everything.
+  fourteen, each named for one technology - B/W, ARCADE, MONO, C64, VHS, EGA,
+  AMIGA, VGA, SNES, COMPOSITE TV, GAME BOY, NOKIA, SVGA and MODERN (no filter).
+  Every display draws at full resolution - a simulation, not an emulation -
+  and only one that was a CRT gets a CRT's scan lines, curvature and glow; an
+  LCD gets its palette. On AUTO every scene is seen through its own (a game its
+  machine's, a film or a series the videotape's, an effect its era's); `D`
+  live, the menu, `?display=` and `--display` force one on everything.
 - **One era per scene.** A scene belongs to the era it comes from (a game to
   its year, an effect to the machines that made it famous, a film or a series
   to the era of its year), and is shown only there; six effects share two or
@@ -592,16 +599,17 @@ can drive entirely from the keyboard.
   own styles first. Nothing is shown in the order it was written in any more.
   AUTOPLAY deals each era's scenes and music once and carries on where its
   last visit stopped, so a big era shows all it has in about a quarter of the
-  time (Amiga's seventeen scenes by track 41, not 160; DOS's nine styles by
-  track 68, not 407). The README's scene table and `seedscene scenes` go by
+  time (measured then, before the eras became spans of years: the Amiga's
+  seventeen scenes by track 41, not 160; DOS's nine styles by track 68, not 407). The README's scene table and `seedscene scenes` go by
   era.
 - **THE JOURNEY shows the catalogue.** Three of an era's scenes in each part,
   cut where the music turns, where it showed one; and played on it goes on
   through each era's scenes three at a time, and its music one style a pass,
   starting each list again when it runs out - so the seed sets the order, not
-  how much is seen. Y2K no longer plays the 1979 asteroid game or the 90s
-  shooter.
-- **The README's scenes** each name every era they play in; two broken rows
+  how much is seen. A rendered journey's default length is 126 s, 21 s an era,
+  room for three scenes of seven. Y2K no longer plays the 1979 asteroid game
+  or the 90s shooter.
+- **The README's scenes** each name their era; two broken rows
   of its table mended.
 - **A scene is called a scene.** What v0.1 called a style - the brief asked
   for "a style name" - is a scene everywhere a person meets it: `--scene`,
@@ -623,7 +631,7 @@ can drive entirely from the keyboard.
   scene from the list by position, so every new scene moved about half the
   seeds to another scene. Now each scene gets its own score from the seed
   and the seed takes the one it favours most: a new scene takes only the
-  seeds that favour it (one in thirty-two today). THE JOURNEY picks each
+  seeds that favour it (one in forty-five today). THE JOURNEY picks each
   era's scene the same way. This reorders the seeds once, now.
 - **Every game scene floats.** The robot title fight, the space run and the
   cube pyramid now play on the floating board the flat games use, with its
@@ -658,16 +666,18 @@ can drive entirely from the keyboard.
 - `space` no longer pauses; it moves to the next scene. Pause is `P`.
 - `H` now shows every key; the info panel moved to `I` and fades out by
   itself after six seconds.
-- The number keys now pick an era instead of a scene: there are twenty-two
-  scenes now, and eight eras.
+- The number keys now pick an era instead of a scene: `1`–`7`.
 - The maze no longer runs laps of its outer lane: it is a game now.
-- THE JOURNEY now starts in 1979, at the arcade, and runs 16 seconds per era
-  by default (128 s).
-- The CRT finish became the era screen: the same scene looks the way its
-  machine would have shown it.
+- THE JOURNEY now starts at the arcade (1972–1981).
+- The CRT finish became a display: the same scene looks the way its screen
+  would have shown it.
 - Scale names read naturally ("harmonic minor", not "HARMONICMINOR").
 
 ### Fixed
+
+- After the eras became spans of years, the command line refused any
+  `--scene`, `--era` or `--music` (`ERA_NAMES is not defined`), and the
+  dial-up handshake into the 2000s no longer played; both work again.
 
 - Pressing `S` for a new seed left the old synth running, and both fought
   over the visual clock: titles overlapped and flickered, worse with each

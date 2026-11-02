@@ -6,7 +6,7 @@
 // the era's own scenes.
 
 import { Rng, stablePick } from './rng.js';
-import { ERAS, SCENE_ERAS, erasForScene, eraKey } from './eras.js';
+import { ERAS, ERA_NAMES, SCENE_ERAS, erasForScene, eraKey } from './eras.js';
 import { STYLE_NAMES } from '../styles/index.js';
 import { MUSIC_NAMES } from './music.js';
 

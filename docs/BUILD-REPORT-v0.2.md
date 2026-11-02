@@ -6,9 +6,10 @@
 
 v0.2 takes the v0.1 tool ([BUILD-REPORT-v0.1.md](BUILD-REPORT-v0.1.md)) and
 turns it into **SEEDSCENE**: a name, a nostalgic front door, a live mode you
-drive from the keyboard, an About part, eight eras of computing from the
-1979 arcade to today with a journey through all of them, an endless AUTOPLAY
-channel, forty-four scenes and twenty-seven styles of music on the sound chips of their eras.
+drive from the keyboard, an About part, seven eras of computing from 1972 to
+now with a journey through them, an endless AUTOPLAY channel, forty-five
+scenes and twenty-eight styles of music, each scene on its own display and
+sound board.
 
 ## At a glance
 
@@ -25,7 +26,25 @@ channel, forty-four scenes and twenty-seven styles of music on the sound chips o
 | Tokens | 204.05 M processed (591.6 K generated), to 2026-10-28 |
 | Cost | **$67.32** at Claude Opus 5.5 API list prices, to 2026-10-28 |
 
-## Where it stands, 2026-10-29
+## Where it stands, 2026-11-01
+
+- **Built:** forty-five scenes in seven eras (spans of years, 1972 to now; the
+  last, 2010–now, has no scenes yet), twenty-eight music styles, fourteen
+  displays and four sound boards, each scene with its own or its era's; THE
+  JOURNEY (three scenes an era, going on through the lists over replays),
+  AUTOPLAY, born in, greetings, the screensaver, the sounds between the tracks,
+  the screen kept on in a programme.
+- **Checked:** `npm test`, twenty-two checks; the music audit, 13 of 28 styles
+  passing every check ([MUSIC-AUDIT.md](MUSIC-AUDIT.md)), the rest the owner's
+  to take on one at a time.
+- **Published:** the work in progress is on GitHub and live at
+  https://3dgiordano.github.io/seedscene/, committed and pushed by the owner;
+  the 0.2.0 release waits for the plan to close.
+- **Open, by the owner's choice:** the plan's remaining rounds; the music by
+  ear, style by style (under way); the thin eras (1997–1999 has two scenes,
+  2000–2009 one, 2010–now none); six scenes' palette normalisations unchecked.
+
+## Where it stood, 2026-10-29
 
 Thirty-eight scenes in eight eras. On 2026-10-29, in one day with the owner
 looking at each piece live:
@@ -2651,6 +2670,9 @@ Two more of the owner's notes, the same day:
 | Live, the greetings link through the root address | the names after the `#` survive the redirect and reach the box |
 | The eight era links | each opens on a scene of its era: the time car, the copper bars, the rings, the 3D maze, the footsteps, the invaders, the fractal, the morph |
 | An era given alone, 2,000 seeds in each of the eight | 16,000 of 16,000 on a scene of the era; 3,612 of 3,612 seeds whose scene was already there keep it; everything on `auto` unchanged; a check of it added to `npm test`'s choices |
+| The logo, rendered as GitHub renders it | six lines of 74 characters, lined up |
+| The gallery, rendered again | 46 stills and animations; their scrollers read SCENE |
+| `npm test` | 17 checks pass |
 
 ### Between the tracks
 
@@ -3640,7 +3662,8 @@ moving its years never changes how it looks: the ball stays on the Amiga's
 screen, the desktop's card game and screensaver on VGA.
 
 The cards of THE JOURNEY show the span and its title; each era's chime is the
-start-up sound of its display's machine; the sound chips follow the spans
+start-up sound of its display's machine (2000–2009 has the modem's handshake
+instead); the sound chips follow the spans
 (Paula's samples in 1990–1993, the FM or wavetable card in 1994–1996,
 wavetable in 1997–1999); BORN IN opens in the span of the twelfth year (or the
 last one before it that has scenes); the intro and the help say 1972 to now.
@@ -3717,9 +3740,6 @@ The README's scene table had two rows broken (a doubled cell divider before
 echolines and timecar pushed their descriptions out of line); each scene now
 names every era it plays in - read from the eras themselves, every example
 command checked to be one of them - and the music heading counts twenty-eight.
-| The logo, rendered as GitHub renders it | six lines of 74 characters, lined up |
-| The gallery, rendered again | 46 stills and animations; their scrollers read SCENE |
-| `npm test` | 17 checks pass |
 
 
 ## VHS, from how a tape records
@@ -3759,6 +3779,48 @@ live and muted on the real GPU: timecar's sky shows only its own lights, in the
 same places frame to frame; moonbike's stars show as short horizontal streaks,
 a point of light as a tape smears it, and they stay where the scene puts them.
 
+## The documents reviewed against the code
+
+The owner asked for a review of the documentation and of the pending list. Three
+readers went through the README, the CHANGELOG and this report, and the other
+documents, against the code. Besides stale words - eight eras where there are
+seven, `1`–`8`, the twelve displays' old names, "not under version control",
+three rows of a table cut off from it - the review found two faults the move
+to eras keyed by year had left in the code: the command line refused any
+`--scene`, `--era` or `--music` (`choose.js` lost an import:
+`ERA_NAMES is not defined`), and the sounds between the tracks still looked
+for the eras by their old names, so the modem's handshake into the 2000s and
+the cartridge never played. Both put right: the import back, the modem on the
+year 2000, the cartridge on a scene whose own screen is the Game Boy's (none is
+yet). A rendered journey's default length was 112 s, which left each era 18.7 s
+and two scenes; it is 126 s now, 21 s an era, three scenes. The live menu's
+COPY LIVE / MP4 COMMAND now carries a forced display and sound board.
+
+Checked: the README's examples run (`info --scene vectorballs --era 1990
+--music gabber`, `--era dos`); a journey's parts at 126 s hold three scenes
+an era (two in 1997–1999, one in 2000–2009, all they have) and the modem opens
+2000–2009 in THE JOURNEY and in AUTOPLAY; `npm run test:quick` passes.
+
+The music audit now says how many styles pass (13 of 28) and judges its "off
+grid" cell on the seeds that do not swing, as its notes already did (dreamwave
+showed "swung" in the table and 1.5% in its notes). Run again for this, it
+measured the same on every count but speed: the owner's jobs held the processor,
+and every style ran at half its speed, failing fourteen on speed alone. The report
+keeps the run of 2026-11-01 on an idle machine, with the new line and the corrected
+cell; speed is measured again when the machine is free.
+
+The review raised two questions for the owner. The era keys changed the era and
+kept the scene on screen - a scene shown in an era not its own, against one era
+per scene; the owner chose to go to the era's scenes: `E`, `1`–`7` and the
+menu's ERA now go to the era's first scene in the seed's order (2010–now, with
+none yet, keeps the one on screen; AUTO keeps it too). Checked live and muted:
+from copper, `4` went to fractal in 1994–1996, `E` to snake in 1997–1999 (the
+first of each era in the seed's order), `7` kept snake, `E` to AUTO kept it, `2`
+went to lightcycles in 1982–1989; no errors. The other - 1997–1999 never sounds
+its AWE32 on AUTO - the owner settled too: films and series are HI-FI always, so
+the anime opening stays on the studio's sound and 1997–1999's wavetable is heard
+when a board is forced.
+
 ## The screen kept on in a programme
 
 The owner: left in THE JOURNEY or AUTOPLAY, the screen turns off by the
@@ -3781,7 +3843,7 @@ it; the screensaver (`saver=3`) came on and asked for nothing. Not checked in
 a desktop Chrome, Edge or Safari, where the lock is granted. `npm test`
 passes.
 
-## What went wrong before that
+## What went wrong in the first round
 
 1. **New seed (`S`) made the picture glitch** — reported by the owner.
    Instrumenting the synth nodes showed the cause: the old synth was
@@ -3804,7 +3866,7 @@ passes.
    music change showed the old tempo; re-measuring showed the page was right
    and the capture was an earlier frame.
 
-## What was checked
+## What was checked in the first round
 
 | Check | Result |
 |---|---|
@@ -3825,8 +3887,8 @@ right is for a listener to judge; `npm run sampler` exists for that.
 - The tunnel's depth shading is flat, and the copper floor aliases near the
   bottom edge.
 - Live mode assumes a 44.1 kHz audio device.
-- The project is not under version control yet, which is why v0.1's exact
-  source was not preserved.
+- v0.1's exact source was not preserved: the project went under git only
+  during 0.2.
 
 ## Token usage and cost, to 2026-10-28
 
@@ -3850,8 +3912,11 @@ conversation, served from the prompt cache at a twentieth of the input price.
 
 - Restart Claude Code so the v0.20.0 plugins load, and finish v0.2 with them.
 - The music by ear: a stage of its own, going over the styles one by one with
-  the owner (owner, 2026-10-29); `npm run sampler` plays them on their chips.
-- Put the project under git at the v0.2 release (owner, 2026-10-29).
+  the owner (owner, 2026-10-29) - under way since 2026-10-31, thirteen styles
+  approved; `npm run sampler` plays them on their boards.
+- Publish the v0.2.0 release on GitHub (its tag matching package.json), which
+  builds and deploys the site (docs/DEPLOY.md); the project is already on
+  GitHub, the work in progress live.
 - Check the six other scenes that normalise palette colours the way that turned
   the chess scenes black (left by the owner's choice on 2026-10-29).
 - Regenerate the gallery and the showcase, and run `npm test`.

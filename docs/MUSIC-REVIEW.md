@@ -42,12 +42,12 @@ measures:
 | Range | more than a line can carry | 24 semitones | 31 |
 | Leaps | a line that jumps instead of moving | 20% wider than a third, 3% wider than a sixth | 35%, 8% |
 | Repeats | nothing to remember | 30% of two-bar phrases heard again | 10% |
-| Stuck notes | a line standing still: one pitch struck a third time running | 2% of melody notes | 6% |
+| Stuck notes | a line standing still: one pitch struck a third time running | 2% of melody notes | warns at 6%, never fails (owner-approved styles go past it) |
 | Off the grid | notes out of time (styles without swing) | 1% of onsets | 5% |
 | The echo | a delay landing between the eighths a melody sits on | - | warns at level 0.04, fails at 0.1 |
-| Echo rubs | an echo landing a tone or a semitone from the melody note then sounding (judged where the echo is heard, level 0.04 or more) | 40% of echoes | 50% |
-| Melody against chords | a buried melody, rendered on the style's chip | -3 dB | -8 dB |
-| Sound against the real one | a melody instrument that does not sound like the instrument it imitates, held against a measured spectrum of the real one, on every chip of its eras | 9 dB on average at its worst point | 13 dB |
+| Echo rubs | an echo landing a tone or a semitone from the melody note then sounding (judged where the echo is heard, level 0.04 or more) | 40% of echoes | warns at 50%, never fails |
+| Melody against chords | a buried melody, rendered on the first chip the style is heard on | -3 dB | -8 dB |
+| Sound against the real one | a melody instrument that does not sound like the instrument it imitates, held against a measured spectrum of the real one, on every chip of its eras and of the scenes it plays with there | 9 dB on average at its worst point | 13 dB |
 | Peak, invalid samples | clipping, broken audio | -1 dBFS, none | -0.3 |
 | Speed | too slow for two tracks at once in AUTOPLAY | 3x real time | 2x |
 
@@ -83,7 +83,7 @@ it, add it, and let the audit catch the next one.
 1. Audit. Read the findings worst first.
 2. Find the cause in the composer, not just the symptom.
 3. Fix it, in the style's own code; a shared change is checked against every
-   other style (their sound byte for byte, `tools` hashes).
+   other style (their sound byte for byte, hashed before and after).
 4. Audit again; repeat until nothing fails that the style does not mean.
 5. Hand over with a table, before and after, and a taste to listen to.
 6. The owner listens. The audit finds what can be measured; whether it sounds

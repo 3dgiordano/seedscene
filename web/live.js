@@ -233,7 +233,17 @@ function setStyle(name) {
   toast(`SCENE: ${name.toUpperCase()}`);
 }
 
+/**
+ * ERA: auto, or one era. A scene has one era, so choosing another era goes to that era's first scene in
+ * the order the seed deals them (as the scene keys travel); an era with no scenes yet keeps the one on screen.
+ */
 function setEra(name) {
+  if (name !== 'auto' && ERAS[name].scenes.length && !ERAS[name].scenes.includes(cfg.style)) {
+    setSceneInEra(sceneTour(cfg.seed).find((x) => x.era === name).scene, name);
+    const e = ERAS[name];
+    toast(`${e.label} ${e.title.toUpperCase()}  ·  ${cfg.style.toUpperCase()}`);
+    return;
+  }
   cfg.era = name;
   remember('era', name);
   if (demo.setEra(name).musicChanged) connectSynth();
@@ -437,6 +447,8 @@ function commands() {
   const base = `--seed ${q(cfg.seed)} --scene ${cfg.style}`
     + (cfg.era === 'auto' ? '' : ` --era ${cfg.era}`)
     + (cfg.music === 'auto' ? '' : ` --music ${cfg.music}`)
+    + (cfg.display === 'auto' ? '' : ` --display ${cfg.display}`)
+    + (cfg.board === 'auto' ? '' : ` --board ${cfg.board}`)
     + ` --res ${cfg.width}x${cfg.height} --duration ${cfg.duration}`
     + (cfg.overlay ? '' : ' --no-overlay');
   return {

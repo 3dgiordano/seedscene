@@ -82,7 +82,7 @@ whole idea. **Not yet** — nothing covers it.
 | The trackmo itself: parts that follow the music | Done — THE JOURNEY, and AUTOPLAY cutting scenes on the bar |
 | The Amiga palette of effects (copper, shadebobs, vector balls) | Done |
 | Glenz vectors, the see-through solid | Partly — a glenz solid flies inside `starfield`; it is not a scene of its own |
-| Kefrens bars, twisters, rotozoomers, the bouncing checkered ball | Not yet |
+| Kefrens bars, twisters, rotozoomers, the bouncing checkered ball | Partly — `kefrens`, `twister` and `ball` done; no rotozoomer |
 | Landscapes and voyages (the travelling trackmos) | Not yet |
 | Dancers and silhouettes | Not yet |
 | The musicdisk: a player you watch and listen to | Not yet — the closest is the sampler mp3 |
@@ -193,13 +193,13 @@ whole idea. **Not yet** — nothing covers it.
 | Dance pads (Dance Dance Revolution) | Not yet |
 | Guitar games (Guitar Hero) | Not yet |
 | Pinball | Partly — `bricks` bounces a ball on the beat; there is no table, no flippers, no bumpers |
-| The years from 2010 to 2024 | Not yet — one era, 2024, for fourteen years |
+| The years from 2010 to 2024 | Not yet — one era, 2010–now, music only, no scenes yet |
 
 ### The owner's fifth list
 
 | Idea | Where it stands |
 |---|---|
-| Tennis for Two, the oscilloscope tennis of 1958 | Not yet — `paddles` is the 1972 game seen from above; nothing comes before 1979 |
+| Tennis for Two, the oscilloscope tennis of 1958 | Not yet — `paddles` is the 1972 game seen from above; nothing comes before 1972 |
 | The Addams Family: the 60s series, the 90s films and their game and pinball table, the 2020s revival | Not yet — no gothic mansion, no harpsichord, no finger snaps |
 
 ### The owner's fourth list
@@ -235,7 +235,9 @@ whole idea. **Not yet** — nothing covers it.
 
 ## 3. Proposals: periods
 
-Today there are eight eras. Eleven more close the gaps: three the inventory
+When this was written there were eight eras, named for machines; since
+2026-11-01 there are seven spans of years (1972, 1982, 1990, 1994, 1997, 2000,
+2010), and the periods below would split or extend them. Eleven more close the gaps: three the inventory
 found, one brings the turn of the century home, two came with the owner's
 second list, three fill the years since 2002, two came with the fourth, and
 two more are Claude's, approved with the rest, and one opens the timeline
@@ -810,16 +812,18 @@ Inside each round the chip goes first, since the styles are tuned on it.
 fire and the interference rings (round 12's classic demo effects); the
 Kefrens bars, the bouncing checkered ball and the twister (round 5's Amiga
 classics); the
-LCD juggler and the pyramid hopper (round 11's classics, in the 1979 arcade
-era; the device is from 1980, and it needs its colours);
+LCD juggler and the pyramid hopper (round 11's classics, first in the arcade
+era; now in 1972–1981 and 1982–1989);
 the scanner car and the footsteps (round 12's films and TV); the 3D pipes
 (round 12's home computer screens); the unlimited bobs, the dual chessboard,
 the chessboard floor with its cube, the rubber vector, the bump-mapped logo
 and the cracktro (round 12's demo effects); the card cascade (round 12's
-home computer screens, in the Y2K era until the media-player years are built);
+home computer screens, now in 1990–1993);
 the ANSI board, the bouncing lines and the 3D maze (round 12's home
 computer screens, which completes its screensavers); the moon bike and the time car (round
-12's films and TV); the anime opening.
+12's films and TV); the anime opening; the styles `keygen`, `triphop`,
+`animeop` and `skatepunk`; born in, greetings and the screensaver; the sounds
+between the tracks - round 12 done (2026-10-31).
 
 **When a round is done** — the same gates as before:
 
@@ -845,17 +849,17 @@ Approved by the owner on 2026-10-28. What twenty-two eras change in what already
 
 - **AUTOPLAY** plays three tracks of 40 seconds in an era, then moves on, and
   goes through every era once before any comes back. With eight eras a cycle
-  takes 16 minutes; with twenty-two it takes 44. Someone waiting for their own
+  took 16 minutes (six eras with scenes today: 12); with twenty-two it takes 44. Someone waiting for their own
   years waits more than half an hour, which is what the era marathon is for.
 - **THE JOURNEY** stops once in every era, in order, and shares its length
-  among them: today 96 seconds give each era 12. With twenty-two eras the same
+  among them: then 96 seconds gave each era 12 (today 126 seconds give each of six 21). With twenty-two eras the same
   12 seconds a stop need 264 seconds, and the trip now starts in 1958; the default length goes up with the eras.
-- **The era key** and the menu's ERA setting step through all twenty-two, in order of year, as they do through the eight today.
+- **The era key** and the menu's ERA setting step through all twenty-two, in order of year, as they do through the seven today.
 - **The "now playing" card** keeps the title the seed writes for each
   rendition, so no two are alike; the track it plays shows under it, small:
   *after Speed Zone*.
 - **The sampler** grows with the styles: every style on each chip of its
-  eras: at least one take for each of the 83 styles, against today's 33. It splits into one file per
+  eras: at least one take for each of the 83 styles, against today's 28 styles (40 takes). It splits into one file per
   period so each can be heard on its own.
 - **The gallery and the showcase videos** gain a frame per new scene and a
   stop per new period, re-rendered at the end of each round.
@@ -878,7 +882,7 @@ Approved by the owner on 2026-10-28.
 | A screen that flashes | light-gun games flashed the whole screen white on every shot | no full-screen flashes on the beat, anywhere: hits are marked locally, so nobody sensitive to flashing light is put at risk |
 | A famous family on screen | the gothic family is a registered name, with its own characters and theme | the house, the mood, the harpsichord and the snaps; never the family's names, faces, characters or theme tune — the dancer is a silhouette, the mansion anyone's |
 | A release that never comes | everything now goes into v0.2, in fourteen rounds | each round leaves v0.2 complete and releasable; the owner calls the release when it is masterful |
-| Work with no record | the folder is still not under version control, which is how v0.1's exact source was lost | the owner decides when; it is asked again before the release |
+| Work with no record | the folder was not under version control, which is how v0.1's exact source was lost | resolved 2026-10-29: on GitHub, `main` |
 
 ---
 
