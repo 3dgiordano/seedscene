@@ -64,8 +64,8 @@ looking at each piece live:
   that survives a GPU reset.
 - **Decided by the owner:** the music by ear waits for a stage of its own; the
   project goes under git at the v0.2 release; the usage figures were for v0.1
-  only. Still open: six other scenes normalise their palette colours the way
-  that once turned the chess scenes black, unchecked by the owner's choice.
+  only. The six other scenes that normalised their palette colours the way
+  that once turned the chess scenes black were put right on 2026-11-02.
 - **Next:** the rest of round 12 - the other screensavers, the card cascade,
   the ANSI board, the time car, the moon bike, the anime opening, its modes
   and styles - or another round, as the owner picks.
@@ -3917,6 +3917,8 @@ conversation, served from the prompt cache at a twentieth of the input price.
 - Publish the v0.2.0 release on GitHub (its tag matching package.json), which
   builds and deploys the site (docs/DEPLOY.md); the project is already on
   GitHub, the work in progress live.
-- Check the six other scenes that normalise palette colours the way that turned
-  the chess scenes black (left by the owner's choice on 2026-10-29).
+- ~~Check the six other scenes that normalise palette colours the way that turned
+  the chess scenes black~~ - done 2026-11-02: the rings, fireworks, maze, bricks,
+  snake, boxer and the stage's rim now clip the colour at zero and lift it only
+  where it would be black (about one seed in fifty had a black moment).
 - Regenerate the gallery and the showcase, and run `npm test`.
