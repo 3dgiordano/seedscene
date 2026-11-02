@@ -9,6 +9,6 @@ Plan: CHANGELOG.md (0.2.0 — in development) and docs/BUILD-REPORT-v0.2.md, sec
 - returned: v0.2's content - the plan built a piece at a time; 31 pieces approved, the last skatepunk (round 11) ([detail](progress-plan.md))
 - returned: music by ear - 28 styles pass the measurements (keygen, triphop, animeop, skatepunk added 2026-10-31); the owner will go over them one by one in a music stage of its own, later (owner, 2026-10-29)
 - returned: version control - the 0.2.0 WIP is on GitHub and live at https://3dgiordano.github.io/seedscene/; the owner committed this session's work on 2026-11-01 (one commit unpushed when checked); the official release when the plan is closed is the owner's ([detail](progress-git.md))
-- returned: the music audit - 14 of 28 styles pass (modjazz's flute approved with a warning one Amiga sample cannot clear; jungle put right and approved on 2026-11-02), 14 still fail; which style to put right next is the owner's ([detail](progress-music.md))
+- returned: the music audit - 15 of 28 styles pass (modjazz's flute approved with a warning one Amiga sample cannot clear; jungle approved and merged 2026-11-02; keygen put right and approved 2026-11-02), 13 still fail; which style to put right next is the owner's ([detail](progress-music.md))
 
-Next: the owner commits jungle's fix once the message is reviewed; then the next piece is the owner's - the next audit style, a plan piece, or scenes for the thin eras; re-measure the audit's speed on a free machine.
+Next: the next audit style - derelict and triphop are the nearest, two fails each; keygen's fix is committed and pushed (2026-11-02), merging it to main is the owner's.

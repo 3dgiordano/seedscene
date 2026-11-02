@@ -1,8 +1,8 @@
 # Music audit
 
-Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ fail, ~ let off by the style, · not measured; off grid is measured on the seeds that do not swing; speed is wall-clock time on the machine that ran it. Run `npm run audit:music -- <style>` for one style. Jungle re-audited on 2026-11-02, after it was put right (its row and section; its speed on another machine).
+Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ fail, ~ let off by the style, · not measured; off grid is measured on the seeds that do not swing; speed is wall-clock time on the machine that ran it. Run `npm run audit:music -- <style>` for one style. Jungle and keygen re-audited on 2026-11-02, after they were put right (their rows and sections; their speed on another machine).
 
-**14 of 28 styles pass** (no ✗ anywhere); failing: dreamwave, chiptune, rave, hardcore, newbeat, eurodance, gabber, ambient, orchestral, gameboy, heroic, derelict, keygen, triphop.
+**15 of 28 styles pass** (no ✗ anywhere); failing: dreamwave, chiptune, rave, hardcore, newbeat, eurodance, gabber, ambient, orchestral, gameboy, heroic, derelict, triphop.
 
 | style | bass in chord | bass rubs | melody on beat | held | held rubs | top | range | leaps >3rd | >6th | repeats | stuck | off grid | echo rubs | melody vs chords | sound vs real | peak | speed |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -30,7 +30,7 @@ Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ 
 | `fmmetal` | ✓ 99% | ✓ 0% | ✓ 93% | ✓ 95% | ✓ 5% | ✓ F#5 | ✓ 11 | ✓ 4% | ✓ 0% | ✓ 88% | ⚠ 5.0% | ✓ 0.0% | ⚠ 51% | ✓ -2.6 dB | · - | ✓ -1.9 | ✓ 3.8x |
 | `midiquest` | ✓ 88% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ G#5 | ✓ 12 | ✓ 6% | ✓ 1% | ✓ 73% | ✓ 0.0% | ✓ 0.0% | ✓ 31% | ✓ -2.6 dB | ✓ 6 dB flute | ✓ -2.4 | ✓ 3.8x |
 | `rocknroll` | ~ 74% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ B5 | ✓ 12 | ✓ 2% | ✓ 0% | ✓ 82% | ✓ 0.0% | · swung | ⚠ 65% | ✓ 1.6 dB | · - | ✓ -1.9 | ✓ 5.3x |
-| `keygen` | ✓ 98% | ⚠ 4% | ✓ 100% | ✓ 100% | ✓ 0% | ✗ G7 | ✓ 24 | ✗ 49% | ⚠ 8% | ✓ 91% | ✓ 0.0% | ✓ 0.0% | · - | ✓ -1.4 dB | · - | ✓ -2.0 | ✓ 14.0x |
+| `keygen` | ✓ 98% | ⚠ 3% | ✓ 98% | ✓ 100% | ✓ 0% | ✓ G5 | ✓ 10 | ✓ 3% | ✓ 0% | ✓ 91% | ✓ 0.0% | ✓ 0.0% | · - | ✓ -1.9 dB | · - | ✓ -2.1 | ✓ 22.9x |
 | `triphop` | ✓ 97% | ⚠ 4% | ✓ 100% | ⚠ 68% | ✗ 26% | ⚠ G6 | ✓ 19 | ✗ 39% | ✓ 2% | ✓ 34% | ✓ 0.0% | · swung | ⚠ 54% | ✓ 3.3 dB | · - | ✓ -2.5 | ✓ 5.6x |
 | `animeop` | ✓ 98% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ G#5 | ✓ 22 | ✓ 10% | ✓ 1% | ✓ 43% | ✓ 0.2% | ✓ 0.0% | ⚠ 68% | ✓ -2.8 dB | · - | ✓ -1.9 | ✓ 4.5x |
 | `skatepunk` | ✓ 92% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ D5 | ✓ 8 | ✓ 1% | ✓ 0% | ⚠ 30% | ⚠ 23.8% | ✓ 0.0% | ✓ 3% | ⚠ -5.6 dB | · - | ✓ -1.9 | ✓ 4.1x |
@@ -272,12 +272,9 @@ Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ 
 
 ## Keygen (`keygen`)
 
-135, 140, 125 bpm; E minor, A dorian, E dorian. Layers: 353 bass, 379 chord, 284 melody notes.
+135, 140, 125 bpm; E minor, A dorian, E dorian. Layers: 353 bass, 275 chord, 180 melody notes.
 
-- ✗ the melody reaches G7 - shrill on a sustained lead
-- ✗ 49% of melodic moves leap wider than a third
-- ⚠ 4% of bass notes rub a minor second against a chord tone sounding
-- ⚠ 8% of melodic moves leap wider than a sixth
+- ⚠ 3% of bass notes rub a minor second against a chord tone sounding
 
 ## Trip-Hop (`triphop`)
 

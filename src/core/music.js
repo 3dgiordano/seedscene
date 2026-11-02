@@ -239,7 +239,9 @@ export const MUSIC_PRESETS = {
     bpm: [120, 140], bpmPick: [125, 125, 125, 125, 125, 125, 128, 128, 120, 132, 135, 140, 140],
     scales: ['minor', 'harmonicMinor', 'dorian', 'major'], progressions: ANTHEM,
     drums: 'keygen', bass: 'bounce', chords: 'xmarp', lead: 'squelch', arp: null,
-    hook: { hits: [7, 10] }, leadFrom: 0.12,
+    hook: { hits: [7, 10], line: true }, leadFrom: 0.12,
+    // (the squelch sings a line - its slides and its echo kept - where the hook leapt with every chord to G7)
+    melody: { free: [0, 7], dense: [0.65, 0.65, 0.65], close: true, moving: true },
     swing: 0, intro: 0.04, fx: { reverb: 0.25, delay: 0.3, delayBeats: 0.75 },
   },
   // --- the 90s Bristol sound, from a trip-hop drum cheat sheet (the tempo, the
@@ -1348,6 +1350,21 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
           case 'squelch': {
             // the call and answer of the hook, on a squelching tracker lead that slides into its
             // notes (the 3xx effect); the echo channel plays it again a few rows on, quieter, on the other side
+            if (hookLine) {
+              // the line, sung on the same lead: chord tones on the beats, steps between, the slide and the echo kept
+              const tune = hookAnswer && Math.floor(bar / hookBars) % 4 === 2 ? hookAnswer : hookLine;
+              const nt = tune[bar % hookBars].find((x) => x.step === step);
+              if (!nt) break;
+              const n = noteOf(anBase, nt.deg) + (anBase < 60 ? 12 : 0);
+              const at = bar * STEPS + step;
+              const from = kgLast && at - kgLast.at <= 2 && kgLast.n !== n && kr.bool(kgSlide) ? kgLast.n : null;
+              const len = nt.len * sixteenth * 0.95;
+              const vel = 0.5 * (step % 4 === 0 ? 1 : 0.85);
+              push(t, 'xmlead', n, vel, len, { slideFrom: from });
+              if (kgEcho) push(t + kgEcho * sixteenth, 'xmlead', n, vel * 0.45, len, { slideFrom: from, kit: 'echo' });
+              kgLast = { n, at };
+              break;
+            }
             const half = bar % 2;
             const rh = hookRhythm[half];
             if (!rh[step]) break;
