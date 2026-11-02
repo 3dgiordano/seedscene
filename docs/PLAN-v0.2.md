@@ -6,6 +6,12 @@ this plan goes into it — as much as can be built — and later versions polish
 it. The plan keeps being refined as new ideas come in; the order of the work
 is in [section 8](#8-the-build-plan).
 
+**Split by the owner on 2026-11-02 (decision Q9):** 0.2.0 closes the holes
+that show - every era with scenes of its own, the C64 with its own sound, the
+vector games on a vector screen - and is released; the rest of this plan moves
+to 0.3.0, in [PLAN-v0.3.md](PLAN-v0.3.md), with an outside proposal's new
+ideas. What 0.2.0 still takes is in section 8, **What 0.2.0 still takes**.
+
 Everything the owner has given as inspiration since the project began, what
 SEEDSCENE already does with it, and what it will do next: periods, sound
 chips, music styles, the tracks each period plays, and visualizations.
@@ -831,6 +837,24 @@ round's Amiga and C64 styles later); then `italo` (2026-11-02), in 1982–1989; 
 scenes glenz and landscape, the musicdisk player and the musicdisk mode were left out of
 round 5 at the owner's word (2026-11-02).
 
+**What 0.2.0 still takes** — the owner's split of 2026-11-02 (Q9). Everything
+not named here moves to 0.3.0 ([PLAN-v0.3.md](PLAN-v0.3.md)): rounds 1–4, 6–10,
+13 and 14, and round 5's glenz, landscape, musicdisk player and mode.
+
+| # | Piece | Why it is in 0.2.0 | Effort |
+|---|---|---|---|
+| A | **The SID**, a sound board of 1982–1989: three voices with their four waveforms (pulse with its width, saw, triangle, noise), ring modulation and sync, the 6581's resonant filter, an ADSR per voice, chords as 50 Hz arpeggios; on the YM2149's pattern | the era is seen on the C64's display and heard on the Atari ST's chip or the studio, never on a C64; the plan had taken the `chiptune` style for the chip | M |
+| B | **The vector display**: a beam drawing lines on black - no raster, no scan lines, no dither; the glow of a bright line, a short persistence, a faint shimmer (never a flash) | `rocks` was a vector game seen today on a raster monitor; round 11's vector tube and wireframe tank need it | S |
+| C | **Round 11's rest**, the eras it fills first: skate park and kart race (1997–1999), DJ decks (2000–2009), vector tube and wireframe tank on the vector display, then road crossing, behind-view shooter, cartoon castle, artillery, football match; `terrace` | the round under way; four of its scenes go to the thin eras | L |
+| D | **Shader art for 2010–now**: three or four scenes of the era's own art, each from a real piece of it - a raymarched scene of signed distances (soft shadows, ambient occlusion), a flight into a fractal, a chromatic tunnel, a neon grid | the era named *Shader art* has no scene, and `synthwave` plays in no programme | M |
+| E | **2000–2009 and 1997–1999 to three scenes or more**: the code rain (the film is of 1999), a 64k intro's camera flight, besides C's | an era with one or two scenes repeats itself in THE JOURNEY and AUTOPLAY | M |
+
+**0.2.0's gate:** every era has at least three scenes of its own; every era's
+display has a sound board of its machine where one is built (the C64's the
+SID); each piece passes the round gates below and the owner's look and ear;
+then the release in docs/BUILD-REPORT-v0.2.md's **Before release**. The dead
+air of nineteen styles stays the owner's call, before the release or after.
+
 **When a round is done** — the same gates as before:
 
 - every new style plays on each chip of its eras in the sampler, its levels
@@ -906,3 +930,4 @@ The owner's answers of 2026-10-28.
 | Q6 | The radio stations only in the racer? | **Yes** |
 | Q7 | Claude's own ideas, proposed after "anything else?"? | **Yes, all of them** — now in sections 3 to 8 |
 | Q8 | The card cascade: a card on each beat, as planned, or on each bar? (2026-10-30: a card a beat buried the arcs at 175 BPM) | **On each bar**, another halfway through when the music is busy |
+| Q9 | (2026-11-02, after an outside proposal) Release a shorter 0.2.0 and move the rest to 0.3.0? Q1 had said no | **Yes**: 0.2.0 takes section 8's **What 0.2.0 still takes**; the rest, and the proposal's new ideas, go to [PLAN-v0.3.md](PLAN-v0.3.md) |
