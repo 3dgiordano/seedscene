@@ -327,6 +327,12 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   the time car's, the boxing match's and the card cascade's shaders compile in
   a third of the time or less, with the same pictures; and the live page
   starts loading the first scene as soon as its boot screen is up.
+- **Keygen, put right** through the music audit: its squelchy lead played
+  the hook a chord's step above each new root, leaping with every chord to
+  G7; it sings a line now, chord tones on the beats and steps between, up to
+  the octave, with its slides and its echo channel as before. Every check
+  passes but one warning: the bass on the bar line beside the last chord's
+  final arpeggio, which stops a fifth of a row before it.
 - **Jungle, put right** through the music audit: its lead played the shared
   motif on every chord, up to D7, a third of its notes off the harmony; it
   sings a line now, in half time over the break - three long notes a bar, on
