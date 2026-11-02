@@ -473,6 +473,18 @@ grid, the mix - all of them or one at a time ([the review](docs/MUSIC-REVIEW.md)
 npm run audit:music -- keygen
 ```
 
+Past the audit, the review tools listen to a style's rendered audio the way a
+critical ear would: each part alone and its level in the mix, the
+accompaniment over the lead, an instrument's spectrum, the fills and rolls,
+one note alone, and the dead air where everything stops at once. A reviewer
+subagent ([.claude/agents/music-reviewer.md](.claude/agents/music-reviewer.md))
+runs them on every new or changed style, against a checklist of what the
+owner has heard by ear, before anyone listens:
+
+```bash
+npm run review:music -- gaps bomb
+```
+
 ## The About part
 
 Press **`A`** in live mode and SEEDSCENE plays its own demo about itself — the
@@ -608,11 +620,13 @@ tools/wav.js          the soundtrack as a WAV for ffmpeg
 tools/gallery.js      regenerates the images on this page (npm run gallery)
 tools/sampler.js      every music style in one mp3 (npm run sampler)
 tools/music-audit.js  every music style checked as music (npm run audit:music)
+tools/music-review.js a style's rendered audio measured as a listener hears it (npm run review:music)
 tools/timbre-refs.js  real instruments' spectra the audit compares a sound with
 tools/server.js       local static server
 tools/build-web.js    the live demo as a static site (npm run build:web)
 .github/workflows/    publishing the site to GitHub Pages on each release
 test/determinism.mjs  the same-seed promise, checked
+.claude/agents/       the music reviewer, a subagent for Claude Code
 SEEDSCENE.NFO         the release notes, the way they used to be written
 ```
 

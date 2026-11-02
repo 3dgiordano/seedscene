@@ -86,7 +86,7 @@ whole idea. **Not yet** — nothing covers it.
 | Landscapes and voyages (the travelling trackmos) | Not yet |
 | Dancers and silhouettes | Not yet |
 | The musicdisk: a player you watch and listen to | Not yet — the closest is the sampler mp3 |
-| Melodic tracker ballads, the musicdisk mood | Partly — `dreamwave` and `modjazz`; no slow melodic MOD ballad |
+| Melodic tracker ballads, the musicdisk mood | Done — `ballad`, besides `dreamwave` and `modjazz` |
 
 ### Iconic effects
 
@@ -117,7 +117,7 @@ whole idea. **Not yet** — nothing covers it.
 |---|---|
 | C64 | Done — its era, its boot screen |
 | Game Boy / LSDJ | Done — the handheld era, `gameboy` |
-| Atari ST / Falcon | Not yet — no era, no YM chip |
+| Atari ST / Falcon | Partly — its YM2149 is one of 1982–1989's sound boards, with `stchip`; no era or scenes of its own |
 | SNES / Mega Drive | Not yet — the console era is 32-bit; no 16-bit chips |
 | PlayStation | Partly — the console era, on wavetable |
 | Dreamcast | Partly — the Y2K era stands near it |
@@ -127,14 +127,14 @@ whole idea. **Not yet** — nothing covers it.
 | Game | What it brings | Where it stands |
 |---|---|---|
 | Turrican, Apidya, Battle Squadron, R-Type | heroic shooters, driving and melodic | Done — `heroic`, `starpilot` |
-| Shadow of the Beast | atmosphere: tribal drums, flutes, mystery | Not yet |
+| Shadow of the Beast | atmosphere: tribal drums, flutes, mystery | Done — `beast` |
 | Lotus | racing at full speed | Not yet |
-| Agony | melancholy: piano, strings, a slow pulse | Not yet |
+| Agony | melancholy: piano, strings, a slow pulse | Done — `agony` |
 | Pinball Dreams / Fantasies | bouncy, bright, catchy | Not yet |
 | Super Stardust | orchestral techno in space | Partly — `starpilot` |
 | Alien Breed, Walker | dark, industrial | Partly — `derelict`, `cyborg` |
-| Cannon Fodder, Lemmings | jolly, a march, a tune you whistle | Not yet |
-| Xenon 2 | hip-hop breakbeat in a shooter | Not yet |
+| Cannon Fodder, Lemmings | jolly, a march, a tune you whistle | Done — `march` |
+| Xenon 2 | hip-hop breakbeat in a shooter | Done — `bomb` |
 
 ### Modern visualizers
 
@@ -216,9 +216,9 @@ whole idea. **Not yet** — nothing covers it.
 ### What the inventory says
 
 - The pack's **musical styles** are all covered.
-- The **game soundtracks** are half covered. What's missing are the moods that aren't heroic: atmosphere, melancholy, bounce, a march, hip-hop.
+- The **game soundtracks** are half covered. What's missing are the moods that aren't heroic: atmosphere, melancholy, bounce, a march, hip-hop. (Since filled by round 5 but for the bounce: the atmosphere `beast`, the melancholy `agony`, the march `march`, hip-hop `bomb`.)
 - The **effects** are mostly covered. The well-known Amiga tricks are missing (Kefrens bars, rotozoomer, glenz, the checkered ball), and so is anything that feeds back on itself (MilkDrop).
-- The **periods** have one hole each between 1985 and 1993: the Atari ST, the Mega Drive and the SNES, and the Gravis Ultrasound.
+- The **periods** have one hole each between 1985 and 1993: the Atari ST, the Mega Drive and the SNES, and the Gravis Ultrasound. (The Atari ST's chip has since come, as a board of 1982–1989.)
 - Racing and The Matrix are entirely open.
 - The owner's second list is entirely open, and it points at two more
   periods: the arcade of the 90s, where the run-and-gun and plane shooters

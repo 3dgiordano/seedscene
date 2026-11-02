@@ -8,7 +8,7 @@ v0.2 takes the v0.1 tool ([BUILD-REPORT-v0.1.md](BUILD-REPORT-v0.1.md)) and
 turns it into **SEEDSCENE**: a name, a nostalgic front door, a live mode you
 drive from the keyboard, an About part, seven eras of computing from 1972 to
 now with a journey through them, an endless AUTOPLAY channel, forty-five
-scenes and twenty-eight styles of music, each scene on its own display and
+scenes and thirty-five styles of music, each scene on its own display and
 sound board.
 
 ## At a glance
@@ -26,23 +26,28 @@ sound board.
 | Tokens | 204.05 M processed (591.6 K generated), to 2026-10-28 |
 | Cost | **$67.32** at Claude Opus 5.5 API list prices, to 2026-10-28 |
 
-## Where it stands, 2026-11-01
+## Where it stands, 2026-11-02
 
 - **Built:** forty-five scenes in seven eras (spans of years, 1972 to now; the
-  last, 2010–now, has no scenes yet), twenty-eight music styles, fourteen
-  displays and four sound boards, each scene with its own or its era's; THE
+  last, 2010–now, has no scenes yet), thirty-five music styles, fourteen
+  displays and five sound boards, each scene with its own or its era's; THE
   JOURNEY (three scenes an era, going on through the lists over replays),
   AUTOPLAY, born in, greetings, the screensaver, the sounds between the tracks,
   the screen kept on in a programme.
-- **Checked:** `npm test`, twenty-two checks; the music audit, 13 of 28 styles
-  passing every check ([MUSIC-AUDIT.md](MUSIC-AUDIT.md)), the rest the owner's
-  to take on one at a time.
+- **Checked:** `npm test`, twenty-two checks; the music audit, all 35 styles
+  passing ([MUSIC-AUDIT.md](MUSIC-AUDIT.md)); every style approved by the
+  owner, by ear; every new or changed style reviewed by the music reviewer
+  before the owner listens ([MUSIC-REVIEW.md](MUSIC-REVIEW.md)).
 - **Published:** the work in progress is on GitHub and live at
-  https://3dgiordano.github.io/seedscene/, committed and pushed by the owner;
-  the 0.2.0 release waits for the plan to close.
-- **Open, by the owner's choice:** the plan's remaining rounds; the music by
-  ear, style by style (under way); the thin eras (1997–1999 has two scenes,
-  2000–2009 one, 2010–now none); six scenes' palette normalisations unchecked.
+  https://3dgiordano.github.io/seedscene/; since 2026-11-02 each change comes
+  on a branch of its own from main, its commit reviewed by the owner before it
+  is made, merged by the owner through a pull request. The 0.2.0 release waits
+  for the plan to close.
+- **Open, by the owner's choice:** the plan's remaining rounds (round 11's
+  terrace and ten scenes; round 5's glenz, landscape, musicdisk player and
+  musicdisk mode, left out at the owner's word); the thin eras (1997–1999 has
+  two scenes, 2000–2009 one, 2010–now none); the dead air the review finds in
+  nineteen approved styles (see **Dead air** below).
 
 ## Where it stood, 2026-10-29
 
@@ -3843,6 +3848,97 @@ it; the screensaver (`saver=3`) came on and asked for nothing. Not checked in
 a desktop Chrome, Edge or Safari, where the lock is granted. `npm test`
 passes.
 
+## The music by ear, five more styles and a reviewer
+
+The music by ear began on 2026-10-31, the owner listening to each style on the
+boards of its eras; thirteen were approved by 2026-11-01. On 2026-11-02 the
+owner heard the rest, one at a time, each put right until it sounded right,
+on branches from main, then merged.
+
+**Melody lines.** Fourteen styles' leads played each chord's own steps:
+they leapt with every chord change, climbed to G7-C9, had a third of their
+notes or more off the harmony on the beat, and were often buried under their
+pads, their echoes on a dotted eighth that fell between their notes. Each got a
+line of its own - chord tones on the beats, steps between, within an octave,
+the echo on the beat: jungle (in half time, after the owner heard its first
+line as messy), keygen, derelict, trip-hop, rave (in the rave piano's
+syncopation), eurodance (a short riff in the middle of the keyboard, after the
+owner heard a sung line as shrill), the handheld chip, new beat, the heroic
+game, the C64 chiptune, happy hardcore, gabber, ambient techno and dreamwave.
+Arpeggios and plucks that climbed to F#8-G#8 stay under C6 now. At the owner's
+ear too: gabber's open hat on every off-beat closed and short, its clap
+softer; dreamwave's rolls straight on the grid under its swing, where they
+fell a thirty-second late. Acid was approved as it was.
+
+**The orchestral tracker** was a choir wall over block chords, a brass line
+buried among them and the timpani loudest of all - "not an orchestra", the
+owner said. Re-orchestrated from orchestration references: the first violins
+sing the melody, the brass doubles it an octave below at the climax, the rest
+of the strings are spaced under it as a section is, the choir comes in softly
+only at the climax, the timpani mark the accents.
+
+**Trip-hop's scratches** were rebuilt in four rounds at the owner's ear - fast
+repeats, then monotonous, then "someone who can't scratch", then "a dog
+barking": a sung "aaah" held on the record at the tonic, in a man's register;
+the hand moving it back and forth, each move gathering speed and slowing to
+nothing where it turns, so the pitch rises and falls with it; routines from a
+handful of motifs, one cue and one speed a phrase. The figures came from
+search summaries of Hansen's studies of real scratching: the papers
+themselves were blocked by the environment's network policy.
+
+**Colours that went black.** The six other scenes that normalised their
+palette colours the way that once blacked out the chess scenes were put right
+(see **Before release**).
+
+**The Atari ST's YM2149**, a fifth sound board, from the chip's datasheet:
+three squares at the pitches its 12-bit periods allow, a volume 3 dB a step
+written 50 times a second, the hardware envelope run at audio rate as a
+buzzing bass, chords as 50 Hz arpeggios, the noise channel's hats and
+digi-drums. It is one of 1982–1989's boards with the synthesizer's own voices,
+by the seed. With it **ST buzz** (`stchip`), the ST demos' music. On the chip
+the owner heard synth-pop's cymbals as static: its gated snare, a long burst of
+noise, is played as the plain one there (the ST had no gated reverb).
+
+**Italo disco** (`italo`), in 1982–1989: an octave bass in sixteenths, an
+arpeggiator under C6, hand claps and an open hat on the off-beat, a vocoder
+singing the tune over synth pads, in a minor key.
+
+**Five more styles of the Amiga years** - round 5's music: beast lands
+(`beast`), lament (`agony`), musicdisk ballad (`ballad`), jolly march
+(`march`) and hip-hop blaster (`bomb`), homages to moods, never to tunes.
+Round 5's scenes - glenz, landscape, the musicdisk player and its mode - were
+left out at the owner's word.
+
+**The reviewer.** The owner had heard faults the audit passed. Asked whether
+a subagent could review the five new styles first, it did, from their scores
+and measurements of their rendered audio, and found everything the owner had
+heard. At the owner's word its tools stay -
+`npm run review:music -- layers|stack|spectrum|fills|probe|gaps` - and so does
+the reviewer (`.claude/agents/music-reviewer.md`), with a checklist of what the
+owner has heard by ear; every new or changed style goes through it before the
+owner listens, and a fault the owner hears that it missed becomes a
+measurement and a checklist item ([MUSIC-REVIEW.md](MUSIC-REVIEW.md)).
+
+**Dead air.** The owner heard the hip-hop blaster go near silent for about
+eight seconds in its breakdown, and in its first bar: the drums, the bass,
+the rap and the scratches (which needed the kick) stopped at once, with
+nothing underneath. The DJ now scratches alone there, softer than over the
+beat and a different move each bar, over strings holding the chord. The fault
+became the reviewer's `gaps` measurement and its eighth checklist item. Run
+over every style, it finds dead air in nineteen styles approved before it
+existed - longest in the march, the orchestral tracker and the MIDI quest
+(about 25 s over three 90-second pieces, 6-9 s at most at once), then tracker
+jazz (13 s), the rest 4-12 s, intros and breakdowns most likely; whether to
+fill them is the owner's.
+
+| Check | Result |
+|---|---|
+| Each style put right | its audit before and after, on the report's three seeds and on twenty; the other styles' scores hashed identical |
+| The full music audit, after round 5 | 35 of 35 styles pass |
+| The YM2149, ST buzz, italo disco, round 5 | the other styles compose identical scores |
+| The hip-hop blaster's dead air | none left on paula, opl3 or hifi with the audit's three seeds (10-12 s a piece before); every other style's audio identical on every chip |
+| `npm test` | passes after each change |
+
 ## What went wrong in the first round
 
 1. **New seed (`S`) made the picture glitch** — reported by the owner.
@@ -3911,9 +4007,10 @@ conversation, served from the prompt cache at a twentieth of the input price.
 ## Before release
 
 - Restart Claude Code so the v0.20.0 plugins load, and finish v0.2 with them.
-- The music by ear: a stage of its own, going over the styles one by one with
-  the owner (owner, 2026-10-29) - under way since 2026-10-31, thirteen styles
-  approved; `npm run sampler` plays them on their boards.
+- ~~The music by ear: a stage of its own, going over the styles one by one with
+  the owner (owner, 2026-10-29)~~ - done 2026-11-02: all thirty-five styles
+  approved (see **The music by ear** below); `npm run sampler` plays them on
+  their boards.
 - Publish the v0.2.0 release on GitHub (its tag matching package.json), which
   builds and deploys the site (docs/DEPLOY.md); the project is already on
   GitHub, the work in progress live.
