@@ -41,6 +41,8 @@ const LEAD_INSTR = {
 // where a clash is what the style is about, or its bass is meant to walk away from the chord
 const EXEMPT = {
   derelict: { clash: 'the half-step above the root is the dread it is built on', walk: 'a drone holds the tonic under the moving chords (a pedal)' },
+  beast: { walk: 'a bowed drone holds the tonic under the moving chords (a pedal)' },
+  march: { grid: 'its snare rolls are thirty-seconds, between the sixteenths on purpose' },
   cyborg: { clash: 'an odd-metre machine score: tension is the point' },
   modjazz: { walk: 'a walking bass leaves the chord on purpose, and approaches the next root by a half-step', rubs: true },
   rocknroll: { walk: 'a boogie bass walks the sixth and seventh' },
@@ -230,7 +232,9 @@ function analyse(style, seed, duration) {
   const swung = (score.meta.swing || 0) > 0 || P.shuffle || P.mpc;
   const timed = score.events.filter((e) => e.instr !== 'crash' && e.instr !== 'riser');
   let off = 0;
-  for (const e of timed) { const x = e.t / row; if (Math.abs(x - Math.round(x)) > 0.08) off++; }
+  // (a style let off to thirty-seconds - a march's rolls - is held to that finer grid instead: a stray note still shows)
+  const gridRow = EXEMPT[style] && EXEMPT[style].grid ? row / 2 : row;
+  for (const e of timed) { const x = e.t / gridRow; if (Math.abs(x - Math.round(x)) > 0.08) off++; }
   r.offGrid = swung ? null : pct(off, timed.length);
   r.swung = !!swung;
   const eighths = mel.length && mel.every((e) => Math.round(e.t / row) % 2 === 0);
@@ -427,6 +431,7 @@ function audit(style, seeds, duration, withMix) {
   else if (echo.offLine && echo.level >= 0.04) say.push(`⚠ a quiet echo (${echo.steps} sixteenths, level ${echo.level}) falls between the melody's eighths`);
   if (ex.clash) say.push(`~ clashes let off: ${ex.clash}`);
   if (ex.walk) say.push(`~ the bass let off the chord: ${ex.walk}`);
+  if (ex.grid) say.push(`~ the grid taken in thirty-seconds: ${ex.grid}`);
   if (!runs[0].layers.melody.length) say.push('· no melody found to analyse');
   if (mx && mx.bad) say.push(`✗ ${mx.bad} invalid samples`);
   say.sort((a, b) => '✗⚠~·'.indexOf(a[0]) - '✗⚠~·'.indexOf(b[0]));
