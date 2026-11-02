@@ -327,6 +327,13 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   the time car's, the boxing match's and the card cascade's shaders compile in
   a third of the time or less, with the same pictures; and the live page
   starts loading the first scene as soon as its boot screen is up.
+- **New beat, put right** through the music audit: its brass played the
+  chord's own steps, two of five notes on the beat off the chord and a third
+  of its long notes a semitone from the harmony, its dotted echo between its
+  eighths; it sings a line now on the real brass, as cyborg's and star
+  pilot's, chord tones on the beats and steps between, up to the octave, its
+  echo on the beat. Every check passes but two warnings: the EBM bass's
+  passing notes, and the brass on the Amiga, which one sample cannot brighten.
 - **Handheld chip, put right** through the music audit: its pulse lead ran
   sixteenths off each chord, leaping an octave on every beat's last one, up
   to F#8 over nearly three octaves; it sings a line now on the same pulse

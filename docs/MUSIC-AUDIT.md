@@ -1,8 +1,8 @@
 # Music audit
 
-Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ fail, ~ let off by the style, · not measured; off grid is measured on the seeds that do not swing; speed is wall-clock time on the machine that ran it. Run `npm run audit:music -- <style>` for one style. Jungle, keygen, derelict, triphop, rave, eurodance and gameboy re-audited on 2026-11-02, after they were put right (their rows and sections; their speed on another machine).
+Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ fail, ~ let off by the style, · not measured; off grid is measured on the seeds that do not swing; speed is wall-clock time on the machine that ran it. Run `npm run audit:music -- <style>` for one style. Jungle, keygen, derelict, triphop, rave, eurodance, gameboy and newbeat re-audited on 2026-11-02, after they were put right (their rows and sections; their speed on another machine).
 
-**20 of 28 styles pass** (no ✗ anywhere); failing: dreamwave, chiptune, hardcore, newbeat, gabber, ambient, orchestral, heroic.
+**21 of 28 styles pass** (no ✗ anywhere); failing: dreamwave, chiptune, hardcore, gabber, ambient, orchestral, heroic.
 
 | style | bass in chord | bass rubs | melody on beat | held | held rubs | top | range | leaps >3rd | >6th | repeats | stuck | off grid | echo rubs | melody vs chords | sound vs real | peak | speed |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -13,7 +13,7 @@ Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ 
 | `rave` | ✓ 100% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ A5 | ✓ 10 | ✓ 3% | ✓ 0% | ✓ 65% | ✓ 0.0% | ✓ 0.0% | ✓ 0% | ⚠ -3.5 dB | · - | ✓ -1.8 | ✓ 10.3x |
 | `jungle` | ✓ 99% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ B5 | ✓ 9 | ✓ 8% | ✓ 0% | ✓ 73% | ✓ 0.0% | ✓ 0.0% | ✓ 0% | ✓ -2.0 dB | · - | ✓ -2.1 | ✓ 9.8x |
 | `hardcore` | ✓ 87% | ✓ 0% | ⚠ 73% | · - | · - | ✗ C9 | ✗ 35 | ✗ 38% | ✗ 10% | ✓ 76% | ✓ 0.0% | ✓ 0.0% | ✓ 37% | ✗ -9.7 dB | · - | ✓ -1.8 | ✓ 3.6x |
-| `newbeat` | ✓ 95% | ⚠ 4% | ✗ 58% | ✗ 54% | ✗ 33% | ⚠ C#6 | ✓ 19 | ⚠ 27% | ✗ 8% | ✓ 69% | ✓ 0.0% | ✓ 0.0% | ⚠ 61% | ✓ -0.1 dB | ⚠ 11 dB brass | ✓ -1.9 | ✓ 3.8x |
+| `newbeat` | ✓ 95% | ⚠ 4% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ C#5 | ✓ 12 | ✓ 1% | ✓ 0% | ✓ 75% | ✓ 0.0% | ✓ 0.0% | ✓ 34% | ✓ -1.3 dB | ⚠ 11 dB brass | ✓ -1.9 | ✓ 6.0x |
 | `eurodance` | ⚠ 75% | ✓ 0% | ✓ 96% | · - | · - | ✓ B4 | ✓ 11 | ✓ 7% | ✓ 0% | ✓ 64% | ✓ 0.0% | ✓ 0.0% | ✓ 34% | ✓ -1.6 dB | · - | ✓ -1.8 | ✓ 5.5x |
 | `gabber` | · - | · - | ✗ 42% | · - | · - | ✗ G8 | ⚠ 31 | ✗ 38% | ✗ 11% | ✓ 64% | ⚠ 3.8% | ✓ 0.0% | ✓ 37% | ✗ -11.4 dB | · - | ✓ -2.0 | ✓ 8.2x |
 | `ambient` | ✓ 99% | ✓ 0% | ⚠ 77% | ⚠ 80% | ⚠ 9% | ✗ E8 | ✗ 34 | ✗ 65% | ✗ 42% | ✗ 8% | ✓ 0.0% | ✓ 0.0% | ✓ 30% | ✓ 1.2 dB | · - | ✓ -2.9 | ✓ 4.1x |
@@ -101,18 +101,10 @@ Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ 
 
 ## New Beat (`newbeat`)
 
-112, 108, 108 bpm; F# phrygian, C phrygian, C# phrygian. Layers: 544 bass, 389 chord, 154 melody notes.
+112, 108, 108 bpm; F# phrygian, C phrygian, C# phrygian. Layers: 544 bass, 389 chord, 110 melody notes.
 
-- ✗ only 58% of melody notes on the beat are chord tones
-- ✗ only 54% of held melody notes are chord tones
-- ✗ 33% of held melody notes rub a semitone against the harmony
-- ✗ 8% of melodic moves leap wider than a sixth
-- ✗ the echo (3 sixteenths, level 0.15) falls between the eighths the melody sits on
 - ⚠ 4% of bass notes rub a minor second against a chord tone sounding
-- ⚠ the melody reaches C#6 - shrill on a sustained lead
-- ⚠ 27% of melodic moves leap wider than a third
-- ⚠ 61% of the melody's echoes land a step from the note then sounding - listen: a rub at every turn, or the genre's own echo
-- ⚠ the brass strays 11 dB on average from a trombone (soft to loud, on opl3): 0 0 0 0 0 0 where the real one has 0 16 16 - - - - UNSW Music Acoustics, brass acoustics (a trombone crescendo, soft and loud)
+- ⚠ the brass:real strays 11 dB on average from a trombone (soft to loud, on paula): 0 0 0 0 0 1 where the real one has 0 16 16 - - - - UNSW Music Acoustics, brass acoustics (a trombone crescendo, soft and loud)
 
 ## Eurodance (`eurodance`)
 

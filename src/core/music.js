@@ -112,8 +112,12 @@ export const MUSIC_PRESETS = {
   newbeat: {
     label: 'New Beat', blurb: 'slow and heavy Belgian EBM: sequenced bass, big claps',
     bpm: [108, 120], scales: ['phrygian', 'minor'],
-    drums: 'newbeat', bass: 'ebm', chords: 'dubstab', lead: 'brass', arp: null,
-    swing: 0, intro: 0.04, fx: { reverb: 1.3, delay: 1, delayBeats: 0.75 },
+    drums: 'newbeat', bass: 'ebm', chords: 'dubstab', lead: 'hook', arp: null,
+    // (the brass sings a line - chord tones on the beats, steps between - where it played the chord's own steps,
+    //  a third of its long notes a semitone off; the real brass, as cyborg's and star pilot's; its echo on the beat)
+    hook: { instr: 'brass', kit: 'real', oct: 60, vel: 0.6, line: true },
+    melody: { free: [0, 7], dense: [0.5, 0.5, 0.5], close: true, moving: true },
+    swing: 0, intro: 0.04, fx: { reverb: 1.3, delay: 1, delayBeats: 1 },
   },
   eurodance: {
     label: 'Eurodance', blurb: 'hip-house organ bass, house piano, an anthem on top',
