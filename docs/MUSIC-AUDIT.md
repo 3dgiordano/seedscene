@@ -1,8 +1,8 @@
 # Music audit
 
-Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ fail, ~ let off by the style, · not measured; off grid is measured on the seeds that do not swing; speed is wall-clock time on the machine that ran it. Run `npm run audit:music -- <style>` for one style.
+Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ fail, ~ let off by the style, · not measured; off grid is measured on the seeds that do not swing; speed is wall-clock time on the machine that ran it. Run `npm run audit:music -- <style>` for one style. Jungle re-audited on 2026-11-02, after it was put right (its row and section; its speed on another machine).
 
-**13 of 28 styles pass** (no ✗ anywhere); failing: dreamwave, chiptune, rave, jungle, hardcore, newbeat, eurodance, gabber, ambient, orchestral, gameboy, heroic, derelict, keygen, triphop.
+**14 of 28 styles pass** (no ✗ anywhere); failing: dreamwave, chiptune, rave, hardcore, newbeat, eurodance, gabber, ambient, orchestral, gameboy, heroic, derelict, keygen, triphop.
 
 | style | bass in chord | bass rubs | melody on beat | held | held rubs | top | range | leaps >3rd | >6th | repeats | stuck | off grid | echo rubs | melody vs chords | sound vs real | peak | speed |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -11,7 +11,7 @@ Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ 
 | `acid` | ✓ 96% | ✓ 1% | · - | · - | · - | · - | · - | · - | · - | · - | · - | ✓ 0.0% | · - | · - | · - | ✓ -2.0 | ✓ 4.6x |
 | `trance` | ✓ 87% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ B5 | ✓ 12 | ✓ 2% | ✓ 0% | ✓ 77% | ✓ 0.8% | ✓ 0.0% | ⚠ 58% | ✓ -2.0 dB | · - | ✓ -1.9 | ✓ 5.7x |
 | `rave` | ✓ 100% | ✓ 0% | ✗ 20% | · - | · - | ✗ G7 | ✓ 17 | ⚠ 28% | ✓ 3% | ✓ 64% | ✓ 0.0% | ✓ 0.0% | ⚠ 42% | ✗ -12.4 dB | · - | ✓ -1.9 | ✓ 4.3x |
-| `jungle` | ✓ 99% | ✓ 0% | ⚠ 68% | ⚠ 68% | ⚠ 13% | ✗ D7 | ✓ 17 | ⚠ 27% | ✓ 2% | ✓ 91% | ✓ 1.9% | ✓ 0.0% | ⚠ 42% | ✓ 3.0 dB | · - | ✓ -2.1 | ✓ 4.3x |
+| `jungle` | ✓ 99% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ B5 | ✓ 9 | ✓ 8% | ✓ 0% | ✓ 73% | ✓ 0.0% | ✓ 0.0% | ✓ 0% | ✓ -2.0 dB | · - | ✓ -2.1 | ✓ 9.8x |
 | `hardcore` | ✓ 87% | ✓ 0% | ⚠ 73% | · - | · - | ✗ C9 | ✗ 35 | ✗ 38% | ✗ 10% | ✓ 76% | ✓ 0.0% | ✓ 0.0% | ✓ 37% | ✗ -9.7 dB | · - | ✓ -1.8 | ✓ 3.6x |
 | `newbeat` | ✓ 95% | ⚠ 4% | ✗ 58% | ✗ 54% | ✗ 33% | ⚠ C#6 | ✓ 19 | ⚠ 27% | ✗ 8% | ✓ 69% | ✓ 0.0% | ✓ 0.0% | ⚠ 61% | ✓ -0.1 dB | ⚠ 11 dB brass | ✓ -1.9 | ✓ 3.8x |
 | `eurodance` | ⚠ 75% | ✓ 0% | ⚠ 63% | ✗ 63% | ⚠ 9% | ✗ C#8 | ✓ 22 | ⚠ 30% | ⚠ 8% | ✓ 50% | ⚠ 9.5% | ✓ 0.0% | ✓ 29% | ✗ -14.0 dB | · - | ✓ -1.9 | ✓ 4.7x |
@@ -88,14 +88,9 @@ Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ 
 
 ## Jungle (`jungle`)
 
-165, 169, 169 bpm; F# minor, A# minor, B minor. Layers: 104 bass, 260 chord, 237 melody notes.
+165, 169, 169 bpm; F# minor, A# minor, B minor. Layers: 104 bass, 260 chord, 102 melody notes.
 
-- ✗ the melody reaches D7 - shrill on a sustained lead
-- ⚠ only 68% of melody notes on the beat are chord tones
-- ⚠ only 68% of held melody notes are chord tones
-- ⚠ 13% of held melody notes rub a semitone against the harmony
-- ⚠ 27% of melodic moves leap wider than a third
-- ⚠ 42% of the melody's echoes land a step from the note then sounding - listen: a rub at every turn, or the genre's own echo
+- nothing stands out
 
 ## Happy Hardcore (`hardcore`)
 
