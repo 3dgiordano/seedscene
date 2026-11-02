@@ -148,8 +148,12 @@ export const MUSIC_PRESETS = {
   gameboy: {
     label: 'Handheld Chip', blurb: 'two pulse channels, a 4-bit wave and noise',
     bpm: [120, 150], scales: ['major', 'minor', 'dorian'],
-    drums: 'gb', bass: 'wave', chords: 'gbarp', lead: 'gbchip', arp: null,
-    swing: 0, intro: 0.04, fx: { reverb: 0.15, delay: 0.5, delayBeats: 0.5 },
+    drums: 'gb', bass: 'wave', chords: 'gbarp', lead: 'hook', arp: null,
+    // (the pulse channel sings a line - chord tones on the beats, steps between - where it ran sixteenths off each
+    //  chord, leaping an octave on every beat's last one, to F#8; its echo on the beat)
+    hook: { instr: 'chip', kit: 'gb', oct: 72, vel: 0.5, line: true },
+    melody: { free: [0, 7], dense: [0.65, 0.65, 0.65], close: true, moving: true },
+    swing: 0, intro: 0.04, fx: { reverb: 0.15, delay: 0.5, delayBeats: 1 },
   },
   heroic: {
     label: 'Heroic Game', blurb: 'a hero on a mission: driving bass, brass, a lead that soars',

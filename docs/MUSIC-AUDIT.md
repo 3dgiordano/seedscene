@@ -1,8 +1,8 @@
 # Music audit
 
-Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ fail, ~ let off by the style, · not measured; off grid is measured on the seeds that do not swing; speed is wall-clock time on the machine that ran it. Run `npm run audit:music -- <style>` for one style. Jungle, keygen, derelict, triphop, rave and eurodance re-audited on 2026-11-02, after they were put right (their rows and sections; their speed on another machine).
+Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ fail, ~ let off by the style, · not measured; off grid is measured on the seeds that do not swing; speed is wall-clock time on the machine that ran it. Run `npm run audit:music -- <style>` for one style. Jungle, keygen, derelict, triphop, rave, eurodance and gameboy re-audited on 2026-11-02, after they were put right (their rows and sections; their speed on another machine).
 
-**19 of 28 styles pass** (no ✗ anywhere); failing: dreamwave, chiptune, hardcore, newbeat, gabber, ambient, orchestral, gameboy, heroic.
+**20 of 28 styles pass** (no ✗ anywhere); failing: dreamwave, chiptune, hardcore, newbeat, gabber, ambient, orchestral, heroic.
 
 | style | bass in chord | bass rubs | melody on beat | held | held rubs | top | range | leaps >3rd | >6th | repeats | stuck | off grid | echo rubs | melody vs chords | sound vs real | peak | speed |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -18,7 +18,7 @@ Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ 
 | `gabber` | · - | · - | ✗ 42% | · - | · - | ✗ G8 | ⚠ 31 | ✗ 38% | ✗ 11% | ✓ 64% | ⚠ 3.8% | ✓ 0.0% | ✓ 37% | ✗ -11.4 dB | · - | ✓ -2.0 | ✓ 8.2x |
 | `ambient` | ✓ 99% | ✓ 0% | ⚠ 77% | ⚠ 80% | ⚠ 9% | ✗ E8 | ✗ 34 | ✗ 65% | ✗ 42% | ✗ 8% | ✓ 0.0% | ✓ 0.0% | ✓ 30% | ✓ 1.2 dB | · - | ✓ -2.9 | ✓ 4.1x |
 | `orchestral` | ✓ 92% | ✓ 0% | ⚠ 70% | ✗ 62% | ⚠ 11% | ✗ B6 | ⚠ 26 | ⚠ 35% | ✗ 11% | ✓ 42% | ⚠ 6.8% | ✓ 0.0% | ✓ 19% | ✗ -9.3 dB | ⚠ 11 dB brass | ✓ -2.2 | ✓ 4.3x |
-| `gameboy` | ✓ 98% | ✓ 2% | ✓ 80% | · - | · - | ✗ F#8 | ✗ 34 | ✗ 59% | ✗ 34% | ✓ 84% | ⚠ 3.0% | ✓ 0.0% | ✓ 24% | ✓ -0.9 dB | · - | ✓ -2.2 | ✓ 13.7x |
+| `gameboy` | ✓ 98% | ✓ 2% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ A5 | ✓ 12 | ✓ 3% | ✓ 0% | ✓ 71% | ✓ 0.0% | ✓ 0.0% | ✓ 36% | ✓ 0.0 dB | · - | ✓ -2.1 | ✓ 18.7x |
 | `heroic` | ✓ 99% | ✓ 0% | ✗ 56% | · - | · - | ✗ D#8 | ✗ 32 | ✗ 37% | ✗ 16% | ✓ 63% | ✓ 1.1% | ✓ 0.0% | ✓ 20% | ✓ 0.0 dB | · - | ✓ -2.1 | ✓ 4.5x |
 | `synthwave` | ✓ 98% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ C6 | ✓ 12 | ✓ 3% | ✓ 0% | ✓ 61% | ✓ 0.0% | ✓ 0.0% | ⚠ 58% | ✓ -2.6 dB | · - | ✓ -2.4 | ✓ 7.0x |
 | `arcade` | ~ 82% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ B5 | ✓ 12 | ✓ 1% | ✓ 0% | ✓ 91% | ✓ 0.0% | ✓ 0.0% | ⚠ 66% | ✓ -0.4 dB | · - | ✓ -2.3 | ✓ 21.7x |
@@ -164,13 +164,9 @@ Seeds aurora, hikari, seedscene; 90 s each; 2026-11-01. ✓ pass, ⚠ warn, ✗ 
 
 ## Handheld Chip (`gameboy`)
 
-128, 134, 133 bpm; G# minor, A dorian, D# major. Layers: 328 bass, 92 chord, 270 melody notes.
+128, 134, 133 bpm; G# minor, A dorian, D# major. Layers: 328 bass, 92 chord, 111 melody notes.
 
-- ✗ the melody reaches F#8 - shrill on a sustained lead
-- ✗ the melody spans 34 semitones - more than a singer's line
-- ✗ 34% of melodic moves leap wider than a sixth
-- ✗ 59% of melodic moves leap wider than a third
-- ⚠ 3.0% of melody notes are struck a third time running on one pitch - listen: a line standing still, or a fanfare or a chant meaning it
+- nothing stands out
 
 ## Heroic Game (`heroic`)
 

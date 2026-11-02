@@ -327,6 +327,11 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   the time car's, the boxing match's and the card cascade's shaders compile in
   a third of the time or less, with the same pictures; and the live page
   starts loading the first scene as soon as its boot screen is up.
+- **Handheld chip, put right** through the music audit: its pulse lead ran
+  sixteenths off each chord, leaping an octave on every beat's last one, up
+  to F#8 over nearly three octaves; it sings a line now on the same pulse
+  channel, chord tones on the beats and steps between, up to the octave, its
+  echo on the beat. Every check passes.
 - **Eurodance, put right** through the music audit: its anthem lead sang
   high in a singer's place, the chord's own steps up to C#8, buried fourteen
   decibels under the house piano, and its plucks climbed to G#8; it plays a
