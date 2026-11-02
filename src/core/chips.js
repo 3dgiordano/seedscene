@@ -820,6 +820,9 @@ function ymChip(native) {
     else instr[name] = tone(YM_PLUCK.has(name) ? 'pluck' : YM_PAD.has(name) ? 'pad' : 'lead', YM_PAD.has(name) ? 0.42 : 0.55);
   }
   for (const name of Object.keys(NEW_INSTR)) if (!instr[name]) instr[name] = tone(YM_PLUCK.has(name) ? 'pluck' : 'lead', 0.55);
+  // (a vocoder-like lead sung on the choir: on the chip, a lead's square, not a pad's slow swell)
+  const choirPad = instr.choir, vocoderLead = tone('lead', 0.55);
+  instr.choir = { tail: choirPad.tail, render(v, out) { (v.ev.kit === 'vocoder' ? vocoderLead : choirPad).render(v, out); } };
 
   return { name: 'ym', instr, prepare, sendScale: { reverb: 0.15, delay: 0.5 } };
 }
