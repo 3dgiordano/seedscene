@@ -170,8 +170,12 @@ export const MUSIC_PRESETS = {
   heroic: {
     label: 'Heroic Game', blurb: 'a hero on a mission: driving bass, brass, a lead that soars',
     bpm: [132, 152], scales: ['minor', 'dorian', 'harmonicMinor'], progressions: ANTHEM,
-    drums: 'heroic', bass: 'octave8', chords: 'power', lead: 'hero', arp: 'arp',
-    swing: 0, intro: 0.04, fx: { reverb: 1.1, delay: 0.9, delayBeats: 0.75 },
+    drums: 'heroic', bass: 'octave8', chords: 'power', lead: 'hook', arp: 'arp',
+    // (the hero's lead sings a line - chord tones on the beats, steps between - where it played the chord's own
+    //  steps with fills leaping an octave, to D#8; its echo on the beat)
+    hook: { instr: 'lead', kit: 'hero', oct: 72, vel: 0.5, line: true },
+    melody: { free: [0, 7], dense: [0.6, 0.6, 0.6], close: true, moving: true },
+    swing: 0, intro: 0.04, fx: { reverb: 1.1, delay: 0.9, delayBeats: 1 },
   },
   synthwave: {
     label: 'Synthwave', blurb: 'the modern revival: gated snares, octave bass, neon arps',

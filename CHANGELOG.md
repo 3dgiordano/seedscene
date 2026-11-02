@@ -327,6 +327,11 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   the time car's, the boxing match's and the card cascade's shaders compile in
   a third of the time or less, with the same pictures; and the live page
   starts loading the first scene as soon as its boot screen is up.
+- **Heroic game, put right** through the music audit: its lead played the
+  chord's own steps with fills leaping an octave, up to D#8 over more than
+  two octaves, nearly half its notes on the beat off the chord; it sings a
+  line now on the same soaring lead, chord tones on the beats and steps
+  between, up to the octave, its echo on the beat. Every check passes.
 - **Orchestral tracker, laid out as an orchestra** through the music audit
   and the principles of orchestration: the first violins sing the melody on
   top, a line of its own, chord tones on the beats and steps between; the
