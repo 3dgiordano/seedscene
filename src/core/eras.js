@@ -14,7 +14,7 @@ export const ERAS = {
     label: '1972–1981', year: 1972, to: 1981, title: 'The first video games',
     blurb: 'the arcades and the black-and-white set: the first paddle game, the invaders, the rocks, the maze',
     display: 'arcade',   // the screen most of its things were seen on (src/core/displays.js)
-    scenes: ['paddles', 'invaders', 'rocks', 'maze', 'lcd'],
+    scenes: ['paddles', 'invaders', 'rocks', 'maze', 'lcd', 'crossing', 'tube', 'tanks'],
     music: ['arcade', 'cyborg', 'derelict', 'synthpop'],
   },
   1982: {

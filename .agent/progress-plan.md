@@ -65,6 +65,10 @@ Done on 2026-11-02, approved by the owner's look and merged (#12): piece B, the 
 
 Done on 2026-11-02, approved by the owner's look and merged: piece D, shader art for 2010-now - prism (the chromatic light pieces of the 2010s), sculpture (the raymarched still life), fractalflight (the mandelbox).
 
+Built on 2026-11-03 (branch arcade-classics, waiting for the owner's look): piece C's road crossing (`crossing`, 1972-1981, arcade monitor), against the arcade screenshot Frogger_game_arcade.png from Wikipedia; then, the same day, the vector tube (`tube`) and the wireframe tanks (`tanks`), both 1972-1981 on the colour vector monitor, against arcade-museum.com's screenshots of their games; uncommitted, waiting for the owner's look. The owner chose (2026-11-03) to keep the tanks on the colour vector monitor, green and red as the screenshots show them. Still to build of C: skate park, kart race, behind-view shooter, cartoon castle, artillery, football match; `terrace`.
+
 Built on 2026-11-02 (branch thin-eras, waiting for the owner's look): piece E - coderain (1997-1999), gimbal (2000-2009, the 64k intros), djdecks (2000-2009); every era now has three scenes or more.
 
 The next piece is the owner's pick, or Claude's if they leave it open.
+
+Owner, 2026-11-03: references for a game come first from https://www.arcade-museum.com/ (its game pages, how it plays, its resources), then the videos the owner names; the environment's network is on full access.

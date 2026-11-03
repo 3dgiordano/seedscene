@@ -16,7 +16,7 @@ Then ride it through half a century, from 1972 to now.**
 
 ![THE JOURNEY: every era from the arcade to the 64k intro, each with its own card, scenes and music](docs/gallery/journey.gif)
 
-`v0.2` · 7 eras · 51 scenes · 35 music styles · 16 displays · 6 sound boards · endless autoplay · runs in your browser · renders to mp4 ·
+`v0.2` · 7 eras · 54 scenes · 35 music styles · 16 displays · 6 sound boards · endless autoplay · runs in your browser · renders to mp4 ·
 no assets, only maths · built with [3dgiordano/agent-plugins](https://github.com/3dgiordano/agent-plugins)
 
 </div>
@@ -131,7 +131,7 @@ machine name it once had (`--era amiga`).
 
 | years | | its display (scenes may have their own) | its scenes | the music it brings |
 |---|---|---|---|---|
-| **1972–1981** | the first video games | ARCADE | paddles, invaders, rocks, maze, lcd | arcade attract, cyborg pulse, derelict ship, synth-pop |
+| **1972–1981** | the first video games | ARCADE | paddles, invaders, rocks, maze, lcd, crossing, tube, tanks | arcade attract, cyborg pulse, derelict ship, synth-pop |
 | **1982–1989** | home computers, arcades and the video shop | C64 | lightcycles, pyramid, boxer, bricks, outrun, scanner, timecar, moonbike, dottunnel, plasma, ball | SID chiptune, synth-pop, ST buzz, italo disco — on the C64's SID, the Atari ST's YM2149 or the synthesizer's own voices, by the seed |
 | **1990–1993** | the demoscene's golden years | AMIGA | the Amiga effects - copper, kefrens, vector balls, the chessboards, the cracktro and more - plasma, metaballs, tunnel, fractal, bumplogo, fireworks, morph; footsteps, starfighter, cascade, echolines | Amiga rave, New Beat, orchestral trackers, dreamwave, tracker jazz, beast lands, lament, musicdisk ballad, jolly march, hip-hop blaster — on Paula's 8-bit samples |
 | **1994–1996** | the PC demos and the multimedia years | VGA | fire, pipes, ansi, maze3d; fractal, tunnel, metaballs, plasma, bumplogo | ambient techno, acid, gabber, eurodance, jungle, FM metal, MIDI quest — on a Sound Blaster 16's FM or an AWE32's wavetable; and keygen, the party's tracker tunes, played from samples as a module player did; and trip-hop, its strings and Rhodes on the card; and lament and jolly march, played on the card |
@@ -369,8 +369,10 @@ Era by era, oldest first. Each one is a memory of its time, made from scratch.
 |---|---|---|
 | ![paddles](docs/gallery/paddles.png) | ![invaders](docs/gallery/invaders.png) | ![rocks](docs/gallery/rocks.png) |
 | **paddles** — the first video game, in neon: a return on every beat, and on an accent a paddle misses and is blown apart. `--scene paddles --era 1972 --seed rally` | **invaders** — the marching formation of the late-70s arcades, its aliens made up by the seed: a step a beat, each alien bursting on a beat as the cannon's shot lands. `--scene invaders --era 1972 --seed formation` | **rocks** — the rock shooter of the vector arcades, in glowing phosphor lines: a ship that flies, dodges and fires on the eighths, big rocks breaking in two. `--scene rocks --era 1972 --seed vectorscope` |
-| ![maze](docs/gallery/maze.png) | ![lcd](docs/gallery/lcd.png) |   |
-| **maze** — the dot-chomping maze chase, in neon: a chomper hunting dots round a mirrored maze, three wisps on its tail, a new maze each time it is cleared. `--scene maze --era 1972 --seed powerpill` | **lcd** — the juggling LCD handheld of 1980, the whole device: a maroon case, round red buttons, a juggler in black segments, the balls hopping cell by cell into a hand on the beat. `--scene lcd --era 1972 --seed juggler` |   |
+| ![maze](docs/gallery/maze.png) | ![lcd](docs/gallery/lcd.png) | ![crossing](docs/gallery/crossing.png) |
+| **maze** — the dot-chomping maze chase, in neon: a chomper hunting dots round a mirrored maze, three wisps on its tail, a new maze each time it is cleared. `--scene maze --era 1972 --seed powerpill` | **lcd** — the juggling LCD handheld of 1980, the whole device: a maroon case, round red buttons, a juggler in black segments, the balls hopping cell by cell into a hand on the beat. `--scene lcd --era 1972 --seed juggler` | **crossing** — the road-crossing game of the early-80s arcades, in neon: a hopper crossing traffic and a river of logs to the bays of the far bank, every lane and every hop stepping on the beat. `--scene crossing --era 1972 --seed frogs` |
+| ![tube](docs/gallery/tube.png) | ![tanks](docs/gallery/tanks.png) |   |
+| **tube** — the tube shooter of the colour vector arcades, in glowing lines: a claw on the rim of a tube of many shapes, things climbing its lanes toward it; a dive down the tube on every drop. `--scene tube --era 1972 --seed tempo` | **tanks** — the wireframe tank battle of the vector arcades, through the gunner's sight: green mountains, a moon, blocks and pyramids, the radar in red above; the enemy blown apart on the backbeat. `--scene tanks --era 1972 --seed radar` |   |
 
 ### 1982–1989 · home computers, arcades and the video shop
 
@@ -594,7 +596,7 @@ seedscene info    [options]     show what a seed composes
 | option | meaning | default |
 |---|---|---|
 | `--seed <word>` | anything at all; the same word always gives the same demo | random |
-| `--scene <name>` | one of the fifty-one scenes (`--style`, its old name, works too) | chosen by the seed - one of the era's, if the era is given |
+| `--scene <name>` | one of the fifty-four scenes (`--style`, its old name, works too) | chosen by the seed - one of the era's, if the era is given |
 | `--era <name>` | `auto` `1972` `1982` `1990` `1994` `1997` `2000` `2010` — or any year inside one, or its old name (`arcade` `c64` `amiga` `dos` `console` `handheld` `y2k` `modern`) | an era the scene belongs to |
 | `--display <name>` | `auto` `bw` `arcade` `vector` `colorvector` `mono` `c64` `vhs` `ega` `amiga` `vga` `snes` `composite` `gameboy` `nokia` `svga` `modern` | the screen: on `auto` each scene its own, or its era's |
 | `--board <name>` | `auto` `hifi` `paula` `opl3` `awe32` `ym` `sid` | the sound board: on `auto` each scene its own, or its era's |
@@ -664,7 +666,7 @@ src/core/music.js     composer, thirty-five styles, synthesizer, feature track
 src/core/chips.js     the sound chips: Paula, OPL3, AWE32, YM2149, SID
 src/core/visual.js    renderer, palette, title plate, scroller, era cards
 src/core/gl.js        WebGL2 helpers
-src/styles/index.js   the fifty-one scenes, the 3D stage, the About part, the display's screen
+src/styles/index.js   the fifty-four scenes, the 3D stage, the About part, the display's screen
 src/app.js            ties the music and the picture together
 web/index.html        the live page
 web/boot.js           the C64 boot screen
