@@ -59,6 +59,8 @@ Outside the plan, at the owner's word (2026-11-01), each checked live and approv
 
 Split on 2026-11-02 (Q9): 0.2.0 takes PLAN-v0.2.md section 8, "What 0.2.0 still takes" (A-E); the rest is docs/PLAN-v0.3.md.
 
-Built on 2026-11-02 (branch sid-chip, waiting for the owner's ear): piece A, the SID - a sixth board, half the tracks of 1982-1989 (ERA_CHIPS ['sid', 'sid', 'ym', null]); the four styles pass the audit; the reviewer's faults put right on the chip alone; ST buzz plays on it with an unfiltered sawtooth buzzer (keeping it off the SID would need boards by style - the owner's call).
+Done on 2026-11-02, merged by the owner (#11): piece A, the SID - a sixth board, half the tracks of 1982-1989 (ERA_CHIPS ['sid', 'sid', 'ym', null]); the four styles pass the audit; the reviewer's faults put right on the chip alone; ST buzz plays on it with an unfiltered sawtooth buzzer (keeping it off the SID would need boards by style - the owner's call).
+
+Built on 2026-11-02 (branch vector-display, waiting for the owner's look): piece B, the vector displays - vector (B/W, 16 intensities) and colorvector (7 colours), each tracing a picture's lines and outlines (the first version barely filtered, the owner found); rocks seen through vector; from a photo of a real vector tube (e-basteln.de) and arcadevector.pages.dev; no persistence trail (a few ms, under a frame).
 
 The next piece is the owner's pick, or Claude's if they leave it open.

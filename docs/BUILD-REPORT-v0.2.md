@@ -29,7 +29,7 @@ sound board.
 ## Where it stands, 2026-11-02
 
 - **Built:** forty-five scenes in seven eras (spans of years, 1972 to now; the
-  last, 2010–now, has no scenes yet), thirty-five music styles, fourteen
+  last, 2010–now, has no scenes yet), thirty-five music styles, sixteen
   displays and six sound boards, each scene with its own or its era's; THE
   JOURNEY (three scenes an era, going on through the lists over replays),
   AUTOPLAY, born in, greetings, the screensaver, the sounds between the tracks,
@@ -3972,6 +3972,47 @@ boards chosen by style, the owner's call.
 | The other styles and boards | no score and no other chip's code changed |
 | Live, muted, `board=sid` in 1982–1989 | the scene plays, the HUD reads "sound SID", no console errors |
 | `npm test` | 22 checks pass |
+
+## The vector monitors
+
+The split's second piece: displays for the games a beam drew. Built from a
+photograph of a real vector tube drawing the rock shooter (e-basteln.de's
+Asteroids mini, on a Vectrex tube), an account of how the beam and the
+phosphor work (arcadevector.pages.dev) and the instruction sets of Atari's
+vector generators (arcarc.xmission.com's notes, which warn they may hold
+errors; jmargolin.com's history).
+
+The first version only blackened the dim, glowed and whitened the brightest:
+the owner, forcing it on other scenes, saw no difference, and the rocks
+looked as they had - the scene already drew its lines on black. A vector
+monitor cannot fill: its beam draws lines from point to point. So the display
+now traces any picture's lines and the outlines of what it fills (an edge of
+colour or brightness on each channel; a thin line found as brighter than what
+is round it) and leaves the inside of every shape unlit. And at the owner's
+word (option A) it is two displays, one for each tube:
+
+- `vector`, the black-and-white tube of the rock shooter and the lunar
+  lander: one blue-white, sixteen intensities (the Digital Vector
+  Generator's four-bit intensity field; the count is derived from its width).
+- `colorvector`, the colour tube of the tube shooter (1981, the first in
+  colour) and the space-war cockpit: three bits of colour - "8 basic colors",
+  one of them the beam off, so seven - each at any of 256 intensities (the
+  Analog Vector Generator's colour opcode, given for the cockpit game; the
+  same for the tube shooter is its author's belief).
+
+The phosphor fades in a few milliseconds, under a frame, so nothing trails -
+which also keeps every frame computable from its time alone.
+
+Compared with the photograph: black between the lines in both, thin lines,
+no pixels or scan lines. The rocks' lines are drawn as bright as the ship's,
+where in the photograph the rocks are dimmer than the ship, the saucer and the
+shots - the scene's own drawing, approved before, left for the owner's look.
+
+| Check | Result |
+|---|---|
+| Live on the real GPU, muted: `rocks` on AUTO | "screen VECTOR (auto)"; thin blue-white lines on black; no console errors |
+| `plasma` forced on `colorvector`, `fire` on `vector` | the plasma's bands become thin contour lines in pure colours, the fire the outlines of its flames; the inside of every shape black |
+| `npm test` | 22 checks pass, sixteen displays complete |
 
 ## What went wrong in the first round
 
