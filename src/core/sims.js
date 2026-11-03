@@ -2297,6 +2297,37 @@ const CRACK_FONT = [
 const crackCode = (ch) => Math.max(0, CRACK_CHARS.indexOf(ch));
 export const CRACK_LINE = 24;              // characters a line of a page
 
+/**
+ * The code rain's words: what the rain reveals besides a face - the seed itself and the project's name - in
+ * the crack intros' 5x7 font. Nothing moves here; the scene reads the letters and the font.
+ */
+export class CoderainSim {
+  constructor(seed) {
+    const clean = [...String(seed).toUpperCase()].filter((ch) => CRACK_CHARS.includes(ch)).join('').trim().slice(0, 12);
+    const words = [clean || 'SEED', 'SEEDSCENE'];
+    this.words = new Float32Array(24);
+    words.forEach((w, j) => [...w].forEach((ch, i) => { this.words[j * 12 + i] = crackCode(ch); }));
+    this.lens = [words[0].length, words[1].length, 0, 0];
+    this.font = new Float32Array(48 * 2);
+    CRACK_FONT.forEach((g, i) => {
+      let lo = 0, hi = 0;
+      g.split('|').forEach((row, y) => [...row].forEach((c, x) => {
+        if (c !== '#') return;
+        if (y < 4) lo += 2 ** (y * 5 + x); else hi += 2 ** ((y - 4) * 5 + x);
+      }));
+      this.font[i * 2] = lo; this.font[i * 2 + 1] = hi;
+    });
+  }
+
+  uniforms() {
+    return {
+      uFont: { v: this.font, kind: '4fv' },
+      uWords: { v: this.words, kind: '4fv' },
+      uWordLen: { v: this.lens, kind: '4f' },
+    };
+  }
+}
+
 export class CracktroSim {
   constructor(seed, spb, meta, features, greets = []) {
     this.spb = spb;
@@ -2885,4 +2916,4 @@ export class AnimeopSim {
   }
 }
 
-export const SIMS = { animeop: AnimeopSim, timecar: TimecarSim, moonbike: MoonbikeSim, maze3d: Maze3dSim, echolines: EcholinesSim, ansi: AnsiSim, cascade: CascadeSim, cracktro: CracktroSim, rubber: RubberSim, chessfloor: ChessfloorSim, bobs: BobsSim, pyramid: PyramidSim, pipes: PipesSim, maze: MazeSim, snake: SnakeSim, rocks: RocksSim, starfighter: StarSim, paddles: PaddlesSim, invaders: InvadersSim, bricks: BricksSim, lightcycles: LightcyclesSim };
+export const SIMS = { coderain: CoderainSim, animeop: AnimeopSim, timecar: TimecarSim, moonbike: MoonbikeSim, maze3d: Maze3dSim, echolines: EcholinesSim, ansi: AnsiSim, cascade: CascadeSim, cracktro: CracktroSim, rubber: RubberSim, chessfloor: ChessfloorSim, bobs: BobsSim, pyramid: PyramidSim, pipes: PipesSim, maze: MazeSim, snake: SnakeSim, rocks: RocksSim, starfighter: StarSim, paddles: PaddlesSim, invaders: InvadersSim, bricks: BricksSim, lightcycles: LightcyclesSim };

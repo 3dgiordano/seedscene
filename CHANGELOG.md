@@ -4,7 +4,7 @@
 
 The release that turns the tool into **SEEDSCENE**: a name, a personality,
 a Commodore 64 front door, seven eras of computing from 1972 to now,
-forty-eight scenes, thirty-five styles of music, sixteen displays and six
+fifty-one scenes, thirty-five styles of music, sixteen displays and six
 sound boards, an endless AUTOPLAY channel, and a live mode you
 can drive entirely from the keyboard.
 
@@ -125,8 +125,8 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   ribbon — wider on the bass, fatter and brighter on the kick, its colours
   turning with the bars of the music, a copper bar rolling behind it on the
   beat.
-- **The bouncing checkered ball** (`ball`, Amiga): the Amiga's first and most
-  famous demo — the red and white ball spinning on its tilted axis, bouncing
+- **The bouncing checkered ball** (`ball`, Amiga): the ball of the Amiga's
+  first demos — the red and white ball spinning on its tilted axis, bouncing
   from wall to wall of a grid room, its shadow on the back wall; it lands on
   every beat, spins faster as the music builds, and the room lights up on
   the kick.
@@ -147,7 +147,7 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   as an idea — a long, low black car coming down a night road, the red light
   in its nose sweeping left and right, one pass on every beat with a trail
   fading behind it; the road rushes faster as the music builds and the
-  headlamps glow on the kick. No name, no logo, no design of the original.
+  headlamps glow on the kick. No name, no logo, no design of any one car.
 - **The footsteps** (`footsteps`, 32-bit console): the dinosaur films' most
   famous warning, as an idea — two short plastic cups of water on a car's
   dashboard at night in the rain, the water trembling into rings with every
@@ -164,7 +164,7 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   1982 arcades — twenty-eight cubes in seven rows whose tops change colour as
   they are landed on, rainbow discs floating at the sides, red balls
   bouncing down, the score and the colour to change to in the corner. The
-  hopper is a round green one of its own, not the original character; it
+  hopper is a round green one of its own, no character of the arcades; it
   lands on every beat, the balls drop in every two bars, the discs turn with
   the hats, and each round brings its own colours.
 - **The 3D pipes** (`pipes`, DOS): the screensaver of the mid-90s office PC,
@@ -195,8 +195,8 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   weave a knot as they pass.
 - **The dual chessboard** (`dualchess`, Amiga): a chessboard on each of the
   Amiga's bitplanes, each zooming slowly between big squares and small ones,
-  by ratio so no squares stream past at the edges, the palette giving every overlap of squares its own shade (after
-  Nuance's Dual Chess and Sanity's Quarters Chess Board). Two modes, a phrase
+  by ratio so no squares stream past at the edges, the palette giving every overlap of squares its own shade (evoking
+  the dual boards and the fluid zoom of the Amiga years' chessboard intros). Two modes, a phrase
   each: the layers sliding sideways past each other at their own speeds; then
   the boards turning slowly on their own axes against each other, a quarter
   turn a notch on each beat, breaking into moiré, square again for the next. The
@@ -207,7 +207,7 @@ scene now has one era, a span of years (see **Eras are spans of years** and
 - **The chessboard floor** (`chessfloor`, Amiga): the chessboard of the Amiga
   intros seen from above in perspective and turning beneath you, its corners
   swinging out over the black, the sky in copper bands, and a red cube over
-  it (after Quadriga's Chessboard intro). Ours: the board is a surface that
+  it (as the chessboard intros of the early 90s are remembered). Ours: the board is a surface that
   waves in 3D - a slow swell that grows with the bass, and every time the
   cube lands, its corner on the surface, the board gives under it and a ring
   of waves runs out from under it and dies away; the board turns in lurches
@@ -226,7 +226,7 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   the screen punches in on the kick, with the zoom blur, and shakes with the
   bass; the copper bars behind flare on the kick and widen with the bass, a
   third joining them when the music peaks. The cube is grey, as the
-  original's; the colour is the bars'.
+  demos' cubes were; the colour is the bars'.
 - **The bump-mapped logo** (`bumplogo`, DOS): an emblem raised out of rough
   stone, lit by moving coloured lights so it reads as embossed metal, done in
   2D as the mid-90s PC demos did - each pixel's slope shifts where the light
@@ -251,7 +251,7 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   time: what this is, and thanks to 3dgiordano and the SEEDSCENE community -
   which then fades away and leaves the stars.
 - **The card cascade** (`cascade`, Y2K): the end of the desktop card game,
-  built from captures of the original's win screen - the four foundations
+  as the win screens of the 90s office PC are remembered - the four foundations
   emptying from the kings down, each card falling and bouncing off the bottom
   of the table and leaving a copy of itself at every step, never cleared: fast
   cards fan out in white edges with their red and black indices, slow ones
@@ -284,7 +284,7 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   the snare sets the stars twinkling, and on the drop the logo cycles its
   colours.
 - **The bouncing lines** (`echolines`, DOS): the screensaver of the early 90s,
-  built from captures of it - two figures of four corners, each corner flying
+  as it is remembered - two figures of four corners, each corner flying
   straight and bouncing off the edges of the screen, each figure drawn again
   at the moments just behind it in thin lines of one colour, a fan of echoes.
   On the music: the figures fly faster as it builds, with a shove on each kick
@@ -292,7 +292,7 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   punches the screen; each snare hit moves the colours on; the busier the
   music, the more echoes, from six to fourteen.
 - **The 3D maze** (`maze3d`, DOS): the maze screensaver of the mid-90s,
-  built from captures of it - corridors of dark red bricks with pale mortar,
+  as it is remembered - corridors of dark red bricks with pale mortar,
   a tan floor, a ceiling of white tiles, walked in first person through a maze
   of the seed's own with a hand on the wall, corners taken walking. A move
   every two beats, on the first and third of the bar; each kick a footfall
@@ -300,7 +300,7 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   as each phrase ends a grey stone spins on the path ahead, and on the drop
   the walk goes through it and the world turns upside down, until the next.
 - **The moon bike** (`moonbike`, modern): the boy and his friend from the
-  stars, as an idea, built from stills of the film's moon shot - a deep blue
+  stars, as an idea, as the moon crossing of the early 80s is remembered - a deep blue
   night, a huge pale moon with its seas and a wisp of cloud, pines at the
   corners, and a bicycle crossing the moon in silhouette, the rider hunched
   over the bars with his cape flying and a bundle in a blanket in the basket.
@@ -383,9 +383,43 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   vowel's formants, steady as a machine's voice - over synth pads. In the
   1982–1989 era, on the synthesizer's own voices or the Atari ST's chip. It
   passes every check of the music audit.
+- **The new scenes after the owner's look.** `sculpture`: the ball now
+  travels through the arch's hole and the ring's and melts into them as it
+  passes - the smooth-blending trick the scene is about - where before it
+  bounced in place. `gimbal`: a light behind the rings, its shafts through the
+  haze cut by the rings, and a lens flare; every colour the seed's. `coderain`:
+  continuous falls that run until they leave the screen (they were cut on the
+  rhythm), small glyphs in sheets of depth with focus, glow and transparency,
+  white heads typing and leaving fading ghosts; then, at the owner's second
+  look, no punch (it shook the fine glyphs), a camera moving slowly forward
+  through the sheets, the flow gathering speed through each phrase, and a face
+  in dark glasses woven of code revealed as each phrase opens - rising glyph by
+  glyph with soft edges, its glasses - two full rounded ovals nearly as wide
+  together as the face, half-way down the head - a place where the code is
+  dimmed to about the hair's tone so the rain still shows through them, the head
+  given a jaw and dark hair, no neck or shoulders; and in turn
+  with the face, the seed and SEEDSCENE rise out of the rain the same way,
+  coming towards the camera from far off, soft, sharpening, then fading and
+  blurring as they come too near, and no tape tear along the bottom of this scene. The other five
+  new scenes get the kick's zoom punch; the 3D ones a slowly drifting camera.
+  `djdecks`: the decks and the mixer as they were, and round them now a club
+  night - the booth with a lit edge, dancers below with their hands up over a
+  floor of chasing tiles, moving heads throwing beams through drifting smoke,
+  a laser fan, the mirror ball's spots, a strobe at the end of each phrase, and
+  the lights flaring in the lens as each phrase opens; the camera moves as
+  before, a little farther back.
+- **Three scenes for the thin eras**, so every era has three of its own:
+  `coderain` (1997–1999), falling green code as the cyberpunk screens of the
+  time imagined it - glyphs of the seed's own, falls starting on the beat, seen
+  on videotape; `gimbal` (2000–2009), the 64k intros of the time as the memory
+  of them goes - steel rings turning a quarter on the beat round a metal
+  core, in a hall of tiled bands and warm haze, letterboxed; and `djdecks`
+  (2000–2009), two turntables and a mixer from above, the live deck changing
+  each phrase, the crossfader sliding over, a scratch to end it. Each evokes
+  its time, written from scratch: no titles, names or logos.
 - **Shader art for 2010–now**, the era named for it, which had no scene:
-  three scenes, each from a real piece of the 2010s' fragment-shader art,
-  written from scratch. `prism`, the tiny chromatic-ring pieces: a lattice of
+  three scenes evoking the 2010s' fragment-shader art, written from scratch.
+  `prism`, in the spirit of its tiny chromatic light pieces: a lattice of
   points of light pushed out by a wave, each colour a moment behind, a white
   star where they meet. `sculpture`, the raymarched still life: shapes of
   distance functions melting on a floor under a low sun, with soft shadows,
@@ -394,10 +428,9 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   same pace whatever the tempo so the fractal can be seen. Each moves with the music. Synthwave, the era's own
   style, plays in THE JOURNEY and AUTOPLAY again, which no longer pass the era by.
 - **The vector monitors**, two displays: `vector`, the black-and-white tube
-  the rock shooter of 1979 was drawn on, and `colorvector`, the colour tube
-  of the 1981 tube shooter and the space-war cockpit. From a photograph of a
-  real vector tube drawing the rocks, an account of how the beam and the
-  phosphor work, and the instruction sets of the vector generators. A beam
+  of the vector arcades of 1979, and `colorvector`, the colour tube of the
+  years after. From how the beam and the phosphor work and the published
+  instruction sets of the vector generators. A beam
   only draws lines, so the display traces any picture's lines and the outlines
   of what it fills, and leaves the inside of every shape unlit, black: a filled
   scene becomes its contours. The black-and-white tube draws them blue-white
@@ -677,7 +710,7 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   other side; a bouncing octave bass and drum samples. On DOS it plays from
   samples, as a module player did, whatever card the seed chose.
 - **The anime opening** (`animeop`, 32-bit console): the openings the 90s
-  brought to Latin America, built from frames of two of them - a cut on every
+  brought to Latin America, as they are remembered - a cut on every
   bar: the team in a row against a red sunburst, three of them against a
   sunset, a power-up over two bars - the charge, then on the downbeat a white
   flash, a column of fire bursting up and a ring of dust, lightning out of the
@@ -689,7 +722,7 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   every beat into a white flash, and the title card - the seed in thick outlined
   letters over rushing blue streaks - slamming in on the drop.
 - **The time car** (`timecar`, arcade): the time-travel car of the 80s, as
-  an idea, built from stills of the film's first run and its fire trails - a
+  an idea, evoking the first run and the fire trails of the 80s time-travel film - a
   wet parking lot lit orange, a long low building beyond, two onlookers (one
   with the remote, one filming) swaying to the music. A steel wedge in 3D laps
   the lot, passing in front of them, swings round and charges between them,
@@ -699,8 +732,8 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   the beat as the trails race between their legs; then the plate it left,
   spinning on its edge like a coin until it falls flat, SEEDSCENE on it. The
   car is drawn from the coupe's side profile; the fire is a volume with a glow.
-- **The starfighter, against the console original.** Six screenshots of the
-  16-bit classic were the reference. White streaks that crossed the screen
+- **The starfighter, as the 16-bit space shooters looked.** Six frames of
+  the kind were measured. White streaks that crossed the screen
   from below are gone: they were background stars passing too close to the
   camera. The ship is a white fighter with tall blue fins at its wing tips,
   the drones are red delta-wing fighters banking as they weave, space is
@@ -800,9 +833,10 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   one. A programme's track plays on its first scene's board.
 - **Eras are spans of years.** Seven, keyed by the year they start - 1972–1981,
   1982–1989, 1990–1993, 1994–1996, 1997–1999, 2000–2009, 2010–now - and a game
-  or a film goes to the year it came out (Tron, Q*bert, the robot fight,
-  Arkanoid and OutRun to the 1980s; the 16-bit space shooter and the dinosaur
-  film to 1990–1993). The machine names still find their era.
+  or a film goes to the year it came out (the light-cycle film, the
+  cube-pyramid hopper, the robot fight, the brick breaker and the arcade road
+  racer to the 1980s; the 16-bit space shooter and the dinosaur film to
+  1990–1993). The machine names still find their era.
 - **Displays.** The screens are their own catalogue, apart from the eras:
   sixteen, each named for one technology - B/W, ARCADE, VECTOR, COLOR VECTOR, MONO, C64, VHS, EGA,
   AMIGA, VGA, SNES, COMPOSITE TV, GAME BOY, NOKIA, SVGA and MODERN (no filter).

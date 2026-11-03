@@ -12,7 +12,7 @@
 export const ERAS = {
   1972: {
     label: '1972–1981', year: 1972, to: 1981, title: 'The first video games',
-    blurb: 'the arcades and the black-and-white set: Pong, the invaders, the rocks, the maze',
+    blurb: 'the arcades and the black-and-white set: the first paddle game, the invaders, the rocks, the maze',
     display: 'arcade',   // the screen most of its things were seen on (src/core/displays.js)
     scenes: ['paddles', 'invaders', 'rocks', 'maze', 'lcd'],
     music: ['arcade', 'cyborg', 'derelict', 'synthpop'],
@@ -42,14 +42,14 @@ export const ERAS = {
     label: '1997–1999', year: 1997, to: 1999, title: '3D consoles and pocket screens',
     blurb: 'the 32-bit consoles on the TV, a game on every phone, the anime of the afternoons',
     display: 'composite',
-    scenes: ['snake', 'animeop'],
+    scenes: ['snake', 'animeop', 'coderain'],
     music: ['heroic', 'eurodance', 'rocknroll', 'starpilot', 'midiquest', 'animeop', 'skatepunk', 'gameboy', 'march'],
   },
   2000: {
     label: '2000–2009', year: 2000, to: 2009, title: 'The 64k intro',
     blurb: 'hi-res, glow on everything, a whole demo in 64 kilobytes',
     display: 'svga',
-    scenes: ['morph'],
+    scenes: ['morph', 'gimbal', 'djdecks'],
     music: ['trance', 'hardcore', 'keygen', 'triphop'],
   },
   2010: {

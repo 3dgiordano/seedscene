@@ -131,7 +131,7 @@ export const DISPLAYS = {
 export const DISPLAY_NAMES = Object.keys(DISPLAYS);
 
 /**
- * The scenes that need a look of their own: a game its machine's screen (Pong a black-and-white set, the
+ * The scenes that need a look of their own: a game its machine's screen (the first paddle game a black-and-white set, the
  * arcade games the arcade monitor, the phone's snake its phone's LCD, the 16-bit space shooter its console's TV), a film or a
  * television series the videotape it was watched on, a scene that draws its own device no filter at all, and a
  * thing whose years fall in an era seen mostly on another machine its own machine's. Every other scene - the demo
@@ -139,13 +139,14 @@ export const DISPLAY_NAMES = Object.keys(DISPLAYS);
  */
 export const SCENE_DISPLAY = {
   paddles: 'bw',
-  rocks: 'vector',                    // (the rock shooter of 1979 was drawn by a beam, on a vector monitor)
+  rocks: 'vector',                    // (the vector arcade games of 1979 were drawn by a beam)
   invaders: 'arcade', maze: 'arcade', bricks: 'arcade', lightcycles: 'arcade',
   boxer: 'arcade', pyramid: 'arcade', outrun: 'arcade',
   lcd: 'modern',
   snake: 'nokia',                     // (the phone's game, on the phone's screen)
   starfighter: 'snes',                // (the 16-bit console's polygons)
-  scanner: 'vhs', timecar: 'vhs', moonbike: 'vhs', footsteps: 'vhs', animeop: 'vhs',
+  scanner: 'vhs', timecar: 'vhs', moonbike: 'vhs', footsteps: 'vhs', animeop: 'vhs', coderain: 'vhs',
+  djdecks: 'modern',                  // (the decks drawn whole, and the club round them, on the decade's flat screen)
   // a demo or a desktop thing whose years put it in an era seen mostly on another machine keeps its own
   ball: 'amiga',                      // (the Amiga's bouncing ball of 1984, in the 8-bit decade)
   cascade: 'vga', echolines: 'vga',   // (the PC desktop's card game and screensaver, in the Amiga's years)

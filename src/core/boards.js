@@ -47,7 +47,7 @@ export const BOARD_NAMES = Object.keys(BOARDS);
  * heard mostly on another machine its own machine's. Every other scene plays on its era's boards.
  */
 export const SCENE_BOARD = {
-  scanner: 'hifi', timecar: 'hifi', moonbike: 'hifi', footsteps: 'hifi', animeop: 'hifi',
+  scanner: 'hifi', timecar: 'hifi', moonbike: 'hifi', footsteps: 'hifi', animeop: 'hifi', coderain: 'hifi',
   starfighter: 'hifi', snake: 'hifi', lcd: 'hifi',
   ball: 'paula',                      // (the Amiga's bouncing ball, in the 8-bit decade)
   cascade: 'opl3', echolines: 'opl3', // (the PC desktop's card game and screensaver, in the Amiga's years)
