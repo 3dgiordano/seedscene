@@ -8,7 +8,7 @@
 //   AUTOPLAY     an endless mix: a few tracks in one era, then another era.
 //                Born in a year, it opens in the era the viewer was twelve in
 //                and keeps coming back to it, the eras between drawn from the
-//                ones nearest it.
+//                ones nearest it. Held in one era, it never leaves it.
 //                Every 40 seconds a new track, and inside each track the
 //                scene changes where the music turns - on the drop, on the
 //                crash that opens a phrase - two or three scenes a track.
@@ -68,6 +68,35 @@ export function bornInHome(year) {
 }
 
 /**
+ * A list dealt round after round, without end: each round the whole list in a new order drawn by the
+ * seed, so nothing comes again before all of it has come round, and a round never replays the last
+ * one's order by rote (a list as long as a track's or a visit's share would otherwise come back in
+ * the same order every time). A round opens away from where the last one closed: not on its last
+ * item, nor - with four or more to deal - on the one before it, so a part that runs over the end of
+ * a round shows no item twice. `rounds` keeps the rounds dealt so far.
+ */
+function dealt(rounds, seed, label, list, n) {
+  const len = list.length;
+  const r = Math.floor(n / len);
+  while (rounds.length <= r) {
+    const k = rounds.length;
+    const round = new Rng(seed, k ? `${label}/${k}` : label).shuffle(list);
+    const gap = len > 3 ? 2 : len > 1 ? 1 : 0;
+    const prev = rounds[k - 1];
+    for (let p = 0; prev && p < gap; p++) {
+      const tail = prev.slice(len - (gap - p));
+      if (!tail.includes(round[p])) continue;
+      const q = round.findIndex((x, j) => j > p && !tail.includes(x));
+      if (q > p) [round[p], round[q]] = [round[q], round[p]];
+    }
+    // the same order as the last round: the last two change places (the opening stays as it was set)
+    if (prev && len > 2 && round.every((x, j) => x === prev[j])) [round[len - 2], round[len - 1]] = [round[len - 1], round[len - 2]];
+    rounds.push(round);
+  }
+  return rounds[r][n % len];
+}
+
+/**
  * The overlap from one track into the next: `beats` beats of each, played
  * together over `seconds`, on a tempo that glides from the outgoing track's
  * to the incoming one's - bent just enough that the beats fill the time
@@ -106,63 +135,95 @@ class Transition {
 
 export class Programme {
   /**
-   * @param {{seed:string, kind:'journey'|'autoplay', partSec:number, count?:number, passes?:number}} o
+   * @param {{seed:string, kind:'journey'|'autoplay', partSec:number, count?:number, passes?:number, era?:string}} o
    */
-  constructor({ seed, kind, partSec, count, bornIn, passes, board }) {
+  constructor({ seed, kind, partSec, count, bornIn, passes, board, era }) {
     this.seed = seed;
     this.kind = kind;
     this.board = board || 'auto';  // SOUND BOARD: auto (each track its first scene's), or one forced on all
     // born in: AUTOPLAY round the era of the viewer's twelfth year
     this.bornIn = kind === 'autoplay' && Number.isInteger(bornIn) ? bornIn : null;
     this.home = this.bornIn !== null ? bornInHome(this.bornIn) : null;
+    // held in one era: AUTOPLAY on the era the viewer asked for, and no other (born in comes first)
+    this.era = kind === 'autoplay' && this.bornIn === null && ERA_NAMES.includes(era) ? era : null;
+    this.opening = 0;              // held in one era: the track its card opens (where the page dropped in)
     this.partSec = partSec;
     // THE JOURNEY: every era once a pass; live, pass after pass
     this.count = kind === 'journey' ? ERA_NAMES.length * Math.max(1, passes || 1) : (count || 100000);
     this.cache = new Map();
     this.transitions = new Map();
     this.visits = [];              // autoplay: how many blocks before each one were in its era
+    this.deals = new Map();        // each list's rounds dealt so far
+    this.journeyPlans = [];        // THE JOURNEY: the parts planned so far (each opens away from the one before)
     const total = this.partSec * this.count;
     this.totalSamples = Math.round(total * SAMPLE_RATE);
-    this.meta = { duration: total, title: kind === 'journey' ? 'THE JOURNEY' : this.bornIn !== null ? `BORN IN ${this.bornIn}` : 'AUTOPLAY' };
+    this.meta = { duration: total, title: kind === 'journey' ? 'THE JOURNEY' : this.bornIn !== null ? `BORN IN ${this.bornIn}` : this.era ? `AUTOPLAY ${ERAS[this.era].label}` : 'AUTOPLAY' };
   }
 
   /** Era, scene and music of part i, without composing it. */
+  /** The n-th item of a list dealt round after round (see dealt). */
+  deal(seed, label, list, n) {
+    const key = `${seed}\n${label}`;
+    if (!this.deals.has(key)) this.deals.set(key, []);
+    return dealt(this.deals.get(key), seed, label, list, n);
+  }
+
   plan(i) {
     if (this.kind === 'journey') {
-      // the era's scenes and music in the seed's order, taken a few at a time pass after pass: when a
-      // list runs out it starts again from the top, so every scene and every style comes round
-      const era = ERA_NAMES[i % ERA_NAMES.length];
-      const pass = Math.floor(i / ERA_NAMES.length);
-      const e = ERAS[era];
-      const order = new Rng(`${this.seed}/${era}`, 'journey-scenes').shuffle(e.scenes);
-      const k = Math.min(order.length, this.journeyScenes());
-      const scenes = Array.from({ length: k }, (_, j) => order[(pass * k + j) % order.length]);
-      const tunes = new Rng(`${this.seed}/${era}`, 'journey-music').shuffle(e.music);
-      return {
-        era, style: scenes[0], scenes, music: tunes[pass % tunes.length],
-        seed: pass ? `${this.seed}/${era}/${pass}` : `${this.seed}/${era}`, eraChanged: true,
-      };
+      // planned in order, each part from the one before it (only the last few are worth keeping)
+      for (let j = this.journeyPlans.length; j <= i; j++) this.journeyPlans.push(this.journeyPlan(j, this.journeyPlans[j - 1]));
+      return this.journeyPlans[i];
     }
     // autoplay: eras in blocks of tracks; music and scenes in a fresh order every block
     const block = Math.floor(i / BLOCK);
     const k = i % BLOCK;
     const era = this.blockEra(block);
     const music = this.blockMusic(block);
+    const order = this.blockScenes(block);
     return {
       era,
-      style: this.blockScenes(block)[(k * SCENES_PER_TRACK) % ERAS[era].scenes.length],
+      style: order[(k * SCENES_PER_TRACK) % order.length],
       music: music[k % music.length],
       seed: `${this.seed}/${i}`,
-      eraChanged: k === 0,
+      // held in one era, its card opens only the first track seen; every other one has its NOW PLAYING
+      eraChanged: this.era ? i === this.opening : k === 0,
+    };
+  }
+
+  /**
+   * THE JOURNEY: part i, given the part before it. The era's scenes and music, dealt by the seed round
+   * after round, taken a few at a time pass after pass, so every scene and every style comes round,
+   * each round in a new order. Eras share scenes and styles: a part does not open on the scene the one
+   * before it closed on, nor play the style it played.
+   */
+  journeyPlan(i, before) {
+    const era = ERA_NAMES[i % ERA_NAMES.length];
+    const pass = Math.floor(i / ERA_NAMES.length);
+    const e = ERAS[era];
+    const key = `${this.seed}/${era}`;
+    const k = Math.min(e.scenes.length, this.journeyScenes());
+    const scenes = Array.from({ length: k }, (_, j) => this.deal(key, 'journey-scenes', e.scenes, pass * k + j));
+    let music = this.deal(key, 'journey-music', e.music, pass);
+    if (before) {
+      const last = before.scenes[before.scenes.length - 1];
+      const j = scenes.indexOf(last) === 0 ? scenes.findIndex((sc) => sc !== last) : -1;
+      if (j > 0) [scenes[0], scenes[j]] = [scenes[j], scenes[0]];
+      // (the era's next style instead - the one after it in the deal comes round on the next pass)
+      if (music === before.music && e.music.length > 1) music = this.deal(key, 'journey-music', e.music, pass + 1);
+    }
+    return {
+      era, style: scenes[0], scenes, music,
+      seed: pass ? `${this.seed}/${era}/${pass}` : `${this.seed}/${era}`, eraChanged: true,
     };
   }
 
   /**
    * Autoplay: the era of a block - every era once a cycle, in a new order each cycle.
    * Born in: the viewer's own era every other block, from the first; between them an
-   * era drawn by how near its year is to the one they turned twelve in.
+   * era drawn by how near its year is to the one they turned twelve in. Held in one era: that era.
    */
   blockEra(block) {
+    if (this.era) return this.era;
     if (this.home) {
       if (block % 2 === 0) return this.home;
       const at = this.bornIn + TWELVE;
@@ -170,7 +231,18 @@ export class Programme {
       return new Rng(this.seed, `born-${this.bornIn}-${block}`).weighted(others, others.map((e) => Math.exp(-Math.abs(ERAS[e].year - at) / 5)));
     }
     const cycle = Math.floor(block / ERA_NAMES.length);
-    return new Rng(this.seed, `autoplay-cycle-${cycle}`).shuffle(ERA_NAMES)[block % ERA_NAMES.length];
+    return this.cycleEras(cycle)[block % ERA_NAMES.length];
+  }
+
+  /** Autoplay: a cycle's order of the eras - never opening on the era the cycle before closed on. */
+  cycleEras(cycle) {
+    const order = new Rng(this.seed, `autoplay-cycle-${cycle}`).shuffle(ERA_NAMES);
+    if (cycle > 0 && order.length > 2) {
+      const before = new Rng(this.seed, `autoplay-cycle-${cycle - 1}`).shuffle(ERA_NAMES);
+      // (the cycle before is taken as drawn: only its first two can have moved, never its last)
+      if (order[0] === before[before.length - 1]) [order[0], order[1]] = [order[1], order[0]];
+    }
+    return order;
   }
 
   /** Autoplay: how many blocks before this one played its era - where its era's lists carry on from. */
@@ -185,13 +257,13 @@ export class Programme {
   }
 
   /**
-   * Autoplay: an era's scenes or music, dealt once by the seed, turned on to where this block's visit
-   * starts - so each visit plays the next of them, and the list starts again only when it runs out.
+   * Autoplay: the share of an era's scenes or music a block plays - `perVisit` of them, on from where
+   * the era's last visit stopped in its deal (see dealt), so each visit plays the next of them and a
+   * list comes round again only when all of it has played, each time in a new order.
    */
-  eraDeal(block, kind, list, perVisit) {
-    const deal = new Rng(this.seed, `autoplay-${kind}-${this.blockEra(block)}`).shuffle(list);
-    const at = (this.eraVisit(block) * perVisit) % deal.length;
-    return [...deal.slice(at), ...deal.slice(0, at)];
+  eraDeal(block, kind, list, perVisit, skip = 0) {
+    const at = this.eraVisit(block) * perVisit + skip;
+    return Array.from({ length: perVisit }, (_, j) => this.deal(this.seed, `autoplay-${kind}-${this.blockEra(block)}`, list, at + j));
   }
 
   /**
@@ -202,11 +274,17 @@ export class Programme {
   blockScenes(block) {
     const draw = (n) => this.eraDeal(n, 'scenes', ERAS[this.blockEra(n)].scenes, BLOCK * SCENES_PER_TRACK);
     const order = draw(block);
-    if (block > 0) {
+    // (a block after one in its own era carries on in the era's deal, which never repeats a scene in a row)
+    if (block > 0 && this.blockEra(block - 1) !== this.blockEra(block)) {
       const prev = draw(block - 1);
       const last = (BLOCK - 1) * SCENES_PER_TRACK;
       const maybe = [0, last, last + 1, last + 2].map((j) => prev[j % prev.length]);
-      const j = order.findIndex((sc) => !maybe.includes(sc));
+      // (and where the swap leaves no scene next to itself, in the order the block plays them)
+      const fits = (sc, j) => j > 0 && !maybe.includes(sc);
+      const apart = (j) => [j - 1, j + 1].every((n) => n < 1 || n >= order.length || order[n] !== order[0])
+        && (j === 1 || order[1] !== order[j]);
+      const good = order.findIndex((sc, n) => fits(sc, n) && apart(n));
+      const j = !maybe.includes(order[0]) ? -1 : good > 0 ? good : order.findIndex(fits);
       if (j > 0) [order[0], order[j]] = [order[j], order[0]];
     }
     return order;
@@ -215,14 +293,15 @@ export class Programme {
   /**
    * Autoplay: the order a block plays its era's music in, on from the era's last visit. Eras share styles,
    * so a block that would open on the style the last block (as drawn) closed
-   * on starts with its next one instead.
+   * on starts one further on in its era's deal instead (never two of a style in a row, even in an
+   * era of two).
    */
   blockMusic(block) {
-    const draw = (n) => this.eraDeal(n, 'music', ERAS[this.blockEra(n)].music, BLOCK);
-    const order = draw(block);
-    if (block > 0 && order.length > 1) {
-      const prev = draw(block - 1);
-      if (order[0] === prev[(BLOCK - 1) % prev.length]) order.push(order.shift());
+    const list = ERAS[this.blockEra(block)].music;
+    const order = this.eraDeal(block, 'music', list, BLOCK);
+    if (block > 0 && list.length > 1) {
+      const prev = this.eraDeal(block - 1, 'music', ERAS[this.blockEra(block - 1)].music, BLOCK);
+      if (order[0] === prev[BLOCK - 1]) return this.eraDeal(block, 'music', list, BLOCK, 1);
     }
     return order;
   }
@@ -284,11 +363,13 @@ export class Programme {
 
   /**
    * Where the live page drops into an endless programme, for u in [0, 1): anywhere
-   * in AUTOPLAY; born in, at the start of one of the viewer's own era's blocks.
+   * in AUTOPLAY; born in, at the start of one of the viewer's own era's blocks; held in one era,
+   * at the start of a block, the era's card opening it.
    */
   entry(u) {
     const n = Math.min(this.count, 50000);
     if (this.home) return Math.floor(u * n / (2 * BLOCK)) * 2 * BLOCK;
+    if (this.era) return (this.opening = Math.floor(u * n / BLOCK) * BLOCK);
     return Math.floor(u * n);
   }
 
@@ -383,13 +464,13 @@ export class Programme {
    * The sounds between the tracks for a part, on the part's own clock (0 is where it starts
    * sounding, inSec where its slot opens): a modem's handshake through the mix into the
    * years from 2000 (the Y2K PC stands in for the media-player years), the line connecting on
-   * the drop; a cartridge going in as a track starts whose scene is on the Game Boy's screen;
+   * the drop (not held in one era, where no track comes in from another); a cartridge going in as a track starts whose scene is on the Game Boy's screen;
    * and in THE JOURNEY, the era's chime as it opens, on the incoming track's key.
    */
   between(pl, inSec, audioSec, meta) {
     const events = [];
     const at = (sec) => Math.round(sec * SAMPLE_RATE);
-    if (String(pl.era) === '2000' && pl.eraChanged && inSec > 0) events.push({ t: 0, instr: 'modem', note: 0, vel: 0.8, dur: at(inSec) });
+    if (String(pl.era) === '2000' && pl.eraChanged && inSec > 0 && !this.era) events.push({ t: 0, instr: 'modem', note: 0, vel: 0.8, dur: at(inSec) });
     if (SCENE_DISPLAY[pl.style] === 'gameboy') events.push({ t: 0, instr: 'cartridge', note: 0, vel: 0.8, dur: at(0.4) });
     if (this.kind === 'journey' && pl.eraChanged && ERAS[pl.era].display !== 'svga') {
       events.push({ t: at(inSec), instr: 'chime', kit: CHIME_OF[ERAS[pl.era].display] || 'bell', note: 60 + meta.root, vel: 0.55, dur: at(2.5) });
@@ -460,10 +541,10 @@ export function composeJourney(seed, duration, passes = 1, board = 'auto') {
 /** Passes a live journey plays before it comes round to the first again. */
 export const JOURNEY_PASSES = 500;
 
-/** AUTOPLAY: an endless mix, or `duration` seconds of it for a render; born in a year, round its era. */
-export function composeAutoplay(seed, duration, bornIn = null, board = 'auto') {
+/** AUTOPLAY: an endless mix, or `duration` seconds of it for a render; born in a year, round its era; or held in one era. */
+export function composeAutoplay(seed, duration, bornIn = null, board = 'auto', era = null) {
   const count = duration ? Math.max(1, Math.ceil(duration / AUTOPLAY_PART)) : undefined;
-  return new Programme({ seed, kind: 'autoplay', partSec: AUTOPLAY_PART, count, bornIn, board });
+  return new Programme({ seed, kind: 'autoplay', partSec: AUTOPLAY_PART, count, bornIn, board, era });
 }
 
 /**

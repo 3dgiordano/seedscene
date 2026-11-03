@@ -6,7 +6,7 @@ import { Demo, STYLE_NAMES } from '../src/app.js';
 import { SAMPLE_RATE, MUSIC_NAMES, MUSIC_PRESETS } from '../src/core/music.js';
 import { bootSequence } from './boot.js';
 import { createMenu } from './menu.js';
-import { ERAS, ERA_NAMES, eraKey } from '../src/core/eras.js';
+import { ERAS, ERA_NAMES, eraKey, erasForScene } from '../src/core/eras.js';
 import { sceneTour, sceneList, musicTour } from '../src/core/catalogue.js';
 import { DISPLAYS, DISPLAY_NAMES } from '../src/core/displays.js';
 import { BOARDS, BOARD_NAMES } from '../src/core/boards.js';
@@ -54,6 +54,10 @@ if (cfg.music !== 'auto' && !MUSIC_NAMES.includes(cfg.music)) cfg.music = 'auto'
 if (cfg.era !== 'auto' && !ERA_NAMES.includes(cfg.era)) cfg.era = 'auto';
 if (cfg.display !== 'auto' && !DISPLAYS[cfg.display]) cfg.display = 'auto';
 if (cfg.board !== 'auto' && !BOARDS[cfg.board]) cfg.board = 'auto';
+// an era the viewer asked for - in the address, with its key, from the menu - keeps the scene keys inside
+// it, and AUTOPLAY started from it (O, the screensaver) plays that era and no other
+let eraHeld = cfg.era !== 'auto';
+const heldEra = () => (eraHeld ? cfg.era : null);
 
 const canvas = document.getElementById('c');
 const hud = document.getElementById('hud');
@@ -157,7 +161,7 @@ function connectSynth(startPart = 0) {
     outputChannelCount: [2],
     processorOptions: {
       seed: demo.seed, duration: demo.duration, music: demo.music, chip: demo.chip, board: cfg.board, loop: true,
-      programme: pr ? pr.kind : null, startPart, bornIn: pr ? pr.bornIn : null,
+      programme: pr ? pr.kind : null, startPart, bornIn: pr ? pr.bornIn : null, era: pr ? pr.era : null,
     },
   });
   node = current;
@@ -206,7 +210,7 @@ async function start() {
   prepare();
   // asked for in the address: start in AUTOPLAY (the synth then starts somewhere new in it)
   if (cfg.journey) { if (!demo.inJourney) demo.setProgramme('journey'); programmeChrome('journey', true); }
-  else if (cfg.autoplay) { if (!demo.inAutoplay) demo.setProgramme('autoplay', { bornIn: cfg.bornIn }); programmeChrome('autoplay', true); }
+  else if (cfg.autoplay) { if (!demo.inAutoplay) demo.setProgramme('autoplay', { bornIn: cfg.bornIn, era: heldEra() }); programmeChrome('autoplay', true); }
   await startAudio(demo.renderer.whenReady());
   running = true;
   loop();
@@ -238,6 +242,7 @@ function setStyle(name) {
  * the order the seed deals them (as the scene keys travel); an era with no scenes yet keeps the one on screen.
  */
 function setEra(name) {
+  eraHeld = name !== 'auto';
   if (name !== 'auto' && ERAS[name].scenes.length && !ERAS[name].scenes.includes(cfg.style)) {
     setSceneInEra(sceneTour(cfg.seed).find((x) => x.era === name).scene, name);
     const e = ERAS[name];
@@ -261,9 +266,12 @@ function stepEra(d) {
 /**
  * The next or previous scene: through the catalogue era by era, oldest first, each era's scenes in the
  * order the seed deals them; past an era's last scene, on into the next era's first, scene and era together.
+ * In an era the viewer asked for, round that era's scenes, from its last back to its first.
  */
 function stepStyle(d) {
-  const tour = sceneTour(cfg.seed);
+  const all = sceneTour(cfg.seed);
+  const mine = eraHeld ? all.filter((x) => x.era === cfg.era) : [];
+  const tour = mine.length ? mine : all;
   let i = tour.findIndex((x) => x.scene === cfg.style && x.era === demo.era);
   if (i < 0) i = tour.findIndex((x) => x.scene === cfg.style);
   const next = tour[(i + d + tour.length) % tour.length];
@@ -275,7 +283,9 @@ function setSceneInEra(name, era) {
   cfg.style = name;
   cfg.era = era;
   remember('scene', name);
-  remember('era', era);
+  // travelling the catalogue, the address names the era only where the scene alone does not say it,
+  // so a reload goes on travelling rather than holding the era
+  remember('era', eraHeld || erasForScene(name).length > 1 ? era : null);
   if (demo.setSceneInEra(name, era).musicChanged) connectSynth();
   else demo.renderer.sceneStart = now() % (demo.inProgramme ? demo.programme.meta.duration : demo.duration);
   updateHud();
@@ -379,10 +389,10 @@ function togglePause() {
 
 const PROGRAMME_KEY = { journey: 'T', autoplay: 'O' };
 
-/** THE JOURNEY (T) or AUTOPLAY (O); the same key again goes back to the demo. */
+/** THE JOURNEY (T) or AUTOPLAY (O) - held in the viewer's era, if they asked for one; the same key again goes back to the demo. */
 function toggleProgramme(kind) {
   const on = !(demo.programme && demo.programme.kind === kind);
-  demo.setProgramme(on ? kind : null);
+  demo.setProgramme(on ? kind : null, { era: heldEra() });
   connectSynth(firstPart());
   cfg.autoplay = demo.inAutoplay;                // kept in the address, so a reload comes back to it
   cfg.journey = demo.inJourney;
@@ -392,7 +402,8 @@ function toggleProgramme(kind) {
   remember('born', null);
   programmeChrome(kind, on);
   if (!on) toast(`BACK TO ${String(cfg.seed).toUpperCase()}`);
-  else toast(kind === 'journey' ? `THE JOURNEY: ${ERAS[ERA_NAMES[0]].year} TO NOW` : 'AUTOPLAY: ERA AFTER ERA, NO END');
+  else toast(kind === 'journey' ? `THE JOURNEY: ${ERAS[ERA_NAMES[0]].year} TO NOW`
+    : demo.programme.era ? `AUTOPLAY: ${ERAS[demo.programme.era].label}, NO END` : 'AUTOPLAY: ERA AFTER ERA, NO END');
 }
 
 /** Born in: AUTOPLAY opened in the era of the viewer's twelfth year, and kept near it. */
@@ -542,7 +553,7 @@ function setGreets(names) {
   toast(names.length ? `GREETINGS TO ${names.join(', ')}` : 'NO GREETINGS');
 }
 
-// ---- the screensaver: a minute without input, and AUTOPLAY takes the screen ---------
+// ---- the screensaver: a minute without input, and AUTOPLAY takes the screen (in the viewer's era, if they asked for one)
 
 let lastInput = performance.now();
 // the screensaver is on (in full screen if the page was - a browser lets a page ask for full
@@ -556,7 +567,7 @@ function sleepCheck() {
   if (demo.inProgramme || demo.inAbout || menu.isOpen() || bornOpen() || greetOpen() || help.classList.contains('open')) return;
   if (performance.now() - lastInput < cfg.saver * 1000) return;
   saver = true;
-  demo.setProgramme('autoplay');
+  demo.setProgramme('autoplay', { era: heldEra() });
   connectSynth(firstPart());
   programmeChrome('autoplay', true);
   hint.textContent = '';

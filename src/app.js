@@ -15,6 +15,7 @@ import { STYLE_NAMES } from './styles/index.js';
 import { resolveChoices } from './core/choose.js';
 import { composeJourney, composeAutoplay, partAt, JOURNEY_PASSES } from './core/journey.js';
 import { boardFor, chipOfBoard } from './core/boards.js';
+import { ERAS } from './core/eras.js';
 
 export { STYLE_NAMES };
 
@@ -44,7 +45,7 @@ export class Demo {
       display: opts.display || 'auto',   // DISPLAY: auto, or one display forced on everything
     });
     if (opts.journey) this.setProgramme('journey');
-    else if (opts.autoplay) this.setProgramme('autoplay', { bornIn: opts.bornIn });
+    else if (opts.autoplay) this.setProgramme('autoplay', { bornIn: opts.bornIn, era: opts.era });
   }
 
   /** Turn the requested choices (maybe 'auto') into concrete ones. */
@@ -93,10 +94,10 @@ export class Demo {
    */
   setBoard(name) {
     if (this.programme) {
-      const { kind, bornIn } = this.programme;
+      const { kind, bornIn, era } = this.programme;
       this.req.board = name;
       this.programme = null;
-      this.setProgramme(kind, { bornIn });
+      this.setProgramme(kind, { bornIn, era });
       return { musicChanged: true };
     }
     return this.update({ req: { board: name } });
@@ -145,15 +146,17 @@ export class Demo {
    * Programmes: THE JOURNEY (every era in turn) or AUTOPLAY (an endless mix
    * by era). While one plays, the demo's own choices are kept aside and
    * restored afterwards. null switches back to the demo. AUTOPLAY may be born
-   * in a year: { bornIn: 1985 } opens it in the era the viewer was twelve in.
+   * in a year: { bornIn: 1985 } opens it in the era the viewer was twelve in; or held in one
+   * era: { era: '1972' } plays that era and no other.
    */
-  setProgramme(kind, { bornIn = null } = {}) {
+  setProgramme(kind, { bornIn = null, era = null } = {}) {
     const born = kind === 'autoplay' && Number.isInteger(bornIn) ? bornIn : null;
-    if ((this.programme && this.programme.kind) === kind && (!kind || this.programme.bornIn === born)) return;
+    const held = kind === 'autoplay' && born === null && ERAS[era] ? era : null;
+    if ((this.programme && this.programme.kind) === kind && (!kind || (this.programme.bornIn === born && this.programme.era === held))) return;
     if (kind) {
       this.programme = kind === 'journey'
         ? composeJourney(this.seed, Math.max(this.duration, 96), JOURNEY_PASSES, this.req.board)
-        : composeAutoplay(this.seed, undefined, born, this.req.board);
+        : composeAutoplay(this.seed, undefined, born, this.req.board, held);
       this.partIndex = -1;
     } else {
       this.programme = null;

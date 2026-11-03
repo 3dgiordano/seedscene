@@ -34,7 +34,7 @@ Approved on 2026-10-28; their detail stays in PLAN-v0.2.md, sections 3 to 7.
 | 9 | the years since 2001: the tape; ten styles; the visualizer channel and seven scenes |
 | 10 | the 8-bit micros and the phones: AY-3-8910, the beeper, the two ringtone chips |
 | 13 | the first screens and the gothic family: the lab oscillators |
-| 14 | the rest: bouncing balls, bomber grid, bullet hell, smoke, the era marathon |
+| 14 | the rest: bouncing balls, bomber grid, bullet hell, smoke, the era marathon's mp4 (`seedscene autoplay --era`; live it landed in 0.2.0 on 2026-11-03: AUTOPLAY held in the era asked for) |
 
 The v0.2 plan wrote its periods (P1–P14) as eras of their own; since
 2026-11-01 eras are spans of years, so a period now lands as boards, displays
