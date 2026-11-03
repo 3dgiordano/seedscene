@@ -10,6 +10,7 @@ Plan: docs/PLAN-v0.2.md section 8, "What 0.2.0 still takes", then docs/BUILD-REP
 - returned: the rocks drawn as bright as the ship; on the real screen they are dimmer than the ship and shots - changing the approved scene is the owner's call
 - returned: ST buzz on the SID or not - it plays there with an unfiltered sawtooth buzzer; keeping it off needs boards chosen by style, the owner's call
 - returned: keys, seeds and names that still echo titles (scene outrun and the About's OUTRUN SUNSETS; styles beast, agony; seeds gigawatts, boing, juggler, powerpill; track names in PLAN-v0.2; the NOKIA display) - renaming changes commands and links, the owner's call
+- returned: AUTOPLAY repeats and the one-era links (scene keys, O, the screensaver held in the era) fixed on main 2026-11-03, uncommitted (journey.js, app.js, live.js, worklet.js, tests, README, CHANGELOG, PLAN-v0.3) - the owner reviews and commits
 - returned: dead air in 19 approved styles, found by `npm run review:music -- gaps`; whether to fill them (intros and breakdowns, likely) is the owner's ([detail](progress-music.md))
 
 Next: the owner reads the new scene section on branch readme-scenes and commits it; then picks what follows: the title echoes, C, or the release.

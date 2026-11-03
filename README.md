@@ -61,10 +61,10 @@ lets the sound start only after a key or a click). Then `H` shows every key.
 | | |
 |---|---|
 | **[AUTOPLAY](https://3dgiordano.github.io/seedscene/)** | the endless channel: a new track every forty seconds, era after era |
-| **[THE JOURNEY](https://3dgiordano.github.io/seedscene/?seed=seedscene&journey=1)** | every era with scenes of its own in turn, 1972 to the 2000s |
+| **[THE JOURNEY](https://3dgiordano.github.io/seedscene/?seed=seedscene&journey=1)** | every era with scenes of its own in turn, 1972 to now |
 | **[Born in 1985](https://3dgiordano.github.io/seedscene/?seed=seedscene&autoplay=1&born=1985)** | AUTOPLAY from the era you were twelve in - change the year in the address, or press `B` |
 | **[Greetings](https://3dgiordano.github.io/seedscene/?seed=hyperspace&scene=cracktro&era=amiga#greets=ANA,LUIS,THE+3+A.M.+CODERS)** | the cracktro greeting your friends - press `G` for your own names |
-| **One era** | [1972–1981](https://3dgiordano.github.io/seedscene/?seed=insertcoin&era=1972) · [1982–1989](https://3dgiordano.github.io/seedscene/?seed=readyrun&era=1982) · [1990–1993](https://3dgiordano.github.io/seedscene/?seed=disk2&era=1990) · [1994–1996](https://3dgiordano.github.io/seedscene/?seed=soundblaster&era=1994) · [1997–1999](https://3dgiordano.github.io/seedscene/?seed=pressstart&era=1997) · [2000–2009](https://3dgiordano.github.io/seedscene/?seed=precalc&era=2000) |
+| **One era** | [1972–1981](https://3dgiordano.github.io/seedscene/?seed=insertcoin&era=1972) · [1982–1989](https://3dgiordano.github.io/seedscene/?seed=readyrun&era=1982) · [1990–1993](https://3dgiordano.github.io/seedscene/?seed=disk2&era=1990) · [1994–1996](https://3dgiordano.github.io/seedscene/?seed=soundblaster&era=1994) · [1997–1999](https://3dgiordano.github.io/seedscene/?seed=pressstart&era=1997) · [2000–2009](https://3dgiordano.github.io/seedscene/?seed=precalc&era=2000) · [2010–now](https://3dgiordano.github.io/seedscene/?seed=raymarch&era=2010) - `space` stays in the era, and so do `O` and the screensaver |
 | **Your own word** | `https://3dgiordano.github.io/seedscene/?seed=yourname` - the same word gives everyone the same demo |
 | **A screensaver** | `https://3dgiordano.github.io/seedscene/?saver=10` - ten seconds untouched and AUTOPLAY takes the screen |
 
@@ -80,7 +80,7 @@ Or pick the word, the era, the music:
 ```bash
 node bin/seedscene.js live    --seed yourname --era amiga
 node bin/seedscene.js render  --seed yourname --scene vectorballs --era 1990 --music gabber
-node bin/seedscene.js journey  --seed yourname          # every era, 1972 to the 2000s → out/yourname-journey.mp4
+node bin/seedscene.js journey  --seed yourname          # every era, 1972 to now → out/yourname-journey.mp4
 node bin/seedscene.js autoplay --seed yourname --duration 3600   # an hour of it → out/yourname-autoplay.mp4
 ```
 
@@ -89,14 +89,14 @@ on screen (and `H` again to hide it):
 
 | key | |
 |---|---|
-| `O` | **AUTOPLAY** — a new track every 40 seconds, scenes cut on the music, somewhere new each time |
-| `T` | **THE JOURNEY** — every era with scenes of its own in turn, 1972 to the 2000s |
+| `O` | **AUTOPLAY** — a new track every 40 seconds, scenes cut on the music, somewhere new each time; in an era you asked for, that era alone |
+| `T` | **THE JOURNEY** — every era with scenes of its own in turn, 1972 to now |
 | `B` | **BORN IN** — type the year you were born: AUTOPLAY opens in the era you were twelve in, and stays near it |
 | `G` | **GREETINGS** — type a few names: they scroll in the greetings, and stay on this screen |
-| `E` · `1` … `7` | travel to the next era (`E` passes through AUTO too), or jump to one: 1972–1981, 1982–1989, 1990–1993, 1994–1996, 1997–1999, 2000–2009, 2010–now - and to its first scene in your seed's order (2010–now, with none yet, keeps the scene) |
+| `E` · `1` … `7` | travel to the next era (`E` passes through AUTO too), or jump to one: 1972–1981, 1982–1989, 1990–1993, 1994–1996, 1997–1999, 2000–2009, 2010–now - and to its first scene in your seed's order |
 | `D` | display: AUTO (each scene its own screen), or force one screen on everything - B/W, MONO, C64, VHS, EGA, SNES, GAME BOY… |
 | `C` | sound board: AUTO (each scene its own), or force one on all the music - HI-FI, PAULA, OPL3 FM, AWE32, YM2149, SID |
-| `space` · `←` `→` | next / previous scene — era by era, oldest first, each era's scenes in the order your seed deals them; in AUTOPLAY or THE JOURNEY, the next / previous track |
+| `space` · `←` `→` | next / previous scene — era by era, oldest first, each era's scenes in the order your seed deals them; in an era you asked for (its link, `E`, `1` … `7`, the menu), round that era's scenes only, until ERA is AUTO again; in AUTOPLAY or THE JOURNEY, the next / previous track |
 | `↑` `↓` | change the music style — the era's own first, in your seed's order, then the other eras' |
 | `S` | a brand-new random seed |
 | `M` | **the SETUP menu** — type your own seed; pick the scene, the era, the music, the display, the sound board, the resolution, the length, the titles, sound on or off; copy the command that reproduces it |
@@ -214,9 +214,10 @@ render leaves a part too short for them), cut where the music turns, and its own
 its own tempo — and each opens with the line
 its machines would have greeted you with: `INSERT COIN`, `LOAD "JOURNEY",8,1`,
 `INSERT DISK 2`, `C:\SEEDSCENE> JOURNEY.EXE`, `PRESS START`,
-`PRECALCULATING...`. One seed, 1972 to the 2000s. Left playing, it goes round
+`PRECALCULATING...`, `COMPILING SHADERS... DONE`. One seed, 1972 to now. Left playing, it goes round
 again, each pass with the next scenes of every era's list and its next music,
-until all of them have come round.
+until all of them have come round - then round again, in a new order - and no
+part opens on the scene, or plays the style, the one before it ended with.
 
 ## AUTOPLAY
 
@@ -226,8 +227,9 @@ track the picture changes with the music: the scene cuts where the music turns
 — on the drop after the break, on the crash that opens a phrase — so a track
 plays two or three of its era's scenes. Each era deals its scenes and its music
 once, in the seed's order, and every visit to it carries on where the last one
-stopped, so all of it comes round before any of it comes again - never the
-same pairing twice in a row. A new era opens with its card; every other track
+stopped, so all of it comes round before any of it comes again, and then
+comes round in a new order - never the same scene or the same style twice in
+a row, and never the same era two blocks running. A new era opens with its card; every other track
 with a **NOW PLAYING** lower third. `space` skips ahead, `←` goes back, `O`
 returns you to your own demo.
 
@@ -240,7 +242,10 @@ then the old track fades behind a closing filter. THE JOURNEY's eras are
 mixed the same way.
 
 Live, AUTOPLAY drops in somewhere new in its channel every time you press
-`O`, so it never plays the same sequence twice. The rendered channel is
+`O`, so it never plays the same sequence twice. Pressed in an era you asked
+for - its link, `E`, `1` … `7`, the menu - AUTOPLAY stays in that era for as
+long as you leave it, its card opening the first track, every other one with
+its NOW PLAYING; the screensaver does the same. The rendered channel is
 still the seed's: `seedscene autoplay --duration 3600` puts an hour of it in
 an mp4, the same every time for the same word.
 
@@ -283,7 +288,8 @@ this screen, and a reload brings them back. For a video:
 ### Screensaver
 
 Leave it alone for a minute - no key, no click, no mouse moving - and
-SEEDSCENE turns into a screensaver: AUTOPLAY takes the screen, with nothing
+SEEDSCENE turns into a screensaver: AUTOPLAY takes the screen (in the era you
+asked for, if you asked for one), with nothing
 on it but the picture, not even the pointer. Any key, a click or a touch
 brings your own demo back (the key does nothing else). It waits while the
 demo is paused, while a menu or a box is open, and over a programme or the
@@ -594,7 +600,7 @@ seedscene info    [options]     show what a seed composes
 | `--board <name>` | `auto` `hifi` `paula` `opl3` `awe32` `ym` `sid` | the sound board: on `auto` each scene its own, or its era's |
 | `--music <name>` | `auto` or one of the thirty-five styles | music of the era |
 | `--res <WxH\|preset>` | `854x480`, or `240p` `360p` `480p` `576p` `720p` `1080p` (or `--width` and `--height`) | `480p` |
-| `--duration <seconds>` | length | 30 render, 180 live, 126 journey (21 s an era, three scenes each), 600 autoplay |
+| `--duration <seconds>` | length | 30 render, 180 live, 147 journey (21 s an era, three scenes each), 600 autoplay |
 | `--born <year>` | autoplay only: open in the era you were twelve in, and stay near it | — |
 | `--greets "A, B"` | names to greet in the scroller and the cracktro, up to eight | — |
 | `--fps <n>` | frames per second | 30 |

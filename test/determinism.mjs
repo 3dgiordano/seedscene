@@ -118,6 +118,23 @@ check('THE JOURNEY sounds the same every time, whatever the block size', jh === 
   }
   check('THE JOURNEY plays three scenes an era (fewer where it has fewer), and pass after pass shows every scene and style of each', three && belongs && all, '20 passes');
 }
+{
+  // pass after pass an era's part is not the last pass's again (an era of three scenes deals them in a new
+  // order), and where eras share a scene or a style a part neither opens on the scene the last closed on
+  // nor plays the style it played
+  let again = 0, joins = 0;
+  for (const seed of ['aurora', 'seedscene', 'insertcoin']) {
+    const j = composeJourney(seed, 180, 40);
+    const n = SCENE_ERAS.length * 40;
+    for (let i = 1; i < n; i++) {
+      const p = j.plan(i), q = j.plan(i - 1);
+      if (p.scenes[0] === q.scenes[q.scenes.length - 1] || p.music === q.music) joins++;
+      if (i >= SCENE_ERAS.length && p.scenes.join() === j.plan(i - SCENE_ERAS.length).scenes.join()) again++;
+    }
+  }
+  check('THE JOURNEY plays an era differently each pass, and never joins two parts on one scene or one style', joins === 0 && again <= 6,
+    `${again} passes like the last of ${3 * SCENE_ERAS.length * 39}`);
+}
 
 // DISPLAYS -----------------------------------------------------------------
 {
@@ -179,6 +196,36 @@ check('AUTOPLAY sounds the same every time, whatever the block size', ah === pro
     short.length ? `short: ${short.join(', ')}` : `${Math.min(...Object.values(visits))}+ visits an era`);
 }
 {
+  // a visit to an era is not the last visit again (an era whose scenes a visit uses up exactly, or a track
+  // does, deals them in a new order every time round); a block is never in the era the one before was in;
+  // and no scene or style follows itself, from one track to the next, from one block to the next
+  let again = 0, sameEra = 0, twice = 0, visits = 0;
+  for (const seed of ['aurora', 'seedscene', 'insertcoin']) {
+    const a = composeAutoplay(seed);
+    const last = {};
+    let prevScene = null, prevMusic = null;
+    for (let block = 0; block < 300; block++) {
+      const e = a.blockEra(block), order = a.blockScenes(block);
+      if (block > 0 && e === a.blockEra(block - 1)) sameEra++;
+      const shown = order.slice(0, 9);
+      if (last[e] === shown.join()) again++;
+      last[e] = shown.join(); visits++;
+      for (let k = 0; k < 3; k++) {
+        const m = a.plan(block * 3 + k).music;
+        if (m === prevMusic) twice++;
+        prevMusic = m;
+        for (let s = 0; s < Math.min(3, ERAS[e].scenes.length); s++) {
+          const sc = order[k * 3 + s];
+          if (sc === prevScene) twice++;
+          prevScene = sc;
+        }
+      }
+    }
+  }
+  check('AUTOPLAY plays each visit to an era its own way, moves on to another era every block, and never plays a scene or style twice in a row',
+    again <= visits / 50 && sameEra === 0 && twice === 0, `${again} visits like the last of ${visits}`);
+}
+{
   // the live keys' catalogue: era after era, oldest first, every scene of every era, dealt by the seed
   const t1 = sceneTour('aurora'), t2 = sceneTour('hikari');
   const inOrder = t1.every((x, i) => i === 0 || ERA_NAMES.indexOf(x.era) >= ERA_NAMES.indexOf(t1[i - 1].era));
@@ -218,6 +265,33 @@ check('AUTOPLAY sounds the same every time, whatever the block size', ah === pro
   }
   check('BORN IN opens in the era of the twelfth year, keeps coming back, sounds the same whatever the block size',
     home && belongs && repeats === 0 && bh === programmeHash(born, 128), bh);
+}
+{
+  // held in one era (an era link left to AUTOPLAY, or the screensaver over it): every track in that era, its
+  // card only on the track it drops in on, no scene or style twice in a row, the same whatever the block size
+  const held = () => composeAutoplay('aurora', 120, null, 'auto', '1997');
+  const hh = programmeHash(held, 4096);
+  let inEra = true, twice = 0, cards = 0;
+  for (const era of SCENE_ERAS) {
+    const a = composeAutoplay('aurora', undefined, null, 'auto', era);
+    const at = a.entry(0.5);
+    let prevScene = null, prevMusic = null;
+    for (let i = at; i < at + 120; i++) {
+      const p = a.plan(i);
+      if (p.era !== era) inEra = false;
+      if (p.eraChanged) cards++;
+      if (p.music === prevMusic) twice++;
+      prevMusic = p.music;
+      const order = a.blockScenes(Math.floor(i / 3));
+      for (let s = 0; s < Math.min(3, ERAS[era].scenes.length); s++) {
+        const sc = order[(i % 3) * 3 + s];
+        if (sc === prevScene) twice++;
+        prevScene = sc;
+      }
+    }
+  }
+  check('AUTOPLAY held in one era plays only that era, opens on its card, never twice in a row, sounds the same whatever the block size',
+    inEra && cards === SCENE_ERAS.length && twice === 0 && hh === programmeHash(held, 128), hh);
 }
 {
   // inside a track the scene changes with the music: on a bar line, each scene

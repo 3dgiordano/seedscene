@@ -933,6 +933,23 @@ scene now has one era, a span of years (see **Eras are spans of years** and
 
 ### Fixed
 
+- AUTOPLAY and THE JOURNEY repeated themselves. An era whose scenes a visit
+  or a part uses up exactly (the three of 1997–1999, 2000–2009 and 2010–now,
+  the nine of 1994–1996) came back in the same order every time: about half
+  of AUTOPLAY's visits to an era replayed the last one scene for scene, and
+  three eras of THE JOURNEY were the same on every pass. Each era's scenes
+  and music are now dealt round after round, each round in a new order; an
+  era no longer plays two blocks running where one round of eras meets the
+  next; and THE JOURNEY no longer opens a part on the scene, or with the
+  style, the part before it ended with (the eras share a few).
+- The links to one era did not stay in it: `space` and `←` `→` went on
+  into the next era. An era asked for - in the address, with `E` or
+  `1`–`7`, from the menu - now keeps the scene keys inside it until ERA is
+  AUTO again; travelling the catalogue in AUTO, the address names the era
+  only where the scene alone does not say it. AUTOPLAY started there - with
+  `O`, or by the screensaver - stays in that era too, its card opening the
+  first track and a NOW PLAYING every other one (the modem's handshake, the
+  way into the 2000s from another era, does not play there).
 - After the eras became spans of years, the command line refused any
   `--scene`, `--era` or `--music` (`ERA_NAMES is not defined`), and the
   dial-up handshake into the 2000s no longer played; both work again.
