@@ -140,7 +140,9 @@ export const DISPLAY_NAMES = Object.keys(DISPLAYS);
 export const SCENE_DISPLAY = {
   paddles: 'bw',
   rocks: 'vector',                    // (the vector arcade games of 1979 were drawn by a beam)
-  invaders: 'arcade', maze: 'arcade', bricks: 'arcade', lightcycles: 'arcade',
+  tube: 'colorvector',                // (the tube shooter of 1981, on the colour vector tube)
+  tanks: 'colorvector',               // (a black-and-white beam behind a green overlay and a red strip: drawn as the colour tube's green and red)
+  invaders: 'arcade', maze: 'arcade', crossing: 'arcade', bricks: 'arcade', lightcycles: 'arcade',
   boxer: 'arcade', pyramid: 'arcade', outrun: 'arcade',
   lcd: 'modern',
   snake: 'nokia',                     // (the phone's game, on the phone's screen)

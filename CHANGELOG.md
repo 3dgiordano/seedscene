@@ -4,7 +4,7 @@
 
 The release that turns the tool into **SEEDSCENE**: a name, a personality,
 a Commodore 64 front door, seven eras of computing from 1972 to now,
-fifty-one scenes, thirty-five styles of music, sixteen displays and six
+fifty-four scenes, thirty-five styles of music, sixteen displays and six
 sound boards, an endless AUTOPLAY channel, and a live mode you
 can drive entirely from the keyboard.
 
@@ -408,6 +408,36 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   a laser fan, the mirror ball's spots, a strobe at the end of each phrase, and
   the lights flaring in the lens as each phrase opens; the camera moves as
   before, a little farther back.
+- **The road crossing** (`crossing`, 1972–1981, on the arcade monitor), the
+  road-crossing game of the early-80s arcades, in neon: a hopper crossing four
+  lanes of traffic and a river of logs to the five bays of the far bank. Every
+  lane steps on the beat, as the arcade's traffic moved in jerks, and the
+  hopper hops a lane on the beat, choosing each hop to be safe after the next -
+  riding a log, waiting on the verge, stepping aside; now and then it misjudges
+  the traffic and is run over. Five bays filled light up on the next drop and
+  empty for the next round. Lanes, lengths and speeds are the seed's; no title,
+  name or sprite of any game.
+- **The vector tube** (`tube`, 1972–1981, on the colour vector monitor), the
+  tube shooter of the colour vector arcades: a tube seen from its open end -
+  a circle, a square, a cross, a star, a triangle, a bowtie, a V, a flat line, a
+  U - its
+  lanes running down to a point in blue lines. Red zigzags, magenta spinners
+  and green orbs climb the lanes a step on each beat; the yellow claw on the
+  rim slides after the nearest and fires down its lane on the backbeats; one
+  that reaches the rim crawls round toward it. On every drop all of them are
+  zapped and the claw dives down the tube, white streaks rushing past, and the
+  next shape opens out of the dark.
+- **The wireframe tanks** (`tanks`, 1972–1981), the tank battle of the
+  vector arcades, through the gunner's sight: mountains all round the
+  horizon, a crescent moon, blocks and pyramids, an enemy tank somewhere
+  about. The tank rolls on and comes round after the enemy on the beat; once
+  it is in the sight the brackets close in, it fires on the backbeat, and the
+  enemy flies apart in tumbling lines. The world is green and the radar and
+  the score red, as the black-and-white tube showed them through its green
+  overlay and its red strip; the radar sweeps round once a bar. Both scenes
+  are drawn from the arcade museum's screenshots of their games; the shapes,
+  the climbers, the claw, the tank and the sight are drawn here, with no
+  title, name or sprite of any game.
 - **Three scenes for the thin eras**, so every era has three of its own:
   `coderain` (1997–1999), falling green code as the cyberpunk screens of the
   time imagined it - glyphs of the seed's own, falls starting on the beat, seen

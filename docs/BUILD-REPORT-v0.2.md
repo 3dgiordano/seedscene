@@ -28,7 +28,7 @@ sound board.
 
 ## Where it stands, 2026-11-02
 
-- **Built:** fifty-one scenes in seven eras (spans of years, 1972 to now), thirty-five music styles, sixteen
+- **Built:** fifty-four scenes in seven eras (spans of years, 1972 to now), thirty-five music styles, sixteen
   displays and six sound boards, each scene with its own or its era's; THE
   JOURNEY (three scenes an era, going on through the lists over replays),
   AUTOPLAY, born in, greetings, the screensaver, the sounds between the tracks,
@@ -4267,6 +4267,113 @@ music is busy, and never faster.
 | Live on the real GPU, muted | compiled and drawn; no console errors; beams across the decks, the laser fan and the opening flare seen |
 | Cost a frame at 854×480, this machine's GPU | djdecks 9–10 ms (8 before the club) |
 | `npm test` | passes |
+
+## Piece C's small scenes: the road crossing, the vector tube, the wireframe tanks
+
+Piece C's three small scenes, at the owner's word (2026-11-03: "the small
+ones"), each built against references, never from memory. The road crossing
+was built first, from Wikipedia's screenshot of the arcade game of 1981; for
+the other two Wikipedia had only a flyer and a cabinet photo, and Wikimedia
+then refused further requests under its robot policy. The owner opened the
+environment's network and named the source to use first: the Killer List of
+Videogames at arcade-museum.com, whose pages for the two games give their
+screenshots - the tube in three shapes, a flyer naming each climber, the
+tank's view with its radar and obstacles - and how they play. The two videos
+the owner named could not be downloaded (YouTube asks a signed-in browser);
+their thumbnails were looked at.
+
+`crossing` (1972–1981, on the arcade monitor). Against the reference
+screenshot of the arcade game of 1981: a vertical screen, the road at the
+bottom (five lanes of cars, a bulldozer, a lorry), a safe strip, the river
+above (logs and turtles), the bank with five bays at the top, the score over
+it. Kept from it, as the genre: the road below and the river above, a verge
+between, the lanes running opposite ways, logs to ride, the bays to fill.
+Its own: a landscape board in neon, like the other arcade scenes; four lanes
+of road and five of river; cars, lorries and bikes from above with
+headlights and tail lights, logs with pale cut ends; the hopper drawn here
+(a squat body, two eyes, its legs flung out in a hop); no turtles, no
+timer, no lives, no sprite of the game.
+
+The game is a simulation on the music's grid (src/core/sims.js,
+`CrossingSim`): every lane steps forward on each beat, eased, then holds, as
+the arcade's traffic moved in jerks; the hopper hops on the beat, choosing
+among forward, waiting, sideways and back by looking two beats ahead, so it
+rides a log, waits on the verge or steps aside rather than dying; near the
+top it heads for an empty bay and rides the river lane that carries it there.
+One beat in fourteen it is bold and looks one beat ahead only, and now and
+then it misjudges the traffic and is run over. Five bays filled light up on
+the next accented bar - the drop - and empty for the next round.
+
+The first version stalled: on the river's last lane a log carried the hopper
+away from the only open bays and it never went back down to the lane running
+the other way; it reached home three times in two minutes. It now rides the
+lane that carries it toward the bay.
+
+| Check | Result |
+|---|---|
+| Frames against the reference screenshot, three seeds, at a hop, a death and the drop | road below, verge, river of logs, the bank's bays; the five bays flaring on the accented bar (seed frogs, bar 32, 49.2 s); a run-over at 70.8 s |
+| The game over two minutes, eight seeds, on a 16-step grid | 6-10 crossings home, 0-3 deaths, a round of five bays lit on a drop |
+| The same game on the real scores (`rushhour` on a 13-step bar, `frogs`, `hopper`, `lilypad`) | 5-8 homes in 90 s, rounds cleared on accented bars (49.2 s, 52.8 s, 80.0 s) |
+| A scrub back to 37.3 s against a fresh run | the same state |
+| Cost a frame at 854×480, SwiftShader (no GPU here) | crossing 185 ms, rocks 191, invaders 168, bricks 131 - in line with the arcade scenes that run at 60 fps on a GPU; the live check on a real GPU is still to do |
+| `npm run test:quick` | passes, the README's entry included |
+
+`tube` (1972–1981, on the colour vector monitor). Against the screenshots:
+the tube seen from its open end, its lanes running to a far rim a sixth its
+size, in blue; the player's claw in yellow on the rim, its lane's edges lit
+yellow down to the far end; red, magenta and green climbers; the score in
+green at the top left and the level beside it; shapes closed and open, the
+open ones vanishing higher up the screen. Its own: nine shapes resampled to
+sixteen lanes (fifteen open) - a circle, a square, a cross, a five-pointed
+star, a triangle, a bowtie, a V, a flat line, a U; the claw a crown of two
+prongs; the climbers a red zigzag, a turning magenta square, a green orb with
+spikes; no spikes left in the lanes, no superzapper count, no lives.
+
+The game (`TubeSim`): a climber appears at the far end on a beat and takes a
+rung on each beat, seven to the rim; on the rim it crawls a lane a beat toward
+the claw, and one that reaches it takes the claw apart. The claw goes after
+the nearest one, rim first, and fires down its lane twice on each backbeat,
+and on the off-beat eighth when one is two rungs away; a shot meets its
+climber where it stands. On each accented bar - the drop - every climber is
+zapped and the claw dives: the tube rushes past for a bar, streaks out of the
+point it vanishes to, and the next shape opens out of the dark.
+
+The first version fired too early: its backbeat shot left before the claw had
+reached its lane and was never sent, the climbers piled up and the claw was
+caught every few bars, never reaching a drop. Then, firing on every beat, no
+climber came near the rim; the claw fires on the backbeats now, and on the
+off-beats only for one close by.
+
+`tanks` (1972–1981, on the colour vector monitor). Against the screenshots:
+the view over a tank's gun, the horizon low in the middle, mountains along it,
+a crescent moon above them, blocks and pyramids on the plain, an enemy tank,
+the sight - a post above and below, brackets either side - and above it all a
+strip with the radar in the middle and the score at the right, in red. The
+black-and-white beam showed through a green overlay and a red strip on the
+glass: drawn here as the colour tube's green and red, which the owner chose
+over the black-and-white tube's blue-white (2026-11-03). Its own: the enemy
+tank's shape, the sight's brackets closing in as it comes on target, the
+blocks and pyramids' sizes, a range of mountains made by the seed all round.
+
+The game (`TankSim`) works out the world and projects it through the sight,
+handing the shader up to 128 lines: the tank rolls on, comes round after the
+enemy at most 24 degrees a beat, and once it is in the sight fires on the
+backbeat; the shell lands where the enemy is and its lines fly apart,
+tumbling and falling; the next one rolls in a bar later. The enemy turns
+toward the tank and away, and now and then fires a shell that goes past. The
+radar sweeps round once a bar, the enemy a dot it lights. The battlefield
+repeats every 240 units, so the tank never runs out of it. The first mountains
+came out almost flat beside the screenshots' long saw-toothed range; they
+were raised into peaks and saddles in turn, higher where a range rises.
+
+| Check | Result |
+|---|---|
+| Frames against the museum's screenshots, at the busy moments, the dive and a kill | the tube's lanes, rim and far rim, the claw's lane lit, the climbers coming up, the burst of one shot, the dive's streaks and the next shape opening; the tank's horizon, mountains, moon, a block and a pyramid, the enemy in the closed sight, its lines flying, the red strip, radar and score |
+| The tube over two minutes, six seeds | a dive on every drop (6-7 of 7), the claw caught 0-4 times, a climber within two rungs of the rim 14-31% of the time |
+| The tanks over two minutes, three seeds | 21-27 enemies blown up, each on a backbeat; at most 107 lines a frame of 128 |
+| Scrubbing back to three moments against fresh runs, each | the same state |
+| Cost a frame at 854×480, SwiftShader (no GPU here) | tube 291 ms (406 before the zoom was worked out once a frame and far bursts skipped), tanks 141, rocks 202 - the live check on a real GPU is still to do |
+| `npm test` | passes, the mp4 comparison included |
 
 ## What went wrong in the first round
 

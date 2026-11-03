@@ -2916,4 +2916,763 @@ export class AnimeopSim {
   }
 }
 
-export const SIMS = { coderain: CoderainSim, animeop: AnimeopSim, timecar: TimecarSim, moonbike: MoonbikeSim, maze3d: Maze3dSim, echolines: EcholinesSim, ansi: AnsiSim, cascade: CascadeSim, cracktro: CracktroSim, rubber: RubberSim, chessfloor: ChessfloorSim, bobs: BobsSim, pyramid: PyramidSim, pipes: PipesSim, maze: MazeSim, snake: SnakeSim, rocks: RocksSim, starfighter: StarSim, paddles: PaddlesSim, invaders: InvadersSim, bricks: BricksSim, lightcycles: LightcyclesSim };
+// ---------------------------------------------------------------------------
+// The road crossing: a hopper crossing lanes of traffic and a river
+// ---------------------------------------------------------------------------
+
+export const CROSS_ROWS = 12;               // the start, four lanes of road, the verge, five of river, the bank
+const CROSS_X = 0.8;                         // the field's half width
+const CROSS_STEP = 0.08;                     // a hop sideways
+const CROSS_HALF = 0.022;                    // the hopper's half width
+export const CROSS_BAYS = [-0.64, -0.32, 0, 0.32, 0.64];
+const crossRoad = (r) => r >= 1 && r <= 4;
+const crossRiver = (r) => r >= 6 && r <= 10;
+
+/**
+ * The road crossing: four lanes of traffic, a verge, five lanes of a river of
+ * logs, and a bank with five bays at the top. Every lane steps on the beat, as
+ * the arcade's traffic moved in jerks; the hopper hops a lane on the beat too,
+ * choosing each hop two beats ahead so it is still safe after the next one -
+ * carried along on a log, waiting on the verge, stepping aside. When nothing is
+ * safe it is run over or falls in. Five bays filled light up on the next
+ * accented bar - the drop - and empty for the next round.
+ */
+export class CrossingSim extends PlannedSim {
+  reset() {
+    this.rng = new Rng(this.seed, 'crossing-sim');
+    this.lanes = this.makeLanes(new Rng(this.seed, 'crossing-lanes'));
+    this.clock = 0;
+    this.kept = 0;
+    this.score = 0;
+    this.bays = 0;
+    this.full = false;
+    this.hops = [{ t0: -1e9, t1: -1e9, row: 0, x: 0, face: 0 }];
+    this.deaths = [];             // {t, x, y, kind 1 run over, 2 fell in}
+    this.homes = [];              // {t, bay}
+    this.clears = [];             // {t}
+    this.bayLog = [{ t: -1e9, m: 0 }];   // the bays filled, from each moment on
+    this.dead = false;
+    this.respawn = 0;
+  }
+
+  makeLanes(r) {
+    const lanes = [];
+    let dir = r.bool() ? 1 : -1;
+    for (let row = 0; row < CROSS_ROWS; row++) {
+      if (crossRoad(row)) {
+        const kind = r.pick([1, 1, 2, 3]);              // car, car, lorry, bike
+        const len = kind === 2 ? r.float(0.15, 0.19) : kind === 3 ? 0.055 : r.float(0.085, 0.1);
+        const count = kind === 2 ? 1 : r.int(1, kind === 3 ? 3 : 2);
+        const gap = len + r.float(0.05, 0.09);
+        const period = count * gap + r.float(0.22, 0.42);
+        const speed = (kind === 3 ? r.float(0.085, 0.12) : kind === 2 ? r.float(0.035, 0.055) : r.float(0.05, 0.09)) * dir;
+        lanes.push({ kind, len, count, gap, period, speed, colour: r.float() });
+      } else if (crossRiver(row)) {
+        const len = r.float(0.17, 0.32);
+        const count = r.bool(0.35) ? 2 : 1;
+        const gap = len + r.float(0.03, 0.06);
+        const period = count * gap + r.float(0.12, 0.22);
+        lanes.push({ kind: 4, len, count, gap, period, speed: r.float(0.03, 0.065) * dir, colour: r.float() });
+      } else {
+        lanes.push({ kind: row === CROSS_ROWS - 1 ? 5 : 0, len: 0, count: 0, gap: 0, period: 1, speed: 0, colour: 0 });
+        continue;
+      }
+      dir = -dir;
+    }
+    return lanes;
+  }
+
+  /** Beats since the start, stepping: each beat of the grid the traffic jumps forward, eased, then holds. */
+  beats(t) {
+    const g = this.grid;
+    const bar = Math.floor(t / g.barSec + 1e-9);
+    const s = (t - bar * g.barSec) / g.six;
+    const perBar = Math.ceil(g.steps / 4);
+    const beat = Math.min(perBar - 1, Math.floor(s / 4));
+    const len = Math.min(4, g.steps - beat * 4);
+    const f = Math.min(1, (s - beat * 4) / len);
+    const e = Math.min(1, f / 0.45);
+    return bar * perBar + beat + e * e * (3 - 2 * e);
+  }
+
+  offset(row, t) { return this.lanes[row].speed * this.beats(t); }
+
+  /** Whether a hopper at x in a row is safe at t: clear of the traffic, or on a log and still on the field. */
+  safeAt(row, x, t) {
+    if (Math.abs(x) > CROSS_X - CROSS_HALF) return false;
+    const L = this.lanes[row];
+    if (L.kind === 0 || L.kind === 5) return true;
+    const o = this.offset(row, t);
+    const local = (((x - o) % L.period) + L.period) % L.period;   // where in the lane's pattern
+    for (let k = 0; k < L.count; k++) {
+      for (const c of [k * L.gap, k * L.gap + L.period]) {
+        const d = Math.abs(local - c);
+        if (L.kind === 4 && d < L.len / 2 - 0.01) return true;
+        if (L.kind !== 4 && d < L.len / 2 + CROSS_HALF) return false;
+      }
+    }
+    return L.kind !== 4;
+  }
+
+  /** Where a hopper that landed at x in a row at t0 is at t: carried by its log on the river. */
+  xAt(row, x, t0, t) { return crossRiver(row) ? x + this.offset(row, t) - this.offset(row, t0) : x; }
+
+  /** The first moment in [a, b] the hopper is not safe, or null. */
+  danger(row, x, t0, a, b) {
+    for (let i = 0; i <= 8; i++) {
+      const t = a + (b - a) * i / 8;
+      if (!this.safeAt(row, this.xAt(row, x, t0, t), t)) return t;
+    }
+    return null;
+  }
+
+  /** The bay a landing at x would reach, or -1. */
+  bayAt(x) {
+    const i = CROSS_BAYS.findIndex((b, k) => Math.abs(x - b) < 0.075 && !(this.bays & (1 << k)));
+    return i >= 0 && !(this.bays & (1 << i)) ? i : -1;
+  }
+
+  moves(row, x) {
+    // near the top it heads for the nearest empty bay
+    let toward = 0;
+    if (row >= CROSS_ROWS - 4) {
+      const open = CROSS_BAYS.filter((b, i) => !(this.bays & (1 << i)));
+      const b = open.reduce((a, c) => (Math.abs(c - x) < Math.abs(a - x) ? c : a), open[0] ?? x);
+      if (Math.abs(b - x) > 0.04) toward = Math.sign(b - x);
+    }
+    const side = (d) => (toward === 0 ? 1 : toward === d ? 2.6 : 0.25);
+    // the river's last two lanes run opposite ways: it rides the one that carries it to the bay
+    let up = 3, stay = toward ? 0.5 : 1.6, down = 0.3;
+    const drift = (r) => Math.sign(this.lanes[r].speed);
+    if (toward && row === CROSS_ROWS - 2 && drift(row) !== toward) { down = 2.4; stay = 0.3; }
+    if (toward && row === CROSS_ROWS - 3) {
+      if (drift(row) === toward) { stay = 2.2; up = 0.8; } else if (drift(row + 1) === toward) up = 3.2;
+    }
+    return [
+      { row: row + 1, x, face: 0, w: up },
+      { row, x, face: -1, w: stay },
+      { row, x: x - CROSS_STEP, face: 1, w: side(-1) },
+      { row, x: x + CROSS_STEP, face: 2, w: side(1) },
+      { row: row - 1, x, face: 3, w: down },
+    ].filter((m) => m.row >= 0 && m.row < CROSS_ROWS && (m.row < CROSS_ROWS - 1 || this.bayAt(m.x) >= 0));
+  }
+
+  plan() {
+    const g = this.grid.next(this.clock, 4);
+    const g2 = this.grid.next(g, 4), g3 = this.grid.next(g2, 4);
+    this.clock = g;
+    // five bays filled: they light up on the drop, and the next round begins
+    if (this.full && (this.grid.isAccent(g) || g - this.fullAt > 8 * this.grid.barSec)) {
+      this.full = false;
+      this.bays = 0;
+      this.bayLog.push({ t: g, m: 0 });
+      this.clears.push({ t: g });
+      this.score += 1000;
+    }
+    if (this.dead) {
+      if (g < this.respawn) return;
+      this.dead = false;
+      this.hops.push({ t0: g, t1: g, row: 0, x: 0, face: 0, fresh: true });
+      return;
+    }
+    const h = this.hops[this.hops.length - 1];
+    const x = this.xAt(h.row, h.x, h.t1, g);
+    const hop = Math.min(0.14, this.grid.spb * 0.4);
+    // each move, scored: safe through the next beat, and with a safe move after it
+    // now and then it is bold, and looks only one beat ahead
+    const bold = this.rng.bool(0.07);
+    let best = null, bestW = -1;
+    for (const m of this.moves(h.row, x)) {
+      if (m.row === CROSS_ROWS - 1) { best = m; bestW = 99; break; }    // a bay in reach: home
+      const hit = this.danger(m.row, m.x, g, g, g2);
+      if (hit !== null && bold && m.face === 0 && crossRoad(m.row) && this.rng.bool(0.3)) {
+        // it misjudges the traffic, and is run over
+        this.hops.push({ t0: g - hop, t1: g, row: m.row, x: m.x, face: 0 });
+        this.die(hit, m.row, m.x);
+        return;
+      }
+      if (hit !== null) continue;
+      const next = bold || this.moves(m.row, this.xAt(m.row, m.x, g, g2)).some((n) =>
+        n.row === CROSS_ROWS - 1 || this.danger(n.row, n.x, g2, g2, g3) === null);
+      if (!next) continue;
+      const w = m.w * (0.6 + 0.8 * this.rng.float());
+      if (w > bestW) { best = m; bestW = w; }
+    }
+    if (!best) {
+      // nothing is safe: it hops on and is caught
+      const m = this.moves(h.row, x)[0];
+      const t = this.danger(m.row, m.x, g, g, g2) ?? g;
+      this.hops.push({ t0: g - hop, t1: g, row: m.row, x: m.x, face: m.face });
+      this.die(t, m.row, this.xAt(m.row, m.x, g, t));
+      return;
+    }
+    if (best.face === -1) {
+      // it stays: a still hop, so it can still be found where it is
+      this.hops.push({ t0: g, t1: g, row: h.row, x, face: h.face, still: true });
+      return;
+    }
+    if (best.row === CROSS_ROWS - 1) {
+      const bay = this.bayAt(best.x);
+      this.hops.push({ t0: g - hop, t1: g, row: best.row, x: CROSS_BAYS[bay], face: 0 });
+      this.bays |= 1 << bay;
+      this.bayLog.push({ t: g, m: this.bays });
+      this.homes.push({ t: g, bay });
+      this.score += 50;
+      if (this.bays === 31) { this.full = true; this.fullAt = g; }
+      // the next one sets off from the start a beat later
+      this.hops.push({ t0: g2, t1: g2, row: 0, x: 0, face: 0, fresh: true });
+      this.clock = g2;
+      return;
+    }
+    if (best.row > h.row) this.score += 10;
+    this.hops.push({ t0: g - hop, t1: g, row: best.row, x: best.x, face: best.face });
+    // the river can still carry it off the field before the next beat
+    const lost = this.danger(best.row, best.x, g, g, g2);
+    if (lost !== null) this.die(lost, best.row, this.xAt(best.row, best.x, g, lost));
+  }
+
+  die(t, row, x) {
+    this.dead = true;
+    this.deaths.push({ t, x, row, kind: crossRiver(row) ? 2 : 1 });
+    this.hops.push({ t0: t, t1: t, row: -1, x, face: 0 });
+    // back at the start on the second bar line after
+    const bar = this.grid.barSec;
+    this.respawn = (Math.floor(t / bar + 1e-9) + 2) * bar;
+    this.clock = Math.max(this.clock, this.respawn - this.grid.six);
+  }
+
+  forget(t) {
+    while (this.hops.length > 2 && this.hops[1].t1 < t) this.hops.shift();
+    this.kept = this.hops[0].t1 > -1e8 ? Math.max(this.hops[0].t1, 0) : 0;
+    this.deaths = this.deaths.filter((d) => d.t > t - 3);
+    this.homes = this.homes.filter((d) => d.t > t - 3);
+    this.clears = this.clears.filter((d) => d.t > t - 6);
+    while (this.bayLog.length > 1 && this.bayLog[1].t < t) this.bayLog.shift();
+  }
+
+  uniforms(t) {
+    this.advanceTo(t);
+    const rowY = (r) => -0.43 + r * 0.066;
+    // where the hopper is: resting, or in the air between two rows
+    let i = 0;
+    while (i + 1 < this.hops.length && this.hops[i + 1].t0 <= t) i++;
+    const h = this.hops[i], prev = this.hops[Math.max(0, i - 1)];
+    let x, y, air = -1, alive = h.row >= 0 ? 1 : 0;
+    if (t < h.t1 && h.t1 > h.t0) {
+      const u = (t - h.t0) / (h.t1 - h.t0);
+      const px = this.xAt(prev.row, prev.x, prev.t1, h.t0);
+      x = px + (h.x - px) * u;
+      y = rowY(prev.row) + (rowY(h.row) - rowY(prev.row)) * u;
+      air = u;
+    } else {
+      x = h.row >= 0 ? this.xAt(h.row, h.x, h.t1, t) : h.x;
+      y = rowY(Math.max(h.row, 0));
+    }
+    const laneA = new Float32Array(CROSS_ROWS * 4), laneB = new Float32Array(CROSS_ROWS * 4);
+    this.lanes.forEach((L, r) => {
+      laneA.set([this.offset(r, t), L.len, L.period, L.kind], r * 4);
+      laneB.set([L.count, L.gap, Math.sign(L.speed), L.colour], r * 4);
+    });
+    const death = recent(this.deaths, t, 1)[0];
+    const home = recent(this.homes, t, 1)[0];
+    const clear = recent(this.clears, t, 1)[0];
+    const face = h.face >= 0 ? h.face : prev.face;
+    let bays = this.bayLog[0].m;
+    for (const b of this.bayLog) if (b.t <= t) bays = b.m;
+    return {
+      uLaneA: { v: laneA, kind: '4fv' },
+      uLaneB: { v: laneB, kind: '4fv' },
+      uHop: { v: [x, y, Math.max(face, 0), alive ? air : -2], kind: '4f' },
+      uDeath: { v: death ? [death.x, rowY(death.row), t - death.t, death.kind] : [0, 0, 99, 0], kind: '4f' },
+      uCrossFx: { v: [this.score % 100000, bays, home ? t - home.t : 99, clear ? t - clear.t : 99], kind: '4f' },
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// The vector tube: a claw on the rim of a tube, things climbing its lanes
+// ---------------------------------------------------------------------------
+
+export const TUBE_PTS = 17;                 // the rim's points (16 lanes closed, or 15 open)
+export const TUBE_FOES = 8;
+export const TUBE_SHOTS = 8;
+export const TUBE_BOOMS = 6;
+const TUBE_RUNGS = 7;                        // the steps a climber takes from the far end to the rim
+const TUBE_SHOT = 0.5;                       // beats a shot takes down the whole tube
+
+// The tube's shapes, each a polygon (closed) or a line (open), resampled to its lanes; and the point it
+// vanishes to, as a fraction of the way up the screen.
+const TUBE_SHAPES = [
+  { closed: true, pts: Array.from({ length: 24 }, (_, i) => [Math.cos(i / 24 * 2 * Math.PI), Math.sin(i / 24 * 2 * Math.PI)]) },
+  { closed: true, pts: [[-1, -1], [1, -1], [1, 1], [-1, 1]] },
+  { closed: true, pts: [[-0.35, -1], [0.35, -1], [0.35, -0.35], [1, -0.35], [1, 0.35], [0.35, 0.35], [0.35, 1], [-0.35, 1], [-0.35, 0.35], [-1, 0.35], [-1, -0.35], [-0.35, -0.35]] },
+  { closed: true, pts: Array.from({ length: 10 }, (_, i) => { const a = Math.PI / 2 + i / 10 * 2 * Math.PI, r = i % 2 ? 0.5 : 1; return [r * Math.cos(a), r * Math.sin(a)]; }) },
+  { closed: true, pts: [[0, 1], [-1, -0.8], [1, -0.8]] },
+  { closed: true, pts: [[-1, 0.7], [-0.45, 0.85], [0, 0.35], [0.45, 0.85], [1, 0.7], [1, -0.7], [0.45, -0.85], [0, -0.35], [-0.45, -0.85], [-1, -0.7]] },
+  { closed: false, pts: [[-1, 0.9], [0, -0.9], [1, 0.9]], vanish: 0.55 },
+  { closed: false, pts: [[-1.2, -0.6], [1.2, -0.6]], vanish: 0.75 },
+  { closed: false, pts: [[-1, 0.9], [-1, -0.6], [1, -0.6], [1, 0.9]], vanish: 0.5 },
+];
+
+function resample(shape) {
+  const P = shape.closed ? [...shape.pts, shape.pts[0]] : shape.pts;
+  const seg = [];
+  let total = 0;
+  for (let i = 0; i + 1 < P.length; i++) { const l = Math.hypot(P[i + 1][0] - P[i][0], P[i + 1][1] - P[i][1]); seg.push(l); total += l; }
+  const n = shape.closed ? 16 : 15;
+  const out = [];
+  for (let k = 0; k <= n; k++) {
+    let d = total * k / n, i = 0;
+    while (i < seg.length - 1 && d > seg[i]) { d -= seg[i]; i++; }
+    const u = Math.min(1, d / seg[i]);
+    out.push([P[i][0] + (P[i + 1][0] - P[i][0]) * u, P[i][1] + (P[i + 1][1] - P[i][1]) * u]);
+  }
+  return { lanes: n, closed: shape.closed, pts: out, vanish: shape.vanish || 0 };
+}
+
+/**
+ * The vector tube: a tube seen from its open end, its lanes running down to a
+ * point. Things climb the lanes from the far end a step on each beat; the claw
+ * on the rim slides lane to lane after the nearest one and fires down the lane
+ * on the backbeats, where the snare is, and on the eighths when one is close.
+ * One that reaches the rim crawls round it toward the claw. On an accented bar
+ * - the drop - the claw dives down the tube, and the next shape opens.
+ */
+export class TubeSim extends PlannedSim {
+  reset() {
+    this.rng = new Rng(this.seed, 'tube-sim');
+    this.order = new Rng(this.seed, 'tube-shapes').shuffle(TUBE_SHAPES.map((_, i) => i));
+    this.clock = 0;
+    this.kept = 0;
+    this.score = 0;
+    this.level = 0;
+    this.shape = resample(TUBE_SHAPES[this.order[0]]);
+    this.levels = [{ t: -1e9, shape: this.shape, level: 0 }];
+    this.lane = Math.floor(this.shape.lanes / 2);
+    this.claw = new Track(this.lane);
+    this.foes = [];               // {id, lane, rung, kind, keys: [{t, lane, rung}]}
+    this.gone = [];               // foes shot or zapped, kept a while for their keys
+    this.shots = [];              // {t0, t1, lane, hit}
+    this.booms = [];              // {t, lane, depth, kind}
+    this.warps = [];              // {t}
+    this.deaths = [];             // {t}
+    this.nextId = 0;
+    this.beat = 0;
+    this.down = 0;                // until when the claw is gone
+  }
+
+  wrapLane(l) { const n = this.shape.lanes; return this.shape.closed ? ((l % n) + n) % n : Math.max(0, Math.min(n - 1, l)); }
+  /** The way round from one lane to another: the short way on a closed tube. */
+  laneDelta(a, b) {
+    const n = this.shape.lanes;
+    let d = b - a;
+    if (this.shape.closed) { d = ((d % n) + n) % n; if (d > n / 2) d -= n; }
+    return d;
+  }
+
+  plan() {
+    const g = this.grid.next(this.clock, 4);
+    const spb = this.grid.spb;
+    this.clock = g;
+    this.beat++;
+    const perBar = Math.ceil(this.grid.steps / 4);
+    const inBar = Math.round(((g / this.grid.barSec) % 1) * perBar) % perBar;
+    // the drop: every one still climbing is zapped, and the claw dives down the tube to the next shape
+    // (the claw caught just before comes back for it: the drop always dives)
+    if (this.grid.isAccent(g) && !this.warps.some((w) => w.t > g - this.grid.barSec * 1.5)) {
+      for (const f of this.foes) {
+        this.booms.push({ t: g, lane: f.lane, depth: f.rung / TUBE_RUNGS, kind: 1 });
+        this.score += 50;
+        f.keys.push({ t: g, lane: f.lane, rung: f.rung, gone: true });
+        this.gone.push(f);
+      }
+      this.foes = [];
+      this.warps.push({ t: g });
+      this.level++;
+      this.shape = resample(TUBE_SHAPES[this.order[this.level % this.order.length]]);
+      const opens = g + this.grid.barSec;
+      this.levels.push({ t: opens, shape: this.shape, level: this.level });
+      this.lane = Math.floor(this.shape.lanes / 2);
+      this.claw.set(opens, this.lane);
+      this.down = opens;
+      this.clock = opens - this.grid.six;
+      return;
+    }
+    if (g < this.down) return;
+    // 1. they climb a rung; on the rim they crawl a lane toward the claw
+    for (const f of this.foes) {
+      if (f.rung > 0) f.rung--;
+      else f.lane = this.wrapLane(f.lane + Math.sign(this.laneDelta(f.lane, this.lane)));
+      f.keys.push({ t: g, lane: f.lane, rung: f.rung });
+    }
+    // one that reaches the claw takes it apart
+    const caught = this.foes.find((f) => f.rung === 0 && f.lane === this.lane);
+    if (caught) {
+      this.deaths.push({ t: g });
+      this.booms.push({ t: g, lane: this.lane, depth: 0, kind: 2 });
+      for (const f of this.foes) { f.keys.push({ t: g, lane: f.lane, rung: f.rung, gone: true }); this.gone.push(f); }
+      this.foes = [];
+      this.down = Math.ceil((g + this.grid.barSec) / this.grid.barSec) * this.grid.barSec;
+      this.clock = this.down - this.grid.six;
+      return;
+    }
+    // 2. new ones at the far end, more as the bar goes on
+    if (this.foes.length < 6 && this.rng.bool(0.7)) {
+      const f = { id: this.nextId++, lane: this.rng.int(0, this.shape.lanes - 1), rung: TUBE_RUNGS, kind: this.rng.int(0, 2), keys: [] };
+      f.keys.push({ t: g - 1e-3, lane: f.lane, rung: TUBE_RUNGS + 1 });
+      f.keys.push({ t: g, lane: f.lane, rung: f.rung });
+      this.foes.push(f);
+    }
+    // 3. the claw goes after the nearest, the ones on the rim first
+    const target = this.foes.slice().sort((a, b) => a.rung - b.rung || Math.abs(this.laneDelta(this.lane, a.lane)) - Math.abs(this.laneDelta(this.lane, b.lane)))[0];
+    if (target) {
+      const d = this.laneDelta(this.lane, target.lane);
+      const step = Math.sign(d) * Math.min(Math.abs(d), target.rung <= 1 ? 4 : 3);
+      const arrive = g + spb * 0.12 * Math.max(1, Math.abs(step) * 0.6);
+      if (step) { this.claw.set(g, this.claw.at(g)); this.claw.set(arrive, this.claw.at(g) + step); }
+      this.lane = this.wrapLane(this.lane + step);
+      // 4. it fires: on the backbeats, and on the off-beat eighth when one is close
+      const backbeat = inBar % 2 === 1;
+      const times = [];
+      if (backbeat) times.push(g + spb * 0.25, g + spb * 0.5);
+      else if (target.rung <= 2) times.push(g + spb * 0.5);
+      for (const t0 of times) {
+        if (t0 < arrive) continue;
+        const f = this.foes.find((x) => x.lane === this.lane && !x.dead);
+        const shot = { t0, t1: t0 + TUBE_SHOT * spb, lane: this.lane };
+        if (f) {
+          // it meets the one in its lane where the climber stands until the next beat
+          const depth = f.rung / TUBE_RUNGS;
+          shot.t1 = t0 + Math.max(0.02, depth) * TUBE_SHOT * spb;
+          f.dead = true;
+          this.booms.push({ t: shot.t1, lane: f.lane, depth, kind: 0 });
+          this.score += [150, 200, 100][f.kind];
+          f.keys.push({ t: shot.t1, lane: f.lane, rung: f.rung, gone: true });
+        }
+        this.shots.push(shot);
+      }
+      for (const f of this.foes.filter((x) => x.dead)) this.gone.push(f);
+      this.foes = this.foes.filter((x) => !x.dead);
+    }
+  }
+
+  forget(t) {
+    this.kept = Math.max(0, Math.min(this.levels[this.levels.length - 1].t, t) - 0);
+    while (this.levels.length > 1 && this.levels[1].t < t - 4) this.levels.shift();
+    this.kept = this.levels[0].t > -1e8 ? this.levels[0].t : 0;
+    this.gone = this.gone.filter((f) => f.keys[f.keys.length - 1].t > t - 2);
+    for (const f of this.foes) while (f.keys.length > 3 && f.keys[1].t < t - 2) f.keys.shift();
+    this.shots = this.shots.filter((s) => s.t1 > t - 1);
+    this.booms = this.booms.filter((b) => b.t > t - 2);
+    this.warps = this.warps.filter((w) => w.t > t - 4);
+    this.deaths = this.deaths.filter((d) => d.t > t - 4);
+    this.claw.forget(t - 2);
+  }
+
+  /** Where a climber is at t: the step to its rung eased in over the first third of the beat. */
+  foeAt(f, t) {
+    const k = f.keys;
+    let i = -1;
+    for (let j = 0; j < k.length; j++) if (k[j].t <= t) i = j;
+    if (i < 0 || k[i].gone) return null;
+    const a = k[Math.max(0, i - 1)], b = k[i];
+    const u = Math.min(1, (t - b.t) / (this.grid.spb * 0.33));
+    const e = u * u * (3 - 2 * u);
+    let dl = b.lane - a.lane;
+    if (this.levelAt(t).shape.closed) { const n = this.levelAt(t).shape.lanes; if (dl > n / 2) dl -= n; if (dl < -n / 2) dl += n; }
+    return { lane: a.lane + dl * e, depth: (a.rung + (b.rung - a.rung) * e) / TUBE_RUNGS };
+  }
+
+  levelAt(t) { let L = this.levels[0]; for (const l of this.levels) if (l.t <= t) L = l; return L; }
+
+  uniforms(t) {
+    this.advanceTo(t);
+    const L = this.levelAt(t);
+    const rim = new Float32Array(TUBE_PTS * 2);
+    L.shape.pts.forEach((p, i) => rim.set(p, i * 2));
+    const foes = new Float32Array(TUBE_FOES * 4).fill(0);
+    let n = 0;
+    for (const f of [...this.foes, ...this.gone].sort((a, b) => a.id - b.id)) {
+      if (n >= TUBE_FOES) break;
+      const at = this.foeAt(f, t);
+      if (at && at.depth <= 1) foes.set([at.lane, at.depth, f.kind, 1], 4 * n++);
+    }
+    const shots = new Float32Array(TUBE_SHOTS * 4).fill(0);
+    this.shots.filter((s) => t >= s.t0 && t < s.t1).slice(-TUBE_SHOTS).forEach((s, i) => {
+      shots.set([s.lane, (t - s.t0) / (TUBE_SHOT * this.grid.spb), 1, 0], i * 4);
+    });
+    const booms = new Float32Array(TUBE_BOOMS * 4);
+    const bl = recent(this.booms, t, TUBE_BOOMS);
+    for (let i = 0; i < TUBE_BOOMS; i++) { const b = bl[i]; booms.set(b ? [b.lane, b.depth, t - b.t, b.kind] : [0, 0, 99, 0], i * 4); }
+    const warp = recent(this.warps, t, 1)[0], death = recent(this.deaths, t, 1)[0];
+    const clawGone = t < this.down && (!warp || t >= warp.t) && death && t - death.t < this.grid.barSec * 2 && t < this.down;
+    return {
+      uRim: { v: rim, kind: '2fv' },
+      uTube: { v: [L.shape.lanes, L.shape.closed ? 1 : 0, L.shape.vanish, L.level], kind: '4f' },
+      uClaw: { v: [this.wrapClaw(this.claw.at(t), L), clawGone ? 0 : 1, warp ? t - warp.t : 99, this.score % 100000], kind: '4f' },
+      uFoes: { v: foes, kind: '4fv' },
+      uTShots: { v: shots, kind: '4fv' },
+      uTBooms: { v: booms, kind: '4fv' },
+      uTubeFx: { v: [death ? t - death.t : 99, this.grid.barSec, warp && t - warp.t < this.grid.barSec ? (t - warp.t) / this.grid.barSec : -1, 0], kind: '4f' },
+    };
+  }
+
+  wrapClaw(x, L) { const n = L.shape.lanes; return L.shape.closed ? ((x % n) + n) % n : Math.max(0, Math.min(n - 1, x)); }
+}
+
+// ---------------------------------------------------------------------------
+// The wireframe tank: a battlefield of lines through a tank's sight
+// ---------------------------------------------------------------------------
+
+export const TANK_SEGS = 128;
+const TANK_F = 1.45;                         // the sight's focal length, in screen units
+const TANK_EYE = 1.0;                        // how high the gunner sits
+const TANK_HORIZON = -0.03;                  // where level ground meets the sky on the screen
+const TANK_TOP = 0.29;                       // the world stops under the strip of the radar and the score
+const TANK_WORLD = 240;                      // the battlefield repeats every this many units, so it never runs out
+const TANK_TURN = 0.42;                           // radians the hull comes round in a beat, at most
+const SHELL = 34;                            // units a shell flies in a beat
+
+// models: edges between corners, in their own units (x across, y up, z forward)
+function boxEdges(w, h, d, x = 0, y = 0, z = 0, taper = 0) {
+  const c = [];
+  for (const yy of [0, h]) for (const zz of [-d / 2, d / 2]) for (const xx of [-w / 2, w / 2]) {
+    const k = yy > 0 ? 1 - taper : 1;
+    c.push([x + xx * k, y + yy, z + zz * k]);
+  }
+  const e = [[0, 1], [2, 3], [0, 2], [1, 3], [4, 5], [6, 7], [4, 6], [5, 7], [0, 4], [1, 5], [2, 6], [3, 7]];
+  return e.map(([a, b]) => [c[a], c[b]]);
+}
+function pyramidEdges(w, h) {
+  const b = [[-w / 2, 0, -w / 2], [w / 2, 0, -w / 2], [w / 2, 0, w / 2], [-w / 2, 0, w / 2]], top = [0, h, 0];
+  return [[b[0], b[1]], [b[1], b[2]], [b[2], b[3]], [b[3], b[0]], ...b.map((p) => [p, top])];
+}
+// the enemy: a low hull, wider at the tracks than on top, a turret and its gun - drawn here, no one's tank
+const TANK_MODEL = [
+  ...boxEdges(3.2, 1.0, 4.6, 0, 0, 0, 0.18),
+  ...boxEdges(1.7, 0.7, 2.0, 0, 1.0, -0.3, 0.12),
+  [[0, 1.35, 0.7], [0, 1.35, 3.4]],
+  [[-0.12, 1.25, 0.7], [-0.12, 1.25, 3.4]],
+];
+const OBSTACLES = [() => boxEdges(4, 4, 4), () => pyramidEdges(5, 5.5), () => boxEdges(7, 1.8, 2.5), () => pyramidEdges(3, 7)];
+
+/**
+ * The wireframe tank: the battlefield seen through the gunner's sight -
+ * mountains round the horizon, a moon, blocks and pyramids, and an enemy tank
+ * somewhere about. The tank rolls forward and comes round after the enemy on
+ * the beat; once it is in the sight it fires on the backbeat, where the snare
+ * is, and the enemy flies apart where the shell lands. The radar sweeps round
+ * once a bar; the enemy fires back now and then, its shells going past.
+ */
+export class TankSim extends PlannedSim {
+  reset() {
+    const r = new Rng(this.seed, 'tank-field');
+    this.rng = new Rng(this.seed, 'tank-sim');
+    this.obstacles = Array.from({ length: 14 }, () => {
+      const a = r.float(0, Math.PI * 2), d = r.float(18, TANK_WORLD / 2);
+      return { x: Math.sin(a) * d, z: Math.cos(a) * d, rot: r.float(0, Math.PI), edges: r.pick(OBSTACLES)() };
+    });
+    // the mountains: a ring of ridges at the horizon, higher in ranges
+    this.ridge = [];
+    const phase = r.float(0, 6);
+    for (let i = 0; i < 96; i++) {
+      // peaks and saddles in turn, higher where a range rises
+      const range = 0.55 + 0.45 * Math.sin(i / 96 * Math.PI * 2 * 3 + phase);
+      this.ridge.push(i % 2 ? range * r.float(0.045, 0.1) : range * r.float(0.0, 0.03));
+    }
+    this.moon = r.float(0, Math.PI * 2);
+    this.clock = 0;
+    this.kept = 0;
+    this.score = 0;
+    this.heading = new Track(0);
+    this.pos = [{ t: -1e9, x: 0, z: 0, h: 0 }];   // where the tank is at each beat
+    this.x = 0; this.z = 0; this.h = 0;
+    this.foe = null;                // {x, z, h, keys: [{t, x, z, h}], born}
+    this.foes = [];                 // every enemy, kept while it can still be seen
+    this.shells = [];               // {t0, t1, x0, z0, x1, z1, mine}
+    this.blasts = [];               // {t, x, z, h}
+    this.shots = [];                // {t} the tank's own, for the sight's flash
+    this.next = 0;                  // when the next enemy rolls in
+  }
+
+  spawn(g) {
+    const a = this.h + this.rng.float(-2.2, 2.2), d = this.rng.float(55, 80);
+    const f = { x: this.x + Math.sin(a) * d, z: this.z + Math.cos(a) * d, h: a + Math.PI + this.rng.float(-0.6, 0.6), keys: [], born: g };
+    f.keys.push({ t: g, x: f.x, z: f.z, h: f.h });
+    this.foe = f;
+    this.foes.push(f);
+  }
+
+  plan() {
+    const g = this.grid.next(this.clock, 4);
+    const spb = this.grid.spb;
+    this.clock = g;
+    const perBar = Math.ceil(this.grid.steps / 4);
+    const inBar = Math.round(((g / this.grid.barSec) % 1) * perBar) % perBar;
+    if (!this.foe && g >= this.next) this.spawn(g);
+    let fire = false;
+    if (this.foe) {
+      const f = this.foe;
+      // the enemy comes on, turning toward the tank and away again
+      const toMe = Math.atan2(this.x - f.x, this.z - f.z);
+      f.h += Math.max(-0.25, Math.min(0.25, angDiff(toMe + Math.sin(g * 0.7) * 0.6, f.h)));
+      const dist = Math.hypot(this.x - f.x, this.z - f.z);
+      if (dist > 22) { f.x += Math.sin(f.h) * 1.4; f.z += Math.cos(f.h) * 1.4; }
+      f.keys.push({ t: g, x: f.x, z: f.z, h: f.h });
+      // now and then it fires, and misses
+      if (dist < 60 && this.rng.bool(0.12) && !this.shells.some((s) => !s.mine && s.t1 > g)) {
+        const miss = this.rng.bool() ? 3 : -3;
+        const side = [Math.cos(this.h) * miss, -Math.sin(this.h) * miss];
+        this.shells.push({ t0: g, t1: g + dist / SHELL * spb * 1.2, x0: f.x, z0: f.z, x1: this.x + side[0] - (f.x - this.x) * 0.3, z1: this.z + side[1] - (f.z - this.z) * 0.3, mine: false });
+      }
+      // the tank comes round after it
+      const want = Math.atan2(f.x - this.x, f.z - this.z);
+      const d = angDiff(want, this.h);
+      const turn = Math.max(-TANK_TURN, Math.min(TANK_TURN, d));
+      this.heading.set(g, this.h);
+      this.h += turn;
+      this.heading.set(g + spb * 0.6, this.h);
+      // in the sight: it fires on the backbeat, and the shell lands where the enemy is
+      const busy = this.shells.some((s) => s.mine && s.t1 > g);
+      if (Math.abs(angDiff(want, this.h)) < 0.04 && dist < 75 && inBar % 2 === 1 && !busy) {
+        const t1 = g + Math.max(0.3, dist / SHELL) * spb;
+        this.shells.push({ t0: g, t1, x0: this.x, z0: this.z, x1: f.x, z1: f.z, mine: true });
+        this.shots.push({ t: g });
+        this.blasts.push({ t: t1, x: f.x, z: f.z, h: f.h, big: this.grid.isAccent(this.grid.next(t1 - 1e-6, 16)) });
+        f.dead = t1;
+        f.keys.push({ t: t1, x: f.x, z: f.z, h: f.h, gone: true });
+        this.score += 1000;
+        this.foe = null;
+        this.next = Math.ceil((t1 + this.grid.barSec) / this.grid.barSec) * this.grid.barSec;
+        fire = true;
+      }
+    }
+    // it rolls forward when it is not turning hard
+    if (!fire && (!this.foe || Math.abs(angDiff(Math.atan2(this.foe.x - this.x, this.foe.z - this.z), this.h)) < 0.3)) {
+      this.x += Math.sin(this.h) * 1.2;
+      this.z += Math.cos(this.h) * 1.2;
+    }
+    this.pos.push({ t: g, x: this.x, z: this.z, h: this.h });
+  }
+
+  forget(t) {
+    while (this.pos.length > 2 && this.pos[1].t < t - 2) this.pos.shift();
+    this.kept = this.pos[0].t > -1e8 ? this.pos[0].t : 0;
+    this.foes = this.foes.filter((f) => !f.dead || f.dead > t - 3);
+    for (const f of this.foes) while (f.keys.length > 3 && f.keys[1].t < t - 2) f.keys.shift();
+    this.shells = this.shells.filter((s) => s.t1 > t - 1);
+    this.blasts = this.blasts.filter((b) => b.t > t - 4);
+    this.shots = this.shots.filter((b) => b.t > t - 2);
+    this.heading.forget(t - 2);
+  }
+
+  /** The tank's place at t, eased between beats. */
+  placeAt(t) {
+    let i = 0;
+    while (i + 1 < this.pos.length && this.pos[i + 1].t <= t) i++;
+    const a = this.pos[i], b = this.pos[Math.min(i + 1, this.pos.length - 1)];
+    const u = b.t > a.t ? Math.min(1, (t - a.t) / (b.t - a.t)) : 0;
+    return { x: a.x + (b.x - a.x) * u, z: a.z + (b.z - a.z) * u, h: this.heading.at(t) };
+  }
+
+  foeAt(f, t) {
+    let i = -1;
+    for (let j = 0; j < f.keys.length; j++) if (f.keys[j].t <= t) i = j;
+    if (i < 0 || f.keys[i].gone) return null;
+    const a = f.keys[i], b = f.keys[Math.min(i + 1, f.keys.length - 1)];
+    const u = b.t > a.t ? Math.min(1, (t - a.t) / (b.t - a.t)) : 0;
+    return { x: a.x + (b.x - a.x) * u, z: a.z + (b.z - a.z) * u, h: a.h + angDiff(b.h, a.h) * u };
+  }
+
+  uniforms(t) {
+    this.advanceTo(t);
+    const me = this.placeAt(t);
+    const sh = Math.sin(me.h), ch = Math.cos(me.h);
+    const segs = [];
+    // a segment of the world, projected through the sight and cut at the near plane and the screen's edges
+    const put = (A, B) => {
+      if (segs.length >= TANK_SEGS * 4) return;
+      const cam = (P) => {
+        const dx = P[0] - me.x, dz = P[2] - me.z;
+        return [dx * ch - dz * sh, P[1] - TANK_EYE, dx * sh + dz * ch];
+      };
+      let a = cam(A), b = cam(B);
+      const near = 0.6;
+      if (a[2] < near && b[2] < near) return;
+      if (a[2] < near) { const u = (near - a[2]) / (b[2] - a[2]); a = a.map((v, k) => v + (b[k] - v) * u); }
+      if (b[2] < near) { const u = (near - b[2]) / (a[2] - b[2]); b = b.map((v, k) => v + (a[k] - v) * u); }
+      const pa = [a[0] / a[2] * TANK_F, TANK_HORIZON + a[1] / a[2] * TANK_F], pb = [b[0] / b[2] * TANK_F, TANK_HORIZON + b[1] / b[2] * TANK_F];
+      if (Math.max(pa[0], pb[0]) < -1 || Math.min(pa[0], pb[0]) > 1) return;
+      segs.push(pa[0], pa[1], pb[0], pb[1]);
+    };
+    // the world repeats, so it never runs out: each thing is placed at its copy nearest the tank
+    const near = (v, c) => v + Math.round((c - v) / TANK_WORLD) * TANK_WORLD;
+    const model = (edges, x, z, rot, lift = [0, 0, 0], spin = 0) => {
+      const c = Math.cos(rot), s = Math.sin(rot);
+      for (const [p, q] of edges) {
+        const w = (P) => [x + P[0] * c + P[2] * s + lift[0], P[1] + lift[1], z - P[0] * s + P[2] * c + lift[2]];
+        put(w(p), w(q));
+      }
+    };
+    for (const f of this.foes) {
+      const at = this.foeAt(f, t);
+      if (at) model(TANK_MODEL, at.x, at.z, at.h);
+    }
+    for (const o of this.obstacles) {
+      const x = near(o.x, me.x), z = near(o.z, me.z);
+      const dx = x - me.x, dz = z - me.z;
+      if (dx * sh + dz * ch < 1 || Math.hypot(dx, dz) > 115) continue;
+      model(o.edges, x, z, o.rot);
+    }
+    // blasts: the enemy's lines flung apart, tumbling and falling
+    for (const b of this.blasts) {
+      const e = t - b.t;
+      if (e < 0 || e > 2.2) continue;
+      const r = new Rng(this.seed, 'blast' + Math.round(b.t * 1000));
+      TANK_MODEL.forEach(([p, q], k) => {
+        if (k % 2) return;
+        const v = [r.float(-5, 5), r.float(4, 9), r.float(-5, 5)];
+        const lift = [v[0] * e, Math.max(-0.2, v[1] * e - 9 * e * e), v[2] * e];
+        const spin = r.float(-6, 6) * e, c = Math.cos(spin), s = Math.sin(spin);
+        const m = [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2, (p[2] + q[2]) / 2];
+        const tw = (P) => [m[0] + (P[0] - m[0]) * c - (P[1] - m[1]) * s, m[1] + (P[0] - m[0]) * s + (P[1] - m[1]) * c, P[2]];
+        model([[tw(p), tw(q)]], b.x, b.z, b.h, lift);
+      });
+    }
+    // shells: a short line on its way
+    for (const s of this.shells) {
+      if (t < s.t0 || t >= s.t1) continue;
+      const u = (t - s.t0) / (s.t1 - s.t0), u2 = Math.min(1, u + 0.05);
+      const y = s.mine ? 0.8 : 1.1;
+      put([s.x0 + (s.x1 - s.x0) * u, y, s.z0 + (s.z1 - s.z0) * u], [s.x0 + (s.x1 - s.x0) * u2, y, s.z0 + (s.z1 - s.z0) * u2]);
+    }
+    // the mountains, at the horizon all round
+    for (let i = 0; i < this.ridge.length; i++) {
+      const a0 = i / this.ridge.length * Math.PI * 2, a1 = (i + 1) / this.ridge.length * Math.PI * 2;
+      const d0 = angDiff(a0, me.h), d1 = angDiff(a1, me.h);
+      if (Math.abs(d0) > 1.0 || Math.abs(d1) > 1.0 || segs.length >= TANK_SEGS * 4) continue;
+      segs.push(Math.tan(d0) * TANK_F, TANK_HORIZON + this.ridge[i], Math.tan(d1) * TANK_F, TANK_HORIZON + this.ridge[(i + 1) % this.ridge.length]);
+    }
+    const n = segs.length / 4;
+    const arr = new Float32Array(TANK_SEGS * 4);
+    arr.set(segs);
+    // the radar: where the enemy is, round the tank
+    const f = this.foe && this.foeAt(this.foe, t) ? this.foeAt(this.foe, t) : null;
+    let blip = [0, 0, 0, 0];
+    if (f) {
+      const dx = f.x - me.x, dz = f.z - me.z;
+      blip = [dx * ch - dz * sh, dx * sh + dz * ch, 1, 0];
+    }
+    const want = f ? Math.abs(angDiff(Math.atan2(f.x - me.x, f.z - me.z), me.h)) : 9;
+    const shot = recent(this.shots, t, 1)[0], blast = recent(this.blasts, t, 1)[0];
+    const md = angDiff(this.moon, me.h);
+    return {
+      uSeg: { v: arr, kind: '4fv' },
+      uTank: { v: [n, Math.max(0, 1 - want / 0.5), shot ? t - shot.t : 99, this.score % 100000], kind: '4f' },
+      uBlip: { v: blip, kind: '4f' },
+      uMoon: { v: [Math.tan(md) * TANK_F, TANK_HORIZON + 0.2, Math.abs(md) < 0.9 ? 1 : 0, blast ? t - blast.t : 99], kind: '4f' },
+    };
+  }
+}
+
+export const SIMS = { tanks: TankSim, tube: TubeSim, crossing: CrossingSim, coderain: CoderainSim, animeop: AnimeopSim, timecar: TimecarSim, moonbike: MoonbikeSim, maze3d: Maze3dSim, echolines: EcholinesSim, ansi: AnsiSim, cascade: CascadeSim, cracktro: CracktroSim, rubber: RubberSim, chessfloor: ChessfloorSim, bobs: BobsSim, pyramid: PyramidSim, pipes: PipesSim, maze: MazeSim, snake: SnakeSim, rocks: RocksSim, starfighter: StarSim, paddles: PaddlesSim, invaders: InvadersSim, bricks: BricksSim, lightcycles: LightcyclesSim };
