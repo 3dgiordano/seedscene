@@ -25,12 +25,12 @@ Approved on 2026-10-28; their detail stays in PLAN-v0.2.md, sections 3 to 7.
 | 1 | the 16-bit consoles: YM2612 and SPC700; `speedzone`, `jumpworld`, `coastline`, `chopper`, `pinball`; runner, jumper, racer, helicopter, rotozoomer; the radio stations |
 | 2 | the arcade of 1995 and the fighters: YM2610, 2A03; their five styles and six scenes; cabinet mode |
 | 3 | sports and pinball |
-| 4 | racing and The Matrix's music (the code rain itself is in 0.2.0) |
+| 4 | racing and the music of the cyberpunk film of 1999 (the code rain itself is in 0.2.0) |
 | 5 (rest) | glenz, landscape, the musicdisk player and the musicdisk mode, left out of 0.2.0 at the owner's word |
 | 6 | adventures, pirates and the woodgrain console: MT-32, AdLib, PC speaker, TIA |
 | 7 | the DOS party and the city: GUS; the party mode |
 | 8 | the rhythm games |
-| 9 | the years since 2001: the tape; ten styles; the MilkDrop channel and seven scenes |
+| 9 | the years since 2001: the tape; ten styles; the visualizer channel and seven scenes |
 | 10 | the 8-bit micros and the phones: AY-3-8910, the beeper, the two ringtone chips |
 | 13 | the first screens and the gothic family: the lab oscillators |
 | 14 | the rest: bouncing balls, bomber grid, bullet hell, smoke, the era marathon |
@@ -54,7 +54,7 @@ nothing here does, so each stays, tied to the scenes of its machine.
 |---|---|---|---|
 | **GBA** | the first Game Boy Advance's TFT had no light of its own: its low colour values came out almost black and the rest washed out, which games answered with brighter palettes (emulators correct it with a gamma near 4 and a colour matrix); 15-bit colour, 240×160, a pixel grid, slow pixels that smear motion. `gameboy` is a four-green STN, `snes` a TV | the handheld games of 2000–2009: a kart race, a platformer, the Mode 7 of the handheld; it gives the thin era a screen of its own | round 1 or 9 |
 | **AGA** | the Amiga 1200's chips: 256 colours out of 24 bits, so no banding, where `amiga` keeps the 12-bit banding of the first chips on purpose | the Amiga demos of 1992 on: texture-mapped tunnels, the landscape, chunky 3D; some of 1990–1993's effects may belong to it - each looked at against its year | round 5's rest |
-| **HAM** | hold-and-modify: each pixel changes one channel of the last, so near-photographic stills, and a colour fringe trailing every sharp horizontal edge - an artefact no other screen has | the raytraced juggler animation of 1986 (a scene to build from it), HAM slideshows; 1982–1989 | round 5's rest |
+| **HAM** | hold-and-modify: each pixel changes one channel of the last, so near-photographic stills, and a colour fringe trailing every sharp horizontal edge - an artefact no other screen has | a raytraced scene in the spirit of the HAM animations of the mid-80s, HAM slideshows; 1982–1989 | round 5's rest |
 | **PC CRT** | the PC's own monitor at 31 kHz: a fine shadow mask or aperture grille (on the flat tubes of the late 90s, two thin damper wires across it), sharp, scan lines too fine to see at high resolutions - and at 320×200 every line drawn twice, a thin dark line between the pairs. `vga` draws 200 coarse TV-like lines; `svga` is the 64k intro's glow, a look rather than a screen | `vga` re-made on it (mode 13h line-doubled); 2000–2009's desktop things; whether `svga`'s glow becomes the scenes' own and the era's screen this one is the owner's | the post shader's mask |
 | **ZX Spectrum** | colour by attribute: two colours in each 8×8 cell, so a sprite crossing a background takes its colours (the attribute clash); fifteen colours, bright and normal | round 10's micros | round 10 |
 | **MSX** | the TMS9918: fifteen colours, two in each eight pixels of a line | round 10's micros | round 10 |

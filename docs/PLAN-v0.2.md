@@ -48,17 +48,17 @@ three, **L** a new system the rest stands on.
 | 2026-10-27 | `requeriments.txt`: a seed, a resolution and a style give a clip with music; real time, live in the browser; the look of 90s and 2000s demoscene productions. |
 | 2026-10-28 | More varied, more frantic music, styles you can switch, presets with the fury of the demoscene; the Amiga scene and others. An About part. |
 | 2026-10-28 | **The inspiration pack**: musical styles; classic Amiga trackmos; musicdisks; iconic effects; PC demo classics; console and handheld scenes; game soundtracks of the MOD era; modern visualizers; energy keywords; parties and archives. Every era, from the C64 to today. |
-| 2026-10-28 | Game sounds and their eras: Pong, Space Invaders, Asteroids, Pac-Man, Arkanoid, each with a visualizer of its own; an AUTOPLAY that plays music and visuals of one era together, for hours. Film scores with a signature: Terminator, Alien. Tron's look. Pop and rock and roll. Catchy, energizing, memorable. |
-| 2026-10-28 | The visuals move with the music, in 3D, with blur — not just the game redrawn. Snake; Punch-Out (NES and Wii); Star Fox and its music. |
+| 2026-10-28 | Game sounds and their eras: the first paddle game, the invaders, the rock shooter, the maze chase, the brick breaker, each with a visualizer of its own; an AUTOPLAY that plays music and visuals of one era together, for hours. Film scores with a signature: the cyborg films and the space-horror films of the 80s. The light-cycle film's look. Pop and rock and roll. Catchy, energizing, memorable. |
+| 2026-10-28 | The visuals move with the music, in 3D, with blur — not just the game redrawn. the snake game of the phones; the console boxing games (on the NES, and again on the Wii); the 16-bit space shooter and its music. |
 | 2026-10-28 | Scenes cut on the music in AUTOPLAY, never the same sequence; a new track every 40 s, mixed into the next. |
-| 2026-10-28 | Realistic game simulations: the loser of a point explodes on a key note; invaders and bricks die on the rhythm; Punch-Out's dodges and showing off, a see-through player; Tron's light walls and their speed. |
+| 2026-10-28 | Realistic game simulations: the loser of a point explodes on a key note; invaders and bricks die on the rhythm; the console boxer's dodges and showing off, a see-through player; the light-cycle film's light walls and their speed. |
 | 2026-10-28 | Music that sounds like the Amiga, DOS and the better sound cards — Sound Blaster 16, Sound Blaster 32, AWE — not like a C64. |
-| 2026-10-28 | For later: racing games (Need for Speed, OutRun and others of the kind) and the music of The Matrix. |
-| 2026-10-28 | **This plan, approved.** Fill the gap in the periods, build the styles, the sound chips of the new periods and the tracks of each period. More games, as concepts: platformers (a run-and-gun soldier like Metal Slug, a runner at full speed down ramps like Sonic, a jumper on platforms like Mario), plane shooters like 1945, a city builder like SimCity with a monster destroying it, hurricanes and earthquakes, helicopters; a first-person rollercoaster, in lines or in 3D, whichever hits harder. "Be creative." |
-| 2026-10-28 | All of it goes into **v0.2**, which has to be masterful. Fill 2010 to 2024 and keep adding. More, as concepts: martial arts — the kung-fu corridor that marked an era, the arrival of Street Fighter II and Mortal Kombat, and the Mortal Kombat film's theme, a rhythm that brings it back; sports — the athletics games where you hammer the buttons to run and jump, motocross, basketball (shooting hoops, NBA Jam); Dance Dance Revolution, with feet hitting the arrows and a simulator that hits or misses the timing; Guitar Hero; pinball, its hits and launches on the music, effects on every bounce. |
-| 2026-10-28 | Pirates: Monkey Island and Pirates of the Caribbean. The adventure games: Goblins, Day of the Tentacle and the other icons. Prince of Persia's sword duel; Pitfall; Pang, with balls bouncing all over the screen. "The list is long": scenes and visualizers that each bring back an era. "I keep giving ideas — take note." |
+| 2026-10-28 | For later: racing games (the arcade road racers of the 80s, the police-chase racers of the 90s and others of the kind) and the music of the cyberpunk film of 1999. |
+| 2026-10-28 | **This plan, approved.** Fill the gap in the periods, build the styles, the sound chips of the new periods and the tracks of each period. More games, as concepts: platformers (a run-and-gun soldier of the 90s arcades, a runner at full speed down ramps of the 16-bit consoles, a jumper on platforms), the vertical plane shooters of the arcades, a city builder of the early 90s with a monster destroying it, hurricanes and earthquakes, helicopters; a first-person rollercoaster, in lines or in 3D, whichever hits harder. "Be creative." |
+| 2026-10-28 | All of it goes into **v0.2**, which has to be masterful. Fill 2010 to 2024 and keep adding. More, as concepts: martial arts — the kung-fu corridor that marked an era, the arrival of the versus fighters of the early 90s, and the techno theme of the mid-90s fighting film, a rhythm that brings it back; sports — the athletics games where you hammer the buttons to run and jump, motocross, basketball (shooting hoops, the two-on-two arcade game); the dance-pad games, with feet hitting the arrows and a simulator that hits or misses the timing; the plastic-guitar games; pinball, its hits and launches on the music, effects on every bounce. |
+| 2026-10-28 | Pirates: the island adventure games of the early 90s and the pirate films of the 2000s. The adventure games: the goblin puzzles, the time-travel cartoon adventure and the other icons. The sword duel of the palace-and-dungeon games; the jungle runner of the woodgrain console; the ball-splitting arcade shooter, with balls bouncing all over the screen. "The list is long": scenes and visualizers that each bring back an era. "I keep giving ideas — take note." |
 | 2026-10-28 | Asked for more ideas, then approved all of Claude's: two more periods (the 8-bit micros, the first phones), more games that marked an era, the home computer's screens, films and TV as concepts, the classic demo effects the pack did not name, seven styles, three ways to watch and the sounds between the tracks. |
-| 2026-10-28 | A homage to Tennis for Two, the tennis game played on an oscilloscope; and the Addams Family, another great influence: visualizers and music inspired by them. |
+| 2026-10-28 | A homage to the tennis game played on a laboratory oscilloscope in 1958; and the gothic family of 60s television and the 90s films, another great influence: visualizers and music inspired by them. |
 
 ---
 
@@ -112,7 +112,7 @@ whole idea. **Not yet** — nothing covers it.
 | Idea | Where it stands |
 |---|---|
 | The DOS look: VGA palette, fractals, plasma | Done — the DOS era |
-| Second Reality's tricks: the lens, the rotozoomer, the city flyover | Not yet |
+| The tricks of the great PC demos of 1993: the lens, the rotozoomer, the city flyover | Not yet |
 | The crystals and dreamlike 3D of the early 90s | Not yet |
 | The 64k intro: a whole world from a few kilobytes | Partly — SEEDSCENE is all code; no procedural city or landscape |
 | The Gravis Ultrasound, the demoscene's sound card | Not yet — DOS plays on OPL3 or AWE32 |
@@ -122,7 +122,7 @@ whole idea. **Not yet** — nothing covers it.
 | Idea | Where it stands |
 |---|---|
 | C64 | Done — its era, its boot screen |
-| Game Boy / LSDJ | Done — the handheld era, `gameboy` |
+| Game Boy and its trackers | Done — the handheld era, `gameboy` |
 | Atari ST / Falcon | Partly — its YM2149 is one of 1982–1989's sound boards, with `stchip`; no era or scenes of its own |
 | SNES / Mega Drive | Not yet — the console era is 32-bit; no 16-bit chips |
 | PlayStation | Partly — the console era, on wavetable |
@@ -130,26 +130,26 @@ whole idea. **Not yet** — nothing covers it.
 
 ### Game soundtracks of the MOD era
 
-| Game | What it brings | Where it stands |
+| Kind of game | What it brings | Where it stands |
 |---|---|---|
-| Turrican, Apidya, Battle Squadron, R-Type | heroic shooters, driving and melodic | Done — `heroic`, `starpilot` |
-| Shadow of the Beast | atmosphere: tribal drums, flutes, mystery | Done — `beast` |
-| Lotus | racing at full speed | Not yet |
-| Agony | melancholy: piano, strings, a slow pulse | Done — `agony` |
-| Pinball Dreams / Fantasies | bouncy, bright, catchy | Not yet |
-| Super Stardust | orchestral techno in space | Partly — `starpilot` |
-| Alien Breed, Walker | dark, industrial | Partly — `derelict`, `cyborg` |
-| Cannon Fodder, Lemmings | jolly, a march, a tune you whistle | Done — `march` |
-| Xenon 2 | hip-hop breakbeat in a shooter | Done — `bomb` |
+| the Amiga's shooters and run-and-guns | heroic shooters, driving and melodic | Done — `heroic`, `starpilot` |
+| the atmospheric Amiga side-scrollers | atmosphere: tribal drums, flutes, mystery | Done — `beast` |
+| the Amiga's racing games | racing at full speed | Not yet |
+| the melancholy late-Amiga shooters | melancholy: piano, strings, a slow pulse | Done — `agony` |
+| the Amiga's pinball games | bouncy, bright, catchy | Not yet |
+| the late-Amiga space shooters | orchestral techno in space | Partly — `starpilot` |
+| the Amiga's dark sci-fi action games | dark, industrial | Partly — `derelict`, `cyborg` |
+| the little-soldier and little-walker games | jolly, a march, a tune you whistle | Done — `march` |
+| the Amiga shooters with a hip-hop beat | hip-hop breakbeat in a shooter | Done — `bomb` |
 
 ### Modern visualizers
 
 | Idea | Where it stands |
 |---|---|
-| Shadertoy-style live shaders | Done — every scene is a shader |
-| projectM / Butterchurn / MilkDrop | Not yet — no feedback-warp visualizer |
-| Synesthesia, Magic, Plane9: audio-reactive 3D worlds | Partly — the 3D stage under the games |
-| Touhou bullet hell | Not yet |
+| Live shaders, as the shader-sharing sites of the 2010s show them | Done — every scene is a shader |
+| The media players' visualizers of the early 2000s | Not yet — no feedback-warp visualizer |
+| Today's visualizer programs: audio-reactive 3D worlds | Partly — the 3D stage under the games |
+| The bullet-hell shooters | Not yet |
 | Neon synthwave demos | Done — `outrun`, the modern era |
 
 ### Energy keywords
@@ -163,25 +163,25 @@ whole idea. **Not yet** — nothing covers it.
 
 | Idea | Where it stands |
 |---|---|
-| Pong, Space Invaders, Asteroids, Pac-Man, Arkanoid | Done — `paddles`, `invaders`, `rocks`, `maze`, `bricks`, simulated, on the beat |
-| Snake, Punch-Out, Star Fox | Done — `snake`, `boxer`, `starfighter` with `starpilot` |
-| Tron | Done — `lightcycles`; no music of its own |
-| Terminator, Alien | Done — `cyborg`, `derelict` |
+| The first paddle game, the invaders, the rock shooter, the maze chase, the brick breaker | Done — `paddles`, `invaders`, `rocks`, `maze`, `bricks`, simulated, on the beat |
+| The phones' snake, the console boxing games, the 16-bit space shooter | Done — `snake`, `boxer`, `starfighter` with `starpilot` |
+| The light-cycle film | Done — `lightcycles`; no music of its own |
+| The cyborg and space-horror films of the 80s | Done — `cyborg`, `derelict` |
 | Pop, rock and roll | Done — `synthpop`, `rocknroll` |
-| Racing: OutRun, Need for Speed, Lotus | Not yet — `outrun` is a sunset, not a road |
-| The Matrix | Not yet |
-| Parties: The Party, Assembly, Revision, Evoke | Not yet — no party atmosphere: a big screen, a crowd, a compo |
-| Archives: Demozoo, Pouet, CSDb, ModArchive, Scene.org | Sources to search and listen to, not content: they feed the proposals below |
+| Racing: the arcade road racers, the police-chase racers, the Amiga's racers | Not yet — `outrun` is a sunset, not a road |
+| The cyberpunk film of 1999 | Not yet |
+| Parties: the big demo parties, from the 90s to now | Not yet — no party atmosphere: a big screen, a crowd, a compo |
+| Archives: the scene's databases and music archives | Sources to search and listen to, not content: they feed the proposals below |
 
 ### The owner's second list of games
 
 | Idea | Where it stands |
 |---|---|
-| Run-and-gun soldier (Metal Slug) | Not yet |
-| A runner at full speed, down ramps and round loops (Sonic) | Not yet |
-| A jumper on platforms (Mario) | Not yet |
-| Plane shooters (1945) | Partly — `starfighter` flies on rails in 3D; nothing vertical, nothing over the sea |
-| A city builder (SimCity) | Not yet |
+| Run-and-gun soldier (the 90s arcades) | Not yet |
+| A runner at full speed, down ramps and round loops (the 16-bit consoles) | Not yet |
+| A jumper on platforms (the 8- and 16-bit consoles) | Not yet |
+| Plane shooters (the vertical shooters of the arcades) | Partly — `starfighter` flies on rails in 3D; nothing vertical, nothing over the sea |
+| A city builder (the early 90s) | Not yet |
 | A monster destroying the city, hurricanes, earthquakes | Not yet |
 | Helicopters | Not yet |
 | A first-person rollercoaster | Not yet — the closest is `dottunnel`'s ride |
@@ -190,14 +190,14 @@ whole idea. **Not yet** — nothing covers it.
 
 | Idea | Where it stands |
 |---|---|
-| The kung-fu corridor (Kung-Fu) | Not yet |
-| Versus fighters (Street Fighter II, Mortal Kombat) | Partly — `boxer` is a fight on the beat; nothing with special moves, rounds and a versus screen |
-| The fighting film's techno theme (Mortal Kombat) | Not yet — the closest is `gabber` and `trance` |
+| The kung-fu corridor (the 80s arcades) | Not yet |
+| Versus fighters (the early 90s) | Partly — `boxer` is a fight on the beat; nothing with special moves, rounds and a versus screen |
+| The fighting film's techno theme (the mid-90s) | Not yet — the closest is `gabber` and `trance` |
 | Athletics, hammering the buttons (track and field) | Not yet |
 | Motocross | Not yet |
-| Basketball: shooting hoops, two-on-two (NBA Jam) | Not yet |
-| Dance pads (Dance Dance Revolution) | Not yet |
-| Guitar games (Guitar Hero) | Not yet |
+| Basketball: shooting hoops, two-on-two (the 90s arcades) | Not yet |
+| Dance pads (the late 90s and 2000s) | Not yet |
+| Guitar games (the 2000s) | Not yet |
 | Pinball | Partly — `bricks` bounces a ball on the beat; there is no table, no flippers, no bumpers |
 | The years from 2010 to 2024 | Not yet — one era, 2010–now, music only, no scenes yet |
 
@@ -205,27 +205,27 @@ whole idea. **Not yet** — nothing covers it.
 
 | Idea | Where it stands |
 |---|---|
-| Tennis for Two, the oscilloscope tennis of 1958 | Not yet — `paddles` is the 1972 game seen from above; nothing comes before 1972 |
-| The Addams Family: the 60s series, the 90s films and their game and pinball table, the 2020s revival | Not yet — no gothic mansion, no harpsichord, no finger snaps |
+| The oscilloscope tennis of 1958 | Not yet — `paddles` is the 1972 game seen from above; nothing comes before 1972 |
+| The gothic family: the 60s series, the 90s films and their game and pinball table, the 2020s revival | Not yet — no gothic mansion, no harpsichord, no finger snaps |
 
 ### The owner's fourth list
 
 | Idea | Where it stands |
 |---|---|
-| Pirates: the island adventure games (Monkey Island), the pirate films (Pirates of the Caribbean) | Not yet |
-| The point-and-click adventures: Goblins, Day of the Tentacle and the rest | Not yet — no adventure era, no Roland MT-32, the sound card those games were scored for |
-| Prince of Persia's sword duel | Not yet — `boxer` is the only duel |
-| Pitfall | Not yet — no Atari 2600 era |
-| Pang: balls bouncing everywhere, split by a harpoon | Partly — `rocks` splits what it hits; nothing bounces |
+| Pirates: the island adventure games (the early 90s), the pirate films (the 2000s) | Not yet |
+| The point-and-click adventures: the goblin puzzles, the time-travel cartoon adventure and the rest | Not yet — no adventure era, no Roland MT-32, the sound card those games were scored for |
+| The sword duel of the palace-and-dungeon games | Not yet — `boxer` is the only duel |
+| The jungle runner of the woodgrain console | Not yet — no Atari 2600 era |
+| The ball-splitting arcade shooter: balls bouncing everywhere, split by a harpoon | Partly — `rocks` splits what it hits; nothing bounces |
 | "The list is long": other games that marked an era | Not yet — see the classics proposed below: the walkers, the bomber grid, the cinematic chase, the gallery shooter |
 
 ### What the inventory says
 
 - The pack's **musical styles** are all covered.
 - The **game soundtracks** are half covered. What's missing are the moods that aren't heroic: atmosphere, melancholy, bounce, a march, hip-hop. (Since filled by round 5 but for the bounce: the atmosphere `beast`, the melancholy `agony`, the march `march`, hip-hop `bomb`.)
-- The **effects** are mostly covered. The well-known Amiga tricks are missing (Kefrens bars, rotozoomer, glenz, the checkered ball), and so is anything that feeds back on itself (MilkDrop).
+- The **effects** are mostly covered. The well-known Amiga tricks are missing (Kefrens bars, rotozoomer, glenz, the checkered ball), and so is anything that feeds back on itself (the media players' visualizers).
 - The **periods** have one hole each between 1985 and 1993: the Atari ST, the Mega Drive and the SNES, and the Gravis Ultrasound. (The Atari ST's chip has since come, as a board of 1982–1989.)
-- Racing and The Matrix are entirely open.
+- Racing and the cyberpunk film of 1999 are entirely open.
 - The owner's second list is entirely open, and it points at two more
   periods: the arcade of the 90s, where the run-and-gun and plane shooters
   lived, and the years of the browser and indie games, the newest nostalgia
@@ -235,7 +235,7 @@ whole idea. **Not yet** — nothing covers it.
   rhythm games of 2005, the festivals of 2014, lo-fi and vaporwave in 2017.
 - The fourth list — pirates, adventures, the classics — asks for two more:
   the point-and-click adventures of 1990, on the Roland MT-32, and the
-  woodgrain console of 1981, the Atari 2600 that Pitfall ran on.
+  woodgrain console of 1981, the Atari 2600 the jungle runner ran on.
 
 ---
 
@@ -254,7 +254,7 @@ before the arcades.
 | P1 | **Atari ST, 1987** — the scrolltext and fullscreen demos | **YM2149**: three square channels, noise, the hardware envelope used as a buzzing bass | big sine scrollers over rasters, Kefrens bars, a twister, starfield | `chiptune`-like but buzzier; a new `stchip` style | M |
 | P2 | **16-bit console, 1991** — Mega Drive and SNES | by the seed: **YM2612** (Mega Drive: six FM voices, a slap bass, a sampled drum) or **SPC700** (SNES: eight sampled voices, soft interpolation, the echo) | runner (new), jumper (new), the racer (new), helicopter (new), rotozoomer (Mode 7, new), `starfighter`, `boxer` | `speedzone`, `jumpworld`, `coastline`, `chopper`, `pinball` (new); `heroic`, `starpilot` | L |
 | P3 | **DOS demo party, 1993** — the Gravis Ultrasound | **GUS**: 32 voices of interpolated samples, clean and wide; joins OPL3 and AWE32 as a third card the seed can pick | the lens, glenz, crystals, the city builder, the raycaster corridor (new) | `idm`, `zoning`, `kaiju` (new); `rave`, `ambient`, `jungle` | M |
-| P4 | **The media player, 2001** — Winamp, MilkDrop, the first MP3s | the synthesizer's own voices, through a gentle "MP3" band-limit | the MilkDrop channel, code rain, the rollercoaster (new) | `bigbeat`, `lobby`, `coaster` (new); `trance` | M |
+| P4 | **The media player, 2001** — the desktop players, their visualizers, the first MP3s | the synthesizer's own voices, through a gentle "MP3" band-limit | the visualizer channel, code rain, the rollercoaster (new) | `bigbeat`, `lobby`, `coaster` (new); `trance` | M |
 | P5 | **Arcade, 1995** — the Neo Geo and the shooter cabinets | **YM2610**: four FM voices, three squares and sampled drums that hit hard | run-and-gun, plane shooter, versus fighter, tournament, hoops (new); `boxer`, the racer | `brigade`, `squadron`, `versus`, `kombat`, `courtjam` (new); `fmmetal`, `heroic` | M |
 | P6 | **Flash and indie, 2010** — browser games, the pixel-art revival, the rhythm runners | the synthesizer's own voices with a bit-crushed chip layer: chiptune over a modern low end | rhythm runner, blocks (new); jumper, `snake` | `indiechip`, `wobble`, `electroswing` (new) | M |
 | P7 | **Lo-fi and vaporwave, 2017** — beats to study to, the mall at dusk | the synthesizer's own voices on a worn tape: wow and flutter, crackle, a soft top end | rainy window, vapor plaza (new); `ripple`, `outrun` | `lofi`, `vapor` (new); `dreamwave` | M |
@@ -272,7 +272,7 @@ corridor, the athletics and the motocross; the 16-bit console the versus
 fighter and the hoops; the Amiga the pinball table; the Amiga the
 Kefrens bars, the ball and the landscape; DOS the city builder and its
 disasters; the 32-bit console the rollercoaster in 3D; the handheld the
-blocks; Y2K the code rain; the modern era the MilkDrop channel, the bullet
+blocks; Y2K the code rain; the modern era the visualizer channel, the bullet
 hell, the rhythm runner and the rollercoaster at night.
 
 The pirates also sail in other eras: the films' swashbuckling orchestra in
@@ -320,12 +320,12 @@ recognizable, and the era and sound chip it would play on.
 
 | Style | Homage to | What makes it | Era · chip | Effort |
 |---|---|---|---|---|
-| `coastline` **Coastline Fusion** | OutRun's beach-side radio | latin-fusion jazz-funk: a slap bass, brass stabs, a bright lead, congas and timbales, major-seventh chords, 130–150 bpm | 16-bit console · YM2612; arcade · native FM | M |
-| `turbo` **Turbo Techno** | the Lotus games on the Amiga | driving tracker techno at 150+, a pumping octave bass, a pitch-bending lead like an engine | Amiga · Paula | S |
-| `nitro` **Nitro Rock** | Need for Speed's first years | rock guitars over a breakbeat, a synth riff, a drop into a chase | DOS · AWE32; 32-bit console | S (the guitar exists) |
+| `coastline` **Coastline Fusion** | the beach-road radio of the 80s arcade racers | latin-fusion jazz-funk: a slap bass, brass stabs, a bright lead, congas and timbales, major-seventh chords, 130–150 bpm | 16-bit console · YM2612; arcade · native FM | M |
+| `turbo` **Turbo Techno** | the Amiga's racing games | driving tracker techno at 150+, a pumping octave bass, a pitch-bending lead like an engine | Amiga · Paula | S |
+| `nitro` **Nitro Rock** | the police-chase racers of the mid-90s | rock guitars over a breakbeat, a synth riff, a drop into a chase | DOS · AWE32; 32-bit console | S (the guitar exists) |
 | `underground` **Night Street** | the street-racing years of the 2000s | dark electro, a sub bass, a half-time beat, a vocal-chop lead | Y2K, modern | M |
 
-### The Matrix
+### The cyberpunk film of 1999
 
 | Style | Homage to | What makes it | Era · chip | Effort |
 |---|---|---|---|---|
@@ -336,12 +336,12 @@ recognizable, and the era and sound chip it would play on.
 
 | Style | Homage to | What makes it | Era · chip | Effort |
 |---|---|---|---|---|
-| `beast` **Beast Lands** | Shadow of the Beast | tribal toms in a slow 6/8, a pan flute, a bowed drone, a mysterious minor | Amiga · Paula | S |
-| `agony` **Lament** | Agony | a slow piano over strings, a lonely lead, rain-like noise | Amiga · Paula; DOS · GUS | S |
-| `pinball` **Pinball Fever** | Pinball Dreams and Fantasies | bouncy techno-pop at 130, a clavinet riff, bells, a chorus that hits | Amiga; 16-bit console | S |
-| `march` **Jolly March** | Cannon Fodder and Lemmings | a march: snare rolls, a tuba bass, a whistled lead, then a dance beat under it | Amiga; handheld | S |
-| `bomb` **Hip-Hop Blaster** | Xenon 2 | a slow hip-hop break, scratches, a stab, a rap-like chopped lead (no voice) | Amiga · Paula | S |
-| `industrial` **Steel Works** | Alien Breed and Walker | a metallic loop in 4/4, a grinding bass, hammer hits, sirens | DOS; 32-bit console | S |
+| `beast` **Beast Lands** | the atmospheric Amiga side-scrollers | tribal toms in a slow 6/8, a pan flute, a bowed drone, a mysterious minor | Amiga · Paula | S |
+| `agony` **Lament** | the melancholy late-Amiga shooters | a slow piano over strings, a lonely lead, rain-like noise | Amiga · Paula; DOS · GUS | S |
+| `pinball` **Pinball Fever** | the Amiga's pinball games | bouncy techno-pop at 130, a clavinet riff, bells, a chorus that hits | Amiga; 16-bit console | S |
+| `march` **Jolly March** | the little-soldier and little-walker games | a march: snare rolls, a tuba bass, a whistled lead, then a dance beat under it | Amiga; handheld | S |
+| `bomb` **Hip-Hop Blaster** | the Amiga shooters with a hip-hop beat | a slow hip-hop break, scratches, a stab, a rap-like chopped lead (no voice) | Amiga · Paula | S |
+| `industrial` **Steel Works** | the Amiga's dark sci-fi action games | a metallic loop in 4/4, a grinding bass, hammer hits, sirens | DOS; 32-bit console | S |
 
 ### From the pack's styles and scenes
 
@@ -350,7 +350,7 @@ recognizable, and the era and sound chip it would play on.
 | `idm` **Glitch** | the IDM of the early 90s | broken beats that stutter and reverse, granular blips, a warm pad underneath | DOS · GUS; modern | M |
 | `ballad` **Musicdisk Ballad** | the melodic tracker tunes of the musicdisks | a slow 4-channel ballad: a vibrato lead, an arpeggio, a soft beat — the tune you play twice | Amiga · Paula | S |
 | `stchip` **ST Buzz** | the Atari ST demos | YM squares, the buzzer bass, fast arpeggios, a digi-drum | Atari ST · YM2149 | S (with the chip) |
-| `grid` **Grid Symphony** | Tron, then and now | orchestra and synth together: a pulsing synth bass, big brass, a heroic theme over an arpeggio | modern; 32-bit console | M |
+| `grid` **Grid Symphony** | the light-cycle films, then and now | orchestra and synth together: a pulsing synth bass, big brass, a heroic theme over an arpeggio | modern; 32-bit console | M |
 | `neonnoir` **Neon Noir** | the 80s sci-fi film score of rain and neon | slow, lush brass pads, a long reverb, a lonely lead, a distant drum | modern; arcade | S |
 | `italo` **Italo Disco** | the 80s Italian dance hits next to synth-pop | an octave bass at 120, a vocoder-like lead, hand claps, a big chorus | C64 · SID; arcade | S |
 | `powerballad` **Stadium Ballad** | 80s rock ballads | a gated-reverb snare, an overdriven guitar, a piano, a key change for the last chorus | 32-bit console; modern | S |
@@ -529,7 +529,7 @@ playing" card. 136 tracks across the twenty-two periods.
 | 16-bit console 1991 | *Mansion Run* | `gothic` (SPC700) | the house of a hundred doors | jumper (haunted levels) |
 | DOS party 1993 | *Big Screen* | `rave` (GUS) | the big screen at the party | lens |
 | DOS party 1993 | *Crystal Sleep* | `ambient` (GUS) | the crystal part | crystals |
-| DOS party 1993 | *Glitch Room* | `idm` | the hall gone dark | MilkDrop channel |
+| DOS party 1993 | *Glitch Room* | `idm` | the hall gone dark | visualizer channel |
 | DOS party 1993 | *Zoning Board* | `zoning` (GUS) | the city grows, block by block | city builder |
 | DOS party 1993 | *Greetings To* | `keygen` (GUS) | the logo, the scroller, the friends | cracktro |
 | DOS party 1993 | *Emboss* | `rave` (GUS) | a light circling the logo | bump-mapped logo |
@@ -565,7 +565,7 @@ playing" card. 136 tracks across the twenty-two periods.
 | Handheld 1998 | *Juggle* | `gameboy` | black segments, three balls | LCD handheld |
 | Handheld 1998 | *Feed Me* | `gameboy` | the pet wants dinner | virtual pet |
 | Media player 2001 | *Slow Motion* | `lobby` | the lobby, in slow motion | code rain |
-| Media player 2001 | *Breakout* | `bigbeat` | the chase over the rooftops | MilkDrop channel |
+| Media player 2001 | *Breakout* | `bigbeat` | the chase over the rooftops | visualizer channel |
 | Media player 2001 | *Park Opening* | `coaster` | the theme park you built yourself | rollercoaster (3D) |
 | Media player 2001 | *Finish Him* | `kombat` | the tournament on the big screen | tournament |
 | Media player 2001 | *Cascade* | `keygen` | the game is won, the cards fly | card cascade |
@@ -610,10 +610,10 @@ the effect driven by the beat, on the 3D stage with its blur where it fits.
 
 | Scene | Homage to | On the music | Effort |
 |---|---|---|---|
-| **racer** | OutRun, Lotus, Need for Speed | a pseudo-3D road with curves and hills; the car leans into each curve on the bar; traffic overtaken on the beat; a checkpoint and EXTENDED PLAY on the drop; the night version for Night Street | M |
-| **bullet hell** | Touhou | a ship weaving through patterns that open like flowers on the bar, change on the drop, and burst on the crash | M |
+| **racer** | the road racers of the arcades, the Amiga and the 90s PC | a pseudo-3D road with curves and hills; the car leans into each curve on the bar; traffic overtaken on the beat; a checkpoint and EXTENDED PLAY on the drop; the night version for Night Street | M |
+| **bullet hell** | the bullet-hell shooters | a ship weaving through patterns that open like flowers on the bar, change on the drop, and burst on the crash | M |
 | **musicdisk player** | the musicdisks | a tracker's pattern view scrolling the real notes of the score, VU bars on each channel, a track list, the title | S |
-| **party** | The Party, Assembly, Revision | a hall from the back row: a big screen playing the demo, the crowd's lights, a "compo" card before each track | M |
+| **party** | the big demo parties | a hall from the back row: a big screen playing the demo, the crowd's lights, a "compo" card before each track | M |
 
 ### Platforms, planes, cities and rides (the owner's second list)
 
@@ -654,7 +654,7 @@ the effect driven by the beat, on the 3D stage with its blur where it fits.
 | **treasure island** | the treasure maps | an old map: a dotted trail drawn across the island on the beat, the compass swinging on the bar, the X on the drop, the chest opening in a shower of gold | S |
 | **time-split mansion** | the time-travel cartoon adventure | one mansion in three panels — past, present, future — objects flushed from one to another on the beat, the three panels in sync on the drop | M |
 | **three helpers** | the puzzle adventures with three goblin-like helpers | three little helpers, one on each instrument: the brawler acts on the kick, the picker on the snare, the wizard on the hats; the puzzle solves itself on the drop | M |
-| **sword duel** | the palace-and-dungeon sword fights | a dungeon, a fighter animated as fluidly as the rotoscoped originals; guard and thrust on the beat, the gate rising on the bar, a spike trap timed to the snare, the guard falling on the drop | M |
+| **sword duel** | the palace-and-dungeon sword fights | a dungeon, a fighter animated as fluidly as the rotoscoped games of the time; guard and thrust on the beat, the gate rising on the bar, a spike trap timed to the snare, the guard falling on the drop | M |
 | **jungle runner** | the jungle runners of the woodgrain console | a runner in a flat jungle: vines swung on the bar, logs jumped on the beat, crocodiles opening and closing their jaws in time, a tar pit on the break | S |
 | **bouncing balls** | the ball-splitting arcade shooters | big balls bouncing on the kick over a seed-made skyline, a harpoon fired on the snare, each ball hit splitting in two smaller and faster ones, the last pop on the drop | S |
 | **walkers** | the little walkers' puzzle games | a stream of little walkers; builders laying steps on the beat, diggers on the snare, a floater with an umbrella on the break, all of them home on the drop — nobody lost | M |
@@ -689,8 +689,8 @@ the effect driven by the beat, on the 3D stage with its blur where it fits.
 
 | Scene | Homage to | On the music | Effort |
 |---|---|---|---|
-| **code rain** | The Matrix | falling columns of seed-made glyphs, the rain speeding on the build, a shape appearing in it on the drop | S |
-| **MilkDrop channel** | projectM and Butterchurn | the frame fed back into itself through warps that change on the bar, the waveform drawn in it, a new preset on each scene cut | L |
+| **code rain** | the falling green code of the cyberpunk films of the late 90s | falling columns of seed-made glyphs, the rain speeding on the build, a shape appearing in it on the drop | S |
+| **visualizer channel** | the media players' visualizers of the early 2000s | the frame fed back into itself through warps that change on the bar, the waveform drawn in it, a new preset on each scene cut | L |
 | **bullet time** | the slow-motion shot | any scene slowed to a crawl and orbited by the camera at the break, then snapping back on the drop | M |
 
 ### Claude's additions (approved 2026-10-28)
@@ -802,12 +802,12 @@ Inside each round the chip goes first, since the styles are tuned on it.
 | 1 | **The 16-bit consoles** (P2): YM2612 and SPC700; `speedzone`, `jumpworld`, `coastline`, `chopper`, `pinball`; runner, jumper, racer, helicopter, rotozoomer; the radio stations | the biggest gap in the timeline and most of the owner's second list; the two hardest chips first |
 | 2 | **The arcade of 1995, and the fighters** (P5): YM2610 (on the YM2612), 2A03; `brigade`, `squadron`, `versus`, `kombat`, `kungfu`; run-and-gun, plane shooter, missile defense, kung-fu corridor, versus fighter, tournament; cabinet mode | stands on round 1's FM; the platform, plane and fighting games together |
 | 3 | **Sports and pinball**: `olympic`, `dirt`, `courtjam`; athletics, motocross, hoops, pinball | the games of the arcades and the 8-bit years, on the chips of rounds 1 and 2 |
-| 4 | **Racing and The Matrix**: `turbo`, `nitro`, `underground`, `lobby`, `bigbeat`; code rain, bullet time | the racer from round 1 gets its other eras |
+| 4 | **Racing and the cyberpunk film**: `turbo`, `nitro`, `underground`, `lobby`, `bigbeat`; code rain, bullet time | the racer from round 1 gets its other eras |
 | 5 | **The Atari ST and the Amiga classics** (P1): YM2149; `stchip`, `beast`, `agony`, `ballad`, `march`, `bomb`, `italo`; Kefrens bars, twister, ball, glenz, landscape, the musicdisk player; the musicdisk mode | the pack's own heart: the trackmos and the MOD-era soundtracks |
 | 6 | **Adventures, pirates and the woodgrain console** (P10, P11): MT-32, AdLib, PC speaker, TIA; `calypso`, `toon`, `whimsy`, `persia`, `vcs`, `highseas`, `shanty`; pirate duel, sea battle, treasure island, time-split mansion, three helpers, sword duel, jungle runner, gallery shooter, cinematic chase, walkers | the adventure games need a chip of their own, the MT-32, and the most character animation of any round |
 | 7 | **The DOS party and the city** (P3): GUS; `idm`, `zoning`, `kaiju`, `industrial`; lens, crystals, raycaster, the city builder and its disasters; the party mode | the city builder is the largest scene: it comes when the rest is settled |
 | 8 | **The rhythm games** (P8): `eurobeat`, `arenarock`; dance pad, note highway | both need a simulator that judges timing against the score |
-| 9 | **The years since 2001** (P4, P6, P7, P9): the tape for lo-fi; `coaster`, `indiechip`, `wobble`, `electroswing`, `bigroom`, `lofi`, `vapor`, `grid`, `neonnoir`, `powerballad`; the MilkDrop channel, the rollercoaster, blocks, rhythm runner, festival stage, tap flyer, rainy window, vapor plaza | brings the timeline up to now; the MilkDrop channel is a system of its own |
+| 9 | **The years since 2001** (P4, P6, P7, P9): the tape for lo-fi; `coaster`, `indiechip`, `wobble`, `electroswing`, `bigroom`, `lofi`, `vapor`, `grid`, `neonnoir`, `powerballad`; the visualizer channel, the rollercoaster, blocks, rhythm runner, festival stage, tap flyer, rainy window, vapor plaza | brings the timeline up to now; the visualizer channel is a system of its own |
 | 10 | **The 8-bit micros and the phones** (P12, P13): AY-3-8910, the beeper, the two ringtone chips; `micro`, `ringtone`; loading screen, phone screen, LCD handheld, virtual pet | small chips and small screens: quick to build, on the rhythm grid every game already uses |
 | 11 | **More classics**: `skatepunk`, `terrace`, `animeop`; vector tube, wireframe tank, road crossing, pyramid hopper, behind-view shooter, cartoon castle, artillery, skate park, football match, kart race, DJ decks | games that marked an era, each a simulation on the beat like the arcade round's |
 | 12 | **Screens, films and demo effects**: `keygen`, `triphop`; screensavers, card cascade, ANSI board, cracktro, time car, scanner car, footsteps, moon bike, anime opening, fire, bump-mapped logo, interference rings, rubber vector, unlimited bobs, chessboard zoomer; born in, greetings, screensaver; the sounds between the tracks | mostly single effects and modes, each small |
@@ -846,8 +846,8 @@ not named here moves to 0.3.0 ([PLAN-v0.3.md](PLAN-v0.3.md)): rounds 1–4, 6–
 | A | **The SID**, a sound board of 1982–1989 (done 2026-11-02, merged by the owner): three voices with their four waveforms (pulse with its width, saw, triangle, noise), ring modulation and sync, the 6581's resonant filter, an ADSR per voice, chords as 50 Hz arpeggios; on the YM2149's pattern | the era is seen on the C64's display and heard on the Atari ST's chip or the studio, never on a C64; the plan had taken the `chiptune` style for the chip | M |
 | B | **The vector displays** (done 2026-11-02, approved and merged by the owner): `vector` (black and white, sixteen intensities) and `colorvector` (seven colours, three guns on or off), at the owner's word; a beam drawing only lines - any picture traced as its lines and outlines, the inside of shapes unlit - no raster, no scan lines, no dither; the glow of a bright line, a faint shimmer (never a flash); its persistence is a few milliseconds, under a frame, so it leaves no trail | `rocks` was a vector game seen today on a raster monitor; round 11's vector tube and wireframe tank need it | S |
 | C | **Round 11's rest**, the eras it fills first: skate park and kart race (1997–1999), DJ decks (2000–2009), vector tube and wireframe tank on the vector display, then road crossing, behind-view shooter, cartoon castle, artillery, football match; `terrace` | the round under way; four of its scenes go to the thin eras | L |
-| D | **Shader art for 2010–now** (built 2026-11-02, waiting for the owner's look: prism, sculpture, fractalflight): three or four scenes of the era's own art, each from a real piece of it - a raymarched scene of signed distances (soft shadows, ambient occlusion), a flight into a fractal, a chromatic tunnel, a neon grid | the era named *Shader art* has no scene, and `synthwave` plays in no programme | M |
-| E | **2000–2009 and 1997–1999 to three scenes or more**: the code rain (the film is of 1999), a 64k intro's camera flight, besides C's | an era with one or two scenes repeats itself in THE JOURNEY and AUTOPLAY | M |
+| D | **Shader art for 2010–now** (done 2026-11-02, approved and merged by the owner: prism, sculpture, fractalflight): three or four scenes of the era's own art, each from a real piece of it - a raymarched scene of signed distances (soft shadows, ambient occlusion), a flight into a fractal, a chromatic tunnel, a neon grid | the era named *Shader art* has no scene, and `synthwave` plays in no programme | M |
+| E | **2000–2009 and 1997–1999 to three scenes or more** (built 2026-11-02, approved by the owner 2026-11-03: coderain, gimbal, djdecks): the code rain (the film is of 1999), a 64k intro's camera flight, besides C's | an era with one or two scenes repeats itself in THE JOURNEY and AUTOPLAY | M |
 
 **0.2.0's gate:** every era has at least three scenes of its own; every era's
 display has a sound board of its machine where one is built (the C64's the

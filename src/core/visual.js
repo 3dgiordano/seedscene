@@ -662,6 +662,7 @@ export class Renderer {
     p1('uFade', this.fade);
     // scenes that ask for it get a zoom blur on the kick
     p1('uImpact', fx.impact || 0);
+    p1('uTear', fx.tear === undefined ? 1 : fx.tear);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     gl.bindSampler(0, null);
     gl.bindSampler(2, null);

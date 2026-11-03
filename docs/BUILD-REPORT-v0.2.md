@@ -28,7 +28,7 @@ sound board.
 
 ## Where it stands, 2026-11-02
 
-- **Built:** forty-eight scenes in seven eras (spans of years, 1972 to now), thirty-five music styles, sixteen
+- **Built:** fifty-one scenes in seven eras (spans of years, 1972 to now), thirty-five music styles, sixteen
   displays and six sound boards, each scene with its own or its era's; THE
   JOURNEY (three scenes an era, going on through the lists over replays),
   AUTOPLAY, born in, greetings, the screensaver, the sounds between the tracks,
@@ -54,7 +54,7 @@ Thirty-eight scenes in eight eras. On 2026-10-29, in one day with the owner
 looking at each piece live:
 
 - **Built, from references, each approved by the owner:** the unlimited bobs
-  (on the original's cycled screens, music-driven, with a twin chain), the dual
+  (on the trick's own cycled screens, music-driven, with a twin chain), the dual
   chessboard and the chessboard floor with its cube (the chessboard zoomer,
   split in two at the owner's word), the rubber vector, the bump-mapped logo
   and the cracktro with its starfield and warps - the whole of round 12's
@@ -875,7 +875,7 @@ calm, the kick and the peak looked alike — and its beat bar crossed the
 ribbon as a murky grey stripe. The swing and the bars' width now follow the
 bass and the kick, the beat bar runs behind the ribbon, and a faint
 background gradient that the Amiga's 12-bit colour cut into a visible band
-was replaced by black, as in the original.
+was replaced by black, as the effect had it on the Amiga.
 
 | Check | Result |
 |---|---|
@@ -885,12 +885,12 @@ was replaced by black, as in the original.
 
 ### The third piece: the bouncing checkered ball
 
-The Amiga's first and most famous demo (`ball`): a red and white ball, sixteen
+The bouncing checkered ball of the Amiga's first demos (`ball`): a red and white ball, sixteen
 squares round and eight from pole to pole, spinning on a tilted axis and
 bouncing from wall to wall of a grey room ruled in purple, its shadow thrown
 on the back wall. Here its arc is the beat — it touches the floor on every
 one — it spins faster as the music builds, and the room catches the light on
-the kick. Flat red and white, as the original was, with only a hint of the
+the kick. Flat red and white, as those demos drew it, with only a hint of the
 ball's edge.
 
 **What went wrong.** The floor's perspective came out inverted: its lines
@@ -900,7 +900,7 @@ its depth, and its squares grow as they come closer.
 
 | Check | Result |
 |---|---|
-| Frames at the calm, the strongest kick and the peak, for three seeds, against the original demo | the grey room and purple grid, the tilted spin, the shadow down and to the right, the bounce wall to wall; the floor's perspective corrected |
+| Frames at the calm, the strongest kick and the peak, for three seeds, against reference frames of the effect | the grey room and purple grid, the tilted spin, the shadow down and to the right, the bounce wall to wall; the floor's perspective corrected |
 | Shader cost against the Amiga scenes, same software renderer, 854×480 | ball 4.1 ms a frame; kefrens 3.8, copper 4.3 in the same run |
 | `npm test` | 16 checks pass |
 
@@ -956,8 +956,8 @@ ghost segments darkened to the next shade of the LCD.
 
 **The owner's verdict, and the rebuild.** The owner found the juggler
 unrecognisable: nobody would see the 1980 game in it. This time it was held
-against the real thing — a photograph of the device, and one of it running,
-from Wikimedia Commons — and not against memory. What makes it recognisable
+against the real thing — photographs of such a device, at rest and
+running — and not against memory. What makes it recognisable
 was missing: the device itself (the brushed silver face, the maroon case,
 the two big round red buttons with their arrows, the three small ones, the
 screen sunk in a red border), a grey screen rather than a green one, and a
@@ -975,7 +975,7 @@ era, next to the synth-pop): a long, low black car coming down a night road
 straight at the viewer, the red light in its nose sweeping left and right —
 eight lights, one pass on every beat, a trail fading behind it. The road
 rushes faster as the music builds and the headlamps glow brighter on the
-kick. No name, logo or design of the original: a black wedge of a car and a
+kick. No name, logo or design from television: a black wedge of a car and a
 red light.
 
 **What went wrong.** The first car looked like a box — almost a television
@@ -1004,14 +1004,14 @@ the windscreen. Nothing of the animal is shown.
 **What went wrong.** The first version was drawn from memory — one tall
 glass, small in a black frame, rain that read as stars. The owner asked, the
 same turn, never to work from memory again: always look at reference images
-first, then give the homage a musical direction. Two frames of the scene
-showed what was missing: two short cups that flare at the rim, side by side
+first, then give the homage a musical direction. Two reference frames of
+that kind of shot showed what was missing: two short cups that flare at the rim, side by side
 on a grey-blue dashboard ledge, the whole shot in a cold blue, the rain on
 the windscreen at the top. It was rebuilt against them.
 
 | Check | Result |
 |---|---|
-| Frames at the calm, the strongest kick and the peak, for two seeds, against two frames of the scene | the two flared cups on the ledge, the cold blue, the rain on the glass; rings on the kick and the snare; the light dropping at the peak |
+| Frames at the calm, the strongest kick and the peak, for two seeds, against two reference frames | the two flared cups on the ledge, the cold blue, the rain on the glass; rings on the kick and the snare; the light dropping at the peak |
 | Shader cost against the 32-bit console scenes, same software renderer, 854×480 | footsteps 4.3 ms a frame; vectorballs 4.0, starfield 5.7 in the same run |
 | `npm test` | 16 checks pass |
 
@@ -1038,12 +1038,12 @@ other way.
 
 ### The ninth piece: the pyramid hopper
 
-The cube-pyramid game of the 1982 arcades (`pyramid`, arcade), built from the
-game's screenshot on Wikipedia: twenty-eight cubes in seven rows on black,
+The cube-pyramid games of the 1982 arcades (`pyramid`, arcade), checked
+against a screenshot of such an arcade screen: twenty-eight cubes in seven rows on black,
 each top changing from blue to yellow when landed on, a teal left face and a
 dark right one; rainbow discs floating at the sides; a red ball bouncing
-down; the score and the "change to" cube in a corner. The original's hopper
-is a character, so this one is a round green hopper with big eyes.
+down; the score and the "change to" cube in a corner. The arcade's hopper
+was a character, so this one is a round green hopper with big eyes.
 
 The musical direction is Claude's: it hops one cube a beat and lands on the
 beat, the cube it lands on lighting up with the kick; a red ball drops in
@@ -1064,15 +1064,15 @@ each round of 48 hops brings its own colours, as the game's levels did.
 
 | Check | Result |
 |---|---|
-| Frames at the calm, the strongest kick and the peak, for two seeds, against the game's screenshot | the pyramid, the two-colour tops, the faces, the discs, the ball, the score and the target cube |
+| Frames at the calm, the strongest kick and the peak, for two seeds, against the reference screenshot | the pyramid, the two-colour tops, the faces, the discs, the ball, the score and the target cube |
 | The walk-once rewrite against the frames before it | identical |
 | Shader cost against the arcade scenes, same software renderer, 854×480 | pyramid 5.5 ms a frame; snake 9.0, bricks 5.8 in the same run |
 | `npm test` | 16 checks pass |
 
 ### The tenth piece: the 3D pipes
 
-The screensaver of the mid-90s office PC (`pipes`, DOS), built from three
-captures of the original: on black, shiny pipes of solid colours (green,
+The 3D pipes, as the screensavers of the mid-90s office PC are remembered
+(`pipes`, DOS), checked against three reference captures: on black, shiny pipes of solid colours (green,
 teal, orange, white, red, yellow), each growing through a grid in space,
 turning at right angles with a ball joint at the turn, the tangle piling up
 into the distance until the screen is full. Each stretch is drawn as a
@@ -1107,17 +1107,17 @@ there too before it is called done.
 
 | Check | Result |
 |---|---|
-| Frames across a whole cycle, against three captures of the original | the tangle growing a stretch a beat, the colours, the joints at the turns, the depth, the dissolve |
+| Frames across a whole cycle, against the three reference captures | the tangle growing a stretch a beat, the colours, the joints at the turns, the depth, the dissolve |
 | A close-up of a straight run | one continuous tube, no seam, no dark pixel |
 | Live, on the real GPU (after the owner found it black) | draws; no shader errors in the console |
 | Shader cost against the DOS scenes, same software renderer, 854×480 | pipes 7.0 ms a frame; plasma 7.6, tunnel 7.2 in the same run |
 | `npm test` | 16 checks pass |
 
 **The owner's second look.** With the scene running, the owner asked for
-three things: the screen shake the game scenes have; the original's view,
-from above at an angle, where the 3D of the pipes shows - the first version
+three things: the screen shake the game scenes have; the view such
+screensavers had, from above at an angle, where the 3D of the pipes shows - the first version
 looked at them head on; and no pipes crossing through each other, which made
-glitches the original never had. The pipes became a simulation
+glitches the real ones never had. The pipes became a simulation
 (`src/core/sims.js`): a grid of cells, three pipes growing an eighth note at a
 time, turning on the beat, never into a cell another holds; boxed in, a pipe
 ends and a new one starts. The shader only draws what it grew, from a camera
@@ -1132,14 +1132,14 @@ and leaning on the snare.
 | Shader cost against the DOS scenes | pipes 7.4 ms a frame; fire 9.0, fireworks 8.3 in the same run |
 | `npm test` | 16 checks pass |
 
-**The owner's third look.** The owner asked for joints like the original's -
+**The owner's third look.** The owner asked for joints as the real ones had -
 not a ball at every turn - for the use of space the screensaver had, pipes
 far away and the tangle progressing from the back forwards, for a slower
 change, the screen saturated with pipes before it clears, and pointed out a
 glitch: the growing tip ran on past the cell where the pipe then turned, so
 the pipe seemed to break at the bend. The algorithm was checked against a
-remake of the screensaver (1j01/pipes, MIT), used for ideas only - the owner
-noted it is not faithful to the original: joints only at the turns, mostly
+open-source remake of that kind of screensaver (MIT-licensed), used for ideas
+only - the owner noted it is not faithful to the screensavers as they were: joints only at the turns, mostly
 elbows, a ball a third of the time, a ball where each pipe starts, a big grid.
 Each pipe now decides its next cell a step ahead and holds it, so the tip
 always grows towards where the pipe really goes; the grid is 17 × 11 × 17;
@@ -1193,13 +1193,13 @@ colours; and one in which the pyramid falls away, the bottom row first.
 
 The owner liked the pyramid's rhythm and asked for the game under it to be
 faithful in part, as the other game scenes are - how the red ball behaved,
-and what happened to the character when it touched one. From the game's
-description (Wikipedia's Q*bert article) and a screenshot of the arcade
-original: red balls appear on the second row and bounce down until they fall
-off the bottom, and touching one costs a life, with the character's
-cartoon swearing in a balloon; a purple egg bounces to the bottom and hatches
-into Coily, the snake, who chases; a disc at each side carries the character
-to the top, and Coily, in close pursuit, jumps after it and falls.
+and what happened to the character when it touched one. From a description
+of the kind of game and a screenshot of an arcade screen of 1982: red balls
+appear on the second row and bounce down until they fall off the bottom, and
+touching one costs a life, with the character's cartoon swearing in a
+balloon; a purple egg bounces to the bottom and hatches into a coiled snake
+who chases; a disc at each side carries the character to the top, and the
+snake, in close pursuit, jumps after it and falls.
 
 The pyramid became a simulation (`src/core/sims.js`), on eighth notes: the
 hopper lands on the beats, the enemies between them, so the two make a
@@ -1219,7 +1219,7 @@ character stays a round green hopper of our own.
 | Shader cost, same software renderer, 854×480 | pyramid 4.6 ms a frame (it reads the game's state instead of walking it); paddles 4.9, maze 7.0 in the same run |
 | `npm test` | 16 checks pass |
 
-### The starfighter, against the console original
+### The starfighter, against references of its kind
 
 The owner saw white rays crossing the starfighter's screen, seeming to come
 from below, out of view, like shots at the ship from nowhere. Measured
@@ -1233,9 +1233,9 @@ confirmed before the fix.
 
 The owner then asked for the same work as the other homages, from
 references, and for more of them: six screenshots of the 16-bit console
-original (from Wikipedia and an image search) were held against the scene.
+space shooters were held against the scene.
 
-| The original | Before | Now |
+| The references | Before | Now |
 |---|---|---|
 | A white fighter with tall, slender blue fins rising from the wing tips | two blue triangles, a bow tie when it rolled | a long white body, light swept wings, the fins rising and leaning in; tipped a little more towards the camera so the wings read |
 | Red delta-wing enemy fighters | red spinning octahedra | red delta-wings with a grey belly and fin, banking as they weave |
@@ -1266,7 +1266,7 @@ by its spot on the screen but held at a fixed height in the world, and that
 height was below the ground's line at the depth where it appeared; as it
 came on, its fixed height took it down the screen, under the ship. And the
 barrel roll turned the drones' shots away, which the owner does not remember
-in the original - Wikipedia's Star Fox article says the Arwing manoeuvres
+from those games - a description of the kind says the ship manoeuvres
 round attacks, and a hit costs shield energy; the owner remembers the ship
 shaking and the screen flashing when hit.
 
@@ -1334,17 +1334,17 @@ not a woven chain; now the chain is dense and knotted, as theirs.
 | `npm test` | 16 checks pass |
 
 **The owner's look at the bobs.** The owner was not sure the simulation was
-the original's: the frames caught what a picture shows, not how it moves.
+the trick's own: the frames caught what a picture shows, not how it moves.
 The algorithm, from Sol's Graphics Tutorial and the Plus/4 encyclopedia: the
 machine cycles a few screens without clearing them and draws one ball a
 frame on the screen it is about to show, so each screen holds the balls of
 every round, and the chain "looks like all the bobs are moving". The first
 version laid balls that stayed where they fell, a trail growing at its head;
-in the original the whole chain slides along behind the head, tracing its
+in the real trick the whole chain slides along behind the head, tracing its
 path. Now at time t the scene draws the balls drawn at t, t - D, t - 2D ...,
 D a 48th note: one frame to the next, every ball moves a step along the path,
 and the chain grows a ball each round. The tail no longer winds back at the
-end of a phrase - the original never undrew anything: the next phrase
+end of a phrase - the real trick never undrew anything: the next phrase
 clears the screens, as a demo cleared them for its next part.
 
 | Check | Result |
@@ -1411,13 +1411,12 @@ colours, on the same clock: the two cross and weave a knot as they pass.
 ### The chessboard, in two
 
 The owner approved the bobs ("quedaron muy bien") and asked to continue with
-round 12. The chessboard zoomer (`chessboard`, Amiga), from four videos of
-the effect - Nuance's Dual Chess (1993), Sanity's Quarters Chess Board,
-Quadriga's Chessboard intro and an A500 chessboard effect: a chessboard on
-each bitplane, each zooming and sliding on its own, the palette giving each
-overlap of squares its own shade, so the boards weave a shifting lattice
-(the perspective chessboard floor of Quadriga's intro is already the copper
-scene's). The musical direction: the first board's squares punch in on the
+round 12. The chessboard zoomer (`chessboard`, Amiga), evoking the
+chessboard intros of the Amiga years, checked against four videos of the
+effect from the early 90s: a chessboard on each bitplane, each zooming and
+sliding on its own, the palette giving each overlap of squares its own
+shade, so the boards weave a shifting lattice (the perspective chessboard
+floor those intros also had is already the copper scene's). The musical direction: the first board's squares punch in on the
 kick and ease back, the second breathes on the snare and slides with the
 bass, a third fades in for the second half of each phrase (eight shades),
 each phrase brings its own colour - crossfaded over a beat, never a cut of
@@ -1425,15 +1424,15 @@ the whole screen - and the screen shakes with the bass.
 
 | Check | Result |
 |---|---|
-| Frames across two phrases, against the four videos | two boards weaving, the third fading in, the new phrase's colour; the purple phrase reads as Dual Chess |
+| Frames across two phrases, against the four videos | two boards weaving, the third fading in, the new phrase's colour; the purple phrase reads as the dual boards of those intros |
 | On the real GPU, live, every scene compiled and drawn | all 34 pass |
 | Shader cost, same software renderer, 854×480 | chessboard 7.3 ms a frame; bobs 3.8, kefrens 4.9, shadebobs 5.3 in the same run |
 | `npm test` | 16 checks pass |
 
 **The owner's look.** The owner was not sure that was the effect: they
 remembered it rotating. The references, looked at again frame by frame,
-hold two effects: Nuance and Sanity zoom flat boards, the one built first;
-Quadriga's intro has the one remembered - a chessboard seen from above at
+hold two effects: some zoom flat boards, the one built first; others have
+the one remembered - a chessboard seen from above at
 an angle, in perspective, turning beneath the viewer like a turntable, its
 corners swinging out over the black (the plan's own words for it: the board
 turning beneath you). The scene was rebuilt as that: the board turns in
@@ -1443,24 +1442,24 @@ shaking with the bass.
 
 | Check | Result |
 |---|---|
-| Frames across a phrase and round a beat, against Quadriga's intro | the board turning a notch on the beat, its far corners over the black, the copper sky, the new phrase's colour |
+| Frames across a phrase and round a beat, against the rotating-floor reference | the board turning a notch on the beat, its far corners over the black, the copper sky, the new phrase's colour |
 | On the real GPU, live | compiled and drawn |
 | Shader cost, same software renderer, 854×480 | chessboard 5.5 ms a frame; bobs 5.0, shadebobs 6.4 in the same run |
 | `npm test` | 16 checks pass |
 
 **Split in two.** Neither was the effect the owner remembered, and the plan
 had it as Claude's own proposal with no one demo behind it, so the owner went
-through the references: the first version was close to Nuance's Dual Chess,
-and Sanity's Quarters Chess Board added the fluid zoom in and out; the
-rotation they remembered was each board turning on its own axis; the second
-version was very like Quadriga's intro, and with its bouncing cube it could
-be a scene of its own. Both kept, with names to match:
+through the references: the first version was close to the dual boards of
+those intros, and another added the fluid zoom in and out; the rotation they
+remembered was each board turning on its own axis; the second version was
+the chessboard floor with its bouncing cube, as those intros had it, and it
+could be a scene of its own. Both kept, with names to match:
 
 - **dualchess** - the dual boards, now each turning on its own axis against
   the other, which breaks the squares into moiré, and zooming smoothly from
   huge squares to tiny ones and back; the kick punch, the snare breath, the
   bass slide and the third board as before.
-- **chessfloor** - the perspective floor, now with Quadriga's red cube,
+- **chessfloor** - the perspective floor, now with a red cube,
   turning and bouncing on the board, landing on every beat, jumping higher as
   the music builds, growing with the bass, spinning faster on the snare, its
   shadow on the board; and the board ripples in a wave, as so many demos
@@ -1596,7 +1595,7 @@ response to the music every scene of ours has. Now the screen punches in on
 the kick, with the zoom blur, and shakes with the bass; the copper bars
 flare on the kick and widen with the bass, a third joining them when the
 music peaks; the snare flashes the light on the cube. The cube itself is
-unchanged in shape and motion, but grey now, as the original's - in the
+unchanged in shape and motion, but grey now, as the Amiga effect's - in the
 phrase's colour it melted into the bars.
 
 | Check | Result |
@@ -1647,8 +1646,8 @@ far side dimming into the dark.
 ### The cracktro
 
 The owner approved the bump-mapped logo and asked to go on. The cracktro
-(`cracktro`, Amiga), from frames of Skid Row's, Paradox's and Fairlight's
-Amiga crack intros: a chrome group logo - sky blue to white over a dark
+(`cracktro`, Amiga), evoking the Amiga crack intros of the late 80s and
+early 90s, checked against frames of several of them: a chrome group logo - sky blue to white over a dark
 horizon to gold, with a bevel - over stars streaming sideways, rainbow
 copper lines, centred lines of text in a small bitmap font, and a big
 rainbow sine scroller. The group, the release, the credits and the
@@ -1671,7 +1670,7 @@ spaced, the intros' own rainbow used, and the line shortened.
 
 **The owner's look.** Three things. The texts: no made-up groups - if there
 is text, it is about the project, and the thanks go to 3dgiordano and the
-SEEDSCENE community at most. The heart of Skid Row's intro is its
+SEEDSCENE community at most. The heart of many of those intros was the
 starfield: stars in parallax that also move forward and back, as if
 navigating space, which the flat layers did not give. And the text intro
 belongs at the start, then fades out; two scrollers dancing at once (the
@@ -1799,9 +1798,9 @@ with the seed `seedscene`, draws on the GPU, no console errors.
 ### The card cascade
 
 The owner asked to go on with round 12, and the card cascade was the next
-piece (`cascade`, Y2K): the win animation of the desktop card game. The
-references were a still of the original's end screen and two animated
-captures of it, frames taken from them and measured: a card 71 x 96 on a
+piece (`cascade`, Y2K): the win animation of the card game of the 90s office
+PC, as it is remembered. The references were a still of such an end screen
+and two animated captures, frames taken from them and measured: a card 71 x 96 on a
 table about 640 wide, the four foundations at the top right with the kings on
 them, the spent stock with its green ring at the top left; a card leaves a
 pile left or right, falls, and bounces off the bottom, each bounce reaching
@@ -1812,7 +1811,7 @@ borders into solid black arches; a card that stops bouncing slides along the
 bottom. The cards are drawn in the game's own pixels (`src/styles/index.js`):
 the indices in a 5x7 font, the pips laid out as on the cards, the court cards
 a picture of our own (a figure in red, yellow and blue, turned round through
-the middle), never the original's art. The throws are planned a phrase at a
+the middle), never the game's own art. The throws are planned a phrase at a
 time (`src/core/sims.js`), and the shader works out every copy from a few
 numbers per card: within a bounce the height is a parabola, so the newest
 copy over a point is solved, not searched.
@@ -1827,11 +1826,11 @@ clean table.
 
 Three things changed after the first frames. The plan says a card on each
 beat: at 175 BPM that covered the table in seconds and the arcs, which are
-the effect, were lost - the original throws one card at a time - so it is a
+the effect, were lost - the real game threw one card at a time - so it is a
 card a bar, two when the music is busy; the owner chose that over a card
 a beat on 2026-10-30. The cards crossed too fast for the
 black arches: a third of them now crawl a pixel or so a step, as the
-original's slow cards did. And the Y2K era's glow filled in the one-pixel
+real game's slow cards did. And the Y2K era's glow filled in the one-pixel
 edges and fringed them with colour, so the trails read as a white wash: a
 scene can now ask for less of its era's glow and fringes (`STYLE_FX`, read
 in `src/core/visual.js`), and the cascade takes a quarter; every other scene
@@ -1877,9 +1876,8 @@ The owner approved the card cascade on 2026-10-30.
 ### The ANSI board
 
 The owner said go on, and the next piece was the ANSI board (`ansi`, DOS):
-the art the bulletin boards showed their callers. The references were works
-from an ANSI art pack of June 1995 in the 16colo.rs archive, the first
-screen of each: VGA text mode, 80 x 25 cells of 9 x 16 pixels in the sixteen
+the art the bulletin boards showed their callers. The references were ANSI
+works of the mid-90s bulletin boards, the first screen of each: VGA text mode, 80 x 25 cells of 9 x 16 pixels in the sixteen
 colours; pictures and logos built of full and half blocks and the light,
 medium and dark shades; gradients drawn down a ramp of colours - white,
 yellow, brown; white, light cyan, cyan, blue - with the shades between the
@@ -1949,9 +1947,9 @@ The owner approved the ANSI board on 2026-10-30.
 ### The bouncing lines
 
 The owner said go on; the next piece was the second of the plan's
-screensavers, the bouncing lines (`echolines`, DOS). The references were
-captures of the screensaver as Windows 3.1 and 95 showed it, still and
-animated: a black screen; two closed figures of four corners, each in one
+screensavers, the bouncing lines (`echolines`, DOS), as the screensavers of
+the early and mid-90s office PC are remembered. The references were captures
+of such a screensaver, still and animated: a black screen; two closed figures of four corners, each in one
 solid colour that changes over time; each drawn again at moments just
 behind, a fan of thin parallel lines evenly apart; the corners flying in
 straight lines and bouncing off the edges. A corner bouncing in a straight
@@ -1982,8 +1980,9 @@ The owner approved the bouncing lines on 2026-10-30.
 
 The owner said go on; the next piece was the last of the plan's
 screensavers, the maze walked on the bar (`maze3d`, DOS - `maze` was taken
-by the chomper). The references were captures of the maze screensaver of
-Windows 95, still and animated: corridors seen in first person, the eye
+by the chomper), as the maze screensavers of the mid-90s office PC are
+remembered. The references were captures of such a screensaver, still and
+animated: corridors seen in first person, the eye
 halfway up walls as tall as the corridor is wide; dark red bricks, mottled,
 with pale grey mortar, a third of a block long and six courses high; a tan
 floor; a ceiling of white speckled tiles in a grid; corners taken while
@@ -2019,8 +2018,9 @@ The owner approved the 3D maze on 2026-10-30.
 ### The moon bike
 
 The owner said go on; the next piece was the moon bike (`moonbike`,
-modern), the boy and his friend from the stars. The references were stills
-of the film's moon shot: a deep blue sky going violet at the edges; a moon so
+modern), the boy and his friend from the stars, as the film of the early
+80s is remembered. The references were stills of a bicycle crossing a
+moon: a deep blue sky going violet at the edges; a moon so
 large it fills most of the height, pale blue with darker seas and wisps of
 cloud, a halo round it; pines black in the lower corners; and the bicycle in
 silhouette against the moon - a BMX with spoked wheels, the rider hunched
@@ -2038,7 +2038,7 @@ set the stars twinkling; the snare sends a shooting star every other bar.
 The first frames had the moon nearly white - the era's glow washing out its
 seas - and the bicycle crossing low; the moon is darker now, so the glow
 brightens it without hiding its face, and the bicycle crosses its upper
-half, as in the shot. The moon, the pines and the bicycle are worked out only
+half, as in the references. The moon, the pines and the bicycle are worked out only
 where they can be seen, which brought the cost down by a quarter with the
 frames unchanged. And since the gallery takes every still at the same second,
 when the bicycle is not crossing, a gallery entry can now name its own moment
@@ -2100,10 +2100,11 @@ The owner approved the moon bike on 2026-10-30.
 The owner said go on; the next piece was the time car (`timecar`, arcade).
 The plan has it as a car down a night road, a speedometer climbing through
 the build, a burst of light and two trails of fire on the drop. The first
-version was that, seen from behind on a road, from stills of the film's
-posters; the owner asked, before seeing it finished, for another
-perspective for the car and for references to recreate the best-known
-scene. So the references became stills of the first run in the film: a
+version was that, seen from behind on a road, as the posters of the
+time-travel car film of the 80s are remembered; the owner asked, before
+seeing it finished, for another perspective for the car and for references
+to evoke its best-remembered moment. So the references became stills of
+that kind of moment, the car's first run: a
 parking lot at night, wet and lit orange by its lamps, a long low building
 with lit windows beyond; the two onlookers standing in the lot; two
 straight trails of fire running on the asphalt and between their legs as
@@ -2817,8 +2818,8 @@ The owner listened live and approved the anime opening's music on 2026-10-31.
 The owner chose round 11's `skatepunk` next. The plan: "fast punk at 190,
 ska upstrokes, a synth lead like a shouted chorus", for the 32-bit console.
 
-**The references.** The skate games' best-known ska-punk single: about 195
-bpm, in D, its chords A, D, Em, G and Bm - ska verses against punk choruses.
+**The references.** The ska-punk the skate games of the late 90s played:
+about 195 bpm, a handful of plain chords - ska verses against punk choruses.
 A punk drumming lesson's beats (drumhelper, "10 Punk Drum Beats"): eighths on
 the hat, the snare on every "and", the kick on the beat and the "e" after it;
 the kick doubled just before the snare, "one of the biggest concepts that make
@@ -3571,7 +3572,7 @@ went through the list scene by scene:
 
 | Era | Its scenes now |
 |---|---|
-| Arcade 1979 | paddles (Pong is 1972: no era of its own yet), invaders, rocks, maze, bricks, lightcycles, boxer, lcd, pyramid, outrun |
+| Arcade 1979 | paddles (the first paddle game is of 1972: no era of its own yet), invaders, rocks, maze, bricks, lightcycles, boxer, lcd, pyramid, outrun |
 | C64 1982 | dottunnel, plasma; the films and series of its years: scanner, timecar, moonbike |
 | Amiga 1990 | shadebobs, copper, vectorballs, ripple, metaballs, tunnel, starfield, kefrens, ball, rings, twister, bobs, dualchess, chessfloor, rubber, cracktro, plasma, fractal, bumplogo, fireworks, morph |
 | DOS 1994 | fractal, tunnel, metaballs, plasma, fire, pipes, bumplogo, ansi, echolines, maze3d, cascade |
@@ -3583,7 +3584,8 @@ went through the list scene by scene:
 Six scenes share eras on purpose (plasma C64, Amiga and DOS; metaballs,
 tunnel, fractal and bumplogo Amiga and DOS; morph Amiga and Y2K), each seen
 through its era's own filter. A film or a series belongs to the computing era
-of its year (Knight Rider, Back to the Future and E.T. to the C64's).
+of its year (the talking car of 80s television, the time-travel car film and
+the film of the boy and his friend from the stars to the C64's).
 
 What follows from it: an era with no scenes of its own - modern, now - is
 passed by: THE JOURNEY travels seven eras, AUTOPLAY's turns skip it, a viewer
@@ -3627,7 +3629,7 @@ sharp brightness, a jitter per line, a tracking band rolling up, the
 head-switching tear at the bottom - since rebuilt without the band, below); MODERN is now no filter at all. Each era
 names the display most of its things were seen on.
 
-A scene that needs a look of its own names its display: Pong B/W; the arcade
+A scene that needs a look of its own names its display: the first paddle game B/W; the arcade
 games ARCADE; the phone's snake LCD; the console's space shooter 32-BIT; the
 films and the series (scanner, timecar, moonbike, footsteps, the anime
 opening) VHS; the LCD game, which draws its own device, MODERN. The demo
@@ -3638,7 +3640,7 @@ display is forced on everything - `D` live (and the menu, `?display=`), and
 
 Checked on the real GPU (Intel UHD 630, Direct3D 11 through ANGLE), live and
 muted: moonbike on AUTO through VHS, then every display forced in turn - B/W,
-MONO, EGA, LCD and MODERN looked at - with no shader error; Pong on AUTO in
+MONO, EGA, LCD and MODERN looked at - with no shader error; paddles on AUTO in
 black and white. A new test: a game or a film keeps its display whatever the
 era, an effect takes its era's, a forced one wins, and every display is
 complete; `npm test` passes, twenty-one checks. The gallery was made again
@@ -3661,7 +3663,7 @@ owner placed its machine in (the Amiga's in 1990–1993, the PC's in 1994–1996
 the C64's in the 1980s). Moved by that: lightcycles, pyramid, boxer, bricks
 and outrun (1982–1986) and the Amiga's bouncing ball (1984) to 1982–1989;
 starfighter and footsteps (1993), cascade and echolines (the early-90s
-desktop) to 1990–1993; Pong now has its year. Each keeps its own display, so
+desktop) to 1990–1993; the first paddle game now has its year. Each keeps its own display, so
 moving its years never changes how it looks: the ball stays on the Amiga's
 screen, the desktop's card game and screensaver on VGA.
 
@@ -3713,7 +3715,7 @@ greens, no tube; no errors. `npm test` passes; the gallery was made again.
 
 The owner's next: the sound boards should follow the scenes as the displays
 do - a film with a better sound than a chip, a console game on its own, the
-Windows things on a PC card - with a switch on AUTO. `src/core/boards.js`
+90s office PC's things on a PC card - with a switch on AUTO. `src/core/boards.js`
 holds four: HI-FI (the synthesizer's own voices, in full), PAULA, OPL3 FM and
 AWE32 (the chips there were). A scene that needs a sound of its own names its
 board: the films and the series, the 16-bit space shooter, the phone's snake
@@ -3974,12 +3976,10 @@ boards chosen by style, the owner's call.
 
 ## The vector monitors
 
-The split's second piece: displays for the games a beam drew. Built from a
-photograph of a real vector tube drawing the rock shooter (e-basteln.de's
-Asteroids mini, on a Vectrex tube), an account of how the beam and the
-phosphor work (arcadevector.pages.dev) and the instruction sets of Atari's
-vector generators (arcarc.xmission.com's notes, which warn they may hold
-errors; jmargolin.com's history).
+The split's second piece: displays for the games a beam drew. Built from
+photographs of real vector monitors at work, an account of how the beam and
+the phosphor work, and the published notes on the vector generators'
+instruction sets (which warn they may hold errors).
 
 The first version only blackened the dim, glowed and whitened the brightest:
 the owner, forcing it on other scenes, saw no difference, and the rocks
@@ -3990,22 +3990,20 @@ colour or brightness on each channel; a thin line found as brighter than what
 is round it) and leaves the inside of every shape unlit. And at the owner's
 word (option A) it is two displays, one for each tube:
 
-- `vector`, the black-and-white tube of the rock shooter and the lunar
-  lander: one blue-white, sixteen intensities (the Digital Vector
+- `vector`, the black-and-white tube of the vector arcades of 1979: one blue-white, sixteen intensities (the Digital Vector
   Generator's four-bit intensity field; the count is derived from its width).
-- `colorvector`, the colour tube of the tube shooter (1981, the first in
-  colour) and the space-war cockpit: three bits of colour - "8 basic colors",
-  one of them the beam off, so seven - each at any of 256 intensities (the
-  Analog Vector Generator's colour opcode, given for the cockpit game; the
-  same for the tube shooter is its author's belief).
+- `colorvector`, the colour tube of the years after (from 1981): three bits
+  of colour - "8 basic colors", one of them the beam off, so seven - each at
+  any of 256 intensities (the analog vector generator's colour opcode, as the
+  notes give it).
 
 The phosphor fades in a few milliseconds, under a frame, so nothing trails -
 which also keeps every frame computable from its time alone.
 
-Compared with the photograph: black between the lines in both, thin lines,
+Compared with the photographs: black between the lines in both, thin lines,
 no pixels or scan lines. The rocks' lines are drawn as bright as the ship's,
-where in the photograph the rocks are dimmer than the ship, the saucer and the
-shots - the scene's own drawing, approved before, left for the owner's look.
+where on a real screen the rocks were dimmer than the ship and the shots - the
+scene's own drawing, approved before, left for the owner's look.
 
 | Check | Result |
 |---|---|
@@ -4017,23 +4015,19 @@ shots - the scene's own drawing, approved before, left for the owner's look.
 
 The split's third piece (D): the era named *Shader art* had no scene, so THE
 JOURNEY and AUTOPLAY passed it by and synthwave, its own style, played in no
-programme. Three scenes, each from a real piece of the 2010s' fragment-shader
-art, written from scratch, never its code. Shadertoy itself asked the browser
-to prove it was human, which is not done here; the pieces were seen elsewhere:
+programme. Three scenes that evoke the 2010s' fragment-shader art - its kinds
+of piece, not any one piece - written from scratch:
 
-- `prism`, from a still of "Creation" by Danguafer in greentec's analysis of
-  it: a lattice of light points pushed out along the radius, each one split
-  into red, green and blue, a white star in the middle, faint rings.
-- `sculpture`, from the images of Inigo Quilez's articles on soft shadows in
-  raymarched distance fields (2010) and on raymarching distance fields: a
-  rounded block with a hole through it on a floor, its soft shadow and
-  penumbra, smooth organic shapes under a sky gradient.
-- `fractalflight`, from Wikipedia's mandelbox article and its renders: the
-  fractal Tom Lowe found in 2010, written from the article's definition (the
-  box fold, the sphere fold, scale and add), seen as an ornate, boxy palace of
-  arches.
+- `prism`, the tiny chromatic light pieces: a lattice of light points pushed
+  out along the radius, each split into red, green and blue, a white star in
+  the middle, faint rings.
+- `sculpture`, the raymarched still life: smooth shapes of distance functions
+  on a floor, soft shadows with their penumbra, a sky gradient.
+- `fractalflight`, a flight round the mandelbox, the fractal found in 2010,
+  written from its mathematical definition (the box fold, the sphere fold,
+  scale and add): an ornate, boxy palace of arches.
 
-Compared with them: `prism` keeps the lattice, the colour split along the
+Compared with the kind each evokes: `prism` keeps the lattice, the colour split along the
 radius and the central star (its outer points stretch into longer streaks at
 the wave's crest); `sculpture` the arch with its hole, the soft-edged shadow
 and the darkening where things meet, under a pale sky; `fractalflight` the
@@ -4072,6 +4066,207 @@ drifting.
 
 | Live on the real GPU, muted, each of the three | compiled and drawn; no console errors |
 | `npm test` | 22 checks pass; the catalogue holds 55 stops, THE JOURNEY every era |
+
+## The thin eras filled
+
+The split's piece E: every era to three scenes or more, the last part of
+0.2.0's gate on scenes. 1997–1999 had two, 2000–2009 one.
+
+- `coderain` (1997–1999; the screen's idea belongs to the cinema of those
+  years, so it is seen on videotape and heard on the studio's sound): columns
+  of green glyphs, the head of each fall white, the trail fading. The first
+  glyphs, cells of a grid switched on at random, read as blocks of pixels
+  rather than characters; they were rebuilt as
+  three or four strokes between the points of a three-by-five lattice, and the
+  columns thinned out.
+- `gimbal` (2000–2009), the 64k intros of the time as they are remembered:
+  nested rings round a core, in a hall of curved bands, a warm haze,
+  letterboxed. The first rings came out gold, the core glowing and the tiles
+  one big chequer, which read as plastic; they became steel, a sphere of
+  patterned metal and a narrow strip of small tiles.
+- `djdecks` (2000–2009), two turntables and a two-channel mixer as any club
+  had them, with no make, name or logo; a moiré on the brushed metal taken out
+  and the platters' strobe dots made distinct, as real ones are.
+
+The musical direction of each: the code rain's falls start on the beat, more
+of them as the music builds, the snare flickers the glyphs, each phrase opens
+with a ring lit in the rain; the gimbal's rings each turn a quarter on their
+own beat in turn, the core's pattern lights with the kick, each phrase opens
+on a new angle; the decks change over each phrase - the crossfader sliding,
+the new deck's fader rising - with a scratch on the sixteenths in its last
+bar, the meter and the target lamp on the kick. No speed anywhere is the time
+multiplied by how busy the music is.
+
+| Check | Result |
+|---|---|
+| Live on the real GPU, muted, each of the three | compiled and drawn; no console errors |
+| Cost a frame at 854×480, this machine's GPU | coderain 5 ms, djdecks 8, gimbal 12 (16 before its rings' turns were worked out once a pixel) |
+| `npm test` | passes; every era has three scenes or more |
+
+## The new scenes, after the owner's look
+
+The owner looked at the shader-art and thin-era scenes and asked for four
+things, each done and checked live on the real GPU (muted, no console errors):
+
+- **sculpture.** The ball bounced in place, so the melt it is about was
+  hardly seen. Now the arch and the ring hold still and the ball travels a
+  figure of eight through both holes, along their axes, melting into them as it
+  passes (a wider smooth blend, the colours mixed where the surfaces meet);
+  frames show the ball necked to the arch, the ring bulging round it inside its
+  hole, and the neck stretching as it leaves.
+- **gimbal.** The 3D read as static. A light now stands behind the rings as
+  the camera sees them; its rays cross the haze in shafts cut where a ring or
+  the core stands in the way (each ring's plane crossed analytically on the
+  way to the light, fourteen samples along the view ray), and it flares in the
+  lens - a glare, a streak and the coloured ghosts the renderers of the time
+  loved - dimming when a ring covers it. Every colour comes from the seed's
+  palette (asked just before), so no seed repeats one fixed hall; the gallery's
+  seed is `neonhall`.
+- **coderain.** The rain was cut on the rhythm: whether a fall existed was
+  tested against the music's present energy, so when the energy dropped falls
+  vanished in mid-screen. Now each fall starts on a beat, with the same chance
+  whatever the music, and runs until it has left the screen. The glyphs are
+  smaller, in five sheets of depth - far ones dim and soft, the middle one
+  sharp, the nearest large and soft - each glyph with a glow, the sheets added
+  like light; the head of each fall is a white glyph typing its way down,
+  leaving a green ghost that fades. The music lights the heads, flickers the
+  trails and brightens the glow instead.
+- **The punch and the camera.** All six new scenes take the kick's zoom punch
+  the game scenes have; the sculpture's and the gimbal's cameras drift slowly
+  round, nearer and farther, rising and falling.
+
+**The code rain, a second look.** The owner liked the rain but not the punch:
+the zoom blur on every kick shook the whole picture and spoiled the fine
+glyphs. It is gone from this scene. In its place the camera moves slowly and
+steadily forward: six sheets of rain stand one unit apart and come nearer,
+grow and pass, while new ones appear far off, each sharpest at middle
+distance. The music moves the flow instead - the camera and the falls gather
+speed through each phrase and ease back at its end, the time plus the running
+sum of sin squared over the phrase's bars, so the pace changes and never jumps
+(the lesson of the fractal flight). And the moment that opened each phrase -
+a faint ring - now reveals a face in dark glasses, as the owner asked: a
+close weave of glyphs lit as a face is lit from the upper left, black in its
+glasses, the rain dimmed round it; it holds a couple of bars and goes back
+into the code. A first try that only brightened the falling glyphs where the
+face was could not be read - the rain is too sparse to draw a face - hence the
+weave. Cost: 8.5 ms a frame, 11.5 while the face shows.
+
+At the owner's third look: the glasses had white lines for a glint and hard
+edges, and read as an object laid on the rain; now they are only a place where
+the code goes out, softly, two small narrow ovals with their outer ends lifted
+and a faint bridge, no glint. The face had a sharp oval outline; now every edge
+is soft and each glyph of the weave appears at its own moment, the brightest
+parts first, so the face rises out of the rain and sinks back the same way,
+held a little longer. And the videotape's head switching - the torn lines
+along the bottom - is switched off for this scene alone (a per-scene setting
+of the post pass, on for every other scene seen on tape).
+
+At the owner's fourth look the glasses were out of proportion with the face.
+Measured against the look being evoked, the lenses were about half too small
+and set too high: each lens now spans some 43% of the face's width and stands
+about an eighth of the head's height, the two together nearly as wide as the
+face, half-way down the head, almost meeting over the nose, each an almond
+that narrows and lifts towards the temple. The head around them was made a
+head rather than an oval - straight sides, a firm jaw to a square chin, dark
+hair over the top and down past the temples, a high collar - and the mouth set
+at its proportion. The mask was drawn alone on the GPU and read back pixel by
+pixel (hair 24, forehead 135, lenses 0 of 255) to check it before it went into
+the rain.
+
+At the owner's fifth look: the collar's lapels made a triangle at the neck
+that could not be read, and the neck and shoulders made the head look more
+humanoid than human - all three are gone, the face fading away below the chin;
+the face was made larger and lit more evenly, with a broader chin, ears and
+shading under the cheekbones. The lenses, first drawn as narrow almonds, did
+not have the look's shape; against a frontal view of it they are now two full,
+rounded ovals - each some four tenths of the face wide and six tenths as tall
+as wide, the top edge a little flatter, a little taller by the nose - nearly as
+wide together as the face, just below half-way down the head, a thin wire
+bridge high between them. And at the owner's idea the reveal now takes turns,
+a phrase each: the face, then the seed's own word, then SEEDSCENE, in the
+crack intros' 5x7 font woven of code the same way (the seed's letters handed
+to the scene as the ANSI board's are), so every seed's rain says its own name.
+At the owner's sixth look the lenses' shape was right but their place and the
+face were not. The owner gave a drawing of the look's proportions, front and
+three-quarter, and the face was rebuilt in that drawing's own units - from the
+top of the hair (0) to the chin (425): the hairline at 133, the eyes and the
+lenses' top at 253 with the brows just above, the lenses' bottom at 305, the
+base of the nose at 355, the mouth at 395; each lens some 45% of the face's
+width and about half as tall as wide; a straight forehead, cheeks almost
+parallel, an angled jaw to a narrower chin, the ears from the eyes to the nose,
+the hair full over the top and down the temples. Then, closer to the drawing:
+the hairline an arch - high over the middle of the forehead, coming down over
+the temples to the tops of the ears - under hair wider than the face, tufted
+along its top; the lenses smooth ovals rather than squarish ones, reaching the
+face's edges; thick brows resting on the lenses; a broader, squarer chin.
+
+At the owner's seventh look the face was still built of basic, straight shapes:
+straight brows, a straight mouth, lenses as plain ovals that read in shadow as
+an alien's eyes rather than glasses. The features are now drawn as curves with
+a pen's swell (a quadratic stroke whose width runs from one end to the other):
+the brows thick by the nose, arching and thinning out over the lenses; the
+nose's shaded side and the round of its tip; the folds from the nose to the
+mouth; the mouth with a slight bow and the shadow under the lower lip; a crease
+above the chin; and the jaw's outline eased between its stations instead of
+joined by straight lines. The lenses are wider than tall with rounded but
+squarer corners and a flatter top edge, so they read as lenses. The aim stays
+an evocation of the look - its glasses, its hair, its jaw - not a portrait of
+an actor.
+
+The owner kept that face and asked for one more thing: the face and the words
+should come from far off towards the camera and fade when too near, using the
+motion, the translucency and the blurs. Each now appears small at the start of
+its phrase and grows by the same ratio every bar (a steady approach) to nearly
+five times its first size, its weave of glyphs growing with it; it is soft and
+low in contrast while far off, sharp in the middle of its way, soft again and
+fading as it passes the camera. Frames at four moments of the approach - far,
+nearer, near and passing - showed each stage.
+
+The GPU reset seen twice on the live page was reproduced only while test frames
+were drawn on a second WebGL context in the same page, never in the scene
+alone.
+
+| Check | Result |
+|---|---|
+| Cost a frame at 854×480, this machine's GPU | sculpture 12.5 ms, gimbal 11.7 (16.6 before trimming the shafts to fourteen samples), coderain 7, prism 1.8, fractalflight 10.4 |
+| Live, each scene | compiled and drawn; no console errors |
+| `npm test` | passes |
+
+The owner then found the glasses too black: the falling code vanished behind
+them, while behind the hair, which is dark too, it still showed. The glasses
+are now lit a little darker than the hair and dim the rain behind them by a
+fifth rather than putting it out; a frame of the face at its nearest shows the
+falls crossing the lenses, the lenses still reading as dark glasses.
+
+### The DJ decks become a party
+
+The owner asked for the decks to look like a DJ party - lights, flares, smoke,
+the demo effects of the time - and then that the decks themselves stay as they
+were, since people who knew the application they recall should still know it.
+So the turntables, the mixer and everything they do are untouched, still seen
+from above and moved round by the stage's camera (a little farther back now);
+what changed is the world round them. The space behind became a club under the
+booth: the booth's dark top with a strip of light along its edge; the dancers
+seen from above, heads and shoulders turned to the booth, hands up and pumping,
+bouncing on the beat; a floor of tiles lit in the seed's colours, a chase
+stepping round on the beat. Six moving heads - four on the floor throwing their
+beams up and across the room, two on a truss throwing theirs down across the
+decks - light the smoke, which drifts in two layers, one over the dancers and a
+thin one over the decks; each beam is a cone of light whose glow is worked out
+from where the view ray passes nearest its axis (the cheap way the demos of the
+time drew theirs), and their light falls on the decks, the dancers and the
+floor. Each phrase opens with every head turned on the camera, flaring in the
+lens - a glare, a streak and coloured ghosts - before they fan out again with
+a new set of the seed's colours; a fan of lasers sweeps over the hands in the
+second half; the mirror ball's spots wander over everything, more with the
+pads; the strobe flashes on every other beat of the last two bars, when the
+music is busy, and never faster.
+
+| Check | Result |
+|---|---|
+| Live on the real GPU, muted | compiled and drawn; no console errors; beams across the decks, the laser fan and the opening flare seen |
+| Cost a frame at 854×480, this machine's GPU | djdecks 9–10 ms (8 before the club) |
+| `npm test` | passes |
 
 ## What went wrong in the first round
 

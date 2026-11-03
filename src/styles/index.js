@@ -374,6 +374,7 @@ uniform int uDisplay;          // 0 CRT, 1 LCD, 2 TV, 3 clean, 4 modern, 5 video
 uniform float uBloom, uScan, uBarrel, uAberr, uGrain, uVignette;
 uniform float uFade;           // 0..1, a fade to black between parts
 uniform float uImpact;         // 0 for most scenes; 1 gives a zoom blur on the kick
+uniform float uTear;           // 1 for most scenes: the videotape's head switching along the bottom; 0 a scene without it
 
 const vec3 C64[16] = vec3[16](
   vec3(0.000), vec3(1.000), vec3(0.408, 0.216, 0.169), vec3(0.439, 0.643, 0.698),
@@ -477,7 +478,7 @@ void main() {
   vec2 uv = vUv + c * dot(c, c) * uBarrel;          // tube curvature
   if (uDisplay == 6) {
     // a vector monitor's beam is steered, not scanned: a very slight wobble across, and the picture pumping a
-    // little with the bright things on it (a real tube's, photographed: e-basteln.de's Asteroids monitor)
+    // little with the bright things on it, as a real tube does
     uv.x += 0.0004 * sin(uv.y * 9.0 + uTime * 2.3);
     uv = 0.5 + (uv - 0.5) * (1.0 + 0.003 * uEnergy);
   }
@@ -507,7 +508,7 @@ void main() {
     // edge wave: each line shifted a little, slowly, by a smooth noise down the picture
     float wave = (sin(uv.y * 37.0 + uTime * 1.3) * 0.6 + sin(uv.y * 91.0 - uTime * 2.1) * 0.4) * 0.0009;
     // head switching: the bottom lines torn sideways, more the lower they are
-    float hs = smoothstep(0.03, 0.0, uv.y);
+    float hs = smoothstep(0.03, 0.0, uv.y) * uTear;
     vec2 p = suv + vec2(wave + hs * (0.09 + 0.03 * hash12(vec2(line, floor(uTime * 25.0)))), 0.0);
     const vec3 LW = vec3(0.299, 0.587, 0.114);
     // brightness: about 250 lines across the picture (a short blur), then the deck's sharpening
@@ -548,8 +549,8 @@ void main() {
   if (uDisplay == 6) {
     // the vector monitor: the beam draws the picture's lines and outlines, everything else is unlit phosphor,
     // black; a glow spreads round every line (the same lines found wider apart) and the brightest run to white.
-    // The black-and-white tube (Asteroids' DVG): one blue-white, sixteen intensities a vector. The colour tube
-    // (the AVG of Tempest and Star Wars): three guns each on or off - seven colours - at any intensity. (Its
+    // The black-and-white tube of the vector arcades of 1979: one blue-white, sixteen intensities a line. The
+    // colour tube of the years after: three guns each on or off - seven colours - at any intensity. (Its
     // persistence is a few milliseconds, under a frame: nothing trails.)
     vec4 b = vectorBeam(uv, 1.0), g = vectorBeam(uv, 3.0);
     float lit = max(b.r, max(b.g, b.b)), litG = max(g.r, max(g.g, g.b));
@@ -892,7 +893,7 @@ const pipes = `
 // cell another pipe holds. The growing is a simulation (src/core/sims.js) that
 // also places the camera, above the tangle at an angle, new for each one; this
 // draws the runs it projected, the nearest at each pixel, lit with a highlight
-// as the original was. The tangle fills from the distance forwards for sixteen
+// as the screensavers of the time drew them. The tangle fills from the distance forwards for sixteen
 // bars until the screen is full of pipes, then dissolves in blocks through the
 // last bar (never a flash). The camera punches in on the kick and leans on the
 // snare; the ball joints swell on the kick.
@@ -979,7 +980,7 @@ const pyramid = `
 // The cube-pyramid hopper of the 1982 arcades, played: twenty-eight cubes in
 // seven rows on black, each with a top that turns colour when it is landed on,
 // a light left face and a dark right one. The hopper (round, green, big-eyed -
-// not the original's character) hops a cube a beat to turn them all, landing
+// no character of the arcades) hops a cube a beat to turn them all, landing
 // on the beat; the arcade's enemies come down between the beats: red balls
 // dropping onto the second row and bouncing down at random until they fall off
 // the bottom, and a purple egg that bounces to the bottom row and hatches into
@@ -1331,7 +1332,7 @@ vec3 render(vec2 p, vec2 uv) {
 `;
 
 const dualchess = `
-// The dual chessboard of the Amiga intros (Nuance's Dual Chess, 1993): a
+// The dual chessboard of the Amiga intros of the early 90s: a
 // chessboard on each bitplane, every board zooming and sliding on its own, and
 // the palette giving each overlap of squares its own shade - so the boards
 // weave a lattice that never stops shifting, unhurried - the zoom slow, by
@@ -1339,8 +1340,8 @@ const dualchess = `
 // layers sliding sideways past each other, each at its own speed; then the
 // boards turning on their own axes against each other, a quarter turn in the
 // phrase, so the squares break into moire and come back square for the next. The zoom swings smoothly
-// from huge squares to tiny ones and back, as Sanity's Quarters Chess Board
-// did (1991). The music: the first board's squares nudge in on the kick and
+// from huge squares to tiny ones and back, as the chessboard intros of the
+// time did. The music: the first board's squares nudge in on the kick and
 // ease back out, and in a turning phrase it turns a notch on each beat; the
 // second turns the other way, breathes on the snare and slides with the bass; in the second half of
 // every phrase a third board fades in, for eight shades; each phrase brings
@@ -1390,8 +1391,8 @@ vec3 render(vec2 p, vec2 uv) {
 `;
 
 const chessfloor = `
-// The chessboard floor of the Amiga intros, with its cube (Quadriga's
-// Chessboard intro, 1992): a chessboard seen from above at an angle, in
+// The chessboard floor of the Amiga intros, with its cube (as the early 90s
+// remember it): a chessboard seen from above at an angle, in
 // perspective, turning beneath you like a turntable, its corners swinging out
 // over the black, the sky above in copper bands - and over it a red cube,
 // turning, bouncing on the board. Ours: the board is a surface that waves in
@@ -1621,7 +1622,7 @@ vec3 render(vec2 p, vec2 uv) {
     vec3 L = normalize(vec3(-0.5, 0.7, -0.6));
     // flat shading, as the filled vectors were: one shade a face, a lighter rim at its edges
     float lit = (0.18 + 0.82 * max(dot(nw, L), 0.0)) * (1.0 + 0.35 * uSnare);
-    // grey, as the original's, a breath of the phrase's colour: the colour is the bars'
+    // grey, as the demos' cubes were, a breath of the phrase's colour: the colour is the bars'
     vec3 face = mix(vec3(0.78, 0.8, 0.86), hue, 0.12) * lit;
     vec3 q = o + d * tn;
     vec3 aq = abs(q);
@@ -1716,7 +1717,7 @@ vec3 render(vec2 p, vec2 uv) {
 `;
 
 const cracktro = `
-// The crack intro of the Amiga years, and its starfield (Skid Row's): a field
+// The crack intro of the Amiga years, and its starfield, as the crack groups' intros had it: a field
 // of stars in depth that the viewer flies through - drifting sideways, the
 // near stars sliding past faster than the far ones, then diving forward or
 // pulling back, as if steering through space. At the start, the intro: a
@@ -2190,7 +2191,7 @@ vec3 render(vec2 p, vec2 uv) {
 `;
 
 const ball = `
-// The bouncing checkered ball, the Amiga's first and most famous demo: a red
+// The bouncing checkered ball of the Amiga's first demos: a red
 // and white ball spinning on a tilted axis, bouncing between the walls of a
 // grid room, its shadow on the back wall. Here it lands on every beat, spins
 // faster as the music builds, and the room lights up on the kick.
@@ -2230,7 +2231,7 @@ vec3 render(vec2 p, vec2 uv) {
   float across = abs(fract(t * 0.09 + uSeed.x) * 2.0 - 1.0) * 2.0 - 1.0;   // a triangle wave, wall to wall
   vec2 c = vec2(across * travel, floorY + r + 0.36 * (1.0 - pow(2.0 * fract(uBeat) - 1.0, 2.0)));
 
-  // its shadow on the back wall, down and to the right, as in the original
+  // its shadow on the back wall, down and to the right, as the ball demos had it
   float sh = length(p - c - vec2(0.09, -0.05)) - r;
   col *= 1.0 - 0.45 * (1.0 - smoothstep(0.0, 0.006, sh));
 
@@ -2246,7 +2247,7 @@ vec3 render(vec2 p, vec2 uv) {
     float cell = mod(floor(lon / 6.28318 * 16.0) + floor((lat / 3.14159 + 0.5) * 8.0), 2.0);
     vec3 red = vec3(0.85, 0.05, 0.05);
     vec3 b = mix(red, vec3(0.95), cell);
-    // flat as the original, with only a hint of the edge
+    // flat, as the ball demos drew it, with only a hint of the edge
     b *= 0.9 + 0.1 * n.z;
     col = mix(col, b, 1.0 - smoothstep(0.96, 1.0, rr));
   }
@@ -2488,10 +2489,9 @@ vec3 render(vec2 p, vec2 uv) {
 const prism = `
 // Prism: a lattice of points of light pushed out along the radius by a wave that travels from the middle,
 // each colour a moment behind the one before, so every point splits into red, green and blue and a white star
-// burns where they meet - the tiny chromatic-ring pieces of the 2010s (the best known, "Creation" by
-// Danguafer). The wave runs at a steady pace and swells as the music builds (a pace tied to how busy the
-// music is jumped with every kick), the kick throws it outward, the snare widens the
-// split between the colours, and the lattice turns a sixteenth of a turn on each bar; each phrase opens with
+// burns where they meet - in the spirit of the tiny chromatic light pieces of the 2010s' shader art. The wave
+// runs at a steady pace and swells as the music builds (a pace tied to how busy the music is jumped with every
+// kick), the kick throws it outward, the snare widens the split between the colours, and the lattice turns a sixteenth of a turn on each bar; each phrase opens with
 // the colours thrown wide apart and a ring of white light sweeping out from the star.
 float prismLight(vec2 q, float z) {
   float r = max(length(q), 1e-3);
@@ -2528,24 +2528,34 @@ vec3 render(vec2 p, vec2 uv) {
 const sculpture = `
 // Sculpture: the raymarched still life of the 2010s - smooth shapes made of distance functions standing on a
 // floor, lit by a low sun and the sky, with the soft shadows and penumbrae and the darkening where surfaces
-// meet that Inigo Quilez's articles on raymarched distance fields (soft shadows, 2010) taught a generation.
-// An arch - a rounded block with a hole through it - a standing ring and a ball melt into one another; the
-// ball bounces on the beat, landing on it, the melt widens with the bass, the sun swings a little each bar,
-// and the camera circles slowly, punching in on the kick; each phrase opens with the three melted into one
-// shape, which comes apart again over its first bar.
+// meet that became the signature of the decade's raymarched distance fields.
+// An arch - a rounded block with a hole through it - and a standing ring hold still; a ball of the same stuff
+// travels a figure of eight through the arch's hole and the ring's, and wherever it comes near them it melts
+// into them - the surfaces bulging out to meet it, flowing round it as it passes through, letting go behind it -
+// the trick of smooth-blended distance fields that surprised everyone then. The ball goes round once every four
+// bars, swells on the kick, the melt widens with the bass, the sun swings a little each bar, the camera drifts
+// slowly round and punches in on the kick; each phrase opens with everything melted into one shape, coming
+// apart again over its first bar.
 float scBox(vec3 p, vec3 b, float r) { vec3 q = abs(p) - b + r; return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0) - r; }
 float scSmin(float a, float b, float k) { float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0); return mix(b, a, h) - k * h * (1.0 - h); }
-float scBallY() { float ph = fract(uBeat); return 0.42 + 1.1 * ph * (1.0 - ph) * 4.0 * (0.55 + 0.45 * uEnergy); }
-// the scene: x is the distance, y which material (0 floor, 1 sculpture, 2 ball)
+// the ball's way: a figure of eight through the two holes, along their axes where it passes through
+vec3 scBallAt() {
+  float th = (uBarIndex + uBar) / 4.0 * 6.28318 + uSeed.x * 6.28;
+  return vec3(0.95 * sin(th), 0.55 + 0.06 * sin(th * 2.0 + 1.0), 0.8 * sin(2.0 * th));
+}
+// the scene: x is the distance, y the material (0 the floor; from 1 the sculpture to 2 the ball, blended where they melt)
 vec2 scMap(vec3 p) {
-  float k = 0.08 + 0.3 * uBass + 0.9 * exp(-(mod(uBarIndex, 8.0) + uBar) * 2.5);
-  float arch = max(scBox(p - vec3(-0.55, 0.62, 0.0), vec3(0.7, 0.62, 0.32), 0.14), -(length(p.xy - vec2(-0.45, 0.52)) - 0.38));
-  vec3 rq = p - vec3(0.85, 0.72, 0.15);
-  rq.xz = rot(uTime * 0.4) * rq.xz;
-  float ring = length(vec2(length(rq.xy) - 0.5, rq.z)) - 0.13;
-  float ball = length(p - vec3(0.25, scBallY(), -0.75)) - 0.36;
-  float sc = scSmin(arch, ring, k);
-  vec2 m = vec2(scSmin(sc, ball, k * 0.7), ball < sc ? 2.0 : 1.0);
+  float open = exp(-(mod(uBarIndex, 8.0) + uBar) * 2.5);
+  float arch = max(scBox(p - vec3(-0.95, 0.6, 0.0), vec3(0.6, 0.6, 0.26), 0.14), -(length(p.xy - vec2(-0.95, 0.55)) - 0.36));
+  vec3 rq = p - vec3(0.95, 0.55, 0.0);
+  rq.xz = rot(0.25 * sin(uTime * 0.3)) * rq.xz;
+  float ring = length(vec2(length(rq.xy) - 0.5, rq.z)) - 0.12;
+  ring = min(ring, scBox(p - vec3(0.95, 0.0, 0.0), vec3(0.08, 0.06, 0.08), 0.02));   // (its foot)
+  float ball = length(p - scBallAt()) - 0.27 * (1.0 + 0.12 * uKick);
+  float sc = scSmin(arch, ring, 0.05 + 1.2 * open);
+  float k = 0.45 + 0.25 * uBass + 0.6 * open;
+  float hb = clamp(0.5 + 0.5 * (sc - ball) / k, 0.0, 1.0);
+  vec2 m = vec2(scSmin(sc, ball, k), 1.0 + hb);
   return p.y < m.x ? vec2(p.y, 0.0) : m;
 }
 vec3 scNormal(vec3 p) {
@@ -2566,17 +2576,19 @@ float scShadow(vec3 ro, vec3 rd) {
 // ambient occlusion: how much of the space just off the surface is taken
 float scAO(vec3 p, vec3 n) {
   float occ = 0.0, w = 1.0;
-  for (int i = 1; i <= 4; i++) {
-    float h = 0.03 + 0.14 * float(i);
+  for (int i = 1; i <= 3; i++) {
+    float h = 0.04 + 0.18 * float(i);
     occ += (h - scMap(p + n * h).x) * w;
     w *= 0.7;
   }
   return clamp(1.0 - 2.2 * occ, 0.0, 1.0);
 }
 vec3 render(vec2 p, vec2 uv) {
-  float ang = uTime * 0.12 + uSeed.x * 6.28;
-  vec3 ro = vec3(6.0 * sin(ang), 1.9 + 0.35 * sin(uTime * 0.21), 6.0 * cos(ang));
-  vec3 ta = vec3(0.1, 0.45, -0.2);
+  // the camera drifts: round slowly, rising and falling, nearer and farther, its aim wandering a little
+  float ang = uTime * 0.1 + 0.35 * sin(uTime * 0.13) + uSeed.x * 6.28;
+  float dist = 5.4 + 0.6 * sin(uTime * 0.17);
+  vec3 ro = vec3(dist * sin(ang), 1.7 + 0.4 * sin(uTime * 0.21), dist * cos(ang));
+  vec3 ta = vec3(0.15 * sin(uTime * 0.23), 0.45 + 0.08 * sin(uTime * 0.19), 0.0);
   vec3 fw = normalize(ta - ro), rt = normalize(cross(fw, vec3(0.0, 1.0, 0.0))), up = cross(rt, fw);
   vec3 rd = normalize(p.x * rt + p.y * up + (1.9 + 0.25 * uKick) * fw);
   // the sky: pale at the horizon, deeper above, warm towards the sun
@@ -2588,18 +2600,17 @@ vec3 render(vec2 p, vec2 uv) {
   float t = 0.0;
   vec2 h = vec2(0.0);
   // (a ray already above the shapes and climbing only meets the sky)
-  for (int i = 0; i < 72; i++) {
+  for (int i = 0; i < 60; i++) {
     vec3 q = ro + rd * t;
     if (q.y > 2.6 && rd.y > 0.0) { t = 20.0; break; }
     h = scMap(q);
-    if (h.x < 0.0012 * t || t > 18.0) break;
-    t += h.x;
+    if (h.x < 0.0015 * t || t > 18.0) break;
+    t += h.x * 1.05;
   }
   if (t < 18.0) {
     vec3 pos = ro + rd * t, n = scNormal(pos);
     vec3 base = h.y < 0.5 ? vec3(0.72, 0.7, 0.66) * (0.85 + 0.15 * smoothstep(-0.1, 0.1, sin(pos.x * 1.2) * sin(pos.z * 1.2)))
-      : h.y < 1.5 ? mix(vec3(0.82, 0.62, 0.38), unblack(pal(0.2)), 0.35)
-      : mix(vec3(0.5, 0.25, 0.12), unblack(pal(0.65)), 0.5);
+      : mix(mix(vec3(0.82, 0.62, 0.38), unblack(pal(0.2)), 0.35), mix(vec3(0.5, 0.25, 0.12), unblack(pal(0.65)), 0.5), smoothstep(1.15, 1.85, h.y));
     float dif = max(dot(n, sun), 0.0) * scShadow(pos + n * 0.01, sun);
     float occ = scAO(pos, n);
     float amb = 0.5 + 0.5 * n.y;
@@ -2679,6 +2690,711 @@ vec3 render(vec2 p, vec2 uv) {
   }
   col += unblack(pal(0.45)) * glow * (0.35 + 0.9 * uKick + 1.2 * open);
   return col * (0.85 + 0.25 * uEnergy);
+}
+`;
+
+// ---------------------------------------------------------------------------
+// The thin eras filled: a film's code rain (1999), a 64k intro's gimbal and the DJ decks (2000s).
+// ---------------------------------------------------------------------------
+
+const coderain = `
+// Code rain: falling green code, as the cyberpunk screens of the turn of the millennium imagined a computer's
+// inner world - an idea of the time, nothing of any one film - made by hand rather than flat. The camera moves
+// slowly and steadily forward into the rain: sheets of it stand one behind another, coming nearer, growing,
+// passing by and fading as new ones appear far off - the far ones small, dim and out of focus, the nearest large
+// and soft, the ones between sharp; every glyph glowing, the sheets adding up like light. The glyphs are the
+// seed's own, a few strokes on a three-by-five grid, mirrored. A fall is a white glyph typing its way down -
+// changing every few frames as if keyed in - and leaving a green ghost of what it typed, fading; each runs on
+// until it has left the bottom. No punch shakes it: the music moves the flow instead - the camera and the falls
+// gather speed through each phrase and ease back as it ends (worked out as a sum, so nothing ever jumps), falls
+// start on the beats, the kick lights the heads, the snare flickers the trails. And as each phrase opens
+// something rises out of the rain, woven of code, and sinks back over the next bars - in turn a face in dark
+// glasses, the seed, and SEEDSCENE.
+float crGlyph(vec2 f, float id) {
+  // the strokes: three or four lines between the points of a three-by-five lattice, picked by the glyph's number -
+  // a bar across the top, then strokes down, across and slanting, as a kana or a letter is built; the distance
+  if (f.x < -0.3 || f.y < -0.3 || f.x > 1.3 || f.y > 1.3) return 1e3;
+  vec2 q = f * vec2(2.0, 4.0);
+  float d = hash11(id * 1.3) < 0.3 ? 1e3 : sdSeg(q, vec2(0.0, 4.0), vec2(2.0, 4.0));
+  for (int k = 0; k < 3; k++) {
+    float fk = float(k);
+    vec2 a = floor(vec2(hash11(id * 2.1 + fk * 5.3) * 3.0, hash11(id * 3.7 + fk * 1.9) * 5.0));
+    vec2 b = floor(vec2(hash11(id * 4.3 + fk * 7.1) * 3.0, hash11(id * 5.9 + fk * 3.3) * 5.0));
+    if (length(a - b) < 0.5) b = vec2(a.x, 0.0);
+    d = min(d, sdSeg(q, a, b));
+  }
+  return d;
+}
+// the flow: the time, with something added that swells through each phrase of eight bars and dies away at its
+// end - the sum of sin squared over the bars, so its pace rises and falls but it never jumps
+float crExtra(float s) {
+  float x = mod(s, 8.0);
+  return floor(s / 8.0) * 4.0 + x * 0.5 - 0.63662 * sin(x * 0.785398);
+}
+float crFlowAt(float t, float s) { return t + 0.5 * 4.0 * max(uSpb, 0.2) * crExtra(s); }
+// one sheet of rain, cols across the screen at its distance; speed in cells a second of flow; blur its focus
+vec3 crSheet(vec2 p, float cols, float speed, float bright, float blur, float sheet, float flow, float s) {
+  float spb = max(uSpb, 0.2);
+  float beats = uTime / spb;
+  vec2 q = vec2(p.x * cols + hash11(sheet * 3.1) * 7.0, p.y * cols * 0.72);
+  float col = floor(q.x);
+  vec2 cell = fract(q);
+  float row = floor(q.y);
+  float top = cols * 0.36 + 1.0;
+  // the falls in this column, each from the beat it started on, for as long as it takes to leave the screen
+  float lit = 0.0, head = 0.0, fallId = 0.0;
+  for (int k = 0; k < 12; k++) {
+    float b = floor(beats) - float(k);
+    if (hash12(vec2(col * 1.31 + sheet * 17.0, b)) > 0.17) continue;
+    float since = flow - crFlowAt(b * spb, s - (beats - b) / 4.0);          // the flow since it started
+    float y = top - since * speed * (0.8 + 0.5 * hash11(col + b * 0.7));   // the head's row
+    float d = row - y;                                                      // rows behind the head
+    if (d < -0.5) continue;
+    float len = 10.0 + 18.0 * hash11(col * 3.1 + b);
+    float w = (1.0 - clamp(d / len, 0.0, 1.0)) * step(d, len);
+    if (w > lit) { lit = w; fallId = b; }
+    head = max(head, 1.0 - smoothstep(0.0, 1.2, abs(d)));
+  }
+  if (lit <= 0.0) return vec3(0.0);
+  // the glyph: the head typing (a new one every few frames), the trail its ghosts, flickering now and then
+  float typing = floor(uTime * 18.0);
+  float flick = floor(uTime * (1.0 + 5.0 * uSnare) + hash12(vec2(col, row)) * 9.0);
+  float id = head > 0.5 ? floor(hash12(vec2(col, typing + sheet * 11.0)) * 997.0)
+                        : floor(hash12(vec2(col * 1.7 + sheet, row * 0.9 + fallId * 0.31 + floor(flick * 0.2) * 0.13)) * 997.0);
+  float d = crGlyph((vec2(1.0 - cell.x, cell.y) - vec2(0.22, 0.12)) / vec2(0.56, 0.76), id);
+  // the stroke, sharp or soft as the sheet's focus, and its glow
+  float stroke = 1.0 - smoothstep(0.14 - blur, 0.3 + blur * 2.0, d);
+  float glow = exp(-d * (3.6 - blur * 4.0)) * (0.1 + 0.14 * uEnergy);
+  vec3 green = vec3(0.1, 0.95, 0.35);
+  vec3 ghost = mix(green, vec3(0.75, 1.0, 0.8), smoothstep(0.85, 1.0, lit));          // just behind the head, pale
+  vec3 c = ghost * (stroke + glow) * lit * lit;
+  c += vec3(0.85, 1.0, 0.92) * (stroke * 1.1 + glow * 1.5) * head * (0.75 + 0.6 * uKick);
+  return c * bright;
+}
+// the words the rain reveals: the seed, and the project's name, in the crack intros' 5x7 font
+uniform vec4 uFont[24];     // the font, two letters a vec4: rows 0-3, rows 4-6
+uniform vec4 uWords[6];     // the seed's letters (0-11), then SEEDSCENE's (12-23)
+uniform vec4 uWordLen;      // how many letters in each
+float crFontBit(float g, float fx, float fy) {
+  if (fx < 0.0 || fy < 0.0 || fx >= 5.0 || fy >= 7.0) return 0.0;
+  int gi = int(g + 0.5);
+  vec4 v = uFont[gi / 2];
+  float lo = v.x, hi = v.y;
+  if (gi % 2 == 1) { lo = v.z; hi = v.w; }
+  float x = floor(fx), y = floor(fy);
+  float bits = lo, bit = y * 5.0 + x;
+  if (y >= 4.0) { bits = hi; bit = (y - 4.0) * 5.0 + x; }
+  return mod(floor(bits / exp2(bit)), 2.0);
+}
+// how lit a word is at p: its letters' pixels as soft blocks, across the middle of the screen
+float crWord(vec2 p, int j) {
+  float n = j == 0 ? uWordLen.x : uWordLen.y;
+  if (n < 1.0) return 0.0;
+  float cols = n * 6.0 - 1.0;
+  float cell = min(1.6 / cols, 0.06);                                       // as wide as fits, never too tall
+  vec2 q = vec2(p.x / cell + cols * 0.5, 3.5 - p.y / cell);
+  float i = floor(q.x / 6.0);
+  if (i < 0.0 || i >= n) return 0.0;
+  int k = j * 12 + int(i);
+  float g = uWords[k / 4][k % 4];
+  vec2 f = vec2(q.x - i * 6.0, q.y);
+  float on = crFontBit(g, f.x, f.y);
+  vec2 c = fract(f) - 0.5;
+  return on * (1.0 - smoothstep(0.3, 0.55, max(abs(c.x), abs(c.y)))) * (0.75 + 0.25 * (1.0 - f.y / 7.0));
+}
+// the face in the rain: x how lit, y the glasses - soft-edged, a light falling on the rain rather than a shape
+// laid on it. Drawn in the units of a front view of the look being evoked: x across from the middle of the face,
+// y down from the top of the hair (0) to the chin (425); the hairline at 133, the eyes and the top of the lenses
+// at 253, the lenses' bottom at 305, the base of the nose at 355, the mouth at 395.
+float crHalfWidth(float y) {
+  // the face's half-width down from the hairline, eased between its stations: a straight forehead, cheeks almost
+  // parallel, a jaw that turns firmly but smoothly to a broad chin
+  return 112.0 + 8.0 * smoothstep(133.0, 253.0, y) - 2.0 * smoothstep(253.0, 330.0, y)
+       - 16.0 * smoothstep(330.0, 408.0, y) - 33.0 * smoothstep(398.0, 452.0, y) - 22.0 * smoothstep(444.0, 474.0, y);
+}
+// a stroke along a curve (a quadratic from a through b to c), as a pen draws it: w0 wide at a, w1 at c; < 0 inside
+float crStroke(vec2 q, vec2 a, vec2 b, vec2 c, float w0, float w1) {
+  float d = 1e9;
+  vec2 prev = a;
+  for (int i = 1; i <= 8; i++) {
+    float t = float(i) / 8.0;
+    vec2 pt = mix(mix(a, b, t), mix(b, c, t), t);
+    d = min(d, sdSeg(q, prev, pt) - mix(w0, w1, t - 0.0625));
+    prev = pt;
+  }
+  return d;
+}
+float crInk(float d) { return 1.0 - smoothstep(-1.5, 2.0, d); }
+vec2 crFace(vec2 p) {
+  vec2 r = vec2(p.x, 0.02 - p.y) * 512.0 + vec2(0.0, 252.0);
+  float x = abs(r.x), y = r.y;
+  vec2 m = vec2(x, y);                                                       // (mirrored: both sides at once)
+  // the hairline: an arch, highest over the middle of the forehead, coming down over the temples to the tops
+  // of the ears
+  float hairline = 138.0 + 28.0 * smoothstep(30.0, 92.0, x) + 95.0 * smoothstep(92.0, 120.0, x);
+  // the hair: wider than the face, full over the top, its upper edge broken into tufts
+  float tufts = 46.0 + 14.0 * abs(sin(r.x * 0.045 + 0.6)) + 0.0028 * r.x * r.x;
+  float hw = 132.0 - 0.0045 * max(0.0, 150.0 - y) * max(0.0, 150.0 - y);
+  float hair = (1.0 - smoothstep(-6.0, 6.0, x - hw)) * smoothstep(tufts - 6.0, tufts + 6.0, y) * (1.0 - smoothstep(hairline - 6.0, hairline + 6.0, y));
+  float face = (1.0 - smoothstep(-10.0, 8.0, x - crHalfWidth(y))) * smoothstep(hairline - 4.0, hairline + 8.0, y) * (1.0 - smoothstep(462.0, 482.0, y));
+  // the ears: from the eyes down to the base of the nose
+  float ears = 1.0 - smoothstep(0.75, 1.1, length(vec2((x - 128.0) / 14.0, (y - 302.0) / 46.0)));
+  // the light, from the upper left, and the shade under the cheekbones
+  float shade = clamp(0.82 - r.x / 520.0 - (y - 250.0) / 1400.0, 0.45, 1.0);
+  shade *= 1.0 - 0.25 * smoothstep(60.0, 112.0, x) * smoothstep(300.0, 360.0, y);
+  // the features, drawn as curves with a pen's swell: the brows thick by the nose, arching and thinning out
+  // over the lenses; the nose's shaded side and the round of its tip; the folds from the nose to the mouth; the
+  // mouth's line with its slight bow and the shadow under the lower lip; the crease above the chin
+  float ink = 0.0;
+  ink = max(ink, 0.7 * crInk(crStroke(m, vec2(16.0, 251.0), vec2(58.0, 233.0), vec2(112.0, 244.0), 6.5, 2.0)));
+  ink = max(ink, 0.45 * crInk(crStroke(r * vec2(1.0, 1.0) + vec2(0.0, 0.0), vec2(9.0, 286.0), vec2(17.0, 318.0), vec2(21.0, 343.0), 1.5, 3.0)));
+  ink = max(ink, 0.5 * crInk(crStroke(vec2(r.x, y), vec2(-21.0, 347.0), vec2(0.0, 364.0), vec2(21.0, 347.0), 2.0, 2.0)));
+  ink = max(ink, 0.25 * crInk(crStroke(m, vec2(24.0, 354.0), vec2(37.0, 371.0), vec2(39.0, 393.0), 1.4, 0.8)));
+  ink = max(ink, 0.6 * crInk(crStroke(m, vec2(0.0, 395.0), vec2(16.0, 390.0), vec2(35.0, 398.0), 2.4, 1.2)));
+  ink = max(ink, 0.3 * crInk(crStroke(vec2(r.x, y), vec2(-21.0, 409.0), vec2(0.0, 418.0), vec2(21.0, 409.0), 3.0, 3.0)));
+  ink = max(ink, 0.2 * crInk(crStroke(vec2(r.x, y), vec2(-14.0, 440.0), vec2(0.0, 445.0), vec2(14.0, 440.0), 1.5, 1.5)));
+  shade *= 1.0 - ink;
+  float lit = max(face * shade, max(hair * 0.22, ears * 0.5));
+  // the glasses, as the look had them: two lenses from the eyes down, nearly as wide together as the face - wider
+  // than tall, their corners rounded but square enough to read as lenses, the top edge flatter than the bottom -
+  // a thin wire bridge high between them
+  vec2 g = vec2(x - 63.0, y - 279.0);
+  float lens = pow(pow(abs(g.x) / 56.0, 3.4) + pow(abs(g.y) / (g.y < 0.0 ? 24.0 : 28.0), 2.8), 1.0 / 3.1);
+  float glasses = 1.0 - smoothstep(0.88, 1.06, lens);
+  glasses = max(glasses, 0.4 * (1.0 - smoothstep(0.0, 3.0, sdSeg(vec2(r.x, y), vec2(-9.0, 265.0), vec2(9.0, 265.0)))));
+  return vec2(lit, glasses * face);
+}
+vec3 render(vec2 p, vec2 uv) {
+  float s = uBarIndex + uBar;
+  float flow = crFlowAt(uTime, s);
+  // the camera moving forward: six sheets one unit apart, each coming nearer until it passes
+  float cam = flow * 0.55;
+  vec3 col = vec3(0.0);
+  for (int i = 0; i < 6; i++) {
+    float fi = float(i);
+    float d = fi + 1.0 - fract(cam);                                          // its distance, 6 far to 0 passing
+    float sheet = fi + floor(cam);
+    float fade = smoothstep(0.25, 0.9, d) * (1.0 - smoothstep(4.6, 6.0, d));
+    if (fade <= 0.0) continue;
+    float blur = clamp(abs(d - 2.4) * 0.08, 0.0, 0.24);
+    col += crSheet(p, 15.0 * d, 9.0 + 0.6 * d, fade * 0.9 / (0.5 + 0.22 * d), blur, sheet, flow, s);
+  }
+  // a phrase opening: something revealed in the rain - in turn a face in dark glasses, the seed, and SEEDSCENE -
+  // far off at first, small and soft, coming towards the camera with the rain, glyph by glyph out of the code,
+  // and fading and blurring away as it comes too near
+  float x = mod(s, 8.0);
+  float near = smoothstep(0.0, 5.2, x);                                      // 0 far off, 1 too near
+  float size = 0.38 * exp(near * 1.75);                                      // (a steady approach: the size grows by the same ratio a bar)
+  float reveal = smoothstep(0.0, 1.2, x) * (1.0 - smoothstep(3.2, 5.2, x));
+  if (reveal > 0.0) {
+    float which = mod(floor(s / 8.0), 3.0);
+    vec2 ps = p / size;
+    vec2 face = which < 0.5 ? crFace(ps) : vec2(crWord(ps, which < 1.5 ? 0 : 1), 0.0);
+    // soft while far off and again when too near: the shape's light spread out, its contrast lowered
+    float soft = 1.0 - smoothstep(0.0, 0.25, near) * (1.0 - smoothstep(0.7, 1.0, near));
+    face.x = mix(face.x, face.x * 0.6 + 0.12 * step(0.02, face.x), soft * 0.6);
+    // the glasses dark as the hair is, a little darker: the code behind them still seen, never put out
+    face.x = mix(face.x, 0.16, face.y);
+    // the shape is made of code: a close weave of glyphs that comes nearer with it, changing slowly, lit as the
+    // shape is lit
+    vec2 fq = vec2(ps.x * 64.0, ps.y * 64.0 * 0.72);
+    vec2 fc = fract(fq);
+    float fid = floor(hash12(floor(fq) + floor(uTime * 2.5 + hash12(floor(fq)) * 4.0) * 0.37) * 997.0);
+    float fd = crGlyph((vec2(1.0 - fc.x, fc.y) - vec2(0.22, 0.12)) / vec2(0.56, 0.76), fid);
+    float weave = (1.0 - smoothstep(0.12 - 0.1 * soft, 0.3 + 0.4 * soft, fd)) + exp(-fd * (3.5 - 1.5 * soft)) * 0.25;
+    // each glyph appears at its own moment, the brightest parts first, so the shape rises out of the rain
+    float own = hash12(floor(fq) * 1.37 + 5.1);
+    float there = smoothstep(own * 0.8, own * 0.8 + 0.25, reveal * (0.35 + 1.1 * face.x));
+    vec3 faceCol = mix(vec3(0.1, 0.95, 0.35), vec3(0.8, 1.0, 0.85), smoothstep(0.7, 1.0, face.x));
+    col *= mix(1.0, 0.35 + 1.1 * face.x, reveal);                              // the rain dims round it, lights on it
+    col += faceCol * weave * face.x * face.x * there * 1.5;
+    col *= 1.0 - reveal * face.y * 0.2;                                         // the glasses: the code there dimmed, not gone
+  }
+  col += vec3(0.0, 0.025, 0.012);                                               // the dark green of the screen
+  return col;
+}
+`;
+
+const gimbal = `
+// The 64k gimbal: the 64k intros of the turn of the century, whole worlds of glowing generated 3D packed into
+// one small file, as the memory of them goes: nested metal rings turning on their own axes round a core, in a
+// hall of great curved bands with tiled patterns, a haze, the picture letterboxed - every colour the seed's own.
+// A light stands behind the rings: its rays cross the haze towards you, cut into shafts wherever a ring or the
+// core stands in their way, and it flares in the lens - a glare, a streak and coloured ghosts - as the
+// renderers of the time loved to; the flare dims when a ring crosses the light. Each ring turns a quarter on its own beat in turn, eased; the core pulses with
+// the kick; the shafts brighten with the pads; the camera circles slowly, and each phrase opens on a new angle
+// eased in over its first bar.
+mat3 gbRot(vec3 a) {
+  float cx = cos(a.x), sx = sin(a.x), cy = cos(a.y), sy = sin(a.y), cz = cos(a.z), sz = sin(a.z);
+  return mat3(cy * cz, cy * sz, -sy, sx * sy * cz - cx * sz, sx * sy * sz + cx * cz, sx * cy, cx * sy * cz + sx * sz, cx * sy * sz - sx * cz, cx * cy);
+}
+float gbTurn(float i) {
+  // the quarter turns of ring i: one on every third beat, eased over the first half of the beat
+  float b = uTime / max(uSpb, 0.2) - i;
+  float n = floor(b / 3.0);
+  return (n + smoothstep(0.0, 0.5, fract(b / 3.0) * 3.0)) * 1.5708;
+}
+float gbRing(vec3 p, float r, float t) { return length(vec2(length(p.xz) - r, p.y)) - t; }
+mat3 gbR0, gbR1, gbR2;   // the rings' turns, worked out once a pixel
+// how much of the light reaches x: each ring's plane is crossed at one point on the way to the light, and the
+// light is cut if that point lies on the ring; the core cuts it if the way passes within its radius
+float gbRingLit(vec3 x, vec3 L, mat3 R, float rad) {
+  vec3 n = vec3(0.0, 1.0, 0.0) * R;                  // the ring's axis in the world
+  float dn = dot(L, n);
+  if (abs(dn) < 1e-3) return 1.0;
+  float s = -dot(x, n) / dn;
+  if (s < 0.0) return 1.0;
+  return smoothstep(0.03, 0.07, abs(length(x + L * s) - rad));
+}
+float gbLit(vec3 x, vec3 L) {
+  float b = -dot(x, L);
+  float core = b > 0.0 ? smoothstep(0.26, 0.34, length(x + L * b)) : 1.0;
+  return core * gbRingLit(x, L, gbR0, 0.62) * gbRingLit(x, L, gbR1, 0.86) * gbRingLit(x, L, gbR2, 1.1);
+}
+// the scene: x the distance, y what (0 hall, 1 ring, 2 core)
+vec2 gbMap(vec3 p) {
+  float core = length(p) - (0.3 + 0.03 * uKick);
+  vec2 m = vec2(core, 2.0);
+  float d = min(min(gbRing(gbR0 * p, 0.62, 0.035), gbRing(gbR1 * p, 0.86, 0.035)), gbRing(gbR2 * p, 1.1, 0.035));
+  if (d < m.x) m = vec2(d, 1.0);
+  // the hall: two great bands sweeping round, tilted
+  vec3 h1 = p; h1.xy = rot(0.5) * h1.xy;
+  vec3 h2 = p; h2.yz = rot(-0.7) * h2.yz;
+  float hall = min(length(vec2(length(h1.xz) - 3.4, h1.y)) - 0.45, length(vec2(length(h2.xz) - 3.9, h2.y)) - 0.5);
+  if (hall < m.x) m = vec2(hall, 0.0);
+  return m;
+}
+vec3 render(vec2 p, vec2 uv) {
+  float a0 = gbTurn(0.0), a1 = gbTurn(1.0), a2 = gbTurn(2.0);
+  gbR0 = gbRot(vec3(a0, a0 * 0.2, a0 * 0.25));
+  gbR1 = gbRot(vec3(a1 * 0.3, a1, a1 * 0.25));
+  gbR2 = gbRot(vec3(a2 * 0.3, a2 * 0.2, a2));
+  float phrase = floor(uBarIndex / 8.0);
+  float into = smoothstep(0.0, 1.0, mod(uBarIndex, 8.0) + uBar);
+  float view = mix(hash11(phrase - 1.0 + uSeed.x * 9.0), hash11(phrase + uSeed.x * 9.0), into) * 6.28;
+  // the camera drifts round, nearer and farther, rising and falling, all slowly
+  float ang = uTime * 0.12 + 0.3 * sin(uTime * 0.11) + view;
+  float dist = 2.6 + 0.35 * sin(uTime * 0.15 + view);
+  vec3 ro = vec3(dist * sin(ang), 0.9 * sin(uTime * 0.07 + view), dist * cos(ang));
+  vec3 fw = normalize(-ro), rt = normalize(cross(fw, vec3(0.0, 1.0, 0.0))), up = cross(rt, fw);
+  vec3 rd = normalize(p.x * rt + p.y * up + 1.4 * fw);
+  // the seed's colours: one for the haze and the hall, one for the light; every seed its own hall
+  vec3 tint = unblack(pal(0.85)); tint /= max(max(tint.r, tint.g), max(tint.b, 0.3));
+  vec3 glowC = unblack(pal(0.15)); glowC /= max(max(glowC.r, glowC.g), max(glowC.b, 0.3));
+  // the light: behind the rings as the camera sees them, a little above and to one side
+  vec3 L = normalize(-normalize(ro) + 0.45 * up + 0.3 * rt);
+  float sh = max(dot(rd, L), 0.0);
+  vec2 ra = vec2(atan(dot(rd, cross(L, vec3(0.0, 1.0, 0.0))), dot(rd, vec3(0.0, 1.0, 0.0))), 0.0);
+  float shafts = pow(sh, 6.0) * (0.5 + 0.5 * sin(ra.x * 23.0 + uTime * 0.2)) * (0.6 + 0.8 * uPad);
+  vec3 haze = mix(tint * 0.14, tint * 0.4, 0.5 + 0.5 * rd.y) + glowC * (pow(sh, 12.0) * 0.6 + shafts * 0.35);
+  vec3 col = haze;
+  float t = 0.0;
+  vec2 h = vec2(1.0);
+  for (int i = 0; i < 90; i++) {
+    h = gbMap(ro + rd * t);
+    if (h.x < 0.001 * t || t > 12.0) break;
+    t += h.x;
+  }
+  if (t < 12.0) {
+    vec3 pos = ro + rd * t;
+    vec2 e = vec2(0.002, 0.0);
+    vec3 n = normalize(vec3(gbMap(pos + e.xyy).x - gbMap(pos - e.xyy).x, gbMap(pos + e.yxy).x - gbMap(pos - e.yxy).x, gbMap(pos + e.yyx).x - gbMap(pos - e.yyx).x));
+    float dif = max(dot(n, L), 0.0);
+    vec3 r = reflect(rd, n);
+    vec3 env = mix(tint * 0.2, mix(tint, glowC, 0.5) * 0.95, 0.5 + 0.5 * r.y);
+    if (h.y > 1.5) {
+      // the core: a sphere of patterned metal, its pattern in the seed's colours lit by the kick
+      vec3 steel = vec3(dot(env, vec3(0.33))) * 0.8;
+      float pat = step(0.5, fract(atan(n.z, n.x) * 3.18 + uTime * 0.2)) * step(0.5, fract(n.y * 6.0));
+      col = steel * (0.4 + 0.6 * dif) + unblack(pal(0.1)) * pat * (0.15 + 0.9 * uKick);
+    } else if (h.y > 0.5) {
+      // the rings: polished steel, the hall caught in them
+      col = mix(vec3(dot(env, vec3(0.33))), env, 0.35) * (0.5 + 0.5 * dif) + mix(vec3(1.0), glowC, 0.3) * pow(max(dot(r, L), 0.0), 30.0);
+    } else {
+      // the hall's bands: dark stone with a strip of tiles in two of the seed's colours along them
+      vec2 tq = vec2(atan(pos.z, pos.x) * 40.0, pos.y * 30.0);
+      float tile = step(0.5, fract(tq.x)) * step(0.5, fract(tq.y)) + step(fract(tq.x), 0.5) * step(fract(tq.y), 0.5);
+      // (a narrow strip of small tiles along each band, the rest dark)
+      float strip = smoothstep(0.12, 0.09, abs(fract(atan(pos.y, length(pos.xz)) * 2.2) - 0.5));
+      vec3 base = mix(tint * 0.09, mix(unblack(pal(0.35)) * 0.6, unblack(pal(0.6)) * 0.8, tile), strip);
+      col = base * (0.25 + 0.9 * dif) + env * 0.08;
+    }
+    col = mix(col, haze, 1.0 - exp(-0.02 * t * t));
+  }
+  // the shafts: the haze lit along the view ray wherever the light gets through, brighter looking into it
+  float vol = 0.0, tv = min(t, 7.0);
+  float jit = hash12(gl_FragCoord.xy + fract(uTime) * 61.0);
+  for (int i = 0; i < 14; i++) vol += gbLit(ro + rd * (float(i) + jit) / 14.0 * tv, L);
+  vol /= 14.0;
+  float fwd = pow(max(dot(rd, L), 0.0), 5.0);
+  col += glowC * vol * (0.06 + 0.55 * fwd) * (0.7 + 0.6 * uPad + 0.3 * uKick);
+  // the lens flare: where the light falls on the screen, dimmed when a ring or the core covers it
+  float lf = dot(L, fw);
+  if (lf > 0.0) {
+    vec2 sp = vec2(dot(L, rt), dot(L, up)) / lf * 1.4;
+    float seen = gbLit(ro, L) * smoothstep(0.0, 0.3, lf);
+    float k = seen * (0.8 + 0.8 * uKick);
+    vec2 d = p - sp;
+    col += glowC * k * (0.035 / (dot(d, d) + 0.003) * 0.05 + exp(-abs(d.y) * 90.0) * exp(-abs(d.x) * 1.6) * 0.5);
+    // the ghosts, strung along the line through the middle of the picture
+    for (int g = 0; g < 4; g++) {
+      float fg = float(g);
+      vec2 gp = sp * (0.45 - 0.6 * fg);
+      float gr = 0.03 + 0.035 * hash11(fg * 3.3 + uSeed.y);
+      vec3 gc = unblack(pal(0.2 + 0.23 * fg)); gc /= max(max(gc.r, gc.g), max(gc.b, 0.3));
+      col += gc * k * 0.12 * (1.0 - smoothstep(gr * 0.6, gr, length(p - gp)));
+    }
+    col += glowC * k * 0.06 * (1.0 - smoothstep(0.0, 0.015, abs(length(p + sp * 0.3) - 0.38)));   // the halo ring
+  }
+  // the letterbox
+  col *= step(abs(uv.y - 0.5), 0.41);
+  return col;
+}
+`;
+
+const djdecks = `
+// The DJ party: two silver turntables and the mixer between them, seen from above as the clubs and the rhythm
+// games of the 2000s showed them, no make, name or logo - and round them now the night they play to, lit as the
+// demos of the time lit theirs. The decks as they always were: black records on platters edged with strobe dots, a
+// label with a mark you can follow round, the tonearm from its pivot with the needle in the groove, a pitch fader,
+// the start button; on the mixer the knobs, two channel faders and the crossfader. The records turn at 33 1/3; one
+// deck is live each phrase: its channel fader up, its meter lit by the kick and the bass, the needle working in
+// towards the label over the phrase; the crossfader slides across over the first bar as the other deck takes over;
+// in the last bar of a phrase the live record is scratched, rocked back and forth on the sixteenths; the target
+// lamp flashes on the kick. Round them the club: the booth's dark top with a strip of light along its edge, the
+// dancers below seen from above with their hands up, bouncing on the beat, the floor's tiles chasing round under
+// them; moving heads throwing coloured beams through drifting smoke, motes of dust in them; a fan of lasers over
+// the hands in the second half of each phrase; the mirror ball's spots wandering over everything, more with the
+// pads; the strobe on every other beat of the last two bars; each phrase opening with every head turned on the
+// camera, flaring in the lens, before the beams fan out. The colours are the seed's, a new set each phrase; the
+// camera moves round the decks as it always did.
+float djBox(vec2 q, vec2 h, float r) { vec2 d = abs(q) - h + r; return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0) - r; }
+vec3 djDeck(vec2 q, float side, float live, vec3 col, float aa) {
+  float beats = uTime / max(uSpb, 0.2);
+  float inBar = mod(uBarIndex, 8.0) + uBar;                   // where in the phrase
+  // the plinth: brushed silver
+  float plinth = djBox(q, vec2(0.36, 0.37), 0.025);
+  if (plinth < 0.0) col = vec3(0.62, 0.62, 0.6) * (0.95 + 0.05 * hash12(floor(q * vec2(40.0, 900.0))));
+  col *= 1.0 - 0.5 * (1.0 - smoothstep(0.0, 0.006, abs(plinth)));
+  vec2 c = q - vec2(-0.04, -0.02);
+  float r = length(c);
+  // the record turns at 33 1/3 a minute; scratched in the last bar of the phrase when this deck is live
+  float spin = uTime * 3.4907;
+  if (live > 0.5 && inBar > 7.0) spin += 0.9 * sin(fract(beats * 4.0) * 3.14159) * (mod(floor(beats * 4.0), 2.0) * 2.0 - 1.0);
+  float a = atan(c.y, c.x) + spin;
+  // the platter and its strobe dots
+  if (r < 0.31) {
+    // the platter's rim: four rows of strobe dots, standing almost still at the right speed
+    float row = floor((r - 0.29) / 0.005);
+    vec2 dq = vec2(fract(a * (180.0 + row * 2.0) / 6.28318) - 0.5, fract((r - 0.29) / 0.005) - 0.5);
+    float dot_ = 1.0 - smoothstep(0.22, 0.38, length(dq));
+    col = mix(vec3(0.42), vec3(0.85), dot_);
+  }
+  // the record, its grooves catching the light, and the label with its mark
+  if (r < 0.29) {
+    col = vec3(0.03) + vec3(0.08) * pow(abs(sin(r * 900.0)), 8.0) * (0.4 + 0.6 * abs(sin(a * 2.0 - 0.6)));
+    if (r < 0.09) {
+      col = unblack(pal(0.2 + side * 0.3)) * 0.9;
+      col = mix(col, vec3(0.95), step(abs(sin(a)), 0.2) * step(0.0, cos(a)) * step(0.03, r));
+    }
+    if (r < 0.008) col = vec3(0.75);
+  }
+  // the tonearm: from its pivot at the top right to the needle in the groove, working in over the phrase
+  vec2 pivot = vec2(0.27, 0.26);
+  float gr = mix(0.27, 0.12, live > 0.5 ? inBar / 8.0 : 0.0);
+  vec2 needle = vec2(-0.04, -0.02) + gr * normalize(vec2(0.55, -0.25));
+  float arm = sdSeg(q, pivot, needle);
+  col = mix(col, vec3(0.8), 1.0 - smoothstep(0.004, 0.009, arm));
+  col = mix(col, vec3(0.2), 1.0 - smoothstep(0.012, 0.02, length(q - needle)));
+  col = mix(col, vec3(0.7), 1.0 - smoothstep(0.035, 0.042, length(q - pivot)));
+  // the pitch fader and the start button
+  col = mix(col, vec3(0.25), 1.0 - smoothstep(0.0, 0.004, djBox(q - vec2(0.31, -0.08), vec2(0.008, 0.16), 0.004)));
+  col = mix(col, vec3(0.85), 1.0 - smoothstep(0.0, 0.004, djBox(q - vec2(0.31, -0.08 + 0.02 * sin(uTime * 0.1 + side)), vec2(0.022, 0.012), 0.004)));
+  col = mix(col, vec3(0.75), 1.0 - smoothstep(0.035, 0.04, length(q - vec2(-0.29, -0.3))));
+  // the target lamp, flashing on the kick when the deck is live
+  col += vec3(1.0, 0.85, 0.5) * (0.2 + live * uKick * 2.0) * exp(-length(q - vec2(-0.3, 0.3)) * 60.0);
+  return col;
+}
+vec3 djBoard(vec2 p) {
+  float aa = 1.5 / uRes.y;
+  float phrase = floor(uBarIndex / 8.0);
+  float leftLive = mod(phrase + floor(uSeed.x * 2.0), 2.0);   // which deck plays this phrase
+  float into = smoothstep(0.0, 1.0, mod(uBarIndex, 8.0) + uBar);
+  vec3 col = vec3(0.04, 0.04, 0.05);
+  col = djDeck(p - vec2(-0.47, 0.0), 0.0, leftLive, col, aa);
+  col = djDeck(p - vec2(0.47, 0.0), 1.0, 1.0 - leftLive, col, aa);
+  // the mixer
+  vec2 m = p;
+  float body = djBox(m, vec2(0.1, 0.34), 0.012);
+  if (body < 0.0) {
+    col = vec3(0.7, 0.68, 0.64) * (0.95 + 0.05 * hash12(floor(m * vec2(600.0, 30.0))));
+    for (int ch = 0; ch < 2; ch++) {
+      float x = ch == 0 ? -0.045 : 0.045;
+      float live = ch == 0 ? leftLive : 1.0 - leftLive;
+      float level = mix(1.0 - live, live, into);
+      // three knobs, their marks turned a little with the music
+      for (int k = 0; k < 3; k++) {
+        vec2 kc = vec2(x, 0.27 - float(k) * 0.055);
+        float kr = length(m - kc);
+        if (kr < 0.02) col = vec3(0.22);
+        float ka = 0.8 * sin(float(k) * 2.1 + float(ch)) + (k == 2 ? 0.5 * uBass * live : 0.0);
+        col = mix(col, vec3(0.95), (1.0 - smoothstep(0.002, 0.004, sdSeg(m, kc, kc + 0.017 * vec2(sin(ka), cos(ka))))) * step(kr, 0.02));
+      }
+      // the meter: a column of lights, lit by the kick and the bass on the live channel
+      float meter = live * level * clamp(0.35 + 0.5 * uKick + 0.4 * uBass, 0.0, 1.0);
+      for (int s = 0; s < 8; s++) {
+        float fs = float(s);
+        vec2 sc = vec2(x + (ch == 0 ? 0.03 : -0.03), 0.02 + fs * 0.018);
+        float on = step(fs / 8.0, meter - 0.02);
+        vec3 led = fs > 6.0 ? vec3(1.0, 0.2, 0.15) : fs > 4.0 ? vec3(1.0, 0.8, 0.2) : vec3(0.3, 1.0, 0.35);
+        col = mix(col, led * (0.15 + 0.85 * on), 1.0 - smoothstep(0.0, 0.003, djBox(m - sc, vec2(0.006, 0.005), 0.002)));
+      }
+      // the channel fader: up on the live deck, coming up over the phrase's first bar
+      col = mix(col, vec3(0.2), 1.0 - smoothstep(0.0, 0.003, djBox(m - vec2(x, -0.1), vec2(0.004, 0.09), 0.002)));
+      col = mix(col, vec3(0.9), 1.0 - smoothstep(0.0, 0.003, djBox(m - vec2(x, -0.19 + 0.18 * level), vec2(0.018, 0.012), 0.003)));
+    }
+    // the crossfader, sliding over to the live deck through the first bar
+    float cf = mix(1.0, -1.0, leftLive);
+    cf = mix(-cf, cf, into) * 0.06;
+    col = mix(col, vec3(0.2), 1.0 - smoothstep(0.0, 0.003, djBox(m - vec2(0.0, -0.29), vec2(0.075, 0.004), 0.002)));
+    col = mix(col, vec3(0.9), 1.0 - smoothstep(0.0, 0.003, djBox(m - vec2(cf, -0.29), vec2(0.012, 0.018), 0.003)));
+  }
+  col *= 1.0 - 0.5 * (1.0 - smoothstep(0.0, 0.005, abs(body)));
+  return col;
+}
+// ---- the club round the decks ----------------------------------------------------------------------------------
+// In the decks' own space: the booth's top is the plane z = 0 (the decks and the mixer on it, seen from above as
+// they always were), the dancers' hands reach up to z = -0.22, their heads and shoulders are at z = -0.5, the
+// floor's lit tiles at z = -1.7; the mirror ball hangs high above the camera.
+vec3 djHs[6], djHd[6], djHc[6];          // the moving heads: where each stands, where it points, its colour
+float djHash(float n) { return hash11(n * 7.31 + uSeed.w * 13.0); }   // (the stage's own: the camera moves as it did)
+// the heads for this moment: four on the floor round the booth throwing their beams up through the smoke, two on
+// a truss above throwing theirs down across the decks; each phrase opens with every one of them turned on the
+// camera, flaring, before they fan out and sweep again; the colours are the seed's, a new set each phrase
+void djRig(float s, vec3 ro) {
+  float x = mod(s, 8.0), ph = floor(s / 8.0);
+  float e = smoothstep(0.0, 1.0, x);
+  float open = smoothstep(7.5, 8.0, x) + 1.0 - smoothstep(0.0, 1.5, x);
+  float t = uTime * 0.5;
+  for (int i = 0; i < 6; i++) {
+    float fi = float(i);
+    vec3 src, dir;
+    if (i < 4) {
+      float a = 0.785 + 1.5708 * fi;
+      src = vec3(1.45 * cos(a), 0.95 * sin(a), -1.7);
+      float az = a + 3.14159 + 0.9 * sin(t + fi * 1.7);
+      float tl = 0.75 + 0.3 * sin(t * 0.8 + fi * 2.3);                             // (leaning well over: shafts across the room)
+      dir = vec3(sin(tl) * cos(az), sin(tl) * sin(az), cos(tl));
+    } else {
+      float sd = fi < 4.5 ? -1.0 : 1.0;
+      src = vec3(1.5 * sd, 0.0, 1.1);
+      dir = normalize(vec3(-sd * (0.75 + 0.35 * sin(t * 0.9 + fi)), 0.55 * sin(t * 0.6 + fi * 2.0), -1.0));
+    }
+    djHs[i] = src;
+    float ra = fi * 1.047 + uSeed.y * 6.0;                                        // (each past the camera, close by)
+    djHd[i] = normalize(mix(dir, normalize(ro + 0.45 * vec3(cos(ra), sin(ra), 0.0) - src), open));
+    vec3 c = mix(unblack(pal(0.17 * fi + 0.31 * (ph - 1.0))), unblack(pal(0.17 * fi + 0.31 * ph)), e);
+    djHc[i] = c / max(max(c.r, c.g), max(c.b, 0.2));
+  }
+}
+// a cone of light in the smoke: what the view ray gathers crossing it before tMax - from the nearest the ray comes
+// to the cone's axis, the cone's width there and how long the ray stays in it (never thinner than a pixel there)
+float djCone(vec3 ro, vec3 rd, float tMax, vec3 src, vec3 dir, float w0, float spread) {
+  vec3 w = ro - src;
+  float b = dot(rd, dir);
+  float den = max(1.0 - b * b, 1e-4);
+  float t = clamp((b * dot(dir, w) - dot(rd, w)) / den, 0.0, tMax);
+  vec3 pt = w + rd * t;
+  float u = dot(pt, dir);
+  if (u <= 0.0) return 0.0;
+  float r = length(pt - dir * u);
+  float wd = max(w0 + spread * u, t * 0.0025);
+  return exp(-r * r / (wd * wd)) / (wd * max(sqrt(den), 0.3)) * exp(-u * 0.12);
+}
+// the beams' light where they fall on a surface facing up
+vec3 djWash(vec3 P) {
+  vec3 c = vec3(0.0);
+  for (int i = 0; i < 6; i++) {
+    vec3 v = P - djHs[i];
+    float u = dot(v, djHd[i]);
+    if (u <= 0.0) continue;
+    float r = length(v - djHd[i] * u);
+    float wd = 0.03 + 0.09 * u;
+    c += djHc[i] * exp(-r * r / (wd * wd)) * max(-djHd[i].z, 0.0) / (1.0 + 0.3 * u * u);
+  }
+  return c;
+}
+// the mirror ball's spots where they fall at P: a facet's light here and there, the ball turning slowly
+float djSpots(vec3 P) {
+  vec3 v = normalize(P - vec3(0.0, 0.0, 3.2));
+  vec2 g = vec2((atan(v.y, v.x) + uTime * 0.25) * 4.7746, acos(clamp(-v.z, -1.0, 1.0)) * 9.0);
+  vec2 id = floor(g), f = fract(g) - 0.5;
+  return step(0.62, hash12(id + 3.7)) * (1.0 - smoothstep(0.1, 0.3, length(f)));
+}
+// the dancers round the booth, seen from above, on a loose grid: the head or the shoulders (layer 0, z = -0.5), or
+// the raised hands (layer 1, z = -0.22) - how far outside them q is; each facing the booth, none under it
+float djCrowd(vec2 q, float layer, float beats) {
+  vec2 g = q / 0.44;
+  vec2 c0 = floor(g);
+  float d = 1e3;
+  for (int k = 0; k < 4; k++) {
+    vec2 id = c0 + vec2(float(k % 2), float(k / 2));
+    vec2 h = hash22(id + 17.0);
+    vec2 at = (id + 0.25 + 0.5 * h) * 0.44;
+    if (abs(at.x) < 1.15 && abs(at.y) < 0.68) continue;
+    if (h.x > 0.88) continue;                                                   // (a gap in the crowd)
+    float off = h.y * 2.0;
+    vec2 sw = 0.025 * vec2(sin(3.14159 * (beats * 0.5 + off)), cos(3.14159 * (beats * 0.5 + off * 1.3)));
+    vec2 n = normalize(at), v = rot(0.5 * (h.x - 0.5)) * (q - at - sw);
+    vec2 l = vec2(dot(v, vec2(-n.y, n.x)), -dot(v, n));                       // (facing the booth)
+    if (layer < 0.5) {
+      float bob = 0.006 * abs(sin(3.14159 * (beats + off * 0.2)));            // (nearer the camera on the upbeat)
+      d = min(d, length(l) - 0.075 - bob);                                      // the head
+      d = min(d, length(l / vec2(1.0, 0.55) + vec2(0.0, 0.05)) * 0.55 - 0.115); // the shoulders
+    } else if (h.y > 0.45) {
+      float pump = sin(3.14159 * (beats + off));
+      vec2 m = vec2(abs(l.x), l.y);
+      vec2 hand = vec2(0.2 + 0.03 * pump, 0.05 + 0.05 * pump);
+      d = min(d, min(length(m - hand) - 0.035, sdSeg(m, vec2(0.14, 0.0), hand) - 0.022));
+    }
+  }
+  return d;
+}
+vec3 render(vec2 p, vec2 uv) {
+  // the camera, as on the stage - a little farther back, to take in the club: a new angle each phrase, a punch in
+  // on the kick, a lean on the snare
+  float sec = (uBarIndex + uBar) / 8.0;
+  float s0 = floor(sec);
+  float e = smoothstep(0.0, 0.125, fract(sec));
+  float yaw = mix((djHash(s0 - 1.0) - 0.5) * 2.0, (djHash(s0) - 0.5) * 2.0, e) * 0.4 + 0.07 * sin(uTime * 0.37);
+  float tilt = mix(mix(-0.35, 1.0, djHash(s0 + 30.0)), mix(-0.35, 1.0, djHash(s0 + 31.0)), e) * 0.5
+             + 0.04 * sin(uTime * 0.23);
+  float dist = 2.0 - 0.16 * uKick - 0.05 * uBass + 0.07 * sin(uTime * 0.19);
+  float roll = 0.05 * sin(uTime * 0.29) + 0.035 * uSnare * (mod(uBarIndex, 2.0) * 2.0 - 1.0);
+  vec3 ro = dist * vec3(sin(yaw) * cos(tilt), -sin(tilt), cos(yaw) * cos(tilt));
+  vec3 fw = normalize(-ro);
+  vec3 rt = normalize(cross(fw, vec3(0.0, 1.0, 0.0)));
+  vec3 up = cross(rt, fw);
+  vec2 q = rot(roll) * p;
+  vec3 rd = normalize(fw * 1.55 + rt * q.x + up * q.y);
+  float px = 1.5 / (1.55 * uRes.y);                                              // a pixel's width a unit away
+
+  float s = uBarIndex + uBar;
+  float x = mod(s, 8.0);
+  float beats = uTime / max(uSpb, 0.2);
+  djRig(s, ro);
+  float pump = 0.6 + 0.7 * uKick;
+  float ball = 0.25 + 0.9 * uPad;                                                // the mirror ball, up with the pads
+  // the strobe: the last two bars of a phrase, on every other beat, when the music is busy (never faster)
+  float strobe = step(6.0, x) * step(mod(floor(beats), 2.0), 0.5) * exp(-fract(beats) * 9.0) * smoothstep(0.3, 0.6, uEnergy);
+
+  // the booth: a dark top round the decks, a strip of light along its edge; the decks and the mixer on it
+  float tB = -ro.z / rd.z;
+  vec3 P = ro + rd * tB;
+  float booth = djBox(P.xy, vec2(1.0, 0.48), 0.06);
+  float a = smoothstep(px * tB, -px * tB, booth);
+  vec3 bc = vec3(0.0);
+  if (a > 0.0) {
+    vec3 edgeC = unblack(pal(0.5 + 0.1 * sin(uTime * 0.2)));
+    edgeC /= max(max(edgeC.r, edgeC.g), max(edgeC.b, 0.3));
+    bc = vec3(0.03, 0.03, 0.035) + edgeC * (1.0 - smoothstep(0.0, 0.007, abs(booth + 0.014))) * (0.6 + 0.9 * uKick);
+    float device = min(min(djBox(P.xy - vec2(-0.47, 0.0), vec2(0.36, 0.37), 0.025), djBox(P.xy - vec2(0.47, 0.0), vec2(0.36, 0.37), 0.025)),
+                       djBox(P.xy, vec2(0.1, 0.34), 0.012));
+    float dm = smoothstep(px * tB, -px * tB, device);
+    if (dm > 0.0) {
+      vec3 g = djBoard(P.xy);
+      // a sheen sweeps the decks once a bar, as it always did
+      float sweep = fract(uBar) * 3.0 - 1.5;
+      g += vec3(0.6, 0.7, 1.0) * exp(-abs(P.x * 0.6 + P.y - sweep) * 16.0) * 0.05 * (0.4 + uPad);
+      bc = mix(bc, g, dm);
+    }
+    // the club's light on it: the beams from above, the mirror ball's spots, the strobe
+    bc *= 0.8 + djWash(P) * 1.4 + vec3(0.7, 0.7, 0.8) * djSpots(P) * ball * 0.5 + strobe * 0.5;
+  }
+  vec3 col = vec3(0.0);
+  float tMax = tB;
+  if (a < 1.0) {
+    // the floor: tiles lit in the seed's colours, a chase stepping round on the beat
+    float t = (-1.7 - ro.z) / rd.z;
+    P = ro + rd * t;
+    vec2 tile = floor(P.xy / 0.36);
+    vec2 tf = abs(fract(P.xy / 0.36) - 0.5);
+    float chase = step(0.5, fract(hash12(tile) * 0.5 + (tile.x + tile.y) * 0.125 - floor(beats) * 0.25));
+    col = unblack(pal(0.6 + 0.25 * hash12(tile + 5.0))) * (0.03 + 0.1 * chase) * (1.0 - smoothstep(0.38, 0.46, max(tf.x, tf.y)));
+    col += djWash(P) * 0.5 + vec3(0.6, 0.6, 0.7) * djSpots(P) * ball * 0.25;
+    tMax = t;
+    // the dancers over it: heads and shoulders, then the hands raised nearer - dark against the floor, lit from above
+    for (int l = 0; l < 2; l++) {
+      float tl = ((l == 0 ? -0.5 : -0.22) - ro.z) / rd.z;
+      vec3 Q = ro + rd * tl;
+      float d = djCrowd(Q.xy, float(l), beats);
+      float al = smoothstep(px * tl, -px * tl, d);
+      if (al > 0.0) {
+        vec3 dc = vec3(0.02, 0.018, 0.024) + vec3(0.035) * smoothstep(0.0, -0.06, d) + djWash(Q) * 0.3 + vec3(0.5, 0.5, 0.6) * djSpots(Q) * ball * 0.15;
+        dc += vec3(0.8, 0.85, 1.0) * strobe * 0.15;
+        col = mix(col, dc, al);
+        tMax = mix(tMax, tl, al);
+      }
+    }
+  }
+  col = mix(col, bc, a);
+  tMax = mix(tMax, tB, a);
+
+  // the smoke: a drifting layer over the dancers and a thin one over the decks, the beams showing in it
+  vec2 s1 = (ro + rd * ((-0.8 - ro.z) / rd.z)).xy, s2 = (ro + rd * ((0.35 - ro.z) / rd.z)).xy;
+  float wisp = fbm(s2 * 1.6 - vec2(uTime * 0.05, uTime * 0.03));
+  float smoke = 0.25 + 1.1 * smoothstep(0.3, 0.75, fbm(s1 * 1.1 + vec2(uTime * 0.06, -uTime * 0.04)))
+                     * (tMax > (-0.8 - ro.z) / rd.z ? 1.0 : 0.3)
+              + 0.35 * smoothstep(0.45, 0.8, wisp);
+  wisp = smoothstep(0.5, 0.85, wisp);
+  vec3 air = vec3(0.0), avgC = vec3(0.0);
+  for (int i = 0; i < 6; i++) {
+    air += djHc[i] * djCone(ro, rd, tMax, djHs[i], djHd[i], 0.025, 0.05);
+    avgC += djHc[i] / 6.0;
+  }
+  air *= 0.06 * pump * smoke;
+  // the lasers: a fan swept across the room just over the dancers' hands, in for the second half of the phrase
+  float lz = smoothstep(3.75, 4.25, x) * (1.0 - smoothstep(7.6, 8.0, x));
+  if (lz > 0.0) {
+    vec3 lc = unblack(pal(0.55 + 0.4 * uSeed.z));
+    lc = pow(lc / max(max(lc.r, lc.g), max(lc.b, 0.2)), vec3(2.0));
+    vec3 ls = vec3(-1.9, -0.6, -0.12);
+    float lsw = 0.35 * sin(uTime * 0.45);
+    for (int k = 0; k < 7; k++) {
+      float ak = (float(k) - 3.0) * 0.1 * (1.0 + 0.6 * sin(uTime * 0.7)) + lsw + 0.25;
+      vec3 ld = normalize(vec3(cos(ak), sin(ak), 0.02 * sin(uTime * 1.3 + float(k))));
+      air += lc * djCone(ro, rd, tMax, ls, ld, 0.003, 0.0006) * 0.006 * lz * (0.6 + 0.4 * smoke);
+    }
+  }
+  col += air;
+  col += avgC * smoke * 0.025 + (avgC * 0.06 + 0.015) * wisp + vec3(0.85, 0.9, 1.0) * strobe * (0.06 + 0.1 * smoke);   // the smoke lit by the room
+  // motes of dust drifting in the beams
+  vec2 mg = p * 140.0 + vec2(uTime * 2.0, uTime * 1.3);
+  float mote = step(0.985, hash12(floor(mg))) * (1.0 - smoothstep(0.1, 0.4, length(fract(mg) - 0.5)));
+  col += air * mote * 3.0 * smoothstep(0.1, 0.35, dot(air, vec3(0.333)));
+
+  // the heads' lenses glowing where they are seen, and flaring when one turns on the camera: a glare, a streak
+  // across and the coloured ghosts along the line through the middle, as the renderers of the time drew them
+  for (int i = 0; i < 6; i++) {
+    vec3 v = djHs[i] - ro;
+    float zc = dot(v, fw);
+    if (zc <= 0.0) continue;
+    vec2 sp = rot(-roll) * (1.55 * vec2(dot(v, rt), dot(v, up)) / zc);
+    vec3 cross0 = ro + v * (-ro.z / v.z);                                       // (hidden under the booth?)
+    if (v.z < 0.0 && ro.z > 0.0 && djHs[i].z < 0.0 && djBox(cross0.xy, vec2(1.0, 0.48), 0.06) < 0.0) continue;
+    float face = pow(max(dot(djHd[i], -normalize(v)), 0.0), 30.0) * pump * (1.0 - smoothstep(0.8, 1.3, length(sp)));
+    vec2 dp = p - sp;
+    vec3 fc = mix(djHc[i], vec3(1.0), 0.5);
+    col += djHc[i] * 0.4 * (0.05 + face) * exp(-length(dp) * 45.0);
+    col += fc * face * (0.22 * exp(-length(dp) * 7.0) + 0.2 * exp(-abs(dp.y) * 140.0) * exp(-abs(dp.x) * 2.5));
+    for (int g = 0; g < 3; g++) {
+      float fg = float(g);
+      vec2 gp = sp * (0.4 - 0.65 * fg);
+      float gr = 0.025 + 0.03 * hash11(fg * 3.3 + uSeed.y);
+      col += djHc[i] * face * 0.045 * (1.0 - smoothstep(gr * 0.3, gr, length(p - gp)));
+    }
+  }
+  return col;
 }
 `;
 
@@ -6191,7 +6907,7 @@ vec3 render(vec2 p, vec2 uv) {
 
 const SOURCES = {
   plasma, tunnel, metaballs, starfield, copper, fractal,
-  shadebobs, vectorballs, dottunnel, fireworks, fire, kefrens, ball, rings, scanner, footsteps, twister, bobs, dualchess, chessfloor, rubber, bumplogo, cracktro, ansi, echolines, maze3d, moonbike, timecar, animeop, pipes, ripple, outrun, morph, prism, sculpture, fractalflight,
+  shadebobs, vectorballs, dottunnel, fireworks, fire, kefrens, ball, rings, scanner, footsteps, twister, bobs, dualchess, chessfloor, rubber, bumplogo, cracktro, ansi, echolines, maze3d, moonbike, timecar, animeop, pipes, ripple, outrun, morph, prism, sculpture, fractalflight, coderain, gimbal, djdecks,
   paddles: staged(paddles, 0.55, 0.45),
   invaders: staged(invaders, 0.6, 0.35),
   rocks: staged(rocks, 0.45, 0.5),
@@ -6209,11 +6925,14 @@ const SOURCES = {
 
 /** Post-pass effects a scene asks for: the game scenes get the beat blur. */
 export const STYLE_FX = Object.fromEntries(
-  ['paddles', 'invaders', 'rocks', 'maze', 'bricks', 'lightcycles', 'snake', 'boxer', 'starfighter', 'pipes', 'pyramid', 'lcd', 'bobs', 'rubber', 'bumplogo', 'cascade', 'ansi', 'echolines', 'maze3d', 'moonbike', 'timecar', 'animeop']
+  ['paddles', 'invaders', 'rocks', 'maze', 'bricks', 'lightcycles', 'snake', 'boxer', 'starfighter', 'pipes', 'pyramid', 'lcd', 'bobs', 'rubber', 'bumplogo', 'cascade', 'ansi', 'echolines', 'maze3d', 'moonbike', 'timecar', 'animeop', 'djdecks',
+   'prism', 'sculpture', 'fractalflight', 'gimbal']
     .map((n) => [n, { impact: 1 }]),
 );
 // the card cascade's trails are one-pixel edges: the era's full glow would fill them in
 STYLE_FX.cascade.glow = 0.25;
+// the code rain: no punch (it shook the fine glyphs) and no tear along the tape's bottom (it broke the rain there)
+STYLE_FX.coderain = { tear: 0 };
 
 export const STYLE_INFO = {
   plasma:    'Palette-cycling sine plasma with raster bars',
@@ -6255,6 +6974,9 @@ export const STYLE_INFO = {
   prism:       'Shader art: a lattice of light pushed out by a wave, each colour a moment behind, a star where they meet',
   sculpture:   'Shader art: shapes of distance functions melting together on a floor, soft shadows, a ball bouncing on the beat',
   fractalflight: 'Shader art: a slow flight round the mandelbox, its shape shifting slowly, the glow lit by the kick and each phrase',
+  coderain:    'Code rain: falls of green glyphs starting on the beat, more as the music builds, a shape lit in the rain each phrase',
+  gimbal:      'The 64k gimbal: nested rings turning a quarter on the beat round a glowing core, in a hall of bands, haze and light',
+  djdecks:     'The DJ decks: two turntables and a mixer, the live deck changing each phrase, the crossfader sliding, a scratch at the end; round them a club night of beams in the smoke, lasers and flares',
   paddles:     'Neon paddles on the beat; on an accent a paddle misses and blows up',
   invaders:    'A seed-made formation on the beat; aliens burst on the kick',
   rocks:       'A vector ship that flies, dodges and splits the rocks it hits',
