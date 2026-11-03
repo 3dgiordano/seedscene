@@ -26,14 +26,14 @@ sound board.
 | Tokens | 204.05 M processed (591.6 K generated), to 2026-10-28 |
 | Cost | **$67.32** at Claude Opus 5.5 API list prices, to 2026-10-28 |
 
-## Where it stands, 2026-11-02
+## Where it stands, 2026-11-03
 
 - **Built:** fifty-five scenes in seven eras (spans of years, 1972 to now), thirty-six music styles, sixteen
   displays and six sound boards, each scene with its own or its era's; THE
   JOURNEY (three scenes an era, going on through the lists over replays),
   AUTOPLAY, born in, greetings, the screensaver, the sounds between the tracks,
   the screen kept on in a programme.
-- **Checked:** `npm test`, twenty-two checks; the music audit, all 35 styles
+- **Checked:** `npm test`, twenty-six checks; the music audit, all 36 styles
   passing ([MUSIC-AUDIT.md](MUSIC-AUDIT.md)); every style approved by the
   owner, by ear; every new or changed style reviewed by the music reviewer
   before the owner listens ([MUSIC-REVIEW.md](MUSIC-REVIEW.md)).

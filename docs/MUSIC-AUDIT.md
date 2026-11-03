@@ -2,7 +2,7 @@
 
 Seeds aurora, hikari, seedscene; 90 s each; 2026-11-02. ✓ pass, ⚠ warn, ✗ fail, ~ let off by the style, · not measured; off grid is measured on the seeds that do not swing; speed is wall-clock time on the machine that ran it. Run `npm run audit:music -- <style>` for one style.
 
-**35 of 35 styles pass** (no ✗ anywhere). The four styles of 1982–1989 were measured again on 2026-11-02 with the SID among their boards.
+**36 of 36 styles pass** (no ✗ anywhere). The four styles of 1982–1989 were measured again on 2026-11-02 with the SID among their boards; terrace drums was added on 2026-11-03.
 
 | style | bass in chord | bass rubs | melody on beat | held | held rubs | top | range | leaps >3rd | >6th | repeats | stuck | off grid | echo rubs | melody vs chords | sound vs real | peak | speed |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -35,6 +35,7 @@ Seeds aurora, hikari, seedscene; 90 s each; 2026-11-02. ✓ pass, ⚠ warn, ✗ 
 | `ballad` | ✓ 97% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ F#5 | ✓ 8 | ✓ 2% | ✓ 0% | ✓ 75% | ✓ 0.0% | ✓ 0.0% | ✓ 36% | ✓ -1.9 dB | · - | ✓ -2.4 | ✓ 8.1x |
 | `march` | · - | · - | ✓ 100% | ✓ 100% | ✓ 0% | ✓ B5 | ✓ 12 | ✓ 4% | ✓ 0% | ✓ 72% | ✓ 0.7% | ✓ 0.0% | ✓ 27% | ✓ -2.9 dB | ⚠ 10 dB flute | ✓ -2.1 | ✓ 9.9x |
 | `bomb` | ✓ 95% | ✓ 0% | ✓ 100% | · - | · - | ✓ F#5 | ✓ 9 | ✓ 2% | ✓ 0% | ✓ 59% | ✓ 0.0% | · swung | ✓ 25% | ✓ 6.5 dB | · - | ✓ -2.3 | ✓ 11.6x |
+| `terrace` | · - | · - | · - | ✓ 100% | ✓ 0% | ✓ A#4 | ✓ 7 | ✓ 10% | ✓ 0% | ✓ 56% | ✓ 0.0% | ✓ 0.0% | ✓ 33% | ✓ 0.3 dB | · - | ✓ -2.1 | ✓ 20.1x |
 | `italo` | ✓ 98% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ B5 | ✓ 10 | ✓ 4% | ✓ 0% | ✓ 78% | ✓ 0.0% | ✓ 0.0% | ✓ 20% | ✓ 7.2 dB | · - | ✓ -2.0 | ✓ 3.2x |
 | `stchip` | ✓ 99% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ G5 | ✓ 12 | ✓ 3% | ✓ 0% | ✓ 64% | ✓ 0.0% | ✓ 0.0% | ✓ 17% | ✓ 5.8 dB | · - | ✓ -1.8 | ✓ 6.8x |
 | `keygen` | ✓ 98% | ⚠ 3% | ✓ 98% | ✓ 100% | ✓ 0% | ✓ G5 | ✓ 10 | ✓ 3% | ✓ 0% | ✓ 91% | ✓ 0.0% | ✓ 0.0% | · - | ✓ -1.9 dB | · - | ✓ -2.1 | ✓ 16.8x |
@@ -229,6 +230,12 @@ Seeds aurora, hikari, seedscene; 90 s each; 2026-11-02. ✓ pass, ⚠ warn, ✗ 
 97, 93, 90 bpm; B minor, D# dorian, G# dorian. Layers: 71 bass, 108 chord, 110 melody notes.
 
 - nothing stands out
+
+## Terrace Drums (`terrace`)
+
+123, 127, 132 bpm; C# major, C major, D# major. Layers: 0 bass, 250 chord, 185 melody notes. (Audited on 2026-11-03, after the review subagent's two rounds; its bass is the march's tuba, played on the brass, which the audit does not take for a bass, as with the march.)
+
+- ~ the grid taken in thirty-seconds: its snare rolls are thirty-seconds, between the sixteenths on purpose
 
 ## Italo Disco (`italo`)
 
