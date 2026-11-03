@@ -28,8 +28,7 @@ sound board.
 
 ## Where it stands, 2026-11-02
 
-- **Built:** forty-five scenes in seven eras (spans of years, 1972 to now; the
-  last, 2010–now, has no scenes yet), thirty-five music styles, sixteen
+- **Built:** forty-eight scenes in seven eras (spans of years, 1972 to now), thirty-five music styles, sixteen
   displays and six sound boards, each scene with its own or its era's; THE
   JOURNEY (three scenes an era, going on through the lists over replays),
   AUTOPLAY, born in, greetings, the screensaver, the sounds between the tracks,
@@ -4013,6 +4012,66 @@ shots - the scene's own drawing, approved before, left for the owner's look.
 | Live on the real GPU, muted: `rocks` on AUTO | "screen VECTOR (auto)"; thin blue-white lines on black; no console errors |
 | `plasma` forced on `colorvector`, `fire` on `vector` | the plasma's bands become thin contour lines in pure colours, the fire the outlines of its flames; the inside of every shape black |
 | `npm test` | 22 checks pass, sixteen displays complete |
+
+## Shader art for 2010–now
+
+The split's third piece (D): the era named *Shader art* had no scene, so THE
+JOURNEY and AUTOPLAY passed it by and synthwave, its own style, played in no
+programme. Three scenes, each from a real piece of the 2010s' fragment-shader
+art, written from scratch, never its code. Shadertoy itself asked the browser
+to prove it was human, which is not done here; the pieces were seen elsewhere:
+
+- `prism`, from a still of "Creation" by Danguafer in greentec's analysis of
+  it: a lattice of light points pushed out along the radius, each one split
+  into red, green and blue, a white star in the middle, faint rings.
+- `sculpture`, from the images of Inigo Quilez's articles on soft shadows in
+  raymarched distance fields (2010) and on raymarching distance fields: a
+  rounded block with a hole through it on a floor, its soft shadow and
+  penumbra, smooth organic shapes under a sky gradient.
+- `fractalflight`, from Wikipedia's mandelbox article and its renders: the
+  fractal Tom Lowe found in 2010, written from the article's definition (the
+  box fold, the sphere fold, scale and add), seen as an ornate, boxy palace of
+  arches.
+
+Compared with them: `prism` keeps the lattice, the colour split along the
+radius and the central star (its outer points stretch into longer streaks at
+the wave's crest); `sculpture` the arch with its hole, the soft-edged shadow
+and the darkening where things meet, under a pale sky; `fractalflight` the
+mandelbox's boxy architecture of blocks, hollows and balconies; the first
+version flew so close its detail fell under a pixel and read as noise, so the
+flight keeps its distance now and stops at a coarser surface.
+
+Each also has a moment at the top of a phrase (the musical direction every
+homage here gets): the prism throws its colours wide and sweeps a ring of
+white out from the star, the sculpture's three shapes open the phrase melted
+into one and come apart over its first bar, the flight's glow flares.
+
+Each frame costs, timed on this machine's GPU at 854×480 (one scene drawn
+alone, 40 frames, read back): `prism` 3 ms; `sculpture` 10.3 ms (median,
+13.7 at the 90th percentile) and `fractalflight` 10.2 (13.5 at the 90th),
+after cutting their steps, a bounding sphere round the fractal, a sky test for
+the sculpture and a coarser hit for the fractal (17 and 15 ms before). The same timing gives the robot fight,
+approved and live, 28.5 ms. Once, the first time the fractal was opened, the
+browser reported the GPU reset and the page reloaded; it did not happen again.
+
+| Check | Result |
+|---|---|
+At the owner's look the flight turned too fast in some songs to see the fractal.
+Two causes: its angle was the time multiplied by a speed that grew with how busy
+the music was, so every kick (which lifts that measure at once) threw it round -
+by about a radian and a half a kick a minute in, more as the song went on; and
+the box's scale and the flight's banking moved with the bars, so a fast song
+rushed them (at 174 bpm the scale went through its cycle in eleven seconds,
+and a fractal changes a great deal with a small change of scale). Now the
+flight, the banking and the scale move slowly at the same pace whatever the
+tempo; the music lights the glow and the edges, and each phrase opens with the
+glow flaring. The prism's wave had the first fault too and, at the owner's word,
+runs at a steady pace now, the music swelling it instead. Checked live at 174 bpm (happy
+hardcore forced on it): frames three seconds apart show the same arches
+drifting.
+
+| Live on the real GPU, muted, each of the three | compiled and drawn; no console errors |
+| `npm test` | 22 checks pass; the catalogue holds 55 stops, THE JOURNEY every era |
 
 ## What went wrong in the first round
 

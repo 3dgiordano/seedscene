@@ -56,7 +56,7 @@ export const ERAS = {
     label: '2010–now', year: 2010, to: null, title: 'Shader art',
     blurb: 'shader art, neon and the synthwave revival',
     display: 'modern',
-    scenes: [],
+    scenes: ['prism', 'sculpture', 'fractalflight'],
     music: ['synthwave', 'dreamwave'],
   },
 };

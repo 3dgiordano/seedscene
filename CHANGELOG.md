@@ -4,7 +4,7 @@
 
 The release that turns the tool into **SEEDSCENE**: a name, a personality,
 a Commodore 64 front door, seven eras of computing from 1972 to now,
-forty-five scenes, thirty-five styles of music, sixteen displays and six
+forty-eight scenes, thirty-five styles of music, sixteen displays and six
 sound boards, an endless AUTOPLAY channel, and a live mode you
 can drive entirely from the keyboard.
 
@@ -383,6 +383,16 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   vowel's formants, steady as a machine's voice - over synth pads. In the
   1982–1989 era, on the synthesizer's own voices or the Atari ST's chip. It
   passes every check of the music audit.
+- **Shader art for 2010–now**, the era named for it, which had no scene:
+  three scenes, each from a real piece of the 2010s' fragment-shader art,
+  written from scratch. `prism`, the tiny chromatic-ring pieces: a lattice of
+  points of light pushed out by a wave, each colour a moment behind, a white
+  star where they meet. `sculpture`, the raymarched still life: shapes of
+  distance functions melting on a floor under a low sun, with soft shadows,
+  penumbrae and ambient occlusion, a ball bouncing on the beat. `fractalflight`,
+  a slow flight round the mandelbox (2010), written from its definition, the
+  same pace whatever the tempo so the fractal can be seen. Each moves with the music. Synthwave, the era's own
+  style, plays in THE JOURNEY and AUTOPLAY again, which no longer pass the era by.
 - **The vector monitors**, two displays: `vector`, the black-and-white tube
   the rock shooter of 1979 was drawn on, and `colorvector`, the colour tube
   of the 1981 tube shooter and the space-war cockpit. From a photograph of a
