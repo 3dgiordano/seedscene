@@ -2480,6 +2480,209 @@ vec3 render(vec2 p, vec2 uv) {
 `;
 
 // ---------------------------------------------------------------------------
+// Shader art (2010 on): the art made of nothing but a fragment shader, as the
+// decade shared it, each scene from a real piece of it - written from scratch,
+// never its code.
+// ---------------------------------------------------------------------------
+
+const prism = `
+// Prism: a lattice of points of light pushed out along the radius by a wave that travels from the middle,
+// each colour a moment behind the one before, so every point splits into red, green and blue and a white star
+// burns where they meet - the tiny chromatic-ring pieces of the 2010s (the best known, "Creation" by
+// Danguafer). The wave runs at a steady pace and swells as the music builds (a pace tied to how busy the
+// music is jumped with every kick), the kick throws it outward, the snare widens the
+// split between the colours, and the lattice turns a sixteenth of a turn on each bar; each phrase opens with
+// the colours thrown wide apart and a ring of white light sweeping out from the star.
+float prismLight(vec2 q, float z) {
+  float r = max(length(q), 1e-3);
+  // the wave: rings running out from the middle, strongest at the crest of a slow swell
+  float swell = 0.5 + 0.5 * sin(z * 0.9);
+  float ring = 0.5 + 0.5 * cos(r * 8.5 - z * 2.2);
+  vec2 w = q + q / r * ring * (0.18 + 0.32 * swell) * (0.8 + 0.4 * uEnergy + 0.7 * uKick);
+  // the lattice: a point of light in every cell, its glow falling off with the square of the distance
+  vec2 cell = fract(w * 4.2 + 0.5) - 0.5;
+  float d = dot(cell, cell);
+  // and the rings themselves, faint, where the wave crests
+  return 0.0011 / (d + 0.0003) / (0.3 + 1.4 * r) + 0.035 * pow(ring, 24.0) / (0.4 + 2.0 * r);
+}
+vec3 render(vec2 p, vec2 uv) {
+  float t = uTime * 0.8 + uSeed.x * 30.0;
+  float turn = (uBarIndex + smoothstep(0.0, 0.2, uBar)) * 0.3927 * (uSeed.y > 0.5 ? 1.0 : -1.0);
+  vec2 q = rot(turn) * p;
+  float phrase = mod(uBarIndex, 8.0) + uBar;            // 0 where a phrase opens
+  float open = exp(-phrase * 3.0);
+  float split = 0.07 + 0.08 * uSnare + 0.25 * open;
+  vec3 col = vec3(prismLight(q, t), prismLight(q * 1.03, t + split), prismLight(q * 1.06, t + 2.0 * split));
+  // the star where the colours meet
+  float r = length(q);
+  vec2 a = abs(rot(0.7854) * q);
+  col += vec3(1.0) * (0.004 / (r * r + 0.002) + 0.0012 / (min(abs(q.x), abs(q.y)) + 0.004) * exp(-r * 16.0)
+    + 0.0007 / (min(a.x, a.y) + 0.004) * exp(-r * 22.0)) * (0.6 + 0.6 * uKick);
+  col += vec3(1.0) * 0.012 / (abs(length(p) - phrase * 0.9) + 0.01) * open;
+  // a tint from the seed's palette, kept faint: the light stays white where the channels agree
+  col *= mix(vec3(1.0), unblack(pal(0.15 + r * 0.3)) * 1.4, 0.18);
+  return col * (0.75 + 0.45 * uEnergy);
+}
+`;
+
+const sculpture = `
+// Sculpture: the raymarched still life of the 2010s - smooth shapes made of distance functions standing on a
+// floor, lit by a low sun and the sky, with the soft shadows and penumbrae and the darkening where surfaces
+// meet that Inigo Quilez's articles on raymarched distance fields (soft shadows, 2010) taught a generation.
+// An arch - a rounded block with a hole through it - a standing ring and a ball melt into one another; the
+// ball bounces on the beat, landing on it, the melt widens with the bass, the sun swings a little each bar,
+// and the camera circles slowly, punching in on the kick; each phrase opens with the three melted into one
+// shape, which comes apart again over its first bar.
+float scBox(vec3 p, vec3 b, float r) { vec3 q = abs(p) - b + r; return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0) - r; }
+float scSmin(float a, float b, float k) { float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0); return mix(b, a, h) - k * h * (1.0 - h); }
+float scBallY() { float ph = fract(uBeat); return 0.42 + 1.1 * ph * (1.0 - ph) * 4.0 * (0.55 + 0.45 * uEnergy); }
+// the scene: x is the distance, y which material (0 floor, 1 sculpture, 2 ball)
+vec2 scMap(vec3 p) {
+  float k = 0.08 + 0.3 * uBass + 0.9 * exp(-(mod(uBarIndex, 8.0) + uBar) * 2.5);
+  float arch = max(scBox(p - vec3(-0.55, 0.62, 0.0), vec3(0.7, 0.62, 0.32), 0.14), -(length(p.xy - vec2(-0.45, 0.52)) - 0.38));
+  vec3 rq = p - vec3(0.85, 0.72, 0.15);
+  rq.xz = rot(uTime * 0.4) * rq.xz;
+  float ring = length(vec2(length(rq.xy) - 0.5, rq.z)) - 0.13;
+  float ball = length(p - vec3(0.25, scBallY(), -0.75)) - 0.36;
+  float sc = scSmin(arch, ring, k);
+  vec2 m = vec2(scSmin(sc, ball, k * 0.7), ball < sc ? 2.0 : 1.0);
+  return p.y < m.x ? vec2(p.y, 0.0) : m;
+}
+vec3 scNormal(vec3 p) {
+  vec2 e = vec2(0.0015, 0.0);
+  return normalize(vec3(scMap(p + e.xyy).x - scMap(p - e.xyy).x, scMap(p + e.yxy).x - scMap(p - e.yxy).x, scMap(p + e.yyx).x - scMap(p - e.yyx).x));
+}
+// the soft shadow: how close the ray to the sun passes to anything, as a penumbra
+float scShadow(vec3 ro, vec3 rd) {
+  float res = 1.0, t = 0.02;
+  for (int i = 0; i < 22; i++) {
+    float h = scMap(ro + rd * t).x;
+    res = min(res, 9.0 * h / t);
+    t += clamp(h, 0.04, 0.35);
+    if (res < 0.002 || t > 5.0 || (ro + rd * t).y > 2.6) break;
+  }
+  return clamp(res, 0.0, 1.0);
+}
+// ambient occlusion: how much of the space just off the surface is taken
+float scAO(vec3 p, vec3 n) {
+  float occ = 0.0, w = 1.0;
+  for (int i = 1; i <= 4; i++) {
+    float h = 0.03 + 0.14 * float(i);
+    occ += (h - scMap(p + n * h).x) * w;
+    w *= 0.7;
+  }
+  return clamp(1.0 - 2.2 * occ, 0.0, 1.0);
+}
+vec3 render(vec2 p, vec2 uv) {
+  float ang = uTime * 0.12 + uSeed.x * 6.28;
+  vec3 ro = vec3(6.0 * sin(ang), 1.9 + 0.35 * sin(uTime * 0.21), 6.0 * cos(ang));
+  vec3 ta = vec3(0.1, 0.45, -0.2);
+  vec3 fw = normalize(ta - ro), rt = normalize(cross(fw, vec3(0.0, 1.0, 0.0))), up = cross(rt, fw);
+  vec3 rd = normalize(p.x * rt + p.y * up + (1.9 + 0.25 * uKick) * fw);
+  // the sky: pale at the horizon, deeper above, warm towards the sun
+  float sa = 0.6 + 0.35 * sin((uBarIndex + smoothstep(0.0, 0.5, uBar)) * 0.5);
+  vec3 sun = normalize(vec3(cos(sa) * 0.8, 0.55, sin(sa) * 0.8));
+  vec3 sky = mix(vec3(0.62, 0.68, 0.76), vec3(0.32, 0.42, 0.6), clamp(rd.y * 1.6, 0.0, 1.0));
+  sky += vec3(1.0, 0.75, 0.45) * pow(max(dot(rd, sun), 0.0), 8.0) * 0.25;
+  vec3 col = sky;
+  float t = 0.0;
+  vec2 h = vec2(0.0);
+  // (a ray already above the shapes and climbing only meets the sky)
+  for (int i = 0; i < 72; i++) {
+    vec3 q = ro + rd * t;
+    if (q.y > 2.6 && rd.y > 0.0) { t = 20.0; break; }
+    h = scMap(q);
+    if (h.x < 0.0012 * t || t > 18.0) break;
+    t += h.x;
+  }
+  if (t < 18.0) {
+    vec3 pos = ro + rd * t, n = scNormal(pos);
+    vec3 base = h.y < 0.5 ? vec3(0.72, 0.7, 0.66) * (0.85 + 0.15 * smoothstep(-0.1, 0.1, sin(pos.x * 1.2) * sin(pos.z * 1.2)))
+      : h.y < 1.5 ? mix(vec3(0.82, 0.62, 0.38), unblack(pal(0.2)), 0.35)
+      : mix(vec3(0.5, 0.25, 0.12), unblack(pal(0.65)), 0.5);
+    float dif = max(dot(n, sun), 0.0) * scShadow(pos + n * 0.01, sun);
+    float occ = scAO(pos, n);
+    float amb = 0.5 + 0.5 * n.y;
+    float spe = pow(max(dot(reflect(rd, n), sun), 0.0), 24.0) * dif;
+    col = base * (vec3(1.3, 1.05, 0.8) * dif * (0.9 + 0.3 * uSnare) + vec3(0.32, 0.4, 0.55) * amb * occ) + vec3(1.0, 0.9, 0.75) * spe * 0.35;
+    col = mix(col, sky, 1.0 - exp(-0.004 * t * t));
+  }
+  col = pow(col, vec3(0.4545));
+  return col * (0.92 + 0.12 * uEnergy);
+}
+`;
+
+const fractalflight = `
+// Fractal flight: flying over the mandelbox, the fractal Tom Lowe found in 2010 and the shader art of the
+// decade flew through again and again - every point folded inside a box, then inside a sphere, scaled and
+// moved back, over and over, until the surface is a palace of arches, balconies and holes that repeat at every
+// size. Written from its definition. The flight, its banking and the box's scale (the architecture itself
+// shifting) all move slowly at the same pace whatever the tempo, so the fractal can be seen - a speed tied to the
+// bars rushed it in a fast song, one tied to how busy the music is jumped with every kick. The music lights it:
+// the kick punches the view a little and lights the glow, the snare the edges, and each phrase opens with the
+// glow flaring and dying away over its first bar.
+float ffScale() { return -1.66 - 0.08 * sin(uTime * 0.035 + uSeed.z * 6.28); }
+// the distance to the mandelbox from p, and the closest its orbit came to the middle (for the colour)
+vec2 ffMap(vec3 p) {
+  float s = ffScale();
+  vec3 z = p;
+  float dr = 1.0, trap = 1e9;
+  for (int i = 0; i < 7; i++) {
+    z = clamp(z, -1.0, 1.0) * 2.0 - z;                 // the box fold: past 1, 2 - c; past -1, -2 - c
+    float r2 = dot(z, z);
+    if (r2 < 0.25) { z *= 4.0; dr *= 4.0; }            // the sphere fold: inside half, times four
+    else if (r2 < 1.0) { z /= r2; dr /= r2; }          // inside one, turned inside out
+    z = s * z + p;
+    dr = dr * abs(s) + 1.0;
+    trap = min(trap, r2);
+  }
+  return vec2(length(z) / abs(dr), trap);
+}
+vec3 render(vec2 p, vec2 uv) {
+  float fly = uTime * 0.045 + uSeed.x * 6.28;
+  float tilt = 0.3 * sin(uTime * 0.03 + uSeed.y * 6.28);
+  float open = exp(-(mod(uBarIndex, 8.0) + uBar) * 2.5);              // a phrase opening, fading over its first bar
+  // the path: round the box, swooping in close over its face and out again, rising and dipping
+  float near = 0.5 + 0.5 * sin(fly * 1.9 + uSeed.w * 6.28);
+  float rad = 6.0 - 1.4 * near;
+  vec3 ro = vec3(rad * cos(fly), 1.6 * sin(fly * 0.7 + tilt), rad * sin(fly));
+  vec3 ta = vec3(0.8 * cos(fly + 1.2), 0.4 * sin(fly * 1.3), 0.8 * sin(fly + 1.2));
+  vec3 fw = normalize(ta - ro), rt = normalize(cross(fw, vec3(sin(tilt), 1.0, 0.0))), up = cross(rt, fw);
+  vec3 rd = normalize(p.x * rt + p.y * up + (1.5 - 0.08 * uKick) * fw);
+  vec3 bg = mix(vec3(0.01, 0.01, 0.025), unblack(pal(0.85)) * 0.08, 0.5 + 0.5 * rd.y);
+  vec3 col = bg;
+  float t = 0.0, glow = 0.0;
+  vec2 h = vec2(1.0);
+  int steps = 0;
+  // (the box lies inside a sphere of radius 3.5: a ray that misses it meets nothing, one that hits starts there)
+  float bb = dot(ro, rd), bc = dot(ro, ro) - 12.25, bd = bb * bb - bc;
+  if (bd < 0.0) t = 13.0; else t = max(0.0, -bb - sqrt(bd));
+  for (int i = 0; i < 64; i++) {
+    if (t > 12.0) break;
+    h = ffMap(ro + rd * t);
+    glow += exp(-h.x * 40.0) * 0.012;
+    if (h.x < 0.003 * t || t > 12.0) break;
+    t += h.x * 0.9;
+    steps = i;
+  }
+  if (t < 12.0) {
+    vec3 pos = ro + rd * t;
+    vec2 e = vec2(0.003 * t, 0.0);
+    vec3 n = normalize(vec3(ffMap(pos + e.xyy).x - ffMap(pos - e.xyy).x, ffMap(pos + e.yxy).x - ffMap(pos - e.yxy).x, ffMap(pos + e.yyx).x - ffMap(pos - e.yyx).x));
+    vec3 lig = normalize(vec3(0.6, 0.7, -0.4));
+    float occ = 1.0 - float(steps) / 64.0;
+    vec3 base = unblack(pal(0.1 + 0.35 * sqrt(h.y)));
+    float dif = max(dot(n, lig), 0.0);
+    float rim = pow(1.0 - abs(dot(n, rd)), 3.0);
+    col = base * (0.3 + 1.0 * dif) * (0.35 + 0.65 * occ) + unblack(pal(0.6)) * rim * (0.25 + 0.6 * uSnare);
+    col = mix(col, bg, 1.0 - exp(-0.012 * t * t));
+  }
+  col += unblack(pal(0.45)) * glow * (0.35 + 0.9 * uKick + 1.2 * open);
+  return col * (0.85 + 0.25 * uEnergy);
+}
+`;
+
+// ---------------------------------------------------------------------------
 // Arcade scenes: homages to the cabinets — none of them a copy. Shapes are
 // generated from the seed, everything moves on the beat, and every frame is
 // computed from time alone.
@@ -5988,7 +6191,7 @@ vec3 render(vec2 p, vec2 uv) {
 
 const SOURCES = {
   plasma, tunnel, metaballs, starfield, copper, fractal,
-  shadebobs, vectorballs, dottunnel, fireworks, fire, kefrens, ball, rings, scanner, footsteps, twister, bobs, dualchess, chessfloor, rubber, bumplogo, cracktro, ansi, echolines, maze3d, moonbike, timecar, animeop, pipes, ripple, outrun, morph,
+  shadebobs, vectorballs, dottunnel, fireworks, fire, kefrens, ball, rings, scanner, footsteps, twister, bobs, dualchess, chessfloor, rubber, bumplogo, cracktro, ansi, echolines, maze3d, moonbike, timecar, animeop, pipes, ripple, outrun, morph, prism, sculpture, fractalflight,
   paddles: staged(paddles, 0.55, 0.45),
   invaders: staged(invaders, 0.6, 0.35),
   rocks: staged(rocks, 0.45, 0.5),
@@ -6049,6 +6252,9 @@ export const STYLE_INFO = {
   ripple:      'Drops on the beat rippling across a pool floor',
   outrun:      'Synthwave sunset: striped sun, neon grid, mountains',
   morph:       'Raymarched solid melting between shapes on the bar',
+  prism:       'Shader art: a lattice of light pushed out by a wave, each colour a moment behind, a star where they meet',
+  sculpture:   'Shader art: shapes of distance functions melting together on a floor, soft shadows, a ball bouncing on the beat',
+  fractalflight: 'Shader art: a slow flight round the mandelbox, its shape shifting slowly, the glow lit by the kick and each phrase',
   paddles:     'Neon paddles on the beat; on an accent a paddle misses and blows up',
   invaders:    'A seed-made formation on the beat; aliens burst on the kick',
   rocks:       'A vector ship that flies, dodges and splits the rocks it hits',

@@ -16,7 +16,7 @@ Then ride it through half a century, from 1972 to now.**
 
 ![THE JOURNEY: every era from the arcade to the 64k intro, each with its own card, scenes and music](docs/gallery/journey.gif)
 
-`v0.2` · 7 eras · 45 scenes · 35 music styles · 16 displays · 6 sound boards · endless autoplay · runs in your browser · renders to mp4 ·
+`v0.2` · 7 eras · 48 scenes · 35 music styles · 16 displays · 6 sound boards · endless autoplay · runs in your browser · renders to mp4 ·
 no assets, only maths · built with [3dgiordano/agent-plugins](https://github.com/3dgiordano/agent-plugins)
 
 </div>
@@ -127,9 +127,7 @@ menu) goes to that era's first scene in the seed's order. On the command line
 or in the address, a scene you name yourself is shown in whatever era you name
 with it - its music and its display then the era's. An era is chosen by
 the year it starts (`--era 1990`), any year inside it (`--era 1995`), or the
-machine name it once had (`--era amiga`). The last one has no scenes of its own
-yet: its screen shows any scene, and THE JOURNEY and AUTOPLAY pass it by until
-it has some.
+machine name it once had (`--era amiga`).
 
 | years | | its display (scenes may have their own) | its scenes | the music it brings |
 |---|---|---|---|---|
@@ -139,7 +137,7 @@ it has some.
 | **1994–1996** | the PC demos and the multimedia years | VGA | fire, pipes, ansi, maze3d; fractal, tunnel, metaballs, plasma, bumplogo | ambient techno, acid, gabber, eurodance, jungle, FM metal, MIDI quest — on a Sound Blaster 16's FM or an AWE32's wavetable; and keygen, the party's tracker tunes, played from samples as a module player did; and trip-hop, its strings and Rhodes on the card; and lament and jolly march, played on the card |
 | **1997–1999** | 3D consoles and pocket screens | COMPOSITE TV | snake, animeop | heroic game soundtracks, eurodance, chip rock and roll, star pilot, MIDI quest, the anime opening, skate punk, handheld chip, jolly march — on wavetable |
 | **2000–2009** | the 64k intro | SVGA | morph | trance, happy hardcore, keygen, trip-hop |
-| **2010–now** | shader art | MODERN | none yet | synthwave, dreamwave |
+| **2010–now** | shader art | MODERN | prism, sculpture, fractalflight | synthwave, dreamwave |
 
 ## Displays
 
@@ -353,7 +351,7 @@ character and no tune is copied from any game. The creatures in the
 formation, the mazes, the rocks and the challenger robot are all made up by
 the seed.
 
-## Forty-five scenes, straight out of the scene
+## Forty-eight scenes, straight out of the scene
 
 | | | |
 |---|---|---|
@@ -387,6 +385,8 @@ the seed.
 | **ansi** — the art of the bulletin boards, arriving over the modem: VGA text mode in its sixteen colours, pictures and big block-letter logos built from full and half blocks and the three shades, the gradients run down the artists' ramps from white through yellow to brown or light blue to blue, grey outlines, a sparkle of stars. A line of the file arrives each beat, the cursor sweeping it at about the speed of a 2400-baud modem, and the screen scrolls smoothly up as it fills; each phrase brings a part of the file — a spaced-out header, a sunset or a night sky with its moon over a shaded land, a line about the music, and a logo (SEEDSCENE, the seed, the music) whose last line lands as the next phrase opens. The camera shows the whole screen on the drop, then draws slowly nearer as the picture arrives, keeping the lines already drawn in view above the cursor, and eases back out over the logo so the drop shows it whole; the kick lights the letters as they arrive and punches the screen in, the snare sets the stars twinkling, and on the drop the finished logo cycles its colours. *Era: 1994–1996.* `--scene ansi --era 1994 --seed colorbars` | **fire** — the classic 256-colour fire of the DOS demos: tongues of flame leaping on the kick, sparks flying up on the snare, and at the peak of the music a seed-made emblem catching fire. *Era: 1994–1996.* `--scene fire --era 1994 --seed inferno` | **maze3d** — the 3D maze of the screensavers of the mid-90s, walked in first person: corridors of dark red bricks with pale mortar, a tan floor, a ceiling of white tiles, a maze of the seed's own, walked with a hand on the wall so it never ends. A move every two beats — a step down the corridor, or a corner taken walking — so the steps land on the first and third beats of the bar; each kick is a footfall that dips the view and punches the screen, the snare brightens the ceiling, and as each phrase ends a grey stone spins on the path ahead: the walk goes through it on the drop and the world turns upside down, until the next. *Era: 1994–1996.* `--scene maze3d --era 1994 --seed corridors` |
 | ![pipes](docs/gallery/pipes.png) | ![animeop](docs/gallery/animeop.png) | ![snake](docs/gallery/snake.png) |
 | **pipes** — the 3D pipes screensaver of the mid-90s office PC, seen from above: shiny pipes of solid colours growing cell by cell through a deep grid, never into a cell another holds, turning on the eighth notes with a smooth elbow (now and then a ball joint). The tangle fills from the distance forwards for sixteen bars until the screen is saturated, then dissolves in blocks through the last bar; the camera punches in on the kick. *Era: 1994–1996.* `--scene pipes --era 1994 --seed screensaver` | **animeop** — the anime openings the 90s brought to Latin America, as an idea: a cut on every bar, as those openings cut on the music — the team in a row against a flat red sunburst, three of them against a sunset, a power-up over two bars — the charge, crouched, the ground cracking; bolts of lightning out of the sky, and on the downbeat a white flash, a column of fire bursting up and a ring of dust; then the energized state that stays, a tall serrated aura with lightning crawling round it, the hair spiked up gold and the muscles swollen — a flight in formation across a sky rushing right to left, a charge out of black speed lines — silhouettes of their own, striking a new pose on every beat; the kick punches the picture and bursts the lines, the last bar of each phrase cuts on every beat into a white flash, and on the drop the title card slams in: the seed as the show's name in thick outlined letters, yellow into orange over rushing blue streaks, SEEDSCENE above it and a star glinting at its corner. *Era: 1997–1999.* `--scene animeop --era 1997 --seed hikari` | **snake** — a neon snake that hunts its food, grows, and bursts when it boxes itself in. *Era: 1997–1999.* `--scene snake --era 1997 --seed longsnake` |
+| ![prism](docs/gallery/prism.png) | ![sculpture](docs/gallery/sculpture.png) | ![fractalflight](docs/gallery/fractalflight.png) |
+| **prism** — the shader art of the 2010s at its smallest: a lattice of points of light pushed out along the radius by a wave from the middle, each colour a moment behind the one before, so every point splits into red, green and blue, and a white star burns where they meet - after the tiny chromatic-ring pieces of the time. The wave runs at a steady pace and swells as the music builds, the kick throws it outward, the snare widens the split, the lattice turns a sixteenth of a turn each bar; each phrase opens with the colours thrown wide and a ring of white sweeping out. *Era: 2010–now.* `--scene prism --era 2010 --seed creation` | **sculpture** — the raymarched still life of the 2010s: an arch with a hole through it, a standing ring and a ball, all made of distance functions, melting into one another on a floor, lit by a low sun and the sky - soft shadows with their penumbra, the dark where surfaces meet, as Inigo Quilez's articles taught. The ball bounces on the beat, the melt widens with the bass, the sun swings a little each bar, the camera circles and punches in on the kick; each phrase opens with the three melted into one. *Era: 2010–now.* `--scene sculpture --era 2010 --seed penumbra` | **fractalflight** — flying round the mandelbox, the fractal found in 2010 and flown through by the decade's shader art: every point folded in a box, then in a sphere, scaled and moved back, over and over, into a palace of arches and balconies at every size, swooping in close over its face and out again, slowly and at the same pace whatever the tempo, so the fractal can be seen; its shape shifts slowly as its scale drifts. The kick punches the view a little and lights the glow, the snare the edges, and each phrase opens with the glow flaring. *Era: 2010–now.* `--scene fractalflight --era 2010 --seed mandelbox` |
 
 Every scene carries the two things no demo went without: a title plate and a
 sine scroller that opens with **SEEDSCENE PRESENTS…** — and every scene is an
@@ -540,7 +540,7 @@ seedscene info    [options]     show what a seed composes
 | option | meaning | default |
 |---|---|---|
 | `--seed <word>` | anything at all; the same word always gives the same demo | random |
-| `--scene <name>` | one of the forty-five scenes (`--style`, its old name, works too) | chosen by the seed - one of the era's, if the era is given |
+| `--scene <name>` | one of the forty-eight scenes (`--style`, its old name, works too) | chosen by the seed - one of the era's, if the era is given |
 | `--era <name>` | `auto` `1972` `1982` `1990` `1994` `1997` `2000` `2010` — or any year inside one, or its old name (`arcade` `c64` `amiga` `dos` `console` `handheld` `y2k` `modern`) | an era the scene belongs to |
 | `--display <name>` | `auto` `bw` `arcade` `vector` `colorvector` `mono` `c64` `vhs` `ega` `amiga` `vga` `snes` `composite` `gameboy` `nokia` `svga` `modern` | the screen: on `auto` each scene its own, or its era's |
 | `--board <name>` | `auto` `hifi` `paula` `opl3` `awe32` `ym` `sid` | the sound board: on `auto` each scene its own, or its era's |
@@ -610,7 +610,7 @@ src/core/music.js     composer, thirty-five styles, synthesizer, feature track
 src/core/chips.js     the sound chips: Paula, OPL3, AWE32, YM2149, SID
 src/core/visual.js    renderer, palette, title plate, scroller, era cards
 src/core/gl.js        WebGL2 helpers
-src/styles/index.js   the forty-five scenes, the 3D stage, the About part, the display's screen
+src/styles/index.js   the forty-eight scenes, the 3D stage, the About part, the display's screen
 src/app.js            ties the music and the picture together
 web/index.html        the live page
 web/boot.js           the C64 boot screen
