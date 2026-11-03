@@ -7,8 +7,8 @@
 v0.2 takes the v0.1 tool ([BUILD-REPORT-v0.1.md](BUILD-REPORT-v0.1.md)) and
 turns it into **SEEDSCENE**: a name, a nostalgic front door, a live mode you
 drive from the keyboard, an About part, seven eras of computing from 1972 to
-now with a journey through them, an endless AUTOPLAY channel, forty-five
-scenes and thirty-five styles of music, each scene on its own display and
+now with a journey through them, an endless AUTOPLAY channel, fifty-five
+scenes and thirty-six styles of music, each scene on its own display and
 sound board.
 
 ## At a glance
@@ -28,7 +28,7 @@ sound board.
 
 ## Where it stands, 2026-11-02
 
-- **Built:** fifty-four scenes in seven eras (spans of years, 1972 to now), thirty-five music styles, sixteen
+- **Built:** fifty-five scenes in seven eras (spans of years, 1972 to now), thirty-six music styles, sixteen
   displays and six sound boards, each scene with its own or its era's; THE
   JOURNEY (three scenes an era, going on through the lists over replays),
   AUTOPLAY, born in, greetings, the screensaver, the sounds between the tracks,
@@ -4374,6 +4374,75 @@ were raised into peaks and saddles in turn, higher where a range rises.
 | Scrubbing back to three moments against fresh runs, each | the same state |
 | Cost a frame at 854×480, SwiftShader (no GPU here) | tube 291 ms (406 before the zoom was worked out once a frame and far bursts skipped), tanks 141, rocks 202 - the live check on a real GPU is still to do |
 | `npm test` | passes, the mp4 comparison included |
+
+## Terrace drums and the football match
+
+Piece C's style and the scene it was made for, at the owner's word
+(2026-11-03), together, in 1990–1993; the style plays in 2010–now as well.
+
+**Terrace drums** (`terrace`), from the plan's line - "big bass drums and
+snares in a march, trumpets, the crowd's chant turned into a synth lead" -
+built from the synthesizer's own voices, so every sound board plays it with
+nothing new to learn: the big drums are the timpani's short tom, low, on one
+and three with a pick-up before each, a cymbal struck with them on the strong
+beats; the snares on the eighths, louder on two and four, a drag before the
+bar turns and a roll of thirty-seconds into each phrase, so the audit holds
+it to that finer grid, as it does the march; the crowd's hands on two and
+four once it is going; the march's tuba under it; the trumpets' call - two
+short chords and a pick-up - between the chant's lines; the chant a synth
+lead in short phrases, a call and its answer, inside a fifth, in a major key.
+
+**The reviewer, before the owner's ear.** The audit passed it; the review
+subagent found eight likely faults, and two rounds put them right: 11-12 s of
+dead air in 90 (the intro and the breakdown switch on only the pad and the
+hats, and the terrace has neither) - now the big drum and a soft snare play
+there, the trumpets every bar, and no board has any; the chant buried and
+fizzing on OPL3 (8.4-8.9 dB under the rest in its band, half its energy over
+10 kHz) and the drum booming there - the soft lead, as the hip-hop blaster's,
+now 5.5-6.2 dB over, nothing over 10 kHz; the drum, a timpani, tuned to the
+key's third and ringing 0.7 s on OPL3 - now the kick, as the march's; the mix
+5 dB to the left on Paula - the strong-beat drum now on the right, its
+pick-ups left, answering it; a cymbal sounding 62-71% of the time - now on
+the downbeat of every other bar, 17-18%; the trumpets an octave under the
+chant, trombones - an octave up now, never a tone or a semitone from it; the
+claps raised. Left for the owner's ear: whether the drum reads as a stand's
+bass drum or a dance kick, whether the trumpets an octave up crowd the chant
+(some calls land on its notes), and OPL3's own plain lead, which fizzes in
+dreamwave too.
+
+**The football match** (`football`). Against the arcade museum's screenshots
+of the top-down football games of 1985-1989 (two of 1985, three of 1988 and
+1989): a pitch mown in stripes, seen from straight above, the camera on the
+ball; small players in two kits, the keepers in their own; the lines, boxes
+and nets; boards and a crowd past the touchlines; the score at the top; GOAL!
+in big dotted letters over the pitch. Its own: the kits from the seed's
+palette, the players drawn here (shoulders in the shirt, a head, legs striding
+when they run), the crowd in both sides' colours, a 5 x 7 dotted font of its
+own.
+
+The game (`FootballSim`) plans the ball: from the kick-off it plans the goal
+for the first accented bar five bars or more ahead; until two bars before it,
+a pass every beat or two, each landing on the beat, to a teammate's place in
+a 4-4-2 that slides with the ball, working up the pitch as the phrase goes on;
+then out to a winger, down the line, the cross a beat and a half before the
+drop, the header half a beat before it, and the ball in the net on the
+accented bar itself. The scorer runs off to the corner; the side that conceded
+kicks off two bars on. The beaten keeper dives the wrong way. The first camera
+was close enough that the centre circle filled the screen; it was pulled back
+to about 50 by 28 metres, the players drawn half as big again as a man, as
+the games drew them.
+
+| Check | Result |
+|---|---|
+| The audit, `npm run audit:music -- terrace` | passes every check it measures; the grid held to thirty-seconds like the march's |
+| The review subagent, twice | eight likely faults found, six put right, two left for the owner's ear (above) |
+| `npm run review:music -- gaps terrace` | no dead air on Paula, OPL3 or the studio, three seeds (11-12 s before) |
+| The football's goals on the real score (`derby`, terrace, accents on bars 8, 14, 16) | in at 14.67 s and 29.33 s, on bars 8 and 16 - 14 was too soon after the kick-off |
+| The football over two minutes, three seeds, accents every eight bars | a goal on each, the sides in turn; the score right at each moment |
+| Scrubbing back to three moments against fresh runs | the same state |
+| Frames at the build-up, the run down the line, the goal and after | the stripes, the circle, the boxes and the net; the winger at the corner flag with the boards and the crowd beyond; GOAL! over the box, the ball in the net, the crowd lit |
+| Cost a frame at 854×480, SwiftShader | football 240 ms, rocks 198 - the live check on a real GPU is still to do |
+| `npm run test:quick` | passes |
 
 ## What went wrong in the first round
 

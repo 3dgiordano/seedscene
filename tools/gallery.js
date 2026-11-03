@@ -51,6 +51,7 @@ export const GALLERY = [
   { style: 'cascade',     era: '1990',        seed: 'cascade' },
   { style: 'ansi',        era: '1994',        seed: 'colorbars' },
   { style: 'echolines',   era: '1990',        seed: 'nightshift' },
+  { style: 'football',    era: '1990',        seed: 'derby', at: 14.9 },
   { style: 'maze3d',      era: '1994',        seed: 'corridors' },
   { style: 'moonbike',    era: '1982',     seed: 'moonride', at: 5.1 },
   { style: 'timecar',     era: '1982',     seed: 'gigawatts', at: 12.85 },

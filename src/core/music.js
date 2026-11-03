@@ -340,6 +340,17 @@ export const MUSIC_PRESETS = {
     melody: { free: [0, 7], dense: [0.6, 0.6, 0.6], close: true, moving: true },
     swing: 0, intro: 0.05, fx: { reverb: 0.6, delay: 0.4, delayBeats: 1 },
   },
+  // the football crowds of Latin America and Europe: big bass drums and snares in a march, a cymbal struck with
+  // the drum, the trumpets' calls between the lines, and the crowd's chant turned into a synth lead - short
+  // phrases, a call and its answer, in a major key the whole stand can sing
+  terrace: {
+    label: 'Terrace Drums', blurb: 'the football crowd: bass drums and snares in a march, trumpet calls, the chant on a synth lead',
+    bpm: [120, 134], scales: ['major'], progressions: MARCH,
+    drums: 'terrace', bass: 'tuba', chords: 'fanfare', lead: 'hook', arp: null, noDrop: 'riser',
+    hook: { instr: 'lead', kit: 'soft', oct: 72, vel: 0.62, line: true, answer: true }, leadFrom: 0.1,   // (the soft lead: the plain one fizzed on OPL3)
+    melody: { free: [0, 4], dense: [0.5, 0.5, 0.5], close: true, moving: true },
+    swing: 0, intro: 0.05, fx: { reverb: 1.0, delay: 0.3, delayBeats: 1 },
+  },
   // the shooter with a beat: a slow hip-hop break, scratches, an orchestra stab, a lead chopped like a rap (no
   // voice) - at the 86-100 bpm of the late 80s, the kicks off the beat a little behind like a sampler's swing
   bomb: {
@@ -1066,6 +1077,24 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
             if (a.hat && step % 4 === 2) push(t, 'hat', 0, 0.18, 0.05);
           }
           break;
+        case 'terrace':
+          // the stand's drums: the big bass drums on one and three (on the right, as the march's are) with a
+          // pick-up before each, a cymbal struck with the first each other bar; alone, softer, before the band comes
+          // in and through the breakdown, so the stand is never silent; the snares on the eighths, louder on two
+          // and four, a drag before the bar turns and a roll into each phrase and into the drop; the crowd's hands
+          // on two and four once it is going
+          if (a.kick && (step === 0 || step === 8)) push(t, 'kick', 0, 0.9, 0.35, { pan: 'right' });
+          if (a.kick && (step === 6 || step === 14) && bar % 4 !== 3) push(t, 'kick', 0, 0.55, 0.25);   // (the pick-up left: the two drums answer each other)
+          if (a.kick && step === 0 && bar % 2 === 0) push(t, 'crash', 0, 0.18, 0.01);
+          if (!a.kick && a.pad && !(bar >= totalBars - 1) && (step === 0 || step === 8 || (step === 14 && bar % 2 === 1))) push(t, 'kick', 0, step === 14 ? 0.35 : 0.55, 0.3, { pan: 'right' });
+          if (!a.snare && a.pad && !(bar >= totalBars - 1) && (step === 4 || step === 12)) push(t, 'snare', 0, 0.22, 0.08);
+          if (a.snare && step % 2 === 0 && !(bar % 4 === 3 && step >= 8)) push(t, 'snare', 0, step === 4 || step === 12 ? 0.5 : 0.16, 0.08);
+          if (a.snare && bar % 4 !== 3 && step === 15) push(t, 'snare', 0, 0.26, 0.06);
+          if ((a.snare && bar % 4 === 3 || a.build) && step >= 8) {
+            for (const h of [0, 0.5]) push(t + h * sixteenth, 'snare', 0, 0.22 + 0.035 * (step - 8 + h), 0.06);
+          }
+          if (a.snare && a.intensity > 0.7 && (step === 4 || step === 12)) push(t, 'clap', 0, 0.8, 0.15);
+          break;
         case 'boombap':
           // boom-bap: the kick on one and the "and" of three, the snare on two and four, the hats on the eighths
           // (a little late on the "and", as the sampler swung them); a scratch phrase now and then
@@ -1227,9 +1256,9 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
       const rollKit = (P.drums === 'chip' || P.drums === 'gb' || P.drums === 'arcade') ? 'chip'
         : (P.drums === 'break' || P.drums === 'amen' || P.drums === 'heroic' || P.drums === 'rock' || P.drums === 'jrock' || P.drums === 'skate' || P.drums === 'boombap') ? 'break'
           : P.drums === 'cyborg' ? 'gated' : undefined;
-      if (P.drums === 'heartbeat' || P.drums === 'triphop' || P.drums === 'rain' || P.drums === 'soft' || P.drums === 'march') {
+      if (P.drums === 'heartbeat' || P.drums === 'triphop' || P.drums === 'rain' || P.drums === 'soft' || P.drums === 'march' || P.drums === 'terrace') {
         // no rolls in the dark: only the riser before the drop (the lament's rain, the ballad's soft beat and the
-        // march, which rolls its own snare, take no claps either)
+        // march and the terrace, which roll their own snares, take no claps either)
       } else if (P.drums === 'tribal') {
         // the tribal piece rolls on its toms: the high one, then the low, into the next phrase
         if ((a.build || a.fill) && step >= STEPS / 2) push(t, 'timpani', noteOf(36, step >= STEPS - 2 ? 0 : step >= STEPS - 4 ? 2 : 4), 0.2 + 0.025 * (step - STEPS / 2), 0.25, { kit: 'tom', pan: 'left' });
@@ -1458,6 +1487,11 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
         if (P.chords === 'oompah' && (step === 4 || step === 12)) {
           // the oom-pah's pah: the chord short on the off-beats, brass
           for (const d of triad) push(t, 'brass', noteOf(48, d), 0.32, spb * 0.3, { pan: 'right' });   // (under the tune, on the right)
+        }
+        if (P.chords === 'fanfare' && a.chords && (((bar % 2 === 1 || !a.kick) && (step === 10 || step === 12)) || (bar % 4 === 3 && step === 14))) {
+          // the trumpets' call, between the chant's lines - every bar when the drums are out: two short chords and a
+          // pick-up into the phrase, up where trumpets play (an octave under, they were trombones)
+          for (const d of triad) push(t, 'brass', noteOf(60, d), step === 12 ? 0.36 : 0.3, spb * (step === 12 ? 0.45 : 0.22));
         }
         if (P.chords === 'lament' && step % 2 === 0) {
           // a slow piano: the chord broken upwards in eighths, the strings holding it underneath

@@ -28,8 +28,8 @@ export const ERAS = {
     label: '1990–1993', year: 1990, to: 1993, title: 'The demoscene\'s golden years',
     blurb: 'copper, vector balls and cracktros; the first 3D on the consoles; the desktop and its games',
     display: 'amiga',
-    scenes: ['shadebobs', 'copper', 'vectorballs', 'ripple', 'metaballs', 'tunnel', 'starfield', 'kefrens', 'rings', 'twister', 'bobs', 'dualchess', 'chessfloor', 'rubber', 'cracktro', 'plasma', 'fractal', 'bumplogo', 'fireworks', 'morph', 'footsteps', 'starfighter', 'cascade', 'echolines'],
-    music: ['rave', 'newbeat', 'orchestral', 'dreamwave', 'modjazz', 'beast', 'agony', 'ballad', 'march', 'bomb'],
+    scenes: ['shadebobs', 'copper', 'vectorballs', 'ripple', 'metaballs', 'tunnel', 'starfield', 'kefrens', 'rings', 'twister', 'bobs', 'dualchess', 'chessfloor', 'rubber', 'cracktro', 'plasma', 'fractal', 'bumplogo', 'fireworks', 'morph', 'footsteps', 'starfighter', 'cascade', 'echolines', 'football'],
+    music: ['rave', 'newbeat', 'orchestral', 'dreamwave', 'modjazz', 'beast', 'agony', 'ballad', 'march', 'bomb', 'terrace'],
   },
   1994: {
     label: '1994–1996', year: 1994, to: 1996, title: 'The PC demos and the multimedia years',
@@ -57,7 +57,7 @@ export const ERAS = {
     blurb: 'shader art, neon and the synthwave revival',
     display: 'modern',
     scenes: ['prism', 'sculpture', 'fractalflight'],
-    music: ['synthwave', 'dreamwave'],
+    music: ['synthwave', 'dreamwave', 'terrace'],
   },
 };
 
