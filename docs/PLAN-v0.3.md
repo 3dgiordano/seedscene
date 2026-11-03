@@ -13,6 +13,7 @@ tuned by the owner's ear, every screen checked on the real GPU.
 - [3. New: scenes and styles](#3-new-scenes-and-styles)
 - [4. Order](#4-order)
 - [5. Sources](#5-sources)
+- [6. Ideas: phones, tablets and touch](#6-ideas-phones-tablets-and-touch)
 
 ---
 
@@ -115,3 +116,79 @@ datasheet, captures and recordings, as every homage here is.
   datasheets, the CPC's stereo wiring (left, centre, right is from memory),
   the first GBA's panel captures, the SID datasheet and the 6581 filter's
   measurements.
+
+---
+
+## 6. Ideas: phones, tablets and touch
+
+**Ideas noted by the owner on 2026-11-03, not yet approved or placed in the
+order of section 4.** 0.3.0 should play on a phone and a tablet as well as on
+a computer: everything the keys do today reachable with a finger, and nothing
+on the screen that stays in the way of the picture.
+
+What the page has today (`web/live.js`, `web/menu.js`, `web/index.html`): every
+action is a key (the help screen lists them); a touch only wakes the demo from
+the screensaver; the menu closes when its backdrop is clicked; the help screen
+lets clicks through (`pointer-events: none`) and closes only with H or Esc;
+F asks for full screen; the page has a viewport meta but no web app manifest.
+
+### Gestures
+
+| Gesture | Does | As the key |
+|---|---|---|
+| swipe left / right | previous / next scene | ← → |
+| swipe up / down | change the music style | ↑ ↓ |
+| tap | brings up the touch buttons (below) | — |
+
+In AUTOPLAY and THE JOURNEY a swipe left or right skips a part, as the arrows
+do there. A swipe must not be taken for a tap, nor scroll or zoom the page.
+
+### Touch buttons
+
+- A tap anywhere on the picture brings up the buttons, drawn in the page's own
+  look:
+  - **quick actions**: next scene, next style, next era, pause, sound on/off,
+    display, sound board, full screen;
+  - **the rest**: the menu, the help, the About part, AUTOPLAY, THE JOURNEY,
+    BORN IN, GREETINGS, a new random seed, the info panel.
+- They go away by themselves after a few seconds without a touch, so they
+  never cover the picture for long and need no close button of their own. A
+  touch on a button counts as a touch and keeps them up.
+- The menu and the help, once opened, stay until closed: a tap outside their
+  panel closes them. The menu does this today; the help must learn it, since
+  it lets clicks through now.
+- The boxes that ask for typing (BORN IN's year, GREETINGS, the menu's seed)
+  need the phone's keyboard: an input that brings it up, and an OK and a
+  CANCEL button in place of Return and Esc.
+- The menu is driven by ↑ ↓ ← → today: on touch each row's value changes by
+  tapping it, or by arrows on the row.
+- The panels and their text fit a phone held either way, portrait and
+  landscape.
+- The hints that name keys (`H · KEYS` in the corner, `PRESS T TO GO BACK`,
+  the help's key list) name the touch instead on a touch screen.
+
+### Full screen and installing as an app
+
+- Full screen: the F key's request, from a button. Whether each phone's
+  browser grants it to a page is to be checked.
+- Installing as an app: a web app manifest (name, icons, colours, standalone
+  display, the start address and scope of the site on GitHub Pages) and the
+  matching meta tags, so the site can be put on a phone's home screen and open
+  without the browser's bars - the way to a full screen where the browser
+  gives a page none.
+- An easy **INSTALL AS APP** button where the browser offers one to the page;
+  where it does not, a short help on how to add it to the home screen by hand.
+- The button and that help show only when the page is not already running as
+  an installed app, so the viewer is never asked to install what they are
+  using.
+
+### To check before building
+
+- Which mobile browsers grant full screen to a page, what each one needs
+  before it offers to install a site (manifest fields, icons, a service
+  worker or not), and how a page tells that it runs installed.
+- Sound on phones: the audio starts only after a touch, as after a key today;
+  how the phone's silent switch and battery saver treat it.
+- The frame rate and the heat of the shaders on a phone's GPU at the phone's
+  own pixel ratio, checked live on real devices, as every screen is.
+- The screensaver and the screen wake lock on a phone.
