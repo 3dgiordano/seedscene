@@ -32,6 +32,10 @@ export const BOARDS = {
     name: 'YM2149', label: 'Atari ST sound chip', chip: 'ym',
     blurb: 'three square channels, noise and the envelope buzzer, written 50 times a second, with digi-drums',
   },
+  sid: {
+    name: 'SID', label: 'Commodore 64 sound chip', chip: 'sid',
+    blurb: 'pulse, saw, triangle and noise through the 6581\'s filter, written 50 times a second, drums from waveform tables',
+  },
 };
 
 /** The boards in the order a viewer steps through them. */

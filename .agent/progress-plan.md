@@ -57,4 +57,8 @@ Still to build, by round of the plan (section 8): round 5 - none; its glenz, lan
 
 Outside the plan, at the owner's word (2026-11-01), each checked live and approved: one era per scene and the catalogue in era and seed order (not the order written); eras as spans of years; THE JOURNEY three scenes an era, going on through the lists over replays; displays apart from eras (a named, switchable screen per technology, full resolution, CRT effects only for CRTs); sound boards per scene; the VHS display rebuilt (no tracking band, no snow); the screen kept on in AUTOPLAY and THE JOURNEY.
 
+Split on 2026-11-02 (Q9): 0.2.0 takes PLAN-v0.2.md section 8, "What 0.2.0 still takes" (A-E); the rest is docs/PLAN-v0.3.md.
+
+Built on 2026-11-02 (branch sid-chip, waiting for the owner's ear): piece A, the SID - a sixth board, half the tracks of 1982-1989 (ERA_CHIPS ['sid', 'sid', 'ym', null]); the four styles pass the audit; the reviewer's faults put right on the chip alone; ST buzz plays on it with an unfiltered sawtooth buzzer (keeping it off the SID would need boards by style - the owner's call).
+
 The next piece is the owner's pick, or Claude's if they leave it open.

@@ -837,14 +837,257 @@ function ymChip(native) {
   return { name: 'ym', instr, prepare, sendScale: { reverb: 0.15, delay: 0.5 } };
 }
 
+// ---------------------------------------------------------------------------
+// SID: the Commodore 64's sound chip (the MOS 6581)
+// ---------------------------------------------------------------------------
+//
+// Three voices, each an oscillator, an envelope and a way through the filter, on the PAL C64's clock
+// (985,248 Hz: the 17.734472 MHz colour clock times 4/9, over 8). From the chip's datasheet: a voice's
+// pitch is the clock times a 16-bit number over 2^24, so each note sits a little off its true pitch, low
+// notes most; its waveform a triangle, a sawtooth, a pulse whose width is a 12-bit number, or noise - a
+// 23-bit shift register fed back from its bits 22 and 17, shifted sixteen times a cycle and read from eight
+// of its bits (as reSID models it); ring modulation turns a triangle over on another oscillator's cycle,
+// hard sync restarts a voice on another's. The envelope is a counter of 256 steps, at the datasheet's
+// sixteen rates for each of attack, decay and release: up in a straight line, down in a curve - the
+// counter's clock divided by 2, 4, 8, 16 and 30 once below 93, 54, 26, 14 and 6 (reSID) - and the sustain
+// one of sixteen levels. The 6581's filter: two poles, low-, band- or high-pass, a resonance of sixteen
+// steps, a cutoff running in a near-straight line on a log scale (reSID), here from 220 Hz to the
+// datasheet's 12 kHz, distorting when pushed. The chip had one filter for the voices sent to it, and the
+// players gave it to one at a time, the bass or the lead; here each voice that needs it has its own.
+// The music player wrote it all once a frame, 50 times a second: chords as arpeggios on one voice, the
+// pulse width sweeping, vibrato that waits, filter sweeps, and drums built from a table of waveforms - a
+// frame of noise and then a square falling in pitch for the kick, a punch of pulse and then noise for the
+// snare. Mono, and dry.
+
+const SID_CLOCK = 985248;
+const SID_FRAME = SR / 50;
+const SID_MS = 1e6 / SID_CLOCK;                                     // (the datasheet's rates are for a 1 MHz clock)
+const SID_ATTACK = [2, 8, 16, 24, 38, 56, 68, 80, 100, 250, 500, 800, 1000, 3000, 5000, 8000];
+const SID_DECAY = [6, 24, 48, 72, 114, 168, 204, 240, 300, 750, 1500, 2400, 3000, 9000, 15000, 24000];
+const sidFreq = (f) => Math.max(0, Math.min(65535, Math.round(f * 16777216 / SID_CLOCK))) * SID_CLOCK / 16777216;
+const sidPW = (w) => Math.max(1, Math.min(4094, Math.round(w * 4096))) / 4096;
+const sidCutoff = (fc) => 220 * Math.pow(12000 / 220, Math.max(0, Math.min(2047, fc)) / 2047);   // (an 11-bit register)
+// a step smoothed over the sample it falls in (polyBLEP): the chip's edges, without the digital fold-back
+const blep = (t, dt) => (t < dt ? (t /= dt, t + t - t * t - 1) : t > 1 - dt ? (t = (t - 1) / dt, t * t + t + t + 1) : 0);
+const triOf = (p) => (p < 0.5 ? 4 * p - 1 : 3 - 4 * p);
+
+/** The envelope's 8-bit counter, a sample at a time; the gate opens with the note, or as a drum table says. */
+function sidEnv(v, adsr, gate) {
+  if (v.env === undefined) { v.env = 0; v.envUp = true; v.gate = false; }
+  if (gate && !v.gate) v.envUp = true;                        // (a gate opening starts the attack from where it is)
+  v.gate = gate;
+  const [a, d, s, r] = adsr;
+  if (gate && v.envUp) {
+    v.env += 255 / (SID_ATTACK[a] * SID_MS * SR / 1000);
+    if (v.env >= 255) { v.env = 255; v.envUp = false; }
+  } else {
+    v.envUp = false;
+    const e = v.env, floor = gate ? s * 17 : 0;
+    const div = e > 93 ? 1 : e > 54 ? 2 : e > 26 ? 4 : e > 14 ? 8 : e > 6 ? 16 : 30;
+    if (e > floor) v.env = Math.max(floor, e - 255 / (SID_DECAY[gate ? d : r] * SID_MS * SR / 1000) / div);
+  }
+  return Math.floor(v.env) / 255;
+}
+
+/** The noise waveform: the 23-bit register shifted sixteen times a cycle, its eight output bits as a level. */
+function sidNoise(v, f) {
+  if (!v.lfsr) { v.lfsr = 0x7ffff8; v.nacc = 0; v.nout = 0; }
+  v.nacc += 16 * f / SR;
+  while (v.nacc >= 1) {
+    v.nacc -= 1;
+    const r = v.lfsr;
+    v.lfsr = ((r << 1) | (((r >> 22) ^ (r >> 17)) & 1)) & 0x7fffff;
+    const q = v.lfsr;
+    v.nout = ((((q >> 20) & 1) << 7) | (((q >> 18) & 1) << 6) | (((q >> 14) & 1) << 5) | (((q >> 11) & 1) << 4)
+      | (((q >> 9) & 1) << 3) | (((q >> 5) & 1) << 2) | (((q >> 2) & 1) << 1) | (q & 1)) / 255 - 0.5;
+  }
+  return v.nout;
+}
+
+// what each of the synthesizer's instruments becomes on the chip: a sound as a player's instrument table
+// wrote it, frame by frame - its note, waveform, pulse width, ring or sync, filter - and its ADSR
+const SID_OF = {
+  bass: 'bass', chipbass: 'bass', slap: 'bass', xmbass: 'bass', thbass: 'bass', reese: 'reese', acid: 'acid', drone: 'drone',
+  hat: 'hat', xmhat: 'hat', thshaker: 'hat', thride: 'ride', crash: 'crash', riser: 'riser', vinyl: 'vinyl',
+  kick: 'kick', xmkick: 'kick', thkick: 'kick', boom: 'boom', snare: 'snare', xmsnare: 'snare', thsnare: 'snare',
+  clap: 'clap', timpani: 'tom', anvil: 'anvil', scratch: 'scratch',
+  piano: 'pluck', harp: 'pluck', arp: 'pluck', ep: 'pluck', xmarp: 'pluck', guitar: 'guitar', fmbell: 'bell',
+  stab: 'stab', zap: 'zap', blip: 'blip',
+  pad: 'pad', choir: 'pad', strings: 'strings', organ: 'organ', hoover: 'sync', supersaw: 'sync',
+  flute: 'flute', brass: 'brass', theremin: 'theremin', chiparp: 'arp',
+};
+const SID_SOUNDS = new Set(['modem', 'cartridge', 'chime']);   // (the sounds between the tracks stay as they are)
+const SID_VARIANT = (ev) => (ev.open && (ev.instr === 'hat' || ev.instr === 'xmhat') ? 'openhat'
+  : ev.instr === 'kick' && ev.kit === '909' ? 'kick909' : ev.instr === 'bass' && ev.kit === 'buzz' ? 'buzzbass' : null);
+const tri50 = (frame, len) => { const x = (frame % len) / len; return x < 0.5 ? 2 * x : 2 - 2 * x; };
+
+// each sound: its ADSR, gain, tail, and what the player wrote each frame - { n: note, w: waveform, pw, ring
+// and sync as a ratio to the note, fc: the filter's 11-bit cutoff, res, mode, gate }
+const SID_SOUND = {
+  // a pulse bass through the low-pass, its cutoff falling from a bright attack
+  bass: { adsr: [0, 6, 10, 1], gain: 0.62, tail: 0.05,
+    frame: (n, f) => ({ n, w: 'pulse', pw: 0.3 + 0.15 * tri50(f, 60), fc: 520 + 900 * Math.exp(-f / 4), res: 6, mode: 'lp' }) },
+  buzzbass: { adsr: [0, 6, 12, 1], gain: 0.5, tail: 0.05, frame: (n) => ({ n, w: 'saw' }) },
+  reese: { adsr: [0, 8, 12, 2], gain: 0.6, tail: 0.06,
+    frame: (n, f) => ({ n, w: 'saw', fc: 700 + 300 * tri50(f, 40), res: 4, mode: 'lp' }) },
+  acid: { adsr: [0, 5, 6, 1], gain: 0.6, tail: 0.05,
+    frame: (n, f) => ({ n, w: 'saw', fc: 380 + 1250 * Math.exp(-f / 3), res: 13, mode: 'lp' }) },
+  drone: { adsr: [8, 10, 12, 9], gain: 0.5, tail: 0.6,
+    frame: (n, f) => ({ n, w: 'pulse', pw: 0.2 + 0.25 * tri50(f, 160), fc: 650 + 250 * tri50(f, 220), res: 5, mode: 'lp' }) },
+  // the lead: a pulse whose width sweeps, the vibrato coming in after ten frames
+  lead: { adsr: [0, 6, 13, 2], gain: 0.5, tail: 0.06,
+    frame: (n, f) => ({ n: n + (f > 10 ? 0.18 * Math.sin(TAU * 6 * f / 50) : 0), w: 'pulse', pw: 0.25 + 0.2 * tri50(f, 50) }) },
+  flute: { adsr: [3, 6, 11, 3], gain: 0.62, tail: 0.08,
+    frame: (n, f) => ({ n: n + (f > 8 ? 0.12 * Math.sin(TAU * 5 * f / 50) : 0), w: 'tri' }) },
+  brass: { adsr: [2, 6, 11, 2], gain: 0.5, tail: 0.08,
+    frame: (n, f) => ({ n, w: 'saw', fc: 900 + 700 * Math.min(1, f / 6), res: 3, mode: 'lp' }) },
+  theremin: { adsr: [5, 8, 12, 5], gain: 0.6, tail: 0.15,
+    frame: (n, f) => ({ n: n + 0.3 * Math.sin(TAU * 5.5 * f / 50), w: 'tri' }) },
+  // plucks: struck and gone, nothing sustained
+  pluck: { adsr: [0, 7, 0, 4], gain: 0.5, tail: 0.15, frame: (n, f) => ({ n, w: 'pulse', pw: 0.35 + 0.1 * tri50(f, 30) }) },
+  guitar: { adsr: [0, 8, 4, 3], gain: 0.5, tail: 0.12,
+    frame: (n) => ({ n, w: 'pulse', pw: 0.18, fc: 1350, res: 4, mode: 'lp' }) },
+  bell: { adsr: [0, 9, 0, 6], gain: 0.55, tail: 0.3, frame: (n) => ({ n, w: 'tri', ring: 2.41 }) },
+  stab: { adsr: [0, 6, 0, 2], gain: 0.5, tail: 0.08,
+    frame: (n, f) => ({ n, w: 'saw', fc: 600 + 1200 * Math.exp(-f / 2), res: 7, mode: 'lp' }) },
+  zap: { adsr: [0, 5, 0, 1], gain: 0.45, tail: 0.05, frame: (n, f) => ({ n: n + 24 - 6 * f, w: 'pulse', pw: 0.5 }) },
+  blip: { adsr: [0, 3, 0, 1], gain: 0.5, tail: 0.03, frame: (n) => ({ n, w: 'tri' }) },
+  // sustained chords: one voice stepping through the notes, a frame each
+  pad: { adsr: [5, 8, 11, 6], gain: 0.4, tail: 0.3, frame: (n, f) => ({ n, w: 'pulse', pw: 0.2 + 0.25 * tri50(f, 90) }) },
+  strings: { adsr: [6, 8, 12, 6], gain: 0.36, tail: 0.3,
+    frame: (n) => ({ n, w: 'saw', fc: 1150, res: 2, mode: 'lp' }) },
+  organ: { adsr: [0, 0, 15, 2], gain: 0.4, tail: 0.06, frame: (n) => ({ n, w: 'pulse', pw: 0.5 }) },
+  // the sync lead: a saw restarted on the note's cycle, its own pitch swept up over the note
+  sync: { adsr: [1, 7, 11, 3], gain: 0.7, tail: 0.1, frame: (n, f) => ({ n, w: 'saw', sync: 1.5 + 1.3 * tri50(f, 60) }) },
+  arp: { adsr: [0, 6, 11, 1], gain: 0.42, tail: 0.04, frame: (n, f) => ({ n, w: 'pulse', pw: 0.25 + 0.15 * tri50(f, 70) }) },
+  // the drums, from waveform tables
+  kick: { adsr: [0, 5, 0, 1], gain: 0.95, tail: 0.15,
+    frame: (n, f) => (f === 0 ? { n: 96, w: 'noise' } : { n: Math.max(26, 58 - 9 * f), w: 'pulse', pw: 0.5 }) },
+  kick909: { adsr: [0, 7, 0, 2], gain: 1, tail: 0.3,
+    frame: (n, f) => (f === 0 ? { n: 96, w: 'noise' } : { n: Math.max(26, 56 - 7 * f), w: f < 3 ? 'pulse' : 'tri', pw: 0.5 }) },
+  boom: { adsr: [0, 8, 0, 4], gain: 0.95, tail: 0.3,
+    frame: (n, f) => (f === 0 ? { n: 90, w: 'noise' } : { n: Math.max(22, 50 - 4 * f), w: 'tri' }) },
+  snare: { adsr: [0, 6, 0, 2], gain: 0.75, tail: 0.15,
+    frame: (n, f) => (f === 0 ? { n: 57, w: 'pulse', pw: 0.5 } : { n: 103 - Math.min(10, f), w: 'noise' }) },
+  clap: { adsr: [0, 5, 0, 2], gain: 1.1, tail: 0.15,
+    frame: (n, f) => ({ n: 100, w: 'noise', gate: f !== 1 && f !== 3, fc: 1050, res: 3, mode: 'bp' }) },
+  tom: { adsr: [0, 7, 0, 3], gain: 0.85, tail: 0.2, frame: (n, f) => ({ n: n - Math.min(5, 0.6 * f), w: 'tri' }) },
+  anvil: { adsr: [0, 7, 0, 4], gain: 0.55, tail: 0.25, frame: (n) => ({ n, w: 'tri', ring: 3.17 }) },
+  scratch: { adsr: [0, 4, 8, 1], gain: 0.5, tail: 0.04,
+    frame: (n, f) => ({ n: 62 + 10 * Math.sin(TAU * f / 6), w: 'saw', fc: 1100, res: 8, mode: 'bp' }) },
+  hat: { adsr: [0, 1, 0, 1], gain: 1.3, tail: 0.3, frame: () => ({ n: 110, w: 'noise', fc: 1400, res: 0, mode: 'hp' }) },
+  openhat: { adsr: [0, 6, 0, 4], gain: 0.75, tail: 0.3, frame: () => ({ n: 110, w: 'noise', fc: 1400, res: 0, mode: 'hp' }) },
+  ride: { adsr: [0, 6, 0, 5], gain: 0.3, tail: 0.3, frame: () => ({ n: 108, w: 'noise', fc: 1950, res: 6, mode: 'hp' }) },
+  crash: { adsr: [0, 9, 0, 9], gain: 0.4, tail: 0.8, frame: () => ({ n: 104, w: 'noise', fc: 1700, res: 0, mode: 'hp' }) },
+  riser: { adsr: [11, 0, 15, 2], gain: 0.4, tail: 0.1, frame: (n, f, dur) => ({ n: 70 + 36 * Math.min(1, f / Math.max(1, dur)), w: 'noise' }) },
+  vinyl: { adsr: [0, 0, 15, 1], gain: 0.05, tail: 0.05, frame: () => ({ n: 60, w: 'noise', fc: 1500, res: 0, mode: 'hp' }) },
+};
+
+function sidChip(native) {
+  // chords struck together on one instrument: on the chip, one voice stepping through them a frame each
+  const arpOf = new WeakMap();
+  const silent = new WeakSet();
+  function prepare(events) {
+    const groups = new Map();
+    for (const e of events) {
+      const kind = SID_OF[e.instr];
+      if (!(e.note > 0) || !['pluck', 'stab', 'pad', 'strings', 'organ', 'sync', 'guitar', 'brass'].includes(kind)) continue;
+      const k = e.instr + '|' + (e.kit || '') + '|' + e.t + '|' + e.dur;
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push(e);
+    }
+    for (const g of groups.values()) {
+      if (g.length < 2) continue;
+      g.sort((x, y) => x.note - y.note);
+      arpOf.set(g[0], g.map((e) => e.note));
+      for (let i = 1; i < g.length; i++) silent.add(g[i]);
+    }
+  }
+
+  const voice = (S) => ({
+    tail: S.tail,
+    render(v, out) {
+      if (silent.has(v.ev)) { out[0] = out[1] = 0; return; }
+      if (!v.sS) v.sS = SID_SOUND[SID_VARIANT(v.ev)] || S;
+      const S2 = v.sS;
+      // (a voice whose envelope has run out after its gate closed is silent: nothing left to work out)
+      if (v.age >= v.ev.dur && v.env === 0) { out[0] = out[1] = 0; return; }
+      const frame = Math.floor(v.age / SID_FRAME);
+      if (frame !== v.sframe) {
+        // the player's frame: what it writes to the voice's registers
+        v.sframe = frame;
+        const notes = arpOf.get(v.ev) || (v.ev.chord && v.ev.chord.length ? v.ev.chord : null);
+        const n = notes ? notes[frame % notes.length] : v.ev.note;
+        const r = S2.frame(n, frame, v.ev.dur / SID_FRAME);
+        r.arp = !!notes;
+        r.f = sidFreq(midiToFreq(r.n));
+        if (r.pw) r.pw = sidPW(r.pw);
+        if (r.mode) {
+          // the filter's coefficients, worked out once a frame (a zero-delay state-variable filter)
+          const g = Math.tan(Math.PI * Math.min(sidCutoff(Math.round(r.fc)), SR * 0.45) / SR);
+          r.k = 1 / (0.707 + (r.res || 0) / 15);
+          r.a1 = 1 / (1 + g * (g + r.k)); r.a2 = g * r.a1; r.a3 = g * r.a2;
+        }
+        v.sreg = r;
+      }
+      const r = v.sreg, f = r.f, dt = f / SR;
+      let s;
+      if (r.w === 'noise') s = sidNoise(v, f);
+      else {
+        let p;
+        if (r.sync) {
+          // hard sync: the voice restarts each time the oscillator it follows comes round
+          const m = osc(v, 1, f);
+          p = v.ph[0] + dt * r.sync; p -= Math.floor(p);
+          if (m < dt) p = m * r.sync;
+          v.ph[0] = p;
+        } else p = osc(v, 0, f);
+        const pd = dt * (r.sync || 1);
+        if (r.w === 'saw') s = 0.5 * (2 * p - 1 - blep(p, pd));
+        else if (r.w === 'pulse') s = 0.5 * ((p < r.pw ? 1 : -1) + blep(p, pd) - blep((p - r.pw + 1) % 1, pd));
+        else {
+          s = 0.5 * triOf(p);
+          // ring modulation: the triangle turned over on the other oscillator's cycle
+          if (r.ring && osc(v, 1, f * r.ring) >= 0.5) s = -s;
+        }
+      }
+      const gate = r.gate === undefined ? v.age < v.ev.dur : r.gate && v.age < v.ev.dur;
+      s *= sidEnv(v, S2.adsr, gate);
+      if (r.mode) {
+        // the 6581's filter, driven a little into its own distortion
+        const x = Math.tanh(s * 1.5) / 1.5;
+        const ic1 = v.sic1 || 0, ic2 = v.sic2 || 0;
+        const v3 = x - ic2, v1 = r.a1 * ic1 + r.a2 * v3, v2 = ic2 + r.a2 * ic1 + r.a3 * v3;
+        v.sic1 = 2 * v1 - ic1; v.sic2 = 2 * v2 - ic2;
+        s = r.mode === 'lp' ? v2 : r.mode === 'bp' ? v1 : x - r.k * v1 - v2;
+      }
+      s -= onePole(v, 'sdc', s, 20);                       // (the C64's output is AC-coupled: a pulse's offset goes)
+      // (a chord stepped as an arpeggio sits under the tune)
+      out[0] = out[1] = s * Math.min(1, v.ev.vel * 1.4) * S2.gain * (r.arp ? 0.72 : 1);
+    },
+  });
+
+  const instr = {};
+  const lead = voice(SID_SOUND.lead);
+  for (const name of [...Object.keys(native.INSTR), ...Object.keys(NEW_INSTR)]) {
+    if (SID_SOUNDS.has(name) || instr[name]) continue;
+    instr[name] = SID_OF[name] ? voice(SID_SOUND[SID_OF[name]]) : lead;
+  }
+  // (a vocoder-like lead sung on the choir: on the chip, a lead's pulse, not a pad's slow swell)
+  const choirPad = instr.choir;
+  instr.choir = { tail: choirPad.tail, render(v, out) { (v.ev.kit === 'vocoder' ? lead : choirPad).render(v, out); } };
+
+  return { name: 'sid', instr, prepare, sendScale: { reverb: 0.1, delay: 0.4 } };
+}
+
 /** The chips, built against the synthesizer's own instruments (for Paula to sample). */
 export function buildChips(native) {
-  return { paula: paulaChip(native), opl3: oplChip(), awe32: aweChip(), ym: ymChip(native) };
+  return { paula: paulaChip(native), opl3: oplChip(), awe32: aweChip(), ym: ymChip(native), sid: sidChip(native) };
 }
 
 /** Which chip an era's music plays on: none for the eras that keep the synthesizer's own voices. */
 export const ERA_CHIPS = {
-  1982: ['ym', null],             // (the Atari ST's chip, or the synthesizer's own voices for the C64 and the rest)
+  1982: ['sid', 'sid', 'ym', null], // (the C64's chip on half the tracks; the Atari ST's, or the synthesizer's own voices)
   1990: ['paula'],                // (the years of the Amiga's samples)
   1994: ['opl3', 'awe32'],        // (the sound card's FM, or its wavetable)
   1997: ['awe32'],                // (the wavetable of the late 90s)

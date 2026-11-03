@@ -127,6 +127,23 @@ its confidence and a one-line fix, and what it could not judge without ears.
 When the owner hears something it missed, the measurement that would have shown
 it goes into the tools and the fault into its checklist.
 
+## The SID, reviewed (2026-11-02)
+
+A new board rather than a new style: the reviewer heard the four styles of
+1982–1989 on the C64's SID against the YM2149 and the studio. It found the
+hats almost silent and the open hat a tick (-35 to -41 dB against the mix; the
+YM's -17 to -27), a DC offset under every pulse voice, the lead 2-3.5 dB lower
+against the rest than on the YM, the dance kick and clap thin, the sync lead
+lost, and ST buzz's buzzer turned into a filtered pulse. Put right on the chip
+alone: hats louder and their high-pass lowered from about 9 kHz to 4.4, an open hat of its own, the lead's
+sustain up and chords stepped as arpeggios set under it, the output
+AC-coupled, a longer kick for the dance kit, a fuller clap, the sync lead
+louder, and an unfiltered sawtooth for the buzz bass. After: italo's hats
+-18 dB, its clap's peak -7.6 dBFS (was -20.7), the lead +1.0 dB in its own
+band (was -0.7); chiptune's lead -0.2 dB (was -3.1); the buzz bass's highs
+index 0.15 (was 0.01; on the YM 0.28). The dance kick stays under the YM's
+(-4.3 dB against -0.7): the owner's ear decides.
+
 ## What it cannot judge
 
 Feel, taste, whether a groove swings or a melody is catchy rather than merely
