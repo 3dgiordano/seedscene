@@ -4,7 +4,7 @@
 
 The release that turns the tool into **SEEDSCENE**: a name, a personality,
 a Commodore 64 front door, seven eras of computing from 1972 to now,
-forty-five scenes, thirty-five styles of music, fourteen displays and six
+forty-five scenes, thirty-five styles of music, sixteen displays and six
 sound boards, an endless AUTOPLAY channel, and a live mode you
 can drive entirely from the keyboard.
 
@@ -383,6 +383,21 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   vowel's formants, steady as a machine's voice - over synth pads. In the
   1982–1989 era, on the synthesizer's own voices or the Atari ST's chip. It
   passes every check of the music audit.
+- **The vector monitors**, two displays: `vector`, the black-and-white tube
+  the rock shooter of 1979 was drawn on, and `colorvector`, the colour tube
+  of the 1981 tube shooter and the space-war cockpit. From a photograph of a
+  real vector tube drawing the rocks, an account of how the beam and the
+  phosphor work, and the instruction sets of the vector generators. A beam
+  only draws lines, so the display traces any picture's lines and the outlines
+  of what it fills, and leaves the inside of every shape unlit, black: a filled
+  scene becomes its contours. The black-and-white tube draws them blue-white
+  in sixteen intensities (the generator's four-bit field); the colour tube in
+  seven colours - three guns, each on or off - at any intensity. A glow round
+  every line, the brightest running to white; the tube's curvature, a very
+  slight wobble across and the picture pumping a little with the bright
+  things on it, never a flash. Its phosphor fades in a few milliseconds,
+  under a frame, so nothing trails. `rocks` is seen through `vector` now (on
+  AUTO); `D` live, `?display=`, `--display`.
 - **The Commodore 64's sound chip, the SID** (the MOS 6581), a sixth sound
   board, from the chip's datasheet: three kinds of wave and noise on the PAL
   C64's clock - a pulse whose 12-bit width sweeps, a sawtooth, a triangle, and
@@ -779,7 +794,7 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   Arkanoid and OutRun to the 1980s; the 16-bit space shooter and the dinosaur
   film to 1990–1993). The machine names still find their era.
 - **Displays.** The screens are their own catalogue, apart from the eras:
-  fourteen, each named for one technology - B/W, ARCADE, MONO, C64, VHS, EGA,
+  sixteen, each named for one technology - B/W, ARCADE, VECTOR, COLOR VECTOR, MONO, C64, VHS, EGA,
   AMIGA, VGA, SNES, COMPOSITE TV, GAME BOY, NOKIA, SVGA and MODERN (no filter).
   Every display draws at full resolution - a simulation, not an emulation -
   and only one that was a CRT gets a CRT's scan lines, curvature and glow; an

@@ -27,6 +27,20 @@ export const DISPLAYS = {
     palette: 'levels', levels: 4, dither: 0.35,  // a few bright colours, hard edges
     tube: 'crt', bloom: 1.3, scan: 0.35, barrel: 0.085, aberr: 0.0016, grain: 0.03, vignette: 0.7,
   },
+  vector: {
+    name: 'VECTOR', label: 'Black-and-white vector monitor', blurb: 'a beam drawing only lines - outlines where the picture had fills - on unlit phosphor: blue-white, sixteen intensities, a glow round every line',
+    screen: 'crt',
+    lines: 0, pixelAspect: 1,
+    palette: 'beam', levels: 16, dither: 0,
+    tube: 'vector', bloom: 1, scan: 0, barrel: 0.06, aberr: 0, grain: 0, vignette: 0.35,
+  },
+  colorvector: {
+    name: 'COLOR VECTOR', label: 'Colour vector monitor', blurb: 'the colour vector tube: lines and outlines only, in seven colours - three guns each on or off - at any intensity',
+    screen: 'crt',
+    lines: 0, pixelAspect: 1,
+    palette: 'rgb3', levels: 0, dither: 0,
+    tube: 'vector', bloom: 1, scan: 0, barrel: 0.06, aberr: 0, grain: 0, vignette: 0.35,
+  },
   mono: {
     name: 'MONO', label: 'Monochrome monitor', blurb: 'green phosphor on black, the office PC before colour',
     screen: 'crt',
@@ -125,7 +139,8 @@ export const DISPLAY_NAMES = Object.keys(DISPLAYS);
  */
 export const SCENE_DISPLAY = {
   paddles: 'bw',
-  invaders: 'arcade', rocks: 'arcade', maze: 'arcade', bricks: 'arcade', lightcycles: 'arcade',
+  rocks: 'vector',                    // (the rock shooter of 1979 was drawn by a beam, on a vector monitor)
+  invaders: 'arcade', maze: 'arcade', bricks: 'arcade', lightcycles: 'arcade',
   boxer: 'arcade', pyramid: 'arcade', outrun: 'arcade',
   lcd: 'modern',
   snake: 'nokia',                     // (the phone's game, on the phone's screen)
@@ -142,8 +157,8 @@ export function displayFor(scene, eraDisplay, forced = 'auto') {
   return SCENE_DISPLAY[scene] || eraDisplay || 'modern';
 }
 
-const PALETTE_MODE = { none: 0, c64: 1, levels: 2, dmg: 3, ega: 4, mono: 5, gray: 6, phone: 7 };
-const TUBE_MODE = { crt: 0, lcd: 1, tv: 2, clean: 3, modern: 4, vhs: 5 };
+const PALETTE_MODE = { none: 0, c64: 1, levels: 2, dmg: 3, ega: 4, mono: 5, gray: 6, phone: 7, beam: 8, rgb3: 9 };
+const TUBE_MODE = { crt: 0, lcd: 1, tv: 2, clean: 3, modern: 4, vhs: 5, vector: 6 };
 
 /** The numbers the post shader needs for a display: a screen that was not a CRT gets none of a CRT's effects. */
 export function displayUniforms(name) {

@@ -367,9 +367,10 @@ uniform vec2 uRes;             // canvas
 uniform vec2 uVRes;            // the picture's resolution (always the canvas's)
 uniform vec2 uLineRes;         // the screen's own lines: its scan lines, an LCD's grid, the tape's jitter
 uniform float uTime, uKick, uSnare, uEnergy;
-uniform int uPalMode;          // 0 none, 1 C64, 2 levels per channel, 3 handheld greens, 4 EGA, 5 green mono, 6 grey, 7 phone LCD
+uniform int uPalMode;          // 0 none, 1 C64, 2 levels per channel, 3 handheld greens, 4 EGA, 5 green mono, 6 grey, 7 phone LCD,
+                               // 8 a black-and-white vector beam, 9 a colour vector beam
 uniform float uLevels, uDither;
-uniform int uDisplay;          // 0 CRT, 1 LCD, 2 TV, 3 clean, 4 modern, 5 videotape
+uniform int uDisplay;          // 0 CRT, 1 LCD, 2 TV, 3 clean, 4 modern, 5 videotape, 6 vector
 uniform float uBloom, uScan, uBarrel, uAberr, uGrain, uVignette;
 uniform float uFade;           // 0..1, a fade to black between parts
 uniform float uImpact;         // 0 for most scenes; 1 gives a zoom blur on the kick
@@ -451,9 +452,35 @@ vec3 quantize(vec3 c, vec2 cell, float dither) {
   return c;
 }
 
+// The vector monitor's beam through a picture: a beam only draws lines, so it traces the picture's lines and
+// the outlines of what it fills, and leaves the inside of every shape unlit. An edge of colour counts as much
+// as one of brightness (a Sobel filter on each channel); a line already drawn thin is found as brighter than
+// what is round it. Its colour is that of the lit side. r: how far apart, in the picture's pixels, it looks.
+vec4 vectorBeam(vec2 p, float r) {
+  vec2 o = r / uVRes;
+  vec3 c = texture(uSceneSoft, p).rgb;
+  vec3 n = texture(uSceneSoft, p + vec2(0.0, o.y)).rgb, s = texture(uSceneSoft, p - vec2(0.0, o.y)).rgb;
+  vec3 e = texture(uSceneSoft, p + vec2(o.x, 0.0)).rgb, w = texture(uSceneSoft, p - vec2(o.x, 0.0)).rgb;
+  vec3 ne = texture(uSceneSoft, p + o).rgb, sw = texture(uSceneSoft, p - o).rgb;
+  vec3 nw = texture(uSceneSoft, p + vec2(-o.x, o.y)).rgb, se = texture(uSceneSoft, p + vec2(o.x, -o.y)).rgb;
+  vec3 gx = (ne + 2.0 * e + se) - (nw + 2.0 * w + sw);
+  vec3 gy = (nw + 2.0 * n + ne) - (sw + 2.0 * s + se);
+  float edge = length(vec3(length(vec2(gx.r, gy.r)), length(vec2(gx.g, gy.g)), length(vec2(gx.b, gy.b)))) * 0.25;
+  vec3 ridge = c - (n + s + e + w + ne + nw + se + sw) / 8.0;
+  float line = max(ridge.r, max(ridge.g, ridge.b));
+  vec3 lit = max(max(max(c, n), max(s, e)), max(max(w, ne), max(max(nw, se), sw)));
+  return vec4(lit, smoothstep(0.1, 0.32, max(edge, line * 1.6)));
+}
+
 void main() {
   vec2 c = vUv - 0.5;
   vec2 uv = vUv + c * dot(c, c) * uBarrel;          // tube curvature
+  if (uDisplay == 6) {
+    // a vector monitor's beam is steered, not scanned: a very slight wobble across, and the picture pumping a
+    // little with the bright things on it (a real tube's, photographed: e-basteln.de's Asteroids monitor)
+    uv.x += 0.0004 * sin(uv.y * 9.0 + uTime * 2.3);
+    uv = 0.5 + (uv - 0.5) * (1.0 + 0.003 * uEnergy);
+  }
 
   vec2 cell = floor(uv * uVRes);
   vec2 suv = (cell + 0.5) / uVRes;                  // centre of the era's pixel
@@ -518,7 +545,23 @@ void main() {
     col = mix(col, acc, clamp(zb * 0.85, 0.0, 0.7)) + acc * zb * 0.12;
   }
 
-  if (uBloom > 0.0) {
+  if (uDisplay == 6) {
+    // the vector monitor: the beam draws the picture's lines and outlines, everything else is unlit phosphor,
+    // black; a glow spreads round every line (the same lines found wider apart) and the brightest run to white.
+    // The black-and-white tube (Asteroids' DVG): one blue-white, sixteen intensities a vector. The colour tube
+    // (the AVG of Tempest and Star Wars): three guns each on or off - seven colours - at any intensity. (Its
+    // persistence is a few milliseconds, under a frame: nothing trails.)
+    vec4 b = vectorBeam(uv, 1.0), g = vectorBeam(uv, 3.0);
+    float lit = max(b.r, max(b.g, b.b)), litG = max(g.r, max(g.g, g.b));
+    float I = b.a * lit, IG = g.a * litG * 0.22 * uBloom;
+    vec3 hue = vec3(0.82, 0.9, 1.0), hueG = hue;
+    if (uPalMode == 9) {
+      hue = step(vec3(0.5 * lit), b.rgb);
+      hueG = step(vec3(0.5 * litG), g.rgb);
+    } else I = floor(I * 15.0 + 0.5) / 15.0;
+    col = hue * I + hueG * IG;
+    col = mix(col, vec3(max(col.r, max(col.g, col.b))), smoothstep(0.85, 1.3, I) * 0.35);
+  } else if (uBloom > 0.0) {
     vec3 bloom = vec3(0.0);
     float rad = 0.005 + 0.012 * uEnergy;
     for (int i = 0; i < 12; i++) {

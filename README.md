@@ -16,7 +16,7 @@ Then ride it through half a century, from 1972 to now.**
 
 ![THE JOURNEY: every era from the arcade to the 64k intro, each with its own card, scenes and music](docs/gallery/journey.gif)
 
-`v0.2` · 7 eras · 45 scenes · 35 music styles · 14 displays · 6 sound boards · endless autoplay · runs in your browser · renders to mp4 ·
+`v0.2` · 7 eras · 45 scenes · 35 music styles · 16 displays · 6 sound boards · endless autoplay · runs in your browser · renders to mp4 ·
 no assets, only maths · built with [3dgiordano/agent-plugins](https://github.com/3dgiordano/agent-plugins)
 
 </div>
@@ -152,7 +152,7 @@ glow and fringes for what was seen on a CRT; for an LCD or anything later, only
 its palette. Each display is one technology, named for it. On **AUTO** (the
 default) every scene is seen through the screen it belongs to: a game through
 its own machine's (Pong on a black-and-white set, the arcade games on the
-arcade monitor, the phone's snake on the phone, the 16-bit space shooter on its
+arcade monitor, the rocks on the vector monitor that drew them, the phone's snake on the phone, the 16-bit space shooter on its
 console), a film or a television series
 through the videotape it was watched on, the LCD game as it draws its own
 device (MODERN). The demo effects go through their era's, with three
@@ -166,6 +166,8 @@ yesterday's screens.
 |---|---|
 | `bw` **B/W** | a black-and-white television: grey, soft and grainy |
 | `arcade` **ARCADE** | the coin-op raster monitor: a few hard, bright colours, heavy bloom, a curved tube |
+| `vector` **VECTOR** | the black-and-white vector monitor: a beam drawing only lines - the outlines of whatever a picture fills - on unlit phosphor, blue-white, sixteen intensities, a glow round every line |
+| `colorvector` **COLOR VECTOR** | the colour vector monitor: lines and outlines only, in seven colours - three guns each on or off - at any intensity |
 | `mono` **MONO** | green phosphor on black, the office PC before colour |
 | `c64` **C64** | the 8-bit home computer's 16 colours, on the family TV |
 | `vhs` **VHS** | a film or a series on tape, played back well: soft brightness the deck sharpens back, colour smeared wide and a little late, lines that wave, the heads switching at the bottom |
@@ -540,7 +542,7 @@ seedscene info    [options]     show what a seed composes
 | `--seed <word>` | anything at all; the same word always gives the same demo | random |
 | `--scene <name>` | one of the forty-five scenes (`--style`, its old name, works too) | chosen by the seed - one of the era's, if the era is given |
 | `--era <name>` | `auto` `1972` `1982` `1990` `1994` `1997` `2000` `2010` — or any year inside one, or its old name (`arcade` `c64` `amiga` `dos` `console` `handheld` `y2k` `modern`) | an era the scene belongs to |
-| `--display <name>` | `auto` `bw` `arcade` `mono` `c64` `vhs` `ega` `amiga` `vga` `snes` `composite` `gameboy` `nokia` `svga` `modern` | the screen: on `auto` each scene its own, or its era's |
+| `--display <name>` | `auto` `bw` `arcade` `vector` `colorvector` `mono` `c64` `vhs` `ega` `amiga` `vga` `snes` `composite` `gameboy` `nokia` `svga` `modern` | the screen: on `auto` each scene its own, or its era's |
 | `--board <name>` | `auto` `hifi` `paula` `opl3` `awe32` `ym` `sid` | the sound board: on `auto` each scene its own, or its era's |
 | `--music <name>` | `auto` or one of the thirty-five styles | music of the era |
 | `--res <WxH\|preset>` | `854x480`, or `240p` `360p` `480p` `576p` `720p` `1080p` (or `--width` and `--height`) | `480p` |
