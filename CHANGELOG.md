@@ -4,7 +4,7 @@
 
 The release that turns the tool into **SEEDSCENE**: a name, a personality,
 a Commodore 64 front door, seven eras of computing from 1972 to now,
-forty-five scenes, thirty-five styles of music, fourteen displays and five
+forty-five scenes, thirty-five styles of music, fourteen displays and six
 sound boards, an endless AUTOPLAY channel, and a live mode you
 can drive entirely from the keyboard.
 
@@ -383,6 +383,21 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   vowel's formants, steady as a machine's voice - over synth pads. In the
   1982–1989 era, on the synthesizer's own voices or the Atari ST's chip. It
   passes every check of the music audit.
+- **The Commodore 64's sound chip, the SID** (the MOS 6581), a sixth sound
+  board, from the chip's datasheet: three kinds of wave and noise on the PAL
+  C64's clock - a pulse whose 12-bit width sweeps, a sawtooth, a triangle, and
+  the 23-bit noise register (as reSID models it) - at the pitches its 16-bit
+  frequencies allow; an envelope of 256 steps at the datasheet's sixteen rates,
+  rising in a straight line and falling in a curve; the 6581's two-pole filter,
+  low-, band- or high-pass with sixteen steps of resonance, its cutoff on a
+  near-log scale, distorting a little; ring modulation for bells and hard sync
+  for a sweeping lead. Written once a frame as the 50 Hz music player wrote
+  it: chords as arpeggios on one voice, vibrato that waits, a filtered pulse
+  bass, and drums from waveform tables - a frame of noise then a square
+  falling in pitch for the kick, a punch of pulse then noise for the snare.
+  It plays half the tracks of 1982–1989, the era seen on the C64's display;
+  the YM2149 and the synthesizer's own voices the rest, by the seed;
+  `--board sid`, `C` live.
 - **The Atari ST's sound chip, the YM2149**, a fifth sound board: three
   square channels, a noise generator and the hardware envelope on the ST's
   2 MHz clock, from the chip's datasheet - pitches at what its 12-bit periods

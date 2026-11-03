@@ -17,7 +17,7 @@ import { encodeWav } from './wav.js';
 import { ERAS, ERA_NAMES } from '../src/core/eras.js';
 import { ERA_CHIPS } from '../src/core/chips.js';
 
-const CHIP_LABEL = { paula: 'Amiga, Paula samples', opl3: 'Sound Blaster 16, OPL3 FM', awe32: 'Sound Blaster AWE32, wavetable' };
+const CHIP_LABEL = { paula: 'Amiga, Paula samples', opl3: 'Sound Blaster 16, OPL3 FM', awe32: 'Sound Blaster AWE32, wavetable', sid: 'Commodore 64, SID' };
 // every style, on each chip of the eras it belongs to
 const TAKES = [];
 for (const name of MUSIC_NAMES) {

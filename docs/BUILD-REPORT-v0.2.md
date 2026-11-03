@@ -30,7 +30,7 @@ sound board.
 
 - **Built:** forty-five scenes in seven eras (spans of years, 1972 to now; the
   last, 2010–now, has no scenes yet), thirty-five music styles, fourteen
-  displays and five sound boards, each scene with its own or its era's; THE
+  displays and six sound boards, each scene with its own or its era's; THE
   JOURNEY (three scenes an era, going on through the lists over replays),
   AUTOPLAY, born in, greetings, the screensaver, the sounds between the tracks,
   the screen kept on in a programme.
@@ -3938,6 +3938,40 @@ fill them is the owner's.
 | The YM2149, ST buzz, italo disco, round 5 | the other styles compose identical scores |
 | The hip-hop blaster's dead air | none left on paula, opl3 or hifi with the audit's three seeds (10-12 s a piece before); every other style's audio identical on every chip |
 | `npm test` | passes after each change |
+
+## The split, and the C64's SID
+
+An outside proposal, written before the YM2149 and round 5, was checked
+against the code and the plan: most of it was already planned; what was new -
+a SID board, a vector display, shader art for 2010–now, a GB APU, displays by
+the real machine (GBA, AGA, HAM, the PC's own monitor, the Spectrum, MSX and
+CPC) and an AY board apart from the YM2149 - went into the plans. At the
+owner's word (Q9) the release was split: 0.2.0 closes the holes that show
+(docs/PLAN-v0.2.md, section 8, **What 0.2.0 still takes**), the rest goes to
+0.3.0 (docs/PLAN-v0.3.md).
+
+**The SID**, the split's first piece: the C64's 6581 as a sixth sound board,
+from the chip's datasheet (a transcription of it; the scan could not be read)
+and reSID's models of its noise register, its envelope's curve and its
+filter's cutoff. It plays half the tracks of 1982–1989, the era seen on the
+C64's display; the YM2149 and the studio share the rest, by the seed (2,057,
+995 and 948 of 4,000 seeds). The real chip had one filter for its voices and
+three voices; here, as on the YM2149, each part of the score is a voice of its
+own and each voice that needs the filter has its own. The music reviewer heard
+the four styles on it before the owner: the hats near silent, a DC offset
+under the pulses, the lead lower than on the YM, the dance kick and clap thin,
+the sync lead lost and ST buzz's buzzer gone; all put right on the chip alone
+(docs/MUSIC-REVIEW.md, **The SID, reviewed**). ST buzz plays on the SID too,
+with an unfiltered sawtooth for its buzzer; keeping it off the SID would need
+boards chosen by style, the owner's call.
+
+| Check | Result |
+|---|---|
+| The music audit, the four styles of 1982–1989 | 4 of 4 pass; synthpop's echo warning as before; the slowest, italo, 3.2x real time |
+| The reviewer's faults, measured again | italo's hats -18 dB against the mix (were -35 to -41), the clap's peak -7.6 dBFS (was -20.7), the lead +1.0 dB in its band (was -0.7); chiptune's lead -0.2 dB (was -3.1) |
+| The other styles and boards | no score and no other chip's code changed |
+| Live, muted, `board=sid` in 1982–1989 | the scene plays, the HUD reads "sound SID", no console errors |
+| `npm test` | 22 checks pass |
 
 ## What went wrong in the first round
 
