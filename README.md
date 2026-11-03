@@ -150,7 +150,7 @@ glow and fringes for what was seen on a CRT; for an LCD or anything later, only
 its palette. Each display is one technology, named for it. On **AUTO** (the
 default) every scene is seen through the screen it belongs to: a game through
 its own machine's (the first paddle game on a black-and-white set, the arcade games on the
-arcade monitor, the rocks on a vector monitor, the phone's snake on the phone, the 16-bit space shooter on its
+arcade monitor, the rocks on a vector monitor, the tube shooter and the tank battle on a colour one, the phone's snake on the phone, the 16-bit space shooter on its
 console), a film or a television series
 through the videotape it was watched on, the LCD game as it draws its own
 device (MODERN). The demo effects go through their era's, with three
@@ -309,7 +309,7 @@ a battery saver, a policy - leaves the screen to the computer's settings.
 
 ![paddles, invaders, rocks, a maze, a brick wall, light riders, a snake, a robot title fight and a space run, each moving to its own music](docs/gallery/arcade.gif)
 
-Before the demoscene there was the arcade, and SEEDSCENE starts there: eleven
+Before the demoscene there was the arcade, and SEEDSCENE starts there: fifteen
 game-inspired visualizers that move to the music instead of a joystick. Not a
 replay of the games — a show made of them. Every game scene plays on a
 **board floating in space** — and a game that is a device of its own, the LCD
@@ -318,7 +318,7 @@ new angle on every eight-bar phrase, a punch in on the kick, a lean on the
 snare, the board's neon frame breathing with the bass, and a zoom blur on
 every kick.
 
-Nine of them are real games underneath, run as small simulations locked to
+Thirteen of them are real games underneath, run as small simulations locked to
 the beat. The chomper hunts the nearest dot and dodges, while the wisps chase
 it — one straight at it, one cutting it off, one keeping its distance — and
 flee after a power dot. The snake steers for its food, keeps itself room to
@@ -337,7 +337,7 @@ egg hatches into a snake that chases; a ball on its cube and it stops and
 swears in a balloon, and with the snake close behind it rides a disc to the
 top and the snake, following, falls.
 
-Four of those nine play on the music's own grid, so their big moments land on it.
+Eight of those thirteen play on the music's own grid, so their big moments land on it.
 In **paddles** every return falls on a beat, and on an accent - the crash
 that opens a phrase, the drop - the paddle the ball is heading for misses
 and is blown apart on that very note; the other side scores. In **invaders**
@@ -349,13 +349,22 @@ the rhythm, and the paddle aims each return somewhere new. In
 turning on the beat and dodging between beats; a rider goes down only where
 the music turns - two beats ahead, the game sends one of them into another's
 wall, timing its speed so it blows up on the downbeat that opens a phrase, or
-on an accent. Same seed, same game, move
-for move.
+on an accent. In **crossing** every lane of traffic and logs steps on the
+beat and the hopper hops a lane on it, looking two beats ahead - riding a log,
+waiting on the verge, now and then misjudging a car; five bays filled light up
+on the drop. In **tube** the climbers take a rung up the lanes on each beat,
+the claw on the rim fires down its lane on the backbeat, and on the drop it
+dives down the tube into the next shape. In **tanks** the tank comes round
+after the enemy on the beat and fires on the backbeat once it is in the sight,
+the radar sweeping once a bar. In **football** every pass lands on a beat, a
+winger goes down the line through the build, and the header goes in on the
+drop. Same seed, same game, move for move.
 
 They are homages, drawn from nothing but maths — no sprite, no maze, no
 character and no tune is copied from any game. The creatures in the
 formation, the mazes, the rocks and the challenger robot are all made up by
-the seed.
+the seed; the hopper, the tube's climbers and its claw, the tanks and the
+footballers' kits are drawn here or chosen by it.
 
 ## Scenes, straight out of the scene
 
