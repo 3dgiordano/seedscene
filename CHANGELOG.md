@@ -4,7 +4,7 @@
 
 The release that turns the tool into **SEEDSCENE**: a name, a personality,
 a Commodore 64 front door, seven eras of computing from 1972 to now,
-fifty-four scenes, thirty-five styles of music, sixteen displays and six
+fifty-five scenes, thirty-six styles of music, sixteen displays and six
 sound boards, an endless AUTOPLAY channel, and a live mode you
 can drive entirely from the keyboard.
 
@@ -408,6 +408,24 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   a laser fan, the mirror ball's spots, a strobe at the end of each phrase, and
   the lights flaring in the lens as each phrase opens; the camera moves as
   before, a little farther back.
+- **The football match** (`football`, 1990–1993), the top-down football
+  games of the arcades and the Amiga: two sides of eleven on a pitch mown in
+  stripes, seen from above, the camera following the ball - the lines, the
+  boxes, the nets, the boards and the crowd in both sides' colours round it.
+  Every pass lands on the beat, working the ball up the pitch through a
+  phrase; through the build a winger takes it down the line and crosses on
+  the last beat but one, and the header goes in on the accented bar - the
+  drop - GOAL! in big dots of the scorers' colour, the crowd on its feet. The
+  side that conceded kicks off two bars later. Drawn from the arcade museum's
+  screenshots of the top-down football games of 1985-1989; the kits are the
+  seed's, no team, name or sprite of any game.
+- **Terrace drums** (`terrace`), a music style for 1990–1993 and 2010–now:
+  the football crowds of Latin America and Europe - the big bass drums on one
+  and three with a pick-up before each and a cymbal struck with them, the
+  snares on the eighths with a drag and a roll into each phrase, the crowd's
+  hands on two and four once it is going, a tuba under it, the trumpets'
+  calls between the lines, and the stand's chant on a synth lead: short
+  phrases inside a fifth, a call and its answer, in a major key.
 - **The road crossing** (`crossing`, 1972–1981, on the arcade monitor), the
   road-crossing game of the early-80s arcades, in neon: a hopper crossing four
   lanes of traffic and a river of logs to the five bays of the far bank. Every
@@ -775,7 +793,7 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   allocations, cached pitches and filter coefficients), and the next track is
   composed a slice per audio block while only one track plays, never all at
   once in the middle of a mix. The sound is the same, bit for bit.
-- **Music styles**, chosen by the era or with `--music` - thirty-five in all, these and the ones below:
+- **Music styles**, chosen by the era or with `--music` - thirty-six in all, these and the ones below:
   `chiptune` (C64 SID), `newbeat`, `rave` (Amiga, 1992), `orchestral`
   (tracker strings, choir, timpani, brass), `dreamwave`, `acid` (303),
   `gabber`, `ambient`, `eurodance`, `jungle`, `heroic` (game soundtrack),

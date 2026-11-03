@@ -6905,6 +6905,141 @@ vec3 render(vec2 p, vec2 uv) {
 }
 `;
 
+const football = `
+// The football match: two sides of eleven on a striped pitch seen from above,
+// the camera following the ball, as the top-down football games of the
+// arcades and the 16-bit computers showed it. The game runs as a simulation
+// (src/core/sims.js): every pass lands on the beat, the build takes a winger
+// down the line, and the header goes in on the drop, the crowd going up.
+uniform vec4 uPl[22];      // x, y in metres, kit (0/1 the sides, 2/3 their keepers, +4 running), facing
+uniform vec4 uBall;        // x, y, height
+uniform vec4 uCam;         // what the camera looks at, in metres
+uniform vec4 uFoot;        // goals each side, since the last goal, who scored it
+const float PX = 52.5, PY = 34.0, SC = 0.036;     // half the pitch; screen units a metre
+
+vec3 kit(int k, bool shorts) {
+  // the two sides in the seed's colours, as far apart as the palette gives; the keepers in their own
+  vec3 a = unblack(pal(0.05 + uSeed.x * 0.3)), b = unblack(pal(0.55 + uSeed.x * 0.3));
+  a /= max(max(a.r, a.g), max(a.b, 0.3)); b /= max(max(b.r, b.g), max(b.b, 0.3));
+  if (k == 0) return shorts ? vec3(0.95) : a;
+  if (k == 1) return shorts ? b * 0.35 : b;
+  if (k == 2) return shorts ? vec3(0.1) : vec3(0.95, 0.85, 0.15);
+  return shorts ? vec3(0.1) : vec3(0.2, 0.85, 0.35);
+}
+float lineD(vec2 m) {
+  // the pitch's markings, in metres: touchlines and goal lines, halfway, the centre circle and spot, the boxes,
+  // the spots and their arcs, the corner arcs
+  vec2 a = abs(m);
+  float d = max(abs(a.x - PX), 0.0) < 1e9 ? abs(max(a.x - PX, a.y - PY)) : 1e9;
+  d = min(d, abs(m.x) + step(PY, a.y) * 1e3);
+  d = min(d, abs(length(m) - 9.15));
+  d = min(d, length(m) - 0.25);
+  vec2 q = vec2(PX - a.x, a.y);
+  d = min(d, max(abs(q.x - 16.5) * step(q.y, 20.16), 0.0) + step(20.16, q.y) * 1e3);
+  d = min(d, abs(q.y - 20.16) + step(16.5, q.x) * 1e3);
+  d = min(d, abs(q.x - 5.5) + step(9.16, q.y) * 1e3);
+  d = min(d, abs(q.y - 9.16) + step(5.5, q.x) * 1e3);
+  d = min(d, length(q - vec2(11.0, 0.0)) - 0.2);
+  d = min(d, abs(length(q - vec2(11.0, 0.0)) - 9.15) + step(q.x, 16.5) * 1e3);
+  d = min(d, abs(length(vec2(q.x, PY - a.y)) - 1.0));
+  return d;
+}
+
+vec3 render(vec2 p, vec2 uv) {
+  vec2 m = uCam.xy + p / SC;
+  vec2 a = abs(m);
+  float goalT = uFoot.z;
+  vec3 col;
+  if (a.x < PX + 3.0 && a.y < PY + 3.0) {
+    // the grass, mown in stripes across the pitch
+    float stripe = mod(floor((m.x + PX) / 5.25), 2.0);
+    col = mix(vec3(0.16, 0.5, 0.14), vec3(0.2, 0.6, 0.17), stripe);
+    col *= 0.95 + 0.06 * vnoise(m * 0.8);
+    col = mix(col, vec3(0.95), 1.0 - smoothstep(0.06, 0.16, lineD(m)));
+  } else {
+    // the stands: a crowd in both sides' colours, on its feet and flickering when a goal goes in
+    vec2 seat = floor(m * vec2(1.6, 1.6));
+    float h = hash12(seat + 17.0);
+    vec3 fan = h < 0.45 ? kit(0, false) : h < 0.9 ? kit(1, false) : vec3(0.9, 0.8, 0.7);
+    float up = exp(-goalT * 0.9) * step(0.0, goalT);
+    float bob = 0.5 + 0.5 * sin(uTime * (6.0 + 6.0 * up) + h * 30.0);
+    vec2 f = fract(m * 1.6) - 0.5;
+    float head = 1.0 - smoothstep(0.22, 0.32, length(f - vec2(0.0, 0.08 * bob * (0.3 + up))));
+    col = vec3(0.05, 0.05, 0.08) + fan * head * (0.35 + 0.35 * uKick + 0.6 * up);
+    // the boards round the pitch
+    if (max(a.x - PX, a.y - PY) < 4.0) col = mix(vec3(0.08, 0.1, 0.25), kit(int(mod(floor((m.x + m.y) / 6.0), 2.0)), false), 0.35);
+    col += vec3(1.0) * up * step(0.985, hash12(seat + floor(uTime * 8.0))) * 0.8;
+  }
+  // the goals: their nets behind the line, the posts and the bar
+  for (int s = -1; s <= 1; s += 2) {
+    vec2 g = vec2(m.x * float(s) - PX, m.y);
+    if (g.x > 0.0 && g.x < 2.2 && abs(g.y) < 3.66) {
+      vec2 net = abs(fract(g * vec2(2.5, 2.5)) - 0.5);
+      col = mix(col * 0.75, vec3(0.92), (1.0 - smoothstep(0.03, 0.09, min(net.x, net.y))) * 0.6);
+    }
+    float frame = min(abs(g.y) - 3.66 < 0.0 ? abs(g.x - 2.2) : 1e3, max(abs(abs(g.y) - 3.66), max(g.x - 2.2, -g.x)));
+    col = mix(col, vec3(1.0), 1.0 - smoothstep(0.08, 0.16, frame));
+  }
+  // shadows first, then the players, seen from above: shoulders in the shirt, a head, legs striding when they run
+  for (int i = 0; i < 22; i++) {
+    vec4 P = uPl[i];
+    vec2 d = (m - P.xy) / 1.4;
+    if (dot(d, d) > 2.5) continue;
+    col *= 1.0 - 0.35 * (1.0 - smoothstep(0.35, 0.6, length(d - vec2(0.25, -0.3))));
+  }
+  for (int i = 0; i < 22; i++) {
+    vec4 P = uPl[i];
+    vec2 d = (m - P.xy) / 1.4;                           // (drawn half as big again as a man, as the games drew them)
+    if (dot(d, d) > 2.0) continue;
+    int k = int(mod(P.z, 4.0));
+    bool run = P.z >= 3.5;
+    vec2 q = rot(-P.w + 1.5708) * d;                       // the player's own frame: facing +y
+    float stride = run ? sin(uTime * 13.0 + float(i) * 1.3) : 0.0;
+    float legs = min(length(q - vec2(-0.18, 0.35 * stride)) - 0.14, length(q - vec2(0.18, -0.35 * stride)) - 0.14);
+    col = mix(col, kit(k, true), 1.0 - smoothstep(0.0, 0.05, legs));
+    float body = length(q * vec2(0.55, 1.15)) - 0.36;
+    col = mix(col, kit(k, false) * (0.85 + 0.25 * smoothstep(0.2, -0.2, q.x)), 1.0 - smoothstep(0.0, 0.05, body));
+    float head = length(q - vec2(0.0, 0.02)) - 0.19;
+    col = mix(col, vec3(0.9, 0.7, 0.55), 1.0 - smoothstep(0.0, 0.04, head));
+    col = mix(col, vec3(0.2, 0.12, 0.06), 1.0 - smoothstep(0.0, 0.04, length(q - vec2(0.0, -0.04)) - 0.15));
+  }
+  // the ball: its shadow on the grass, the ball above it as high as it was kicked
+  vec2 bq = m - uBall.xy;
+  col *= 1.0 - 0.45 * (1.0 - smoothstep(0.15, 0.3, length(bq - vec2(0.15, -0.15))));
+  vec2 bb = bq - vec2(-0.2, 0.55) * uBall.z;
+  float br = 0.3 * (1.0 + uBall.z * 0.06);
+  float ball = length(bb) - br;
+  col = mix(col, vec3(1.0) * (0.85 + 0.15 * step(0.0, bb.x + bb.y)), 1.0 - smoothstep(0.0, 0.05, ball));
+  col = mix(col, vec3(0.1), (1.0 - smoothstep(0.0, 0.04, length(bb) - br * 0.35)) * 0.8);
+
+  // a goal: GOAL! in the scorers' colour, big dots over the pitch, for two bars
+  if (goalT < 4.0) {
+    vec2 g = (p - vec2(-0.42, -0.06)) / vec2(0.034, 0.034);
+    vec2 cell = floor(g), f = fract(g) - 0.5;
+    int ch = int(floor(cell.x / 6.0));
+    int gx = int(cell.x) - ch * 6, gy = 6 - int(cell.y);
+    // a 5 x 7 font: G, O, A, L, !
+    const int FONT[35] = int[35](14, 17, 16, 23, 17, 17, 15,   14, 17, 17, 17, 17, 17, 14,   14, 17, 17, 31, 17, 17, 17,   16, 16, 16, 16, 16, 16, 31,   4, 4, 4, 4, 4, 0, 4);
+    if (ch >= 0 && ch < 5 && gx < 5 && gy >= 0 && gy < 7) {
+      int row = FONT[ch * 7 + gy];
+      if (((row >> (4 - gx)) & 1) == 1) {
+        float dot = 1.0 - smoothstep(0.28, 0.42, length(f));
+        float on = step(0.0, goalT) * (goalT < 0.15 ? goalT / 0.15 : 1.0) * (1.0 - smoothstep(3.2, 4.0, goalT));
+        col = mix(col, kit(int(uFoot.w), false) * 1.2, dot * on);
+      }
+    }
+  }
+  // the score, top left: a chip of each side's colour and its goals
+  for (int s = 0; s < 2; s++) {
+    vec2 o = vec2(-0.86 + float(s) * 0.13, 0.4);
+    col = mix(col, kit(s, false), (1.0 - step(0.022, max(abs(p.x - o.x), abs(p.y - o.y - 0.035)))));
+    int gl = int(s == 0 ? uFoot.x : uFoot.y);
+    col = mix(col, vec3(1.0, 0.95, 0.4), digit7((p - vec2(o.x + 0.032, 0.392)) / 0.04, gl - 10 * (gl / 10)));
+  }
+  return col;
+}
+`;
+
 const tanks = `
 // The wireframe tank: the battlefield seen through a tank's sight, every
 // line in green as the black-and-white vector tube showed it through its
@@ -7375,6 +7510,7 @@ const SOURCES = {
   crossing: staged(crossing, 0.55, 0.4),
   tube: staged(tube, 0.4, 0.45),
   tanks: staged(tanks, 0.35, 0.45),
+  football: staged(football, 0.6, 0.4),
   maze: staged(maze, 0.7, 0.4),
   bricks: staged(bricks, 0.6, 0.35),
   lightcycles: staged(lightcycles, 0.95, 0.6),
@@ -7389,7 +7525,7 @@ const SOURCES = {
 
 /** Post-pass effects a scene asks for: the game scenes get the beat blur. */
 export const STYLE_FX = Object.fromEntries(
-  ['paddles', 'invaders', 'rocks', 'crossing', 'tube', 'tanks', 'maze', 'bricks', 'lightcycles', 'snake', 'boxer', 'starfighter', 'pipes', 'pyramid', 'lcd', 'bobs', 'rubber', 'bumplogo', 'cascade', 'ansi', 'echolines', 'maze3d', 'moonbike', 'timecar', 'animeop', 'djdecks',
+  ['paddles', 'invaders', 'rocks', 'crossing', 'tube', 'tanks', 'football', 'maze', 'bricks', 'lightcycles', 'snake', 'boxer', 'starfighter', 'pipes', 'pyramid', 'lcd', 'bobs', 'rubber', 'bumplogo', 'cascade', 'ansi', 'echolines', 'maze3d', 'moonbike', 'timecar', 'animeop', 'djdecks',
    'prism', 'sculpture', 'fractalflight', 'gimbal']
     .map((n) => [n, { impact: 1 }]),
 );
@@ -7444,6 +7580,7 @@ export const STYLE_INFO = {
   paddles:     'Neon paddles on the beat; on an accent a paddle misses and blows up',
   invaders:    'A seed-made formation on the beat; aliens burst on the kick',
   rocks:       'A vector ship that flies, dodges and splits the rocks it hits',
+  football:    'Football seen from above, the camera on the ball: a pass on every beat, a run down the wing through the build, the header in on the drop, the crowd going up',
   tanks:       'A battlefield of green lines through a tank\'s sight: the tank comes round after the enemy on the beat, fires on the backbeat, the radar sweeping once a bar',
   tube:        'A claw on the rim of a glowing tube, things climbing its lanes on the beat, the shots on the backbeat, a dive down the tube on the drop',
   crossing:    'A hopper crossing traffic and a river of logs to the bays of the far bank, a hop and a step of the traffic on every beat',

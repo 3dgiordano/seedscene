@@ -16,7 +16,7 @@ Then ride it through half a century, from 1972 to now.**
 
 ![THE JOURNEY: every era from the arcade to the 64k intro, each with its own card, scenes and music](docs/gallery/journey.gif)
 
-`v0.2` · 7 eras · 54 scenes · 35 music styles · 16 displays · 6 sound boards · endless autoplay · runs in your browser · renders to mp4 ·
+`v0.2` · 7 eras · 55 scenes · 36 music styles · 16 displays · 6 sound boards · endless autoplay · runs in your browser · renders to mp4 ·
 no assets, only maths · built with [3dgiordano/agent-plugins](https://github.com/3dgiordano/agent-plugins)
 
 </div>
@@ -133,11 +133,11 @@ machine name it once had (`--era amiga`).
 |---|---|---|---|---|
 | **1972–1981** | the first video games | ARCADE | paddles, invaders, rocks, maze, lcd, crossing, tube, tanks | arcade attract, cyborg pulse, derelict ship, synth-pop |
 | **1982–1989** | home computers, arcades and the video shop | C64 | lightcycles, pyramid, boxer, bricks, outrun, scanner, timecar, moonbike, dottunnel, plasma, ball | SID chiptune, synth-pop, ST buzz, italo disco — on the C64's SID, the Atari ST's YM2149 or the synthesizer's own voices, by the seed |
-| **1990–1993** | the demoscene's golden years | AMIGA | the Amiga effects - copper, kefrens, vector balls, the chessboards, the cracktro and more - plasma, metaballs, tunnel, fractal, bumplogo, fireworks, morph; footsteps, starfighter, cascade, echolines | Amiga rave, New Beat, orchestral trackers, dreamwave, tracker jazz, beast lands, lament, musicdisk ballad, jolly march, hip-hop blaster — on Paula's 8-bit samples |
+| **1990–1993** | the demoscene's golden years | AMIGA | the Amiga effects - copper, kefrens, vector balls, the chessboards, the cracktro and more - plasma, metaballs, tunnel, fractal, bumplogo, fireworks, morph; footsteps, starfighter, cascade, echolines, football | Amiga rave, New Beat, orchestral trackers, dreamwave, tracker jazz, beast lands, lament, musicdisk ballad, jolly march, hip-hop blaster, terrace drums — on Paula's 8-bit samples |
 | **1994–1996** | the PC demos and the multimedia years | VGA | fire, pipes, ansi, maze3d; fractal, tunnel, metaballs, plasma, bumplogo | ambient techno, acid, gabber, eurodance, jungle, FM metal, MIDI quest — on a Sound Blaster 16's FM or an AWE32's wavetable; and keygen, the party's tracker tunes, played from samples as a module player did; and trip-hop, its strings and Rhodes on the card; and lament and jolly march, played on the card |
 | **1997–1999** | 3D consoles and pocket screens | COMPOSITE TV | snake, animeop, coderain | heroic game soundtracks, eurodance, chip rock and roll, star pilot, MIDI quest, the anime opening, skate punk, handheld chip, jolly march — on wavetable |
 | **2000–2009** | the 64k intro | SVGA | morph, gimbal, djdecks | trance, happy hardcore, keygen, trip-hop |
-| **2010–now** | shader art | MODERN | prism, sculpture, fractalflight | synthwave, dreamwave |
+| **2010–now** | shader art | MODERN | prism, sculpture, fractalflight | synthwave, dreamwave, terrace drums |
 
 ## Displays
 
@@ -405,8 +405,8 @@ Era by era, oldest first. Each one is a memory of its time, made from scratch.
 | **fractal** — the orbiting Julia set, the classic end-part. *Also 1994–1996.* `--scene fractal --era 1994 --seed julia` | **bumplogo** — the bump-mapped logo of the demos: an emblem raised out of stone, lit by circling coloured lights that flare on the snare, its relief deepening on the kick. *Also 1994–1996.* `--scene bumplogo --era 1994 --seed emboss` | **fireworks** — the fireworks of the demos: a burst on every backbeat, streaks falling to earth. `--scene fireworks --era 1990 --seed newyear` |
 | ![morph](docs/gallery/morph.png) | ![footsteps](docs/gallery/footsteps.png) | ![starfighter](docs/gallery/starfighter.png) |
 | **morph** — the morphing solid of the demos: a shape melting into the next on every bar. *Also 2000–2009.* `--scene morph --era 2000 --seed liquidmetal` | **footsteps** — the dinosaur films' most famous warning, as an idea: two cups of water on a dashboard at night, trembling into rings with every footstep - the left on the kick, the right on the snare. `--scene footsteps --era 1990 --seed impact` | **starfighter** — the space shooters of the 16-bit consoles, in flat-shaded polygons: a white fighter locking onto drones from the horizon, firing, dodging their shots, a warp at each new sector. `--scene starfighter --era 1990 --seed hyperdrive` |
-| ![cascade](docs/gallery/cascade.png) | ![echolines](docs/gallery/echolines.png) |   |
-| **cascade** — the card cascade of the desktop's won card game: a card leaving the piles each bar, bouncing down the green table in a trail of copies, landing on the beat. `--scene cascade --era 1990 --seed cascade` | **echolines** — the bouncing-lines screensaver of the early 90s: two four-cornered figures bouncing off the screen's edges in fans of echoes that the kick stretches and the snare recolours. `--scene echolines --era 1990 --seed nightshift` |   |
+| ![cascade](docs/gallery/cascade.png) | ![echolines](docs/gallery/echolines.png) | ![football](docs/gallery/football.png) |
+| **cascade** — the card cascade of the desktop's won card game: a card leaving the piles each bar, bouncing down the green table in a trail of copies, landing on the beat. `--scene cascade --era 1990 --seed cascade` | **echolines** — the bouncing-lines screensaver of the early 90s: two four-cornered figures bouncing off the screen's edges in fans of echoes that the kick stretches and the snare recolours. `--scene echolines --era 1990 --seed nightshift` || **football** — the top-down football games of the arcades and the Amiga: two sides of eleven on a striped pitch, the camera on the ball, a run down the wing; the header in on the drop, the crowd on its feet. `--scene football --era 1990 --seed derby` |
 
 *Also in this era: plasma.*
 
@@ -487,6 +487,7 @@ plays, or in the menu:
 | `agony` | **lament**: the quiet part of the demo — a slow piano broken in eighths over strings, a lonely lead, the rain on the window, a slow pulse | 66–80 |
 | `ballad` | **musicdisk ballad**: the tune you play twice — a slow four-channel ballad, a lead singing with vibrato under A5 as a tracker's did, an arpeggio, a soft beat | 80–96 |
 | `march` | **jolly march**: a column of little soldiers — a march at 120, rudimental snare drags and rolls, an oom-pah tuba, a whistled tune, and a dance beat under it when it gets going | 112–124 |
+| `terrace` | **terrace drums**: the football crowds of Latin America and Europe — big bass drums and snares in a march, a cymbal struck with the drum, trumpet calls between the lines, the stand's chant on a synth lead | 120–134 |
 | `bomb` | **hip-hop blaster**: the shooter with a beat — a slow boom-bap break, scratches, orchestra stabs, a lead chopped like a rap (no voice) | 88–100 |
 | `italo` | **italo disco**: the 80s Italian dance floor — an octave bass in sixteenths, an arpeggiator, a drum machine with hand claps and an open hat on the off-beat, a vocoder singing the tune, a minor key | 115–125 |
 | `stchip` | **ST buzz**: the Atari ST demos — the YM2149's envelope run at audio rate as a buzzing bass, chords stepped as 50 Hz arpeggios, a square lead, digi-drums and the noise channel's hats; 125 bpm most often, where a 50 Hz player falls | 118–140 |
@@ -519,7 +520,7 @@ score on the sound of its machine:
 | `opl3` **Sound Blaster 16 (OPL3)** or `awe32` **AWE32** | 1994–1996, by the seed | OPL3: two-operator FM with the chip's seven waveforms and operator feedback, FM drums, and dry, like a DOS game. AWE32: wavetable instruments — a grand piano, string and brass sections, a choir, plucked bass and guitar, an acoustic kit — with the card's chorus and reverb. |
 | `awe32` **AWE32-style wavetable** | 1997–1999 | the sampled sound of the CD-era consoles |
 
-Hear all thirty-five back to back, each on the boards of its eras:
+Hear all thirty-six back to back, each on the boards of its eras:
 
 ```bash
 npm run sampler        # → out/music-sampler.mp3
@@ -596,11 +597,11 @@ seedscene info    [options]     show what a seed composes
 | option | meaning | default |
 |---|---|---|
 | `--seed <word>` | anything at all; the same word always gives the same demo | random |
-| `--scene <name>` | one of the fifty-four scenes (`--style`, its old name, works too) | chosen by the seed - one of the era's, if the era is given |
+| `--scene <name>` | one of the fifty-five scenes (`--style`, its old name, works too) | chosen by the seed - one of the era's, if the era is given |
 | `--era <name>` | `auto` `1972` `1982` `1990` `1994` `1997` `2000` `2010` — or any year inside one, or its old name (`arcade` `c64` `amiga` `dos` `console` `handheld` `y2k` `modern`) | an era the scene belongs to |
 | `--display <name>` | `auto` `bw` `arcade` `vector` `colorvector` `mono` `c64` `vhs` `ega` `amiga` `vga` `snes` `composite` `gameboy` `nokia` `svga` `modern` | the screen: on `auto` each scene its own, or its era's |
 | `--board <name>` | `auto` `hifi` `paula` `opl3` `awe32` `ym` `sid` | the sound board: on `auto` each scene its own, or its era's |
-| `--music <name>` | `auto` or one of the thirty-five styles | music of the era |
+| `--music <name>` | `auto` or one of the thirty-six styles | music of the era |
 | `--res <WxH\|preset>` | `854x480`, or `240p` `360p` `480p` `576p` `720p` `1080p` (or `--width` and `--height`) | `480p` |
 | `--duration <seconds>` | length | 30 render, 180 live, 147 journey (21 s an era, three scenes each), 600 autoplay |
 | `--born <year>` | autoplay only: open in the era you were twelve in, and stay near it | — |
@@ -662,11 +663,11 @@ src/core/choose.js    what 'auto' means: scene, then era, then music
 src/core/journey.js   THE JOURNEY and AUTOPLAY: tracks mixed beat on beat
 src/core/sims.js      the games under the game scenes, and the scenes that move with the music
 src/core/rng.js       seeded random streams
-src/core/music.js     composer, thirty-five styles, synthesizer, feature track
+src/core/music.js     composer, thirty-six styles, synthesizer, feature track
 src/core/chips.js     the sound chips: Paula, OPL3, AWE32, YM2149, SID
 src/core/visual.js    renderer, palette, title plate, scroller, era cards
 src/core/gl.js        WebGL2 helpers
-src/styles/index.js   the fifty-four scenes, the 3D stage, the About part, the display's screen
+src/styles/index.js   the fifty-five scenes, the 3D stage, the About part, the display's screen
 src/app.js            ties the music and the picture together
 web/index.html        the live page
 web/boot.js           the C64 boot screen

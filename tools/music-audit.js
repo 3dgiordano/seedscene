@@ -43,6 +43,7 @@ const EXEMPT = {
   derelict: { clash: 'the half-step above the root is the dread it is built on', walk: 'a drone holds the tonic under the moving chords (a pedal)' },
   beast: { walk: 'a bowed drone holds the tonic under the moving chords (a pedal)' },
   march: { grid: 'its snare rolls are thirty-seconds, between the sixteenths on purpose' },
+  terrace: { grid: 'its snare rolls are thirty-seconds, between the sixteenths on purpose' },
   cyborg: { clash: 'an odd-metre machine score: tension is the point' },
   modjazz: { walk: 'a walking bass leaves the chord on purpose, and approaches the next root by a half-step', rubs: true },
   rocknroll: { walk: 'a boogie bass walks the sixth and seventh' },

@@ -3675,4 +3675,199 @@ export class TankSim extends PlannedSim {
   }
 }
 
-export const SIMS = { tanks: TankSim, tube: TubeSim, crossing: CrossingSim, coderain: CoderainSim, animeop: AnimeopSim, timecar: TimecarSim, moonbike: MoonbikeSim, maze3d: Maze3dSim, echolines: EcholinesSim, ansi: AnsiSim, cascade: CascadeSim, cracktro: CracktroSim, rubber: RubberSim, chessfloor: ChessfloorSim, bobs: BobsSim, pyramid: PyramidSim, pipes: PipesSim, maze: MazeSim, snake: SnakeSim, rocks: RocksSim, starfighter: StarSim, paddles: PaddlesSim, invaders: InvadersSim, bricks: BricksSim, lightcycles: LightcyclesSim };
+// ---------------------------------------------------------------------------
+// The football match: a pitch seen from above, the goal on the drop
+// ---------------------------------------------------------------------------
+
+export const FOOT_MAX = 22;
+const PITCH_X = 52.5, PITCH_Y = 34;          // half the pitch, in metres
+// a 4-4-2 for the side attacking +x, in its own half: the keeper, the back four, the midfield, the two up front
+const FORM = [[-50, 0], [-35, -22], [-36, -8], [-36, 8], [-35, 22], [-16, -25], [-17, -8], [-17, 8], [-16, 25], [-4, -7], [-3, 7]];
+const WINGERS = [5, 8];
+
+/**
+ * The football match: two sides of eleven on a striped pitch, seen from above,
+ * the camera following the ball. The ball moves on the beat - every pass lands
+ * on one - working its way up the pitch through a phrase; through the build a
+ * winger takes it down the line, crosses on the last beat but one, and the
+ * header goes in on the accented bar - the drop - with the crowd going up. The
+ * side that conceded kicks off two bars later.
+ */
+export class FootballSim extends PlannedSim {
+  reset() {
+    this.rng = new Rng(this.seed, 'football-sim');
+    this.clock = 0;
+    this.kept = 0;
+    this.moves = [];              // the ball: {t0, t1, x0, y0, x1, y1, h, team, who, kind}
+    this.goals = [];              // {t, team, x, y}
+    this.score = [0, 0];
+    this.kickoff(0, this.rng.int(0, 1));
+  }
+
+  /** Where a player stands in his side's shape, with the ball at (bx, by). */
+  formAt(team, i, bx, by, t) {
+    const dir = team === 0 ? 1 : -1;
+    const [fx, fy] = FORM[i];
+    let x, y;
+    if (i === 0) { x = fx; y = Math.max(-5, Math.min(5, by * dir * 0.15)); }
+    else {
+      x = fx * 0.7 + bx * dir * 0.55 + 6;
+      y = fy * 0.85 + by * dir * 0.2;
+      x += Math.sin(t * 0.6 + i * 1.7 + team * 3) * 1.5;
+      y += Math.cos(t * 0.5 + i * 2.3 + team) * 1.5;
+    }
+    x = Math.max(-PITCH_X + 1, Math.min(PITCH_X - 1, x));
+    return [x * dir, y * dir];
+  }
+
+  kickoff(t, team) {
+    this.team = team;
+    this.holder = 9 + this.rng.int(0, 1);
+    this.bx = 0; this.by = 0;
+    this.clock = t;
+    this.moves.push({ t0: t, t1: t, x0: 0, y0: 0, x1: 0, y1: 0, h: 0, team, who: this.holder, kind: 'rest' });
+    this.planGoal(t);
+  }
+
+  /** The next accented bar at least a few bars on: the goal is planned for it. */
+  planGoal(t) {
+    const bar = this.grid.barSec;
+    let a = Math.ceil((t + 5 * bar) / bar) * bar;
+    while (!this.grid.isAccent(a) && a < t + 20 * bar) a += bar;
+    this.goalAt = a;
+  }
+
+  /** A teammate's spot when the ball comes to him at (x, y): his place in the shape, ahead of the ball. */
+  spotFor(who, x, y, t) {
+    let p = [x, y];
+    for (let k = 0; k < 3; k++) p = this.formAt(this.team, who, p[0], p[1], t);
+    return p;
+  }
+
+  push(m) { this.moves.push(m); this.bx = m.x1; this.by = m.y1; this.clock = m.t1; }
+
+  plan() {
+    const spb = this.grid.spb, bar = this.grid.barSec;
+    const t = this.clock;
+    const dir = this.team === 0 ? 1 : -1;
+    const left = this.goalAt - t;
+    if (left <= spb * 0.6) {
+      // (already at the goal: the next one)
+      this.planGoal(t);
+      return;
+    }
+    if (left <= 2 * bar + 1e-6) {
+      // the build: out to a winger, down the line, the cross, the header on the drop
+      const w = WINGERS[this.by * dir > 0 ? 1 : 0];
+      const side = FORM[w][1] > 0 ? 1 : -1;
+      const wy = side * 28 * dir;
+      const g1 = this.grid.next(t, 4);
+      this.push({ t0: t, t1: g1, x0: this.bx, y0: this.by, x1: 28 * dir, y1: wy, h: 2, team: this.team, who: w, kind: 'pass' });
+      const cross = this.goalAt - spb * 1.5;
+      this.push({ t0: g1, t1: cross, x0: 28 * dir, y0: wy, x1: 46 * dir, y1: wy * 0.95, h: 0, team: this.team, who: w, kind: 'run' });
+      const head = this.goalAt - spb * 0.5;
+      const striker = 9 + (side > 0 ? 1 : 0);
+      const hy = -side * dir * this.rng.float(0.5, 3);
+      this.push({ t0: cross, t1: head, x0: 46 * dir, y0: wy * 0.95, x1: 44 * dir, y1: hy, h: 6, team: this.team, who: striker, kind: 'cross' });
+      const gy = this.rng.float(-2.8, 2.8);
+      this.push({ t0: head, t1: this.goalAt, x0: 44 * dir, y0: hy, x1: (PITCH_X + 0.8) * dir, y1: gy, h: 1.2, team: this.team, who: striker, kind: 'shot' });
+      this.goals.push({ t: this.goalAt, team: this.team, x: (PITCH_X + 0.8) * dir, y: gy, who: striker });
+      this.score[this.team]++;
+      // the scorer away to the corner; the side that conceded kicks off two bars on
+      this.push({ t0: this.goalAt, t1: this.goalAt + 2 * bar, x0: (PITCH_X + 0.8) * dir, y0: gy, x1: (PITCH_X + 1.2) * dir, y1: gy, h: 0, team: this.team, who: striker, kind: 'net' });
+      this.kickoff(this.goalAt + 2 * bar, 1 - this.team);
+      return;
+    }
+    // the build-up: a pass every beat or two, working up the pitch, now and then back or across
+    const beats = this.rng.pick([1, 2, 2]);
+    let t1 = t;
+    for (let k = 0; k < beats; k++) t1 = this.grid.next(t1, 4);
+    if (t1 > this.goalAt - 2 * bar) t1 = this.goalAt - 2 * bar;
+    if (t1 <= t + 1e-6) { this.clock = this.goalAt - 2 * bar; return; }
+    const progress = 1 - (this.goalAt - 2 * bar - t1) / Math.max(bar, this.goalAt - 2 * bar - (this.goalAt - 12 * bar));
+    const aimX = Math.max(-20, Math.min(26, progress * 26 + this.rng.float(-10, 6)));
+    const cands = [];
+    for (let i = 1; i <= 10; i++) {
+      if (i === this.holder) continue;
+      const [sx, sy] = this.spotFor(i, aimX * dir, this.by * 0.4, t1);
+      const d = Math.hypot(sx - this.bx, sy - this.by);
+      if (d < 6 || d > 32) continue;
+      cands.push({ i, sx, sy, w: 1 / (1 + Math.abs(sx * dir - aimX) * 0.2) });
+    }
+    if (!cands.length) { this.push({ t0: t, t1, x0: this.bx, y0: this.by, x1: this.bx + 6 * dir, y1: this.by, h: 0, team: this.team, who: this.holder, kind: 'run' }); return; }
+    const c = this.rng.weighted(cands, cands.map((q) => q.w));
+    const far = Math.hypot(c.sx - this.bx, c.sy - this.by) > 20;
+    this.push({ t0: t, t1, x0: this.bx, y0: this.by, x1: c.sx, y1: c.sy, h: far ? 3 : 0, team: this.team, who: c.i, kind: 'pass', from: this.holder });
+    this.holder = c.i;
+  }
+
+  advanceTo(t) {
+    if (t < this.kept) this.reset();
+    while (this.clock <= t + 1) this.plan();
+    this.forget(t - 4);
+  }
+
+  forget(t) {
+    while (this.moves.length > 2 && this.moves[1].t1 < t) this.moves.shift();
+    this.kept = this.moves[0].t0;
+    this.goals = this.goals.filter((g) => g.t > t - 8);
+  }
+
+  /** The ball at t: along its move, lofted in an arc where it was kicked high. */
+  ballAt(t) {
+    let m = this.moves[0];
+    for (const x of this.moves) if (x.t0 <= t) m = x;
+    const u = m.t1 > m.t0 ? Math.min(1, Math.max(0, (t - m.t0) / (m.t1 - m.t0))) : 1;
+    const e = m.kind === 'run' ? u : 1 - (1 - u) * (1 - u) * 0.6 - 0.4 * (1 - u);    // (a kicked ball slows a little)
+    return { x: m.x0 + (m.x1 - m.x0) * e, y: m.y0 + (m.y1 - m.y0) * e, h: m.h * 4 * u * (1 - u), m, u };
+  }
+
+  uniforms(t) {
+    this.advanceTo(t);
+    const b = this.ballAt(t);
+    const lag = this.ballAt(Math.max(0, t - 0.5));
+    const m = b.m;
+    const goal = recent(this.goals, t, 1)[0];
+    const sinceGoal = goal ? t - goal.t : 99;
+    const pl = new Float32Array(FOOT_MAX * 4);
+    let k = 0;
+    for (let team = 0; team < 2; team++) {
+      for (let i = 0; i < 11; i++) {
+        let [x, y] = this.formAt(team, i, lag.x, lag.y, t);
+        const [x2, y2] = this.formAt(team, i, lag.x, lag.y, t + 0.2);
+        let face = Math.atan2(y2 - y, x2 - x), moving = Math.hypot(x2 - x, y2 - y) > 0.15 ? 1 : 0;
+        const mine = team === m.team;
+        // the one with the ball, or running on to it
+        if (mine && i === m.who && m.kind !== 'rest') {
+          const toward = Math.atan2(m.y1 - m.y0, m.x1 - m.x0);
+          if (m.kind === 'run') { x = b.x - Math.cos(toward) * 0.8; y = b.y - Math.sin(toward) * 0.8; face = toward; moving = 1; }
+          else if (m.kind === 'net') { const u = Math.min(1, sinceGoal / 2); x = m.x0 * 0.9 + (Math.sign(m.x0) * 46 - m.x0 * 0.9) * u * 0; x = Math.sign(m.x0) * (44 + 6 * u); y = (m.y0 + Math.sign(m.y0 || 1) * 30 * u); face = Math.atan2(Math.sign(m.y0 || 1), 0); moving = u < 1 ? 1 : 0; }
+          else { const u = Math.min(1, (t - m.t0) / Math.max(0.01, m.t1 - m.t0)); const [fx, fy] = [x, y]; x = fx + (m.x1 - fx) * u; y = fy + (m.y1 - fy) * u; face = Math.atan2(m.y1 - fy, m.x1 - fx); moving = 1; }
+        }
+        if (mine && i === m.from && t - m.t0 < 0.25) { x = m.x0 - Math.cos(face) * 0.7; y = m.y0 - Math.sin(face) * 0.7; }
+        // the keeper who is beaten dives for it
+        if (!mine && i === 0 && (m.kind === 'shot' || m.kind === 'net')) {
+          const u = m.kind === 'shot' ? Math.min(1, (t - m.t0) / Math.max(0.01, m.t1 - m.t0)) : 1;
+          y = y + (Math.sign(m.y1 || 1) * -2.5) * u;
+          face = Math.atan2(-Math.sign(m.y1 || 1), 0);
+        }
+        pl.set([x, y, (i === 0 ? 2 : 0) + team + (moving ? 4 : 0), face], k * 4);
+        k++;
+      }
+    }
+    // the camera: on the ball, a little ahead of it, never far past the pitch
+    const cx = Math.max(-PITCH_X + 10, Math.min(PITCH_X - 10, lag.x * 0.6 + b.x * 0.4));
+    const cy = Math.max(-PITCH_Y + 3, Math.min(PITCH_Y - 3, lag.y * 0.6 + b.y * 0.4));
+    return {
+      uPl: { v: pl, kind: '4fv' },
+      uBall: { v: [b.x, b.y, b.h, 0], kind: '4f' },
+      uCam: { v: [cx, cy, 0, 0], kind: '4f' },
+      uFoot: { v: [this.scoreAt(t, 0), this.scoreAt(t, 1), sinceGoal, goal ? goal.team : 0], kind: '4f' },
+    };
+  }
+
+  /** A side's goals scored by t (the plan runs ahead of it). */
+  scoreAt(t, team) { return this.score[team] - this.goals.filter((g) => g.team === team && g.t > t).length; }
+}
+
+export const SIMS = { football: FootballSim, tanks: TankSim, tube: TubeSim, crossing: CrossingSim, coderain: CoderainSim, animeop: AnimeopSim, timecar: TimecarSim, moonbike: MoonbikeSim, maze3d: Maze3dSim, echolines: EcholinesSim, ansi: AnsiSim, cascade: CascadeSim, cracktro: CracktroSim, rubber: RubberSim, chessfloor: ChessfloorSim, bobs: BobsSim, pyramid: PyramidSim, pipes: PipesSim, maze: MazeSim, snake: SnakeSim, rocks: RocksSim, starfighter: StarSim, paddles: PaddlesSim, invaders: InvadersSim, bricks: BricksSim, lightcycles: LightcyclesSim };
