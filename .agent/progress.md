@@ -5,11 +5,11 @@ Plan: docs/PLAN-v0.2.md section 8, "What 0.2.0 still takes", then docs/BUILD-REP
 
 ## Open
 - returned: v0.2's content - A, B, D, E done and merged (E on 2026-11-03); C left ([detail](progress-plan.md))
-- returned: C's small scenes - road crossing, vector tube and wireframe tanks built on branch arcade-classics (2026-11-03), uncommitted, for the owner's look ([detail](progress-plan.md))
+- returned: C's small scenes - road crossing, vector tube and wireframe tanks committed and pushed on branch arcade-classics (2026-11-03); the owner opens the PR and merges ([detail](progress-plan.md))
 - returned: version control - the 0.2.0 WIP is on GitHub and live at https://3dgiordano.github.io/seedscene/; main holds everything through #16 (2026-11-03), nothing unpushed; the official release when the plan is closed is the owner's ([detail](progress-git.md))
 - returned: the rocks drawn as bright as the ship; on the real screen they are dimmer than the ship and shots - changing the approved scene is the owner's call
 - returned: ST buzz on the SID or not - it plays there with an unfiltered sawtooth buzzer; keeping it off needs boards chosen by style, the owner's call
 - returned: keys, seeds and names that still echo titles (scene outrun and the About's OUTRUN SUNSETS; styles beast, agony; seeds gigawatts, boing, juggler, powerpill; track names in PLAN-v0.2; the NOKIA display) - renaming changes commands and links, the owner's call
 - returned: dead air in 19 approved styles, found by `npm run review:music -- gaps`; whether to fill them (intros and breakdowns, likely) is the owner's ([detail](progress-music.md))
 
-Next: the owner looks at crossing, tube and tanks (era 1972; seeds frogs, tempo, radar) on branch arcade-classics, live on a real GPU, and commits them; then C's medium scenes, the release, or the other open calls.
+Next: the owner opens the PR for arcade-classics and checks the three scenes live on a real GPU; then C's medium scenes, the release, or the other open calls.
