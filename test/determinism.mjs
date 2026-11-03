@@ -188,6 +188,22 @@ check('AUTOPLAY sounds the same every time, whatever the block size', ah === pro
     `${t1.length} stops`);
 }
 {
+  // the README's scenes, as docs/SCENE-ENTRIES.md writes them: era by era in the eras' order, each once,
+  // with its image, at most forty words, under a heading that never changes (its link can be shared)
+  const readme = await readFile('README.md', 'utf8');
+  const at = readme.search(/^## Scenes, straight out of the scene$/m);
+  const section = at < 0 ? '' : readme.slice(at, readme.indexOf('\n## ', at + 1));
+  const listed = [...section.matchAll(/\*\*(\w+)\*\* — (.*?)(?: \*Also [^*]*\*)? `--scene \1 /g)];
+  const expected = [];
+  for (const e of ERA_NAMES) for (const s of ERAS[e].scenes) if (!expected.includes(s)) expected.push(s);
+  const order = listed.map((m) => m[1]).join() === expected.join() && expected.length === STYLE_NAMES.length;
+  const images = expected.every((s) => section.includes(`![${s}](docs/gallery/${s}.png)`));
+  const long = listed.filter((m) => m[2].split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length > 40).map((m) => m[1]);
+  check('The README lists every scene once, era by era, with its image, in forty words or fewer',
+    at >= 0 && order && images && long.length === 0,
+    at < 0 ? 'no "## Scenes, straight out of the scene" heading' : `${listed.length} entries${long.length ? `, too long: ${long.join(', ')}` : ''}`);
+}
+{
   // born in 1985: twelve in 1997, the 32-bit console's year - it opens there and comes back every other
   // block; it sounds the same whatever the block size; and every track still belongs to its era
   const born = () => composeAutoplay('aurora', 120, 1985);
