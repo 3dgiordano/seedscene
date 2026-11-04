@@ -53,6 +53,7 @@ export const GALLERY = [
   { style: 'echolines',   era: '1990',        seed: 'nightshift' },
   { style: 'football',    era: '1990',        seed: 'derby', at: 14.9 },
   { style: 'maze3d',      era: '1994',        seed: 'corridors' },
+  { style: 'artillery',   era: '1994',        seed: 'incoming', at: 12.85 },
   { style: 'moonbike',    era: '1982',     seed: 'moonride', at: 5.1 },
   { style: 'timecar',     era: '1982',     seed: 'gigawatts', at: 12.85 },
   { style: 'animeop',     era: '1997',    seed: 'hikari', at: 8.06 },

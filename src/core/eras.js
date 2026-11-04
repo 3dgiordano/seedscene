@@ -35,7 +35,7 @@ export const ERAS = {
     label: '1994–1996', year: 1994, to: 1996, title: 'The PC demos and the multimedia years',
     blurb: 'mode 13h, the sound card, the bulletin boards and the screensavers',
     display: 'vga',
-    scenes: ['fractal', 'tunnel', 'metaballs', 'plasma', 'fire', 'pipes', 'bumplogo', 'ansi', 'maze3d'],
+    scenes: ['fractal', 'tunnel', 'metaballs', 'plasma', 'fire', 'pipes', 'bumplogo', 'ansi', 'maze3d', 'artillery'],
     music: ['ambient', 'acid', 'gabber', 'eurodance', 'jungle', 'fmmetal', 'midiquest', 'keygen', 'triphop', 'agony', 'march'],
   },
   1997: {

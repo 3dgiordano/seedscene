@@ -4,7 +4,7 @@
 
 The release that turns the tool into **SEEDSCENE**: a name, a personality,
 a Commodore 64 front door, seven eras of computing from 1972 to now,
-fifty-six scenes, thirty-six styles of music, sixteen displays and six
+fifty-seven scenes, thirty-six styles of music, sixteen displays and six
 sound boards, an endless AUTOPLAY channel, and a live mode you
 can drive entirely from the keyboard.
 
@@ -408,6 +408,17 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   a laser fan, the mirror ball's spots, a strobe at the end of each phrase, and
   the lights flaring in the lens as each phrase opens; the camera moves as
   before, a little farther back.
+- **The artillery** (`artillery`, 1994–1996), the turn-based artillery
+  games of the 90s PC: two teams of five little soldiers in the seed's
+  colours on a hill of earth the seed shapes, seen from the side, mountains
+  and a night sky behind. On each bar line a soldier of one side and then
+  the other fires; the shell arcs through the wind - its strength on a bar
+  at the bottom - to land on the beat where the snare is, blowing a crater
+  in the hill and anyone near it; on the drop it splits in five at the top
+  of its arc. A side wiped out, the other's bar full, a new round starts on
+  a whole hill. Drawn from Wikipedia's screenshots of the PC artillery games
+  of 1991 and 1995; the soldiers, the hill and the split shell are drawn
+  here, no worm, weapon or name of any game.
 - **The skate park** (`skatepark`, 1997–1999), the skateboarding games of
   the late 90s: a wooden vert ramp in a warehouse, built to a real one's
   measures (3.66 m tall, 3.2 m transitions, 0.46 m of vert, 9.75 m wide),
