@@ -6905,6 +6905,289 @@ vec3 render(vec2 p, vec2 uv) {
 }
 `;
 
+const skatepark = `
+// The skate park: a wooden half-pipe in a warehouse, the skater riding wall
+// to wall and up into the air at every bar line - a spin, a flip, a grab -
+// grinding along the coping through the build and going twice as high on the
+// drop. The game runs as a simulation (src/core/sims.js), which places the
+// camera and the skater's limbs; this traces the ramp and the hall.
+uniform vec4 uSkJ[16];      // the skater's joints in the hall: feet, knees, hip, neck, shoulders, elbows, hands, head
+uniform vec4 uSkB[4];       // the board: its centre, along it, its up, toward its toe edge
+uniform vec4 uSkHip;        // the hip, and how high in the air
+uniform vec4 uSkShadow;     // the point under the skater, in the hall; grinding
+uniform vec4 uCamE, uCamF, uCamR, uCamU;   // the camera: eye (and focal length), forward, right, up
+uniform vec4 uSkFx;         // score, combo, since the last landing, the last was the big one
+const float RF = 2.15, RR = 3.2, RV = 0.46, RL = 4.88;   // a real vert ramp's: the flat's half width, the transitions' radius, the vert, half its width
+
+// the ray against the ramp: the flat, the two quarter pipes, the vert walls, the decks; t and the surface's normal
+float rampHit(vec3 ro, vec3 rd, out vec3 n) {
+  float best = 1e9;
+  n = vec3(0.0, 1.0, 0.0);
+  // the flat and the floor round it
+  if (rd.y < 0.0) { float t = -ro.y / rd.y; vec3 p = ro + rd * t; if (abs(p.z) < RL + 6.0 && t > 0.0) { best = t; n = vec3(0.0, 1.0, 0.0); } }
+  for (int s = -1; s <= 1; s += 2) {
+    float sd = float(s);
+    // the transition: inside a cylinder along z, centred at (sd*RF, RR)
+    vec2 o = ro.xy - vec2(sd * RF, RR);
+    float a = dot(rd.xy, rd.xy), b = dot(o, rd.xy), c = dot(o, o) - RR * RR;
+    float h = b * b - a * c;
+    if (h > 0.0) {
+      float t = (-b + sqrt(h)) / a;
+      vec3 p = ro + rd * t;
+      if (t > 0.0 && t < best && abs(p.z) < RL && p.x * sd > RF && p.y < RR) { best = t; n = normalize(vec3(-(p.x - sd * RF), RR - p.y, 0.0)); }
+    }
+    // the vert above it, facing in
+    float tv = (sd * (RF + RR) - ro.x) / rd.x;
+    vec3 pv = ro + rd * tv;
+    if (tv > 0.0 && tv < best && abs(pv.z) < RL && pv.y > RR && pv.y < RR + RV) { best = tv; n = vec3(-sd, 0.0, 0.0); }
+    // the deck on top
+    float td = (RR + RV - ro.y) / rd.y;
+    vec3 pd = ro + rd * td;
+    if (td > 0.0 && td < best && abs(pd.z) < RL && pd.x * sd > RF + RR && pd.x * sd < RF + RR + 1.6) { best = td; n = vec3(0.0, 1.0, 0.0); }
+    // the side panels closing the ramp's ends, its profile cut in them
+    for (int e = -1; e <= 1; e += 2) {
+      float te = (float(e) * RL - ro.z) / rd.z;
+      vec3 pe = ro + rd * te;
+      float ax = pe.x * sd;
+      float top = ax < RF ? -1.0 : ax < RF + RR ? RR - sqrt(max(RR * RR - (ax - RF) * (ax - RF), 0.0)) : ax < RF + RR + 1.6 ? RR + RV : -1.0;
+      if (te > 0.0 && te < best && pe.y > 0.0 && pe.y < top) { best = te; n = vec3(0.0, 0.0, float(e)); }
+    }
+    // the deck's front, down to the floor
+    float tf = (sd * (RF + RR + 1.6) - ro.x) / rd.x;
+    vec3 pf = ro + rd * tf;
+    if (tf > 0.0 && tf < best && abs(pf.z) < RL && pf.y < RR + RV && pf.y > 0.0) { best = tf; n = vec3(sd, 0.0, 0.0); }
+  }
+  return best;
+}
+
+// ---- the skater, in the round: limbs as tapering capsules, clothes over them, a board with its trucks and wheels
+// (the 32-bit games' skaters: a T-shirt over baggy trousers, bare forearms, chunky shoes, a board with a graphic)
+float cone(vec3 p, vec3 a, vec3 b, float r1, float r2) {
+  vec3 pa = p - a, ba = b - a;
+  float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+  return length(pa - ba * h) - mix(r1, r2, h);
+}
+float rbox(vec3 q, vec3 h, float r) { vec3 d = abs(q) - h + r; return length(max(d, 0.0)) + min(max(d.x, max(d.y, d.z)), 0.0) - r; }
+// the body's distance, and which part is nearest: 1 skin, 2 shirt, 3 trousers, 4 shoes, 5 soles, 6 hair, 7 deck top, 8 deck, 9 metal, 10 wheels
+float skSmin(float a, float b, float k) { float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0); return mix(b, a, h) - k * h * (1.0 - h); }
+// where the head looks: over the leading shoulder, down the board the way it rides
+vec3 faceDir() { return normalize(uSkB[1].xyz * 0.75 + uSkB[3].xyz * 0.65); }
+vec2 skater(vec3 p) {
+  vec3 fF = uSkJ[0].xyz, fB = uSkJ[1].xyz, kF = uSkJ[2].xyz, kB = uSkJ[3].xyz, hip = uSkJ[4].xyz, neck = uSkJ[5].xyz;
+  vec3 shF = uSkJ[6].xyz, shB = uSkJ[7].xyz, eF = uSkJ[8].xyz, eB = uSkJ[9].xyz, hF = uSkJ[10].xyz, hB = uSkJ[11].xyz, head = uSkJ[12].xyz;
+  vec3 bc = uSkB[0].xyz, al = uSkB[1].xyz, up = uSkB[2].xyz, toe = uSkB[3].xyz;
+  // the body is modelled as one piece of clay, as the sculpture scene models its shapes: each part a simple shape,
+  // blended into the next with a smooth union, so the knees, the waist, the shoulders and the neck flow; each point
+  // then takes the colour of the part it is nearest - skin, shirt or trousers
+  // the trousers: baggy, wide at the ankle, the knee folding into the thigh, the seat across the hips
+  // each leg from its own hip joint, 9 cm either side of the middle; the pelvis a head and a half wide over them
+  vec3 hjF = uSkJ[13].xyz, hjB = uSkJ[14].xyz;
+  float lF = skSmin(cone(p, fF, kF, 0.072, 0.082), cone(p, kF, hjF, 0.082, 0.1), 0.05);
+  float lB = skSmin(cone(p, fB, kB, 0.072, 0.082), cone(p, kB, hjB, 0.082, 0.1), 0.05);
+  vec3 pu = normalize(neck - hip), pd = normalize(cross(al, pu));
+  vec3 pq = p - (hip + pu * 0.035);
+  float pelvis = (length(vec3(dot(pq, al), dot(pq, pu), dot(pq, pd)) / vec3(0.17, 0.12, 0.11)) - 1.0) * 0.11;
+  float tr = skSmin(skSmin(lF, lB, 0.03), pelvis, 0.07);
+  // the T-shirt: a back with shoulders - widest across them, narrower at the waist, shallow from chest to back - the
+  // trapezius sloping from the neck down to each shoulder, the shoulders rounded, short sleeves
+  vec3 sa = normalize(shF - shB), tu = normalize(neck - hip), dp = normalize(cross(sa, tu));
+  vec3 top = (shF + shB) * 0.5 - tu * 0.05, base = hip + tu * 0.04;
+  // the trunk as two eggs melted into one - the chest, wide at the shoulders, and the belly, narrower - and a bar
+  // across the shoulders, all blended deeply so no seam shows between them
+  vec3 cq = p - (top - tu * 0.1), yq = p - (base + tu * 0.13);
+  float chest = (length(vec3(dot(cq, sa), dot(cq, tu), dot(cq, dp)) / vec3(0.19, 0.17, 0.095)) - 1.0) * 0.095;
+  float belly = (length(vec3(dot(yq, sa), dot(yq, tu), dot(yq, dp)) / vec3(0.14, 0.16, 0.09)) - 1.0) * 0.09;
+  float sh = skSmin(chest, belly, 0.1);
+  sh = skSmin(sh, cone(p, shF - tu * 0.01, shB - tu * 0.01, 0.055, 0.055), 0.14);
+  vec3 nb = top + tu * 0.06;
+  // (melted in deeply - a smaller blend left lumps on the chest where the trapezius and the shoulders met the trunk)
+  sh = skSmin(sh, min(cone(p, nb, shF, 0.05, 0.045), cone(p, nb, shB, 0.05, 0.045)), 0.1);
+  sh = skSmin(sh, min(cone(p, shF, mix(shF, eF, 0.45), 0.06, 0.054), cone(p, shB, mix(shB, eB, 0.45), 0.06, 0.054)), 0.05);
+  // the arms: out of the sleeves, the elbow folding, the hand at the wrist
+  float aF = skSmin(skSmin(cone(p, mix(shF, eF, 0.35), eF, 0.046, 0.04), cone(p, eF, hF, 0.04, 0.032), 0.025), length(p - hF) - 0.045, 0.025);
+  float aB = skSmin(skSmin(cone(p, mix(shB, eB, 0.35), eB, 0.046, 0.04), cone(p, eB, hB, 0.04, 0.032), 0.025), length(p - hB) - 0.045, 0.025);
+  float arms = min(aF, aB);
+  // the head on its neck: the neck out of the shoulders, the head an egg, a nose and ears
+  vec3 hq = p - head;
+  vec3 hu = normalize(head - neck), face = faceDir(), side = normalize(cross(hu, face));
+  vec3 lh = vec3(dot(hq, side), dot(hq, hu), dot(hq, face));
+  float hd = (length(lh / vec3(0.092, 0.124, 0.108)) - 1.0) * 0.092;
+  hd = skSmin(hd, length(lh - vec3(0.0, -0.01, 0.1)) - 0.018, 0.012);
+  hd = min(hd, min(length(lh - vec3(0.094, 0.0, -0.005)) - 0.022, length(lh - vec3(-0.094, 0.0, -0.005)) - 0.022));
+  float nk = cone(p, top, mix(neck, head, 0.5), 0.058, 0.05);
+  float headNeck = skSmin(hd, nk, 0.04);
+  // all of it one piece; the colour of whichever part is nearest
+  float body = skSmin(skSmin(sh, tr, 0.05), skSmin(arms, headNeck, 0.01), 0.035);
+  float skin = min(arms, headNeck);
+  float m = skin < sh && skin < tr ? 1.0 : sh < tr ? 2.0 : 3.0;
+  vec2 r = vec2(body, m);
+  // the hair: over the crown and down the back of the head, clear of the face and the ears
+  float hair = (length((lh - vec3(0.0, 0.017, -0.011)) / vec3(0.099, 0.129, 0.114)) - 1.0) * 0.097;
+  hair = max(hair, -(lh.y + 0.02 - max(lh.z, 0.0) * 1.6));
+  r = hair < r.x ? vec2(hair, 6.0) : r;
+  // the shoes: chunky, across the board as the feet stand, their soles white
+  for (int k = 0; k < 2; k++) {
+    vec3 f = k == 0 ? fF : fB;
+    vec3 q = p - (f - up * 0.045 + toe * 0.03);
+    vec3 lq = vec3(dot(q, toe), dot(q, up), dot(q, al));
+    float shoe = rbox(lq, vec3(0.135, 0.045, 0.055), 0.03);
+    r = shoe < r.x ? vec2(shoe, lq.y < -0.025 ? 5.0 : 4.0) : r;
+  }
+  // the board: the deck, its nose and tail kicked up, the trucks and four wheels under it
+  vec3 q = p - bc;
+  vec3 bq = vec3(dot(q, al), dot(q, up), dot(q, toe));
+  float ax = abs(bq.x);
+  float kick = max(ax - 0.3, 0.0);
+  vec3 dq = vec3(bq.x, bq.y - kick * kick * 2.2, bq.z);
+  float deck = rbox(dq, vec3(0.41, 0.008, 0.105), 0.008);
+  deck = max(deck, length(vec2(max(ax - 0.31, 0.0), bq.z)) - 0.105);
+  r = deck < r.x ? vec2(deck, bq.y - kick * kick * 2.2 > 0.0 ? 7.0 : 8.0) : r;
+  float trucks = min(rbox(vec3(ax - 0.27, bq.y + 0.035, bq.z), vec3(0.025, 0.025, 0.09), 0.01), 1e9);
+  r = trucks < r.x ? vec2(trucks, 9.0) : r;
+  vec3 wq = vec3(ax - 0.27, bq.y + 0.06, abs(bq.z) - 0.1);
+  float wheel = max(length(wq.xy) - 0.028, abs(wq.z) - 0.02);
+  r = wheel < r.x ? vec2(wheel, 10.0) : r;
+  return r;
+}
+vec3 skaterColour(float m, vec3 p) {
+  if (m < 1.5) {
+    // skin; on the face, the eyes, the brows and the mouth
+    vec3 head = uSkJ[12].xyz, hu = normalize(head - uSkJ[5].xyz), face = faceDir(), side = normalize(cross(hu, face));
+    vec3 hq = p - head;
+    vec3 lh = vec3(dot(hq, side), dot(hq, hu), dot(hq, face));
+    vec3 skin = vec3(0.85, 0.62, 0.48);
+    if (length(hq) < 0.13 && lh.z > 0.05) {
+      float eyes = min(length(lh.xy - vec2(0.035, 0.02)), length(lh.xy - vec2(-0.035, 0.02)));
+      float brows = min(length((lh.xy - vec2(0.036, 0.046)) * vec2(0.6, 2.5)), length((lh.xy - vec2(-0.036, 0.046)) * vec2(0.6, 2.5)));
+      float mouth = length((lh.xy - vec2(0.0, -0.055)) * vec2(0.7, 3.0));
+      skin = mix(skin, vec3(0.08), 1.0 - smoothstep(0.009, 0.013, eyes));
+      skin = mix(skin, vec3(0.2, 0.12, 0.06), 1.0 - smoothstep(0.01, 0.014, brows));
+      skin = mix(skin, vec3(0.55, 0.3, 0.28), 1.0 - smoothstep(0.012, 0.016, mouth));
+    }
+    return skin;
+  }
+  if (m < 2.5) {
+    // the shirt in the seed's colour, a band printed across the chest in another
+    vec3 hip = uSkJ[4].xyz, neck = uSkJ[5].xyz;
+    float h = dot(p - hip, normalize(neck - hip)) / max(length(neck - hip), 0.01);
+    vec3 shirt = unblack(pal(0.3 + uSeed.z)) * 0.9 + 0.1;
+    return mix(shirt, unblack(pal(0.05 + uSeed.w)), step(0.52, h) * step(h, 0.66) * 0.85);
+  }
+  if (m < 3.5) return vec3(0.14, 0.17, 0.26) * (0.9 + 0.1 * sin(p.y * 90.0));   // baggy denim
+  if (m < 4.5) return vec3(0.12, 0.12, 0.14);                         // shoes
+  if (m < 5.5) return vec3(0.9);                                      // soles
+  if (m < 6.5) return vec3(0.18, 0.11, 0.06);                         // hair
+  if (m < 7.5) return vec3(0.06);                                     // grip tape
+  if (m < 8.5) return unblack(pal(0.75 + uSeed.z));                   // the deck's graphic, underneath
+  if (m < 9.5) return vec3(0.6, 0.62, 0.66);                          // trucks
+  return vec3(0.95, 0.93, 0.85);                                      // wheels
+}
+vec3 skaterNormal(vec3 p) {
+  vec2 e = vec2(0.002, 0.0);
+  return normalize(vec3(skater(p + e.xyy).x - skater(p - e.xyy).x, skater(p + e.yxy).x - skater(p - e.yxy).x, skater(p + e.yyx).x - skater(p - e.yyx).x));
+}
+
+vec3 render(vec2 p, vec2 uv) {
+  vec3 ro = uCamE.xyz;
+  vec3 rd = normalize(uCamF.xyz * uCamE.w + uCamR.xyz * p.x + uCamU.xyz * p.y);
+  // the hall: a dark back wall of the seed's colours in big painted blocks, rafters, lamps
+  vec3 col = vec3(0.05, 0.05, 0.07);
+  float tw = (-RL - 3.0 - ro.z) / rd.z;
+  if (tw > 0.0) {
+    vec3 w = ro + rd * tw;
+    vec2 blk = floor(w.xy * vec2(0.35, 0.5));
+    vec3 paint = unblack(pal(hash12(blk + uSeed.xy * 9.0)));
+    col = mix(vec3(0.12, 0.11, 0.12), paint * 0.55, step(0.55, hash12(blk + 3.0)));
+    col *= 0.7 + 0.3 * step(0.06, abs(fract(w.y * 0.5) - 0.5));
+    col += vec3(1.0, 0.95, 0.8) * exp(-length(vec2(fract(w.x * 0.18) - 0.5, (w.y - 6.0) * 0.18)) * 18.0) * (0.6 + 0.4 * uKick);
+  }
+  vec3 n;
+  float t = rampHit(ro, rd, n);
+  if (t < 1e8) {
+    vec3 h = ro + rd * t;
+    bool ramp = abs(h.z) < RL && (abs(h.x) < RF + RR + 1.6 || h.y > 0.01);
+    vec3 wood = vec3(0.72, 0.52, 0.3);
+    if (ramp) {
+      // plywood: sheets with seams, the grain along the run
+      float seam = min(abs(fract(h.z / 1.2) - 0.5), abs(fract((abs(h.x) + h.y) / 1.2) - 0.5));
+      wood *= 0.85 + 0.15 * sin(h.z * 40.0 + vnoise(h.xz * 3.0) * 4.0) * 0.4;
+      wood *= 0.75 + 0.25 * smoothstep(0.0, 0.03, seam);
+    } else {
+      wood = vec3(0.16, 0.16, 0.18) * (0.8 + 0.2 * vnoise(h.xz * 2.0));   // the concrete floor
+    }
+    vec3 L = normalize(vec3(0.4, 1.0, 0.5));
+    float dif = 0.45 + 0.55 * max(dot(n, L), 0.0);
+    col = wood * dif * (0.55 + 0.45 * smoothstep(-0.2, 2.0, h.y));
+    // the skater's shadow, under it
+    float sh = length((h - uSkShadow.xyz) * vec3(1.0, 1.0, 0.8));
+    col *= 1.0 - 0.45 * (1.0 - smoothstep(0.25, 0.6, sh)) * (1.0 - 0.25 * min(uSkHip.w, 2.0));
+    col = mix(col, vec3(0.05, 0.05, 0.07), 1.0 - exp(-t * 0.025));
+  }
+  // the coping: a steel pipe along each lip, catching the light; sparks along it in a grind
+  for (int s = -1; s <= 1; s += 2) {
+    vec3 a = vec3(float(s) * (RF + RR), RR + RV, -RL), b = vec3(float(s) * (RF + RR), RR + RV, RL);
+    vec3 da = a - ro, db = b - ro;
+    float za = dot(da, uCamF.xyz), zb = dot(db, uCamF.xyz);
+    if (za > 0.1 && zb > 0.1) {
+      vec2 A = vec2(dot(da, uCamR.xyz), dot(da, uCamU.xyz)) / za * uCamE.w;
+      vec2 B = vec2(dot(db, uCamR.xyz), dot(db, uCamU.xyz)) / zb * uCamE.w;
+      float d = sdSeg(p, A, B);
+      col = mix(col, vec3(0.85, 0.88, 0.92), 1.0 - smoothstep(0.003, 0.006, d));
+    }
+  }
+  // the skater: marched where the ray passes near him, in front of whatever of the ramp is behind him
+  {
+    vec3 c = uSkHip.xyz;
+    vec3 oc = ro - c;
+    float bb = dot(oc, rd), cc = dot(oc, oc) - 1.6 * 1.6;
+    float hh = bb * bb - cc;
+    if (hh > 0.0) {
+      float ts = max(-bb - sqrt(hh), 0.0), te = -bb + sqrt(hh);
+      vec2 hit = vec2(0.0);
+      for (int k = 0; k < 64; k++) {
+        if (ts > te || ts > t) break;
+        hit = skater(ro + rd * ts);
+        if (hit.x < 0.0015) break;
+        ts += hit.x * 0.8;
+      }
+      if (hit.x < 0.0015 && ts < t && ts < te) {
+        vec3 sp = ro + rd * ts, sn = skaterNormal(sp);
+        vec3 L = normalize(vec3(0.4, 1.0, 0.5));
+        float dif = max(dot(sn, L), 0.0), rim = pow(1.0 - max(dot(sn, -rd), 0.0), 3.0);
+        vec3 base = skaterColour(hit.y, sp);
+        col = base * (0.35 + 0.75 * dif) + vec3(0.9, 0.85, 1.0) * rim * 0.25 + vec3(1.0) * pow(max(dot(reflect(rd, sn), L), 0.0), 24.0) * (hit.y > 8.5 && hit.y < 9.5 ? 0.6 : 0.08);
+        col = mix(col, vec3(0.05, 0.05, 0.07), 1.0 - exp(-ts * 0.025));
+      }
+    }
+  }
+  // sparks off the coping in a grind
+  if (uSkShadow.w > 0.5) {
+    vec3 sp = uSkShadow.xyz;
+    vec3 d0 = sp - ro;
+    float z0 = dot(d0, uCamF.xyz);
+    vec2 S = vec2(dot(d0, uCamR.xyz), dot(d0, uCamU.xyz)) / z0 * uCamE.w;
+    for (int j = 0; j < 8; j++) {
+      float fj = float(j), a = fj * 0.8 + uTime * 9.0, r = fract(uTime * 3.0 + hash11(fj)) * 0.05;
+      col += vec3(1.0, 0.8, 0.3) * (1.0 - smoothstep(0.0, 0.004, length(p - S - vec2(cos(a), abs(sin(a))) * r)));
+    }
+  }
+  // the hud: the score, the combo counted up through the phrase, banked with a flash on the drop
+  for (int k = 0; k < 5; k++) {
+    int dg = int(mod(floor(uSkFx.x / pow(10.0, float(4 - k))), 10.0));
+    col = mix(col, vec3(1.0), digit7((p - vec2(-0.84 + float(k) * 0.045, 0.37)) / 0.04, dg));
+  }
+  int cb = int(min(uSkFx.y, 99.0));
+  vec3 cc = mix(vec3(1.0, 0.85, 0.2), vec3(1.0), uSkFx.w * exp(-max(uSkFx.z, 0.0) * 3.0));
+  float pop = 1.0 + 0.4 * exp(-max(uSkFx.z, 0.0) * 6.0) * step(0.0, uSkFx.z);
+  col = mix(col, cc, digit7((p - vec2(0.7, 0.36)) / (0.045 * pop), cb / 10) * float(cb >= 10));
+  col = mix(col, cc, digit7((p - vec2(0.7 + 0.05 * pop, 0.36)) / (0.045 * pop), cb - 10 * (cb / 10)));
+  // the x before it
+  vec2 xq = p - vec2(0.67, 0.4);
+  col = mix(col, cc, (1.0 - smoothstep(0.003, 0.006, min(sdSeg(xq, vec2(-0.012, -0.012), vec2(0.012, 0.012)), sdSeg(xq, vec2(-0.012, 0.012), vec2(0.012, -0.012))))));
+  return col;
+}
+`;
+
 const football = `
 // The football match: two sides of eleven on a striped pitch seen from above,
 // the camera following the ball, as the top-down football games of the
@@ -7511,6 +7794,7 @@ const SOURCES = {
   tube: staged(tube, 0.4, 0.45),
   tanks: staged(tanks, 0.35, 0.45),
   football: staged(football, 0.6, 0.4),
+  skatepark: staged(skatepark, 0.35, 0.45),
   maze: staged(maze, 0.7, 0.4),
   bricks: staged(bricks, 0.6, 0.35),
   lightcycles: staged(lightcycles, 0.95, 0.6),
@@ -7525,7 +7809,7 @@ const SOURCES = {
 
 /** Post-pass effects a scene asks for: the game scenes get the beat blur. */
 export const STYLE_FX = Object.fromEntries(
-  ['paddles', 'invaders', 'rocks', 'crossing', 'tube', 'tanks', 'football', 'maze', 'bricks', 'lightcycles', 'snake', 'boxer', 'starfighter', 'pipes', 'pyramid', 'lcd', 'bobs', 'rubber', 'bumplogo', 'cascade', 'ansi', 'echolines', 'maze3d', 'moonbike', 'timecar', 'animeop', 'djdecks',
+  ['paddles', 'invaders', 'rocks', 'crossing', 'tube', 'tanks', 'football', 'skatepark', 'maze', 'bricks', 'lightcycles', 'snake', 'boxer', 'starfighter', 'pipes', 'pyramid', 'lcd', 'bobs', 'rubber', 'bumplogo', 'cascade', 'ansi', 'echolines', 'maze3d', 'moonbike', 'timecar', 'animeop', 'djdecks',
    'prism', 'sculpture', 'fractalflight', 'gimbal']
     .map((n) => [n, { impact: 1 }]),
 );
@@ -7580,6 +7864,7 @@ export const STYLE_INFO = {
   paddles:     'Neon paddles on the beat; on an accent a paddle misses and blows up',
   invaders:    'A seed-made formation on the beat; aliens burst on the kick',
   rocks:       'A vector ship that flies, dodges and splits the rocks it hits',
+  skatepark:   'A skater on a half-pipe in a warehouse: a trick at every bar line, a grind along the coping through the build, a huge air on the drop, the combo counter',
   football:    'Football seen from above, the camera on the ball: a pass on every beat, a run down the wing through the build, the header in on the drop, the crowd going up',
   tanks:       'A battlefield of green lines through a tank\'s sight: the tank comes round after the enemy on the beat, fires on the backbeat, the radar sweeping once a bar',
   tube:        'A claw on the rim of a glowing tube, things climbing its lanes on the beat, the shots on the backbeat, a dive down the tube on the drop',

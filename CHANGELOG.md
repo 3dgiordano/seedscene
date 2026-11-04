@@ -4,7 +4,7 @@
 
 The release that turns the tool into **SEEDSCENE**: a name, a personality,
 a Commodore 64 front door, seven eras of computing from 1972 to now,
-fifty-five scenes, thirty-six styles of music, sixteen displays and six
+fifty-six scenes, thirty-six styles of music, sixteen displays and six
 sound boards, an endless AUTOPLAY channel, and a live mode you
 can drive entirely from the keyboard.
 
@@ -408,6 +408,34 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   a laser fan, the mirror ball's spots, a strobe at the end of each phrase, and
   the lights flaring in the lens as each phrase opens; the camera moves as
   before, a little farther back.
+- **The skate park** (`skatepark`, 1997–1999), the skateboarding games of
+  the late 90s: a wooden vert ramp in a warehouse, built to a real one's
+  measures (3.66 m tall, 3.2 m transitions, 0.46 m of vert, 9.75 m wide),
+  plywood sheets, steel coping, closed ends, the seed's colours painted in
+  blocks on the back wall, and a life-size skater riding it wall to wall -
+  in the round, as the 32-bit games drew theirs, modelled as one piece of
+  smoothly blended shapes: shoulders and a face, a T-shirt with a printed
+  band, baggy jeans over chunky shoes, bare forearms, a board with grip tape,
+  a graphic, trucks and four wheels -
+  the camera following him, square to the surface (a first animation of its
+  pumping, its trunk and its arms, still to be improved: it does not yet
+  move as a skater does), crouching
+  deepest through the transition and standing up into the vert, arms out
+  for balance. A crossing takes the two seconds or more a skater takes, so it
+  reaches a lip on a bar line every bar or every few, aiming for the accented
+  bar; there it goes straight up off the vert into an air, its time aloft
+  what gravity gives its height - a backside or frontside air, an indy, a melon, a method, a mute, a
+  hand on the board's right edge - turning half round about its own length
+  to come down the wall going forward, a little along the ramp, crouching
+  to take the landing; on the lip before the drop it grinds along the coping on both
+  trucks, the board along the pipe, in sparks; on the drop it goes twice as
+  high for a 540, banking the combo counted up through the phrase. The
+  score and the combo at the top. The moves are taken from Wikipedia's
+  articles on aerials, grinds and the vert ramp and a sequence photograph of
+  a vert air; the look from the arcade museum's screenshot of a
+  skateboarding arcade game of 1997 and Wikipedia's of a console
+  skateboarding game of 1999. The skater and the park are drawn here, no
+  name, skater or level of any game.
 - **The football match** (`football`, 1990–1993), the top-down football
   games of the arcades and the Amiga: two sides of eleven on a pitch mown in
   stripes, seen from above, the camera following the ball - the lines, the
