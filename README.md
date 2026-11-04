@@ -16,7 +16,7 @@ Then ride it through half a century, from 1972 to now.**
 
 ![THE JOURNEY: every era from the arcade to the 64k intro, each with its own card, scenes and music](docs/gallery/journey.gif)
 
-`v0.2` · 7 eras · 56 scenes · 36 music styles · 16 displays · 6 sound boards · endless autoplay · runs in your browser · renders to mp4 ·
+`v0.2` · 7 eras · 57 scenes · 36 music styles · 16 displays · 6 sound boards · endless autoplay · runs in your browser · renders to mp4 ·
 no assets, only maths · built with [3dgiordano/agent-plugins](https://github.com/3dgiordano/agent-plugins)
 
 </div>
@@ -134,7 +134,7 @@ machine name it once had (`--era amiga`).
 | **1972–1981** | the first video games | ARCADE | paddles, invaders, rocks, maze, lcd, crossing, tube, tanks | arcade attract, cyborg pulse, derelict ship, synth-pop |
 | **1982–1989** | home computers, arcades and the video shop | C64 | lightcycles, pyramid, boxer, bricks, outrun, scanner, timecar, moonbike, dottunnel, plasma, ball | SID chiptune, synth-pop, ST buzz, italo disco — on the C64's SID, the Atari ST's YM2149 or the synthesizer's own voices, by the seed |
 | **1990–1993** | the demoscene's golden years | AMIGA | the Amiga effects - copper, kefrens, vector balls, the chessboards, the cracktro and more - plasma, metaballs, tunnel, fractal, bumplogo, fireworks, morph; footsteps, starfighter, cascade, echolines, football | Amiga rave, New Beat, orchestral trackers, dreamwave, tracker jazz, beast lands, lament, musicdisk ballad, jolly march, hip-hop blaster, terrace drums — on Paula's 8-bit samples |
-| **1994–1996** | the PC demos and the multimedia years | VGA | fire, pipes, ansi, maze3d; fractal, tunnel, metaballs, plasma, bumplogo | ambient techno, acid, gabber, eurodance, jungle, FM metal, MIDI quest — on a Sound Blaster 16's FM or an AWE32's wavetable; and keygen, the party's tracker tunes, played from samples as a module player did; and trip-hop, its strings and Rhodes on the card; and lament and jolly march, played on the card |
+| **1994–1996** | the PC demos and the multimedia years | VGA | fire, pipes, ansi, maze3d, artillery; fractal, tunnel, metaballs, plasma, bumplogo | ambient techno, acid, gabber, eurodance, jungle, FM metal, MIDI quest — on a Sound Blaster 16's FM or an AWE32's wavetable; and keygen, the party's tracker tunes, played from samples as a module player did; and trip-hop, its strings and Rhodes on the card; and lament and jolly march, played on the card |
 | **1997–1999** | 3D consoles and pocket screens | COMPOSITE TV | snake, animeop, coderain, skatepark | heroic game soundtracks, eurodance, chip rock and roll, star pilot, MIDI quest, the anime opening, skate punk, handheld chip, jolly march — on wavetable |
 | **2000–2009** | the 64k intro | SVGA | morph, gimbal, djdecks | trance, happy hardcore, keygen, trip-hop |
 | **2010–now** | shader art | MODERN | prism, sculpture, fractalflight | synthwave, dreamwave, terrace drums |
@@ -309,7 +309,7 @@ a battery saver, a policy - leaves the screen to the computer's settings.
 
 ![paddles, invaders, rocks, a maze, a brick wall, light riders, a snake, a robot title fight and a space run, each moving to its own music](docs/gallery/arcade.gif)
 
-Before the demoscene there was the arcade, and SEEDSCENE starts there: sixteen
+Before the demoscene there was the arcade, and SEEDSCENE starts there: seventeen
 game-inspired visualizers that move to the music instead of a joystick. Not a
 replay of the games — a show made of them. Every game scene plays on a
 **board floating in space** — and a game that is a device of its own, the LCD
@@ -318,7 +318,7 @@ new angle on every eight-bar phrase, a punch in on the kick, a lean on the
 snare, the board's neon frame breathing with the bass, and a zoom blur on
 every kick.
 
-Fourteen of them are real games underneath, run as small simulations locked to
+Fifteen of them are real games underneath, run as small simulations locked to
 the beat. The chomper hunts the nearest dot and dodges, while the wisps chase
 it — one straight at it, one cutting it off, one keeping its distance — and
 flee after a power dot. The snake steers for its food, keeps itself room to
@@ -337,7 +337,7 @@ egg hatches into a snake that chases; a ball on its cube and it stops and
 swears in a balloon, and with the snake close behind it rides a disc to the
 top and the snake, following, falls.
 
-Nine of those fourteen play on the music's own grid, so their big moments land on it.
+Ten of those fifteen play on the music's own grid, so their big moments land on it.
 In **paddles** every return falls on a beat, and on an accent - the crash
 that opens a phrase, the drop - the paddle the ball is heading for misses
 and is blown apart on that very note; the other side scores. In **invaders**
@@ -361,13 +361,16 @@ winger goes down the line through the build, and the header goes in on the
 drop. In **skatepark** the skater reaches a lip on a bar line as often as a
 real crossing allows and does an air there, its time aloft set by gravity,
 grinds along the coping before the drop, and goes twice as high on it, the
-combo banked. Same seed, same game, move for move.
+combo banked. In **artillery** a soldier of one side and then the other fires
+on each bar line, the shell arcing through the wind to land on the snare and
+blow a crater in the hill; on the drop it splits in five. Same seed, same
+game, move for move.
 
 They are homages, drawn from nothing but maths — no sprite, no maze, no
 character and no tune is copied from any game. The creatures in the
 formation, the mazes, the rocks and the challenger robot are all made up by
-the seed; the hopper, the tube's climbers and its claw, the tanks, the skater and
-the footballers' kits are drawn here or chosen by it.
+the seed; the hopper, the tube's climbers and its claw, the tanks, the skater, the
+little soldiers and the footballers' kits are drawn here or chosen by it.
 
 ## Scenes, straight out of the scene
 
@@ -428,8 +431,8 @@ Era by era, oldest first. Each one is a memory of its time, made from scratch.
 |---|---|---|
 | ![fire](docs/gallery/fire.png) | ![pipes](docs/gallery/pipes.png) | ![ansi](docs/gallery/ansi.png) |
 | **fire** — the 256-colour fire of the DOS demos: flames leaping on the kick, sparks on the snare, and at the peak an emblem of the seed's catching fire. `--scene fire --era 1994 --seed inferno` | **pipes** — the 3D pipes screensaver of the mid-90s office PC: shiny pipes growing cell by cell through a deep grid, turning on the eighths, until the screen is full and dissolves. `--scene pipes --era 1994 --seed screensaver` | **ansi** — the ANSI art of the bulletin boards, arriving over the modem: shaded pictures and block-letter logos in sixteen colours, a line a beat, the logo landing on the drop. `--scene ansi --era 1994 --seed colorbars` |
-| ![maze3d](docs/gallery/maze3d.png) |   |   |
-| **maze3d** — the 3D maze screensaver of the mid-90s, walked in first person: brick corridors, a step every two beats, and on the drop a spinning stone that turns the world upside down. `--scene maze3d --era 1994 --seed corridors` |   |   |
+| ![maze3d](docs/gallery/maze3d.png) | ![artillery](docs/gallery/artillery.png) |   |
+| **maze3d** — the 3D maze screensaver of the mid-90s, walked in first person: brick corridors, a step every two beats, and on the drop a spinning stone that turns the world upside down. `--scene maze3d --era 1994 --seed corridors` | **artillery** — the turn-based artillery games of the 90s PC: two teams of little soldiers on a hill of earth, a shot each bar arcing through the wind, craters blown in the hill; a shell splitting in five on the drop. `--scene artillery --era 1994 --seed incoming` |   |
 
 *Also in this era: fractal, tunnel, metaballs, plasma, bumplogo.*
 
@@ -611,7 +614,7 @@ seedscene info    [options]     show what a seed composes
 | option | meaning | default |
 |---|---|---|
 | `--seed <word>` | anything at all; the same word always gives the same demo | random |
-| `--scene <name>` | one of the fifty-six scenes (`--style`, its old name, works too) | chosen by the seed - one of the era's, if the era is given |
+| `--scene <name>` | one of the fifty-seven scenes (`--style`, its old name, works too) | chosen by the seed - one of the era's, if the era is given |
 | `--era <name>` | `auto` `1972` `1982` `1990` `1994` `1997` `2000` `2010` — or any year inside one, or its old name (`arcade` `c64` `amiga` `dos` `console` `handheld` `y2k` `modern`) | an era the scene belongs to |
 | `--display <name>` | `auto` `bw` `arcade` `vector` `colorvector` `mono` `c64` `vhs` `ega` `amiga` `vga` `snes` `composite` `gameboy` `nokia` `svga` `modern` | the screen: on `auto` each scene its own, or its era's |
 | `--board <name>` | `auto` `hifi` `paula` `opl3` `awe32` `ym` `sid` | the sound board: on `auto` each scene its own, or its era's |
@@ -681,7 +684,7 @@ src/core/music.js     composer, thirty-six styles, synthesizer, feature track
 src/core/chips.js     the sound chips: Paula, OPL3, AWE32, YM2149, SID
 src/core/visual.js    renderer, palette, title plate, scroller, era cards
 src/core/gl.js        WebGL2 helpers
-src/styles/index.js   the fifty-six scenes, the 3D stage, the About part, the display's screen
+src/styles/index.js   the fifty-seven scenes, the 3D stage, the About part, the display's screen
 src/app.js            ties the music and the picture together
 web/index.html        the live page
 web/boot.js           the C64 boot screen

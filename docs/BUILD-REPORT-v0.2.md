@@ -7,7 +7,7 @@
 v0.2 takes the v0.1 tool ([BUILD-REPORT-v0.1.md](BUILD-REPORT-v0.1.md)) and
 turns it into **SEEDSCENE**: a name, a nostalgic front door, a live mode you
 drive from the keyboard, an About part, seven eras of computing from 1972 to
-now with a journey through them, an endless AUTOPLAY channel, fifty-six
+now with a journey through them, an endless AUTOPLAY channel, fifty-seven
 scenes and thirty-six styles of music, each scene on its own display and
 sound board.
 
@@ -28,7 +28,7 @@ sound board.
 
 ## Where it stands, 2026-11-03
 
-- **Built:** fifty-six scenes in seven eras (spans of years, 1972 to now), thirty-six music styles, sixteen
+- **Built:** fifty-seven scenes in seven eras (spans of years, 1972 to now), thirty-six music styles, sixteen
   displays and six sound boards, each scene with its own or its era's; THE
   JOURNEY (three scenes an era, going on through the lists over replays),
   AUTOPLAY, born in, greetings, the screensaver, the sounds between the tracks,
@@ -4373,6 +4373,42 @@ were raised into peaks and saddles in turn, higher where a range rises.
 | Scrubbing back to three moments against fresh runs, each | the same state |
 | Cost a frame at 854×480, SwiftShader (no GPU here) | tube 291 ms (406 before the zoom was worked out once a frame and far bursts skipped), tanks 141, rocks 202 - the live check on a real GPU is still to do |
 | `npm test` | passes, the mp4 comparison included |
+
+## The artillery
+
+Piece C's next scene (2026-11-04), chosen as the least complex of the four
+left: a side-on 2D game with small figures, no character to animate in the
+round. `artillery` (1994–1996). Against Wikipedia's screenshots of the PC
+artillery games of 1991 and 1995 and their gameplay sections: a side view;
+ground that is blown away in round craters; hills against a dark sky with
+mountains; small figures spread over the ground; arcing shots with tracers;
+a wind gauge and each side's strength. Its own: two teams of five little
+soldiers - a helmet in the side's colour, a bazooka raised to fire - the
+hill and the mountains shaped by the seed, a shell that splits in five on
+the drop (the cluster shells of the genre), no worm, sheep or weapon of any
+game.
+
+The game (`ArtillerySim`): on each bar line a living soldier of one side and
+then the other fires at the other side; the shell's velocity is solved so it
+lands on the beat where the snare is (the fourth beat; the second at a slow
+tempo) under gravity and the wind, at a soldier, or just wide of one a little
+over half the time; it blows a crater in the hill and anyone standing in it
+is flung away and gone. The hill is the seed's waves with the round's craters
+cut from it, worked out the same way in the simulation (where the soldiers
+stand) and the shader (what is drawn). On the accented bar - the drop - the
+shell splits in five at the top of its arc. When a side is wiped out the
+other cheers for a bar and a new round starts on a whole hill. The first
+version fired the opening shot again and again at the start - the next bar
+line worked out from a clock that had not moved - and drew the next round's
+soldiers while the last was still being played; each round now keeps its own.
+
+| Check | Result |
+|---|---|
+| Frames against the screenshots, at a shot, a burst and the drop | the hill and its craters showing the sky through them, the soldiers of both sides, the bars of their strength and the wind, a fireball and its smoke, the shell splitting in five and its five bursts landing together |
+| The game over two minutes, three seeds | a shot every bar, rounds of about ten shots, the split on each accented bar |
+| Scrubbing back against fresh runs | the same state |
+| Cost a frame at 854×480, SwiftShader | artillery 213 ms, rocks 197 - the live check on a real GPU is still to do |
+| `npm run test:quick` | passes, the README's entry included |
 
 ## The skate park
 
