@@ -7,7 +7,7 @@
 v0.2 takes the v0.1 tool ([BUILD-REPORT-v0.1.md](BUILD-REPORT-v0.1.md)) and
 turns it into **SEEDSCENE**: a name, a nostalgic front door, a live mode you
 drive from the keyboard, an About part, seven eras of computing from 1972 to
-now with a journey through them, an endless AUTOPLAY channel, fifty-five
+now with a journey through them, an endless AUTOPLAY channel, fifty-six
 scenes and thirty-six styles of music, each scene on its own display and
 sound board.
 
@@ -28,7 +28,7 @@ sound board.
 
 ## Where it stands, 2026-11-03
 
-- **Built:** fifty-five scenes in seven eras (spans of years, 1972 to now), thirty-six music styles, sixteen
+- **Built:** fifty-six scenes in seven eras (spans of years, 1972 to now), thirty-six music styles, sixteen
   displays and six sound boards, each scene with its own or its era's; THE
   JOURNEY (three scenes an era, going on through the lists over replays),
   AUTOPLAY, born in, greetings, the screensaver, the sounds between the tracks,
@@ -4374,6 +4374,171 @@ were raised into peaks and saddles in turn, higher where a range rises.
 | Cost a frame at 854×480, SwiftShader (no GPU here) | tube 291 ms (406 before the zoom was worked out once a frame and far bursts skipped), tanks 141, rocks 202 - the live check on a real GPU is still to do |
 | `npm test` | passes, the mp4 comparison included |
 
+## The skate park
+
+Piece C's next scene (2026-11-04), in 1997–1999, the era with the fewest
+scenes of its own. `skatepark`: a wooden vert half-pipe in a warehouse -
+plywood sheets, steel coping, closed ends, decks, the seed's colours painted
+in blocks on the back wall - and a skater riding it. The look from the arcade
+museum's one in-game screenshot of a skateboarding arcade game of 1997 (the
+skater from behind, the trick's name and points on screen, the score) and
+Wikipedia's screenshot of a console skateboarding game of 1999 (the skater in
+the air over a wooden ramp in a hall, the score at the top left).
+
+**The moves, from references.** The first version moved the skater from
+memory: up the wall and straight down again with no turn, so it landed going
+backwards, and a "720" on the drop. The owner asked for the skater's
+positions and movements to be right at every moment, from references. They
+came from Wikipedia: the aerials article (a backside air - up the
+transition, a hand on the heel edge, lifting off, turning backside, landing
+forward; a frontside air, an indy, a melon, a method, a mute, each a hand on
+a given edge; a 540 one and a half turns; a 360 or a 720 on vert done from
+riding backwards, to come down forward); the vert ramp article (a foot or two
+of vertical so the rider goes straight up, not forward off the ramp); the
+grind article (the trucks sliding on the coping); the half-pipe article
+(pumping: speed with little effort); and a sequence photograph of a vert air
+taken from above the deck - up the wall square to it, knees bent, arms out;
+straight up past the coping; turning in the air; down the wall a little along
+from where it went up, crouched to take it. Rebuilt on those: square to the
+surface all the way round, crouching deepest through the transition and
+standing into the vert; every air half a turn about the body's own length
+(feet to head), so the board comes round to point down the wall, with the
+grab of its kind; a little drift along the ramp; a deep crouch on landing;
+the 50-50 with the board along the coping and the body upright over it,
+easing on and off the coping from square to the wall; a 540 on the drop.
+Checked as a sequence like the photograph's: the skeleton drawn side-on at
+twelve to eighteen moments through an air, a grind and the 540.
+
+**The ramp, to scale.** The owner then saw that no skateboard could ride the
+ramp as drawn: it was 2.3 m tall with a 2.4 m flat, and the skater, drawn a
+third bigger than life to read from across the hall, stood taller than it.
+And the airs were in the air for 0.3 s where gravity takes 1.07 s to throw
+anyone 1.4 m up and bring them back. Now the ramp is built to a real vert
+ramp's measures - Wikipedia's article gives 11-14 ft tall with 6 in to 2 ft
+of vert; Ocean City, Maryland's municipal vert ramp is 12 ft tall, 10.5 ft
+transitions, 1.5 ft of vert, 32 ft wide: 3.66 m, 3.2 m, 0.46 m, 9.75 m - with
+a flat bottom of 4.3 m, a little more than its height, as no standard is
+published and builders give taller ramps more flat (an assumption). The
+skater is life size, about 1.8 m, and the camera follows him as television
+does. Each air's time aloft is gravity's for its height (2 x sqrt(2h/g): 1.1
+m, 0.94 s; 2.25 m, 1.35 s), its half rounded to the eighths so it lands on
+one; a crossing, lip to lip, takes two seconds or more, so at skate punk's
+191 bpm a lip comes every third bar, at 133 every second, the accented bar
+always aimed for.
+
+**The skater, in the round.** The owner found the figure too basic - flat
+sticks drawn on the screen - and nothing like the games it came from, whose
+skaters were solid figures in clothes: a T-shirt, baggy trousers, chunky
+shoes, short hair, seen from behind riding away. It is now built in the
+round and lit, marched in the shader round the joints the simulation works
+out: trousers that taper from a baggy ankle up to the hip, a T-shirt over the
+trunk and short sleeves with a band printed across the chest, bare forearms
+and hands, a neck and a head with a cap of hair, two chunky shoes with white
+soles standing across the board, and the board itself - its deck kicked up at
+nose and tail, black grip tape on top, the seed's graphic under it, two
+trucks and four wheels. Being solid, it now passes behind the ramp's lip and
+in front of it as it should; its colours are the seed's and the seed's
+palette, no game's character.
+
+At the owner's word the figure was then looked at alone, from six angles -
+its chest, its back, the nose side, the tail side, from above and three
+quarters - shaded and as a mesh of contour lines every 3 cm, in three poses
+(riding, the grab in the air, the grind). That showed what the scene hid: the
+hair covered the whole head, so there was no face and the front looked like
+the back; the arms were held out in a cross at shoulder height; in a crouch
+the knees went down to the board instead of forward over the toes, the hips
+a dark ball under the chest; and, as the owner then pointed out, there were
+no shoulders - the trunk's rounded top rose past the shoulder line into a
+hump behind the head, and the shoulder joints were 27 cm apart where a man's
+are about 40. Now: a face looking over the leading shoulder, with eyes,
+brows, a nose, a mouth and ears, the hair over the crown and down the back;
+the arms low and bent at the elbow for balance; a crouch that keeps the knees
+up and forward and sends the hips down and back; and the trunk a back with
+shoulders - widest across them, narrower at the waist, flat on top along the
+shoulder line, shallow from chest to back - the shoulders 38 cm apart and
+rounded at its corners, the neck straight up out of them.
+
+Then, at the owner's suggestion, the body was modelled the way the sculpture
+scene models its shapes: each part a simple shape - a capsule, a tapering cone,
+a rounded block, an egg - blended into the next with a smooth union, so the
+figure is one piece of clay: the knee folds into the thigh, the shirt into the
+trousers at the waist, the trapezius slopes from the neck down to each
+shoulder, the arm comes out of the sleeve and the hand out of the wrist, the
+neck out of the shoulders into the head. Each point takes the colour of the
+part it is nearest. The head was made 8% bigger, as the shoulders now stood
+wider than it.
+
+The owner then pointed at the chest: lumps where the trapezius and the
+shoulders met the trunk, then a crease across it. A deeper blend softened
+them but did not remove the crease, which came from the trunk itself - a
+rounded block narrowed toward the waist by bending space. The trunk is now two
+eggs melted into one - the chest, wide at the shoulders, and the belly,
+narrower - with a bar across the shoulders and the trapezius from the neck,
+all blended deeply; the separate shoulder balls, which bulged at the upper
+corners and left a dip between them, were taken out. Seen from the front, the
+back and three quarters, and as the contour mesh, the trunk is one smooth piece.
+
+**To a man's proportions.** The owner then saw that the pelvis did not join
+the legs properly - both thighs ran to one point in the middle of the hips, a
+V - and asked for the body's true proportions from reference material. From
+Wikipedia's "Body proportions": an average man is seven and a half heads tall
+(the head measured from the crown to the chin); the half-way mark is a line
+between the greater trochanters - the hip joints - just above the pubic arch;
+the legs, floor to crotch, are three and a half to four heads; the arms about
+three, the hand as long as the face. From figure-drawing canons: the knees two
+heads up; the hips a head and a half wide (Oehler, 1927; the drawing guides
+give 1.5 to 2); the shoulders two heads (some give three; two is the more
+common). So, at 1.78 m and a 23.7 cm head: the hip joints at 0.89 m, 9 cm
+either side of the middle, in a pelvis of its own a head and a half wide; the
+thigh 43 cm and the shin 40 to the ankle, the knee two heads up; the trunk
+56 cm from the hip joints to the shoulder line, the shoulder joints 38 cm
+apart; the upper arm 31 cm and the forearm 26 to the wrist, so a hanging elbow
+comes to the navel and the wrist to the crotch. Each leg now starts at its own
+hip joint and blends into the pelvis; the knees and the elbows are placed by
+two-bone inverse kinematics from those lengths, so a limb never stretches or
+shrinks however the skater crouches or reaches.
+
+**The body's movement, from a study of real skaters.** The owner asked for the
+whole body to move as a skater's does - the trunk shifting, the arms adapting,
+the body keeping its centre of gravity over the board. The reference is
+Kogelbauer, Koyama, Callan and Shinomoto, "Mechanical optimization of
+skateboard pumping" (Physical Review Research, 2024; arXiv 2312.17671), which
+models pumping as a variable-length pendulum and checks it against motion
+capture of two skaters: the skater crouches steadily across the flat and pushes
+up early in the curve going up, raising the centre of mass so the
+conservation of angular momentum speeds it up. Its photographs show the
+rest: the trunk bent over the board and turned toward the way it rides, the
+arms used as counterweights, unlike each other - the leading arm forward and
+up, the trailing one back and down, elbows bent - the head looking ahead. Now:
+standing tall coming down a wall, crouching across the flat, pushing up early
+in the next curve and tall into the vert (and deep again just after a
+landing); the hips square to the board and the shoulders turned some 25
+degrees toward the way it rides, so the trunk twists between them; the body
+leaning forward as the board speeds up down a wall and back as it slows up
+the next, so the weight stays over it; the leading arm reaching forward and
+up and the trailing one back and down, both rising as the skater stands and
+dropping as it crouches, out wide in the air. Checked as an animated GIF of
+the figure through an air, a grind and the 540, from the side and three
+quarters, the ramp behind it.
+
+**Left to improve: the animation.** The owner found that this does not yet
+understand the technique nor show it: the skater's movement - how the trunk
+shifts, how the arms adapt, how the whole body moves to keep its line of
+gravity over the board - is still not a skater's. The skate park goes into
+0.2.0 as it stands, the ramp, the figure and the game as built, and its
+animation is to be reworked later from real skaters' movement, studied in
+motion rather than from stills and a model of the centre of mass alone.
+
+| Check | Result |
+|---|---|
+| The skeleton side-on through an air, the grind and the 540, against the sequence photograph | square to the ramp up the wall, straight up off the vert, half a turn in the air, down a little along it, crouched on landing; upright on the coping, the board along it; the 540 2.6 m over the coping |
+| The game on the real score (`halfpipe`, skate punk at 191 bpm, accents at 20.1, 47.7 and 57.8 s; `ollie`, heroic at 133 bpm) | a lip every third bar at 191 bpm, every second at 133; the grind on the lip before each accent, the 540 on it (20.10, 47.75, 57.80 s); airs of 1.1 m in 0.94 s, the 540 2.25 m in 1.35 s |
+| Scrubbing back against fresh runs | the same state |
+| The figure alone, six angles, shaded and as a contour mesh, riding, grabbing and grinding | a face and hair, shoulders 38 cm apart and no hump, the trunk one smooth piece, each leg from its own hip joint into the pelvis, limbs of fixed length, the crouch folding at the knees and hips |
+| Frames in the hall at the air, the grind and the drop | the half-pipe's U, the coping, the skater square to the wall, upright on the coping, high over it on the drop |
+| Cost a frame at 854×480, SwiftShader | skatepark 316 ms with the skater modelled in blended shapes (234 with flat sticks), rocks 191 - the live check on a real GPU is still to do |
+| `npm run test:quick` | passes, the README's entry included |
+
 ## Terrace drums and the football match
 
 Piece C's style and the scene it was made for, at the owner's word
@@ -4489,6 +4654,9 @@ right is for a listener to judge; `npm run sampler` exists for that.
 - Live mode assumes a 44.1 kHz audio device.
 - v0.1's exact source was not preserved: the project went under git only
   during 0.2.
+- The skate park's skater does not yet move as a skater does: the trunk, the
+  arms and the body's balance over the board are to be reworked from real
+  skaters in motion (the owner's finding, 2026-11-04).
 
 ## Token usage and cost, to 2026-10-28
 

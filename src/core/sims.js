@@ -3870,4 +3870,323 @@ export class FootballSim extends PlannedSim {
   scoreAt(t, team) { return this.score[team] - this.goals.filter((g) => g.team === team && g.t > t).length; }
 }
 
-export const SIMS = { football: FootballSim, tanks: TankSim, tube: TubeSim, crossing: CrossingSim, coderain: CoderainSim, animeop: AnimeopSim, timecar: TimecarSim, moonbike: MoonbikeSim, maze3d: Maze3dSim, echolines: EcholinesSim, ansi: AnsiSim, cascade: CascadeSim, cracktro: CracktroSim, rubber: RubberSim, chessfloor: ChessfloorSim, bobs: BobsSim, pyramid: PyramidSim, pipes: PipesSim, maze: MazeSim, snake: SnakeSim, rocks: RocksSim, starfighter: StarSim, paddles: PaddlesSim, invaders: InvadersSim, bricks: BricksSim, lightcycles: LightcyclesSim };
+// ---------------------------------------------------------------------------
+// The skate park: a skater on a half-pipe, a trick on every bar
+// ---------------------------------------------------------------------------
+
+export const SKATE_SEGS = 16;
+// a real vert ramp's measures (Ocean City, Maryland's: 12 ft tall, 10.5 ft transitions, 1.5 ft of vert, 32 ft wide);
+// the flat bottom a little wider than the ramp is tall (no standard is published; taller ramps take more flat)
+const RAMP_F = 2.15, RAMP_R = 3.2, RAMP_V = 0.46;   // the flat's half width, the transitions' radius, the vert above them
+const RAMP_L = 4.88;                                 // half its width along the coping
+const GRAV = 9.81;
+const RAMP_LIP = RAMP_F + RAMP_R;                   // where the coping runs
+const RAMP_TOP = RAMP_R + RAMP_V;
+const SKATE_FOCAL = 1.6;
+
+/** A point of the ramp's profile, a distance s along it from the middle of the flat (negative: the left side). */
+function rampPoint(s) {
+  const side = s < 0 ? -1 : 1, a = Math.abs(s);
+  const arc = RAMP_R * Math.PI / 2;
+  if (a <= RAMP_F) return { x: s, y: 0, nx: 0, ny: 1 };
+  if (a <= RAMP_F + arc) {
+    const th = (a - RAMP_F) / RAMP_R;
+    const x = RAMP_F + RAMP_R * Math.sin(th), y = RAMP_R - RAMP_R * Math.cos(th);
+    return { x: side * x, y, nx: -side * Math.sin(th), ny: Math.cos(th) };
+  }
+  return { x: side * RAMP_LIP, y: RAMP_R + Math.min(RAMP_V, a - RAMP_F - arc), nx: -side, ny: 0 };
+}
+const RAMP_S = RAMP_F + RAMP_R * Math.PI / 2 + RAMP_V;   // from the middle up to the coping
+
+// The airs of vert skating (Wikipedia, "Aerial (skateboarding)"): each launched straight up off the vert, the
+// skater turning backside (toward the toes) or frontside (toward the back) - half a turn, so it comes down the wall
+// going forward - and holding the board by an edge: which hand, which edge. The 540 turns one and a half.
+const AIRS = [
+  { name: 'backside air', turn: 0.5, dir: -1, hand: 'front', edge: 'heel', pts: 500 },
+  { name: 'frontside air', turn: 0.5, dir: 1, hand: 'back', edge: 'toe', pts: 500 },
+  { name: 'indy', turn: 0.5, dir: -1, hand: 'back', edge: 'toe', pts: 600 },
+  { name: 'melon', turn: 0.5, dir: -1, hand: 'front', edge: 'heel', tweak: 0.4, pts: 600 },
+  { name: 'method', turn: 0.5, dir: -1, hand: 'front', edge: 'heel', method: true, pts: 750 },
+  { name: 'mute', turn: 0.5, dir: -1, hand: 'front', edge: 'toe', pts: 550 },
+];
+const AIR_540 = { name: '540', turn: 1.5, dir: -1, hand: 'back', edge: 'toe', pts: 2000 };
+const GRIND = { name: '50-50', turn: 0, dir: 0, hand: null, edge: null, pts: 250 };
+
+/**
+ * The skate park: a vert ramp in a warehouse built to a real one's measures,
+ * the skater life size, riding wall to wall - a crossing taking the two
+ * seconds or more a skater takes - and reaching a lip on a bar line, aiming
+ * for the accented one, where it goes straight up off the
+ * vert into an air - a backside or frontside air, an indy, a melon, a method, a
+ * mute - turning half round in the air to come down the wall going forward, a
+ * little along the ramp from where it went up, landing on the beat. On the
+ * walls it rides square to the surface, crouching deepest in the transition and
+ * standing up into the vert, arms out for balance. Through the build it grinds
+ * along the coping on both trucks (a 50-50), board along the pipe; on the drop
+ * - the accented bar - it goes up twice as high for a 540, and the combo
+ * counted up through the phrase is banked. (Drawn from Wikipedia's articles on
+ * aerials, grinds and the vert ramp, and a sequence photograph of a vert air.)
+ */
+export class SkateSim extends PlannedSim {
+  reset() {
+    this.rng = new Rng(this.seed, 'skate-sim');
+    this.clock = 0;
+    this.kept = 0;
+    this.score = 0;
+    this.combo = 0;
+    this.bars = [];               // per bar line: {t, side, kind: 'air'|'grind'|'big', trick, z, z1, combo, score, air}
+  }
+
+  /**
+   * The next bar line it reaches a lip on: a crossing, lip to lip (some fifteen metres), takes at least about two
+   * seconds as skaters ride it, so at a fast tempo it is every second or third bar; an accented bar near enough is
+   * aimed for, so the big air lands on the drop.
+   */
+  nextHit(t) {
+    const bar = this.grid.barSec;
+    const k = Math.max(1, Math.ceil(3.2 / bar));
+    for (let j = Math.max(1, k - 1); j <= k + 1; j++) if (this.grid.isAccent(t + j * bar)) return t + j * bar;
+    return t + k * bar;
+  }
+
+  /** An air's time aloft for its height, as gravity sets it - its half rounded to the eighths, so it lands on one. */
+  airOf(h) {
+    const e = this.grid.spb / 2;
+    const half = Math.max(e, Math.round(Math.sqrt(2 * h / GRAV) / e) * e);
+    return { half, h: 0.5 * GRAV * half * half };
+  }
+
+  plan() {
+    const spb = this.grid.spb;
+    if (!this.bars.length) {
+      // (the run starts on the far wall, coming down)
+      const t0 = -this.nextHit(0);
+      this.bars.push({ t: t0, side: 1, kind: 'air', trick: AIRS[0], z: 0, z1: 0, combo: 0, score: 0, air: this.airOf(1).half, h: this.airOf(1).h });
+      this.next = this.nextHit(0) > this.grid.barSec ? this.grid.barSec * Math.ceil(this.nextHit(0) / this.grid.barSec / 2) : this.nextHit(0);
+    }
+    const t = this.next;
+    const nx = this.nextHit(t);
+    const kind = this.grid.isAccent(t) ? 'big' : this.grid.isAccent(nx) ? 'grind' : 'air';
+    const trick = kind === 'big' ? AIR_540 : kind === 'grind' ? GRIND : this.rng.pick(AIRS);
+    this.combo++;
+    if (kind === 'big') this.score += Math.round(this.combo * 250 + trick.pts);
+    else this.score += trick.pts;
+    const prev = this.bars[this.bars.length - 1];
+    const z = Math.max(-3.6, Math.min(3.6, prev.z1 + this.rng.float(-0.8, 0.8)));
+    // an air comes down a little along the ramp from where it went up; a grind slides a couple of metres
+    const drift = kind === 'grind' ? (z > 0 ? -2.2 : 2.2) : (this.rng.bool() ? 1 : -1) * this.rng.float(0.7, 1.3);
+    const z1 = Math.max(-3.8, Math.min(3.8, z + drift));
+    const air = kind === 'grind' ? { half: Math.max(spb, 0.35), h: 0 } : this.airOf(kind === 'big' ? 2.4 : this.rng.float(0.9, 1.4));
+    this.bars.push({ t, side: -prev.side, kind, trick, z, z1, combo: this.combo, score: this.score, air: air.half, h: air.h });
+    if (kind === 'big') this.combo = 0;
+    this.next = nx;
+    this.clock = t;
+  }
+
+  advanceTo(t) {
+    if (t < this.kept) this.reset();
+    while (!this.bars.length || this.clock <= t + 4 * this.grid.barSec) this.plan();
+    while (this.bars.length > 3 && this.bars[2].t < t - this.grid.barSec) this.bars.shift();
+    this.kept = this.bars.length ? Math.max(0, this.bars[0].t) : 0;
+  }
+
+  /**
+   * The skater at t: where its feet are, the board's direction (al) and the up of its body (up), the trick and how
+   * far through it (u), how high above the coping, how deep it crouches.
+   */
+  pose(t) {
+    this.advanceTo(t);
+    let i = 0;
+    while (i + 1 < this.bars.length && this.bars[i + 1].t <= t + this.bars[i + 1].air) i++;
+    const A = this.bars[i], B = this.bars[i + 1] || A;
+    const dt = t - A.t;
+    if (dt <= A.air && dt >= -A.air) {
+      const u = (dt + A.air) / (2 * A.air);
+      if (A.kind === 'grind') {
+        // a 50-50 on the coping: both trucks on the pipe, the board along it, the body upright and leaning a little in
+        const dir = Math.sign(A.z1 - A.z) || 1;
+        const lean = 0.25;
+        return { x: A.side * RAMP_LIP, y: RAMP_TOP + 0.06, z: A.z + (A.z1 - A.z) * u, al: [0, 0, dir], up: norm3([-A.side * Math.sin(lean), Math.cos(lean), 0]), h: 0, u, A, crouch: 0.22, mode: 'grind' };
+      }
+      // an air: straight up off the vert and down again, a little along the ramp; square to the wall it left, the
+      // turn taken about the body's own length (feet to head), so the board comes round to point down the wall
+      const hgt = A.h * 4 * u * (1 - u);                                          // (a parabola: gravity's)
+      const tuck = 0.18 + 0.32 * Math.sin(Math.PI * Math.min(1, u * 1.25));       // knees pulled up to the grab
+      return { x: A.side * (RAMP_LIP - 0.2), y: RAMP_TOP + hgt, z: A.z + (A.z1 - A.z) * u, al: [0, 1, 0], up: [-A.side, 0, 0], h: hgt, u, A, crouch: tuck, mode: 'air' };
+    }
+    // riding from A's lip to B's: down the wall, across the flat and up, fastest at the bottom; square to the surface
+    const t0 = A.t + A.air, t1 = B.t - B.air;
+    const u = Math.max(0, Math.min(1, (t - t0) / Math.max(0.05, t1 - t0)));
+    const e = 0.5 - 0.5 * Math.cos(Math.PI * u);
+    const s = A.side * RAMP_S + (B.side * RAMP_S - A.side * RAMP_S) * e;
+    const p = rampPoint(s), q = rampPoint(s + Math.sign(B.side - A.side) * 0.01);
+    const tx = q.x - p.x, ty = q.y - p.y, tl = Math.hypot(tx, ty) || 1;
+    let al = [tx / tl, ty / tl, 0];
+    let up = [p.nx, p.ny, 0];
+    // up onto the coping before a grind, and back in off it after one: the board swings between the wall and the
+    // pipe, and the body between square to the wall and upright over the lip
+    const onto = (q, w) => {
+      const gUp = norm3([-q.side * Math.sin(0.25), Math.cos(0.25), 0]);
+      al = norm3(add3(scale3(al, 1 - w), scale3([0, 0, Math.sign(q.z1 - q.z) || 1], w)));
+      up = norm3(add3(scale3(up, 1 - w), scale3(gUp, w)));
+    };
+    if (A.kind === 'grind' && u < 0.2) onto(A, 1 - smooth01(u / 0.2));
+    if (B.kind === 'grind' && u > 0.8) onto(B, smooth01((u - 0.8) / 0.2));
+    // the crouch: pumping as a variable-length pendulum (Kogelbauer et al., "Mechanical optimization of skateboard
+    // pumping", Phys. Rev. Research 2024, from motion capture): standing tall coming down the wall, crouching
+    // steadily across the flat, then pushing up early in the curve going up - standing tall into the vert
+    const dir = Math.sign(B.side - A.side) || 1;
+    const sAlong = s * dir;
+    const arc = RAMP_R * Math.PI / 2;
+    let crouch;
+    if (sAlong < -RAMP_F) {
+      const k = Math.max(0, Math.min(1, (-sAlong - RAMP_F) / arc));        // 1 at the top of the curve coming down, 0 at the flat
+      crouch = 0.08 + 0.12 * (1 - k) * (1 - k);
+    } else if (sAlong <= RAMP_F) {
+      crouch = 0.2 + 0.22 * (sAlong + RAMP_F) / (2 * RAMP_F);
+    } else {
+      const k = Math.min(1, (sAlong - RAMP_F) / arc);
+      crouch = 0.42 - 0.36 / (1 + Math.exp(-(k - 0.22) * 14));
+    }
+    crouch += 0.3 * Math.max(0, 1 - u / 0.15);                              // (and deep just after a landing, to take it)
+    // the board speeding up down the wall and slowing up the next: the body leans with it to keep its weight over it
+    const accel = Math.cos(Math.PI * u);
+    return { x: p.x + p.nx * 0.05, y: p.y + p.ny * 0.05, z: A.z1 + (B.z - A.z1) * e, al, up, h: 0, u, A, crouch, mode: 'ride', accel, rise: Math.max(0, 1 - crouch / 0.42) };
+  }
+
+  camera(t) {
+    const a = 0.14 * Math.sin(t * 0.09 + 1.3);   // (from the front of the ramp, swinging a little to each side: further round, a wall hid its own curve)
+    // it follows the skater, as television does, smoothed over half a second so the frame does not jerk
+    let px = 0, py = 0, pz = 0;
+    for (let k = 0; k < 5; k++) { const Q = this.pose(Math.max(0, t - k * 0.12)); px += Q.x / 5; py += Q.y / 5; pz += Q.z / 5; }
+    const target = [px * 0.6, 1.6 + py * 0.45, pz * 0.6];
+    const eye = [target[0] * 0.6 + Math.sin(a) * 11, 5.2 + 0.5 * Math.sin(t * 0.13), target[2] + Math.cos(a) * 11];
+    const f = norm3(sub3(target, eye));
+    const r = norm3(cross3(f, [0, 1, 0]));
+    const u = cross3(r, f);
+    return { eye, f, r, u };
+  }
+
+  /**
+   * The skater's body, in the hall: feet on the board, sideways to it as a skater stands (the chest toward the
+   * toe edge), knees and hips folding with the crouch, arms out for balance or a hand on the board in a grab.
+   */
+  skeleton(P, t) {
+    const K = 1;         // (life size, about 1.8 m: the camera follows him instead)
+    const tr = P.A.trick;
+    let al = P.al, up = P.up;
+    // the air's turn, about the body's own length; half a turn brings the board round to point down the wall
+    if (P.mode === 'air') al = rotateAxis(al, up, tr.dir * tr.turn * Math.PI * 2 * smooth01(P.u));
+    const toe = norm3(cross3(up, al));              // the toe edge's side: where the chest faces
+    const base = [P.x, P.y, P.z];
+    const L = (a, h, c) => [base[0] + (al[0] * a + up[0] * h + toe[0] * c) * K, base[1] + (al[1] * a + up[1] * h + toe[1] * c) * K, base[2] + (al[2] * a + up[2] * h + toe[2] * c) * K];
+    const cr = P.crouch;
+    const grab = P.mode === 'air' && tr.hand ? Math.sin(Math.PI * Math.min(1, Math.max(0, (P.u - 0.12) / 0.76))) : 0;
+    // the board: in a method pulled up behind the back, in a melon pushed out in front
+    let dh = 0, dc = 0;
+    if (P.mode === 'air') { dh = cr * 0.9; if (tr.method) { dh += 0.25 * grab; dc -= 0.3 * grab; } if (tr.tweak) dc += tr.tweak * 0.3 * grab; }
+    const B = (a, h, c) => L(a, h + dh, c + dc);
+    const seg = [];
+    const put = (A3, B3, w, kind) => seg.push([A3, B3, w, kind]);
+    put(B(0.42, 0.04, 0), B(-0.42, 0.04, 0), 0.06, 0);                       // the deck
+    // The body to a man's proportions (Wikipedia, "Body proportions"; figure-drawing canons): 1.78 m, seven and a
+    // half heads of 23.7 cm; the hip joints - the greater trochanters - at half the height, 0.89 m, 9 cm either
+    // side of the middle in a pelvis a head and a half wide; the knees two heads up; the shoulders two heads
+    // apart at their outer edge (the joints 38 cm); the upper arm a head and a half, the forearm to the wrist a
+    // little over one, so a hanging elbow comes to the navel and the wrist to the crotch; the hand as long as the
+    // face. The knees and elbows are found by two-bone inverse kinematics, so no limb ever changes its length.
+    const THIGH = 0.43, SHIN = 0.4, UPPER = 0.31, FORE = 0.26, HIPW = 0.09;
+    const ik = (root, end, l1, l2, pole) => {
+      const v = sub3(end, root);
+      const d = Math.min(Math.hypot(v[0], v[1], v[2]), (l1 + l2) * 0.999);
+      const dir = norm3(v);
+      const a = (l1 * l1 - l2 * l2 + d * d) / (2 * d), h = Math.sqrt(Math.max(0, l1 * l1 - a * a));
+      const pp = norm3(sub3(pole, scale3(dir, dot3(pole, dir))));
+      return add3(add3(root, scale3(dir, a)), scale3(pp, h));
+    };
+    // the ankles over the board, the stance about shoulder width
+    const aF = B(0.22, 0.09, 0), aB = B(-0.22, 0.09, 0);
+    // the pelvis: lowered and sent back by the crouch, the trunk leaning forward over the toes to keep balance
+    const pelvis = L(0, 0.89 - cr * 0.55, -0.02 - cr * 0.22 + dc * 0.3);
+    const hjF = add3(pelvis, scale3(al, HIPW * K)), hjB = add3(pelvis, scale3(al, -HIPW * K));
+    const kneePole = norm3(add3(toe, scale3(up, 0.2)));
+    const kF = ik(hjF, aF, THIGH * K, SHIN * K, kneePole), kB = ik(hjB, aB, THIGH * K, SHIN * K, kneePole);
+    put(aF, kF, 0.075, 1); put(kF, hjF, 0.085, 1); put(aB, kB, 0.075, 1); put(kB, hjB, 0.085, 1);
+    // the trunk: bent over the toes as the skater crouches, and leaning with the board's speeding up and slowing down
+    // so the weight stays over it; the shoulders turned toward the way it rides (the hips stay square to the board,
+    // so the trunk twists between them), as skaters ride a ramp in the motion-capture study's photographs
+    const lean = 0.08 + cr * 0.35, fore = 0.12 * (P.accel || 0);
+    const tUp = norm3(add3(add3(scale3(up, Math.cos(lean)), scale3(toe, Math.sin(lean))), scale3(al, fore)));
+    const twist = P.mode === 'grind' ? 0.3 : P.mode === 'air' ? 0.15 : 0.42;
+    const sa = rotateAxis(al, tUp, -twist), chest = norm3(cross3(tUp, sa));
+    const shC = add3(pelvis, scale3(tUp, 0.56 * K));
+    const shF = add3(shC, scale3(sa, 0.19 * K)), shB = add3(shC, scale3(sa, -0.19 * K));
+    const neck = add3(shC, scale3(tUp, 0.07 * K));
+    const head = add3(add3(shC, scale3(tUp, 0.215 * K)), scale3(chest, 0.015 * K));
+    put(pelvis, neck, 0.13, 2);
+    // the arms as counterweights, not alike: the leading one reaching forward and up the way it rides, the trailing
+    // one back and down; both rising as the skater stands and dropping as it crouches; out wide in the air
+    const rise = P.mode === 'ride' ? P.rise : P.mode === 'grind' ? 0.6 : 0.8;
+    const sway = 0.05 * Math.sin(t * 2.1);
+    let hF = add3(shF, add3(scale3(sa, 0.34 * K), add3(scale3(tUp, (-0.3 + 0.32 * rise + sway) * K), scale3(chest, 0.16 * K))));
+    let hB = add3(shB, add3(scale3(sa, -0.26 * K), add3(scale3(tUp, (-0.42 + 0.12 * rise - sway) * K), scale3(chest, -0.06 * K))));
+    if (P.mode === 'air') { hF = add3(shF, add3(scale3(sa, 0.38 * K), scale3(tUp, 0.05 * K))); hB = add3(shB, add3(scale3(sa, -0.36 * K), scale3(tUp, -0.1 * K))); }
+    if (P.mode === 'grind') { hF = add3(shF, add3(scale3(sa, 0.42 * K), scale3(tUp, -0.12 * K))); hB = add3(shB, add3(scale3(sa, -0.4 * K), scale3(tUp, -0.22 * K))); }
+    if (grab > 0.05) {
+      const edge = B(tr.hand === 'front' ? 0.08 : -0.02, 0.06, tr.edge === 'toe' ? 0.12 : -0.12);
+      if (tr.hand === 'front') hF = lerp3(hF, edge, Math.min(1, grab * 1.6));
+      else hB = lerp3(hB, edge, Math.min(1, grab * 1.6));
+    }
+    const elbowPole = norm3(add3(scale3(tUp, -1), scale3(chest, -0.5)));
+    const eF = ik(shF, hF, UPPER * K, FORE * K, elbowPole), eB = ik(shB, hB, UPPER * K, FORE * K, elbowPole);
+    // (the wrist where the forearm ends: the hand reaches a little past it toward the target)
+    const wF = add3(eF, scale3(norm3(sub3(hF, eF)), FORE * K)), wB = add3(eB, scale3(norm3(sub3(hB, eB)), FORE * K));
+    put(shF, eF, 0.05, 3); put(eF, wF, 0.045, 3); put(shB, eB, 0.05, 3); put(eB, wB, 0.045, 3);
+    const fF = aF, fB = aB, hip = pelvis;
+    hF = wF; hB = wB;
+    // the joints the shader builds the body round, and the board's frame
+    const joints = [fF, fB, kF, kB, hip, neck, shF, shB, eF, eB, hF, hB, head, hjF, hjB];
+    const board = { c: B(0, 0.04, 0), al, up, toe };
+    return { seg, head, K, joints, board };
+  }
+
+  uniforms(t) {
+    const P = this.pose(t);
+    const C = this.camera(t);
+    const A = P.A;
+    const { joints, board, head } = this.skeleton(P, t);
+    const J = new Float32Array(SKATE_SEGS * 4);
+    joints.forEach((q, n) => J.set([q[0], q[1], q[2], 1], n * 4));
+    const spb = this.grid.spb;
+    const shown = this.bars.filter((b) => b.t <= t + b.air);
+    const last = shown[shown.length - 1] || A;
+    const since = t - (last.t + last.air);
+    const hp = joints[4];
+    return {
+      uSkJ: { v: J, kind: '4fv' },
+      uSkB: { v: Float32Array.from([...board.c, 0, ...board.al, 0, ...board.up, 0, ...board.toe, 0]), kind: '4fv' },
+      uSkHip: { v: [hp[0], hp[1], hp[2], P.h], kind: '4f' },
+      uSkShadow: { v: [P.x, P.y - P.h, P.z, P.mode === 'grind' ? 1 : 0], kind: '4f' },
+      uCamE: { v: [...C.eye, SKATE_FOCAL], kind: '4f' },
+      uCamF: { v: [...C.f, 0], kind: '4f' },
+      uCamR: { v: [...C.r, 0], kind: '4f' },
+      uCamU: { v: [...C.u, 0], kind: '4f' },
+      uSkFx: { v: [last.score % 100000, last.combo, since, last.kind === 'big' ? 1 : 0], kind: '4f' },
+    };
+  }
+}
+const lerp3 = (a, b, u) => [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, a[2] + (b[2] - a[2]) * u];
+const smooth01 = (x) => { const u = Math.max(0, Math.min(1, x)); return u * u * (3 - 2 * u); };
+const add3 = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+const sub3 = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const scale3 = (a, k) => [a[0] * k, a[1] * k, a[2] * k];
+const dot3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const cross3 = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const norm3 = (a) => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
+function rotateAxis(v, k, ang) {
+  // Rodrigues: v turned by ang about the unit axis k
+  const c = Math.cos(ang), s = Math.sin(ang), kv = cross3(k, v), kd = dot3(k, v);
+  return [v[0] * c + kv[0] * s + k[0] * kd * (1 - c), v[1] * c + kv[1] * s + k[1] * kd * (1 - c), v[2] * c + kv[2] * s + k[2] * kd * (1 - c)];
+}
+
+export const SIMS = { skatepark: SkateSim, football: FootballSim, tanks: TankSim, tube: TubeSim, crossing: CrossingSim, coderain: CoderainSim, animeop: AnimeopSim, timecar: TimecarSim, moonbike: MoonbikeSim, maze3d: Maze3dSim, echolines: EcholinesSim, ansi: AnsiSim, cascade: CascadeSim, cracktro: CracktroSim, rubber: RubberSim, chessfloor: ChessfloorSim, bobs: BobsSim, pyramid: PyramidSim, pipes: PipesSim, maze: MazeSim, snake: SnakeSim, rocks: RocksSim, starfighter: StarSim, paddles: PaddlesSim, invaders: InvadersSim, bricks: BricksSim, lightcycles: LightcyclesSim };
