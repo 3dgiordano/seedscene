@@ -4,7 +4,7 @@
 
 The release that turns the tool into **SEEDSCENE**: a name, a personality,
 a Commodore 64 front door, seven eras of computing from 1972 to now,
-fifty-eight scenes, thirty-six styles of music, sixteen displays and six
+fifty-eight scenes, thirty-six styles of music, seventeen displays and six
 sound boards, an endless AUTOPLAY channel, and a live mode you
 can drive entirely from the keyboard.
 
@@ -409,15 +409,21 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   the lights flaring in the lens as each phrase opens; the camera moves as
   before, a little farther back.
 - **The behind-view shooter** (`skyrush`, 1982–1989, on the arcade
-  monitor), the behind-view arcade shooters of the 80s: a flyer with a
-  jetpack seen from behind over a checkered plain rushing toward the screen,
-  columns and bushes going by, a pastel sky with a far skyline. On each bar a
-  wave of saucers comes in from the horizon; the flyer slides in front of the
-  nearest and fires on every beat, each shot reaching its saucer on the next.
-  Through the build a serpent of glowing orbs weaves in, and on the drop it
-  bursts orb by orb. Drawn from the arcade museum's screenshots of the
-  behind-view shooter of 1985; the flyer, the saucers and the serpent are
-  drawn here, no hero, enemy or name of any game.
+  monitor), the behind-view arcade shooters of the 80s, at about their
+  resolution: a flyer with a jetpack over a checkered plain rushing toward the
+  screen. He is a skeleton turned to the angle he is seen from, so his view
+  changes with his place on the screen; he runs a stride to the beat on the
+  ground, flies with his legs apart, stumbles, is thrown down flat and gets up
+  blinking. The horizon rises as he climbs and the plain slides as he nears a
+  side, his shadow staying at the foot of the screen. Rows of scenery pass him
+  on the beat; foes fly set ways in trains and lanes, cross in front of him,
+  hop in along the ground landing on the beat, or hold their places in shells
+  that open on the back of each bar, and they fire where he was. A serpent of
+  glowing orbs closes each stage and bursts on the drop, and the next stage
+  starts there in new colours. The rules were read from two open-source
+  tributes to the genre and its sprite sheets and held against arcade
+  screenshots; no code or art was taken, and the flyer, the saucers and the
+  serpent are drawn here, no hero, enemy or name of any game.
 - **The artillery** (`artillery`, 1994–1996), the turn-based artillery
   games of the 90s PC: two sides of five little beetles in the seed's colours,
   one at each end of an island of earth, arches and caves, open ground between
@@ -444,19 +450,30 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   smoothly blended shapes: shoulders and a face, a T-shirt with a printed
   band, baggy jeans over chunky shoes, bare forearms, a board with grip tape,
   a graphic, trucks and four wheels -
-  the camera following him, square to the surface (a first animation of its
-  pumping, its trunk and its arms, still to be improved: it does not yet
-  move as a skater does), crouching
-  deepest through the transition and standing up into the vert, arms out
-  for balance. A crossing takes the two seconds or more a skater takes, so it
-  reaches a lip on a bar line every bar or every few, aiming for the accented
-  bar; there it goes straight up off the vert into an air, its time aloft
-  what gravity gives its height - a backside or frontside air, an indy, a melon, a method, a mute, a
+  the camera following him, square to the surface (its trunk and arms still
+  to be improved: the body does not yet move as a skater's does). Forces move
+  it: gravity, rolling friction, drag and its own pumping, from a published
+  model of skateboard pumping. It falls down the wall speeding up, rides
+  fastest across the flat, some 8 to 10 m/s, slows up the far wall and leaves
+  the lip at the speed that takes it as high as it goes, its centre of mass on
+  a parabola, to land at the speed it left at. A crossing's time is gravity's
+  (wall to wall and through the air 2.7 to 2.9 s at any height and any tempo),
+  so the peak of each air comes on the nearest eighth or sixteenth, its
+  height chosen to fit - a backside or frontside air, an indy, a melon, a method, a mute, a
   hand on the board's right edge - turning half round about its own length
-  to come down the wall going forward, a little along the ramp, crouching
-  to take the landing; on the lip before the drop it grinds along the coping on both
-  trucks, the board along the pipe, in sparks; on the drop it goes twice as
-  high for a 540, banking the combo counted up through the phrase. The
+  to come down the wall going forward, a little along the ramp. The time left
+  over in a phrase is spent on the coping, where a skater can wait: it swings
+  up over the pipe, grinds along it on both trucks, in sparks, slowing on the
+  steel, stalls if it stops, and falls back in; then it pumps back up, each air
+  higher than the last, to a 540 on the drop, banking the combo counted up
+  through the phrase. The camera chases as those games' cameras did, seen in
+  footage of them: always behind the skater, no cuts while it rides, leaning
+  with the wall, looking where it is going; it has weight, a damped spring,
+  so it drops back as the skater speeds up, the skater flying off the wall
+  comes right at it, and it swings round behind it along the pipe on a grind.
+  One cut, for the music: a long lens low on the flat looks up at the 540,
+  from the beat before it to the beat after its landing. The hall is built
+  all round to be seen from there: walls, lamps, a roof of girders. The
   score and the combo at the top. The moves are taken from Wikipedia's
   articles on aerials, grinds and the vert ramp and a sequence photograph of
   a vert air; the look from the arcade museum's screenshot of a
@@ -916,6 +933,26 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   `npm run gallery`.
 
 ### Changed
+
+- **The vector tube and the wireframe tanks, with the punch of the other arcade
+  scenes** (`tube`, `tanks`). Both now play on a new display, `neonvector`, the
+  colour vector tube as memory has it: the beam's filter drew only outlines,
+  which took away every glow, fill and flash. The tube fills the screen, wider
+  than high: its walls lit, a pulse climbing them each beat, a burning far point,
+  the claw's lane a beam of light, each new shape its own colour, stars streaming
+  past and its outline rippling out across the dark; a hit is a flash, a ring and
+  rays. The tanks' battlefield is solid now, its shapes lit from one side and
+  hiding what stands behind them, on a grid that slides by to the horizon. The
+  gunner sits higher; the enemy has tracks with turning road wheels, a sloped hull
+  and a turret that follows the tank. Neither tank ever goes through a block or a
+  pyramid any more: each steers round what is in its way and is never let into
+  it. The tank holds its fire until the enemy is within 18 units (it fired from
+  about 61) with nothing between them. The sight comes down onto the enemy and
+  frames it; the shell leaves the tip of the gun as the view kicks, lands on the
+  next beat, and the enemy goes up in a fireball with a ring along the ground, its
+  turret thrown high and a scorch left behind. The enemy's turret lays its gun, the
+  gun runs back as it fires, and every shell, theirs and ours, leaves the muzzle and
+  flies under gravity until it meets the ground or a real face of a block or pyramid.
 
 - **An era key goes to that era's scenes.** `E`, `1`–`7` and the menu's ERA
   used to change the era and keep the scene on screen, showing it in an era not

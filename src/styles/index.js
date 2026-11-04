@@ -4873,7 +4873,13 @@ vec3 render(vec2 p, vec2 uv) {
   vec2 q = rot(roll) * p;
   vec3 rd = normalize(fw * 1.55 + rt * q.x + up * q.y);
 
+#ifdef STAGE_OPAQUE
+  // (a game that declares itself opaque: what the board covers needs no sky behind it)
+  vec2 cover = abs((ro - rd * ro.z / rd.z).xy) - vec2(0.9, 0.5);
+  vec3 col = rd.z >= 0.0 || max(cover.x, cover.y) >= 0.0 ? stageBackdrop(rd) : vec3(0.0);
+#else
   vec3 col = stageBackdrop(rd);
+#endif
   if (rd.z >= 0.0) return col;
   float tp = -ro.z / rd.z;
   vec2 bq = (ro + rd * tp).xy;
@@ -6906,162 +6912,345 @@ vec3 render(vec2 p, vec2 uv) {
 `;
 
 const skyrush = `
-// The behind-view shooter: a flyer with a jetpack seen from behind over a checkered plain rushing toward the
-// screen, columns and bushes going by, a pastel sky - as the behind-view arcade shooters of the 80s showed it.
-// The game runs as a simulation (src/core/sims.js): waves of saucers on each bar, a shot on each beat landing on
-// the next; two bars before the drop a serpent of glowing orbs weaves in, and bursts on it.
-uniform vec4 uSkyHero;      // the flyer on the screen: x, y, the ground under him, his depth
-uniform vec4 uSkyFoes[8];   // saucers on the screen: x, y, depth, there
-uniform vec4 uSkyShots[6];  // shots: x, y, depth, flying
-uniform vec4 uSkyBooms[6];  // bursts: x, y, depth, since
-uniform vec4 uSerp[8];      // the serpent's orbs: x, y, depth, -1 none, -0.5 coming, since it burst
-uniform vec4 uSkyFx;        // score, beats travelled, the flyer's x in the world
-const float F = 0.9, EYE = 1.0, HOR = 0.06;
-float skMin(float a, float b, float k) { float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0); return mix(b, a, h) - k * h * (1.0 - h); }
+// The behind-view shooter: a flyer with a jetpack, free over the whole screen above a plain rushing toward it, as the
+// behind-view arcade shooters of the 80s showed it, drawn at about their resolution. The game runs as a simulation
+// (src/core/sims.js). The camera answers him: the horizon rises as he climbs, and the eye with it, so the ground under
+// him is always at the foot of the screen, where his shadow stays; the plain slides as he nears a side. He is a skeleton
+// turned to the angle he is seen from, handed over as limbs sorted far to near, so his view changes with his place.
+uniform vec4 uSkyCam;        // the horizon on the screen, the eye's height, lives, since the last drop
+uniform vec4 uSkyFx;         // score, the way travelled, how far the plain has slid, the stage
+uniform vec4 uSkyHero;       // the point under his feet on the screen: x, y; the scale there; shown
+uniform vec4 uSkyShade;      // his shadow: x, y
+uniform vec4 uSkyCount;      // how many sprites, where he comes among them, seconds per beat
+uniform vec4 uSkySpr[48];    // sprites far to near: x, y, depth, kind
+uniform vec4 uSkySprB[48];   // what each needs to know; the last, how far it reaches
+uniform vec4 uSkyLimbA[27];  // his limbs far to near: one end, the other (the head: where it looks)
+uniform vec4 uSkyLimbB[27];  // the radius at each end, what it is
+const float F = 0.9;
+const float ROWS = 240.0;
 vec3 sky2(float t) { vec3 c = unblack(pal(t)); return c / max(max(c.r, c.g), max(c.b, 0.3)); }
+float skTone(float lit) { return lit > 0.4 ? 1.22 : (lit > -0.35 ? 1.0 : 0.66); }
 
-// the scenery: on each three metres of the way ahead, a column or a bush, left or right of the flight
-vec3 scenery(vec3 col, vec2 p, float travel) {
-  for (int k = 12; k >= 0; k--) {
-    float cell = floor(travel / 3.0) + float(k) + 1.0;
-    float z = cell * 3.0 - travel;
-    if (z < 0.8) continue;
-    float h = hash11(cell * 7.13 + uSeed.x * 5.0);
-    float x = (h < 0.5 ? -1.0 : 1.0) * (1.3 + 3.0 * hash11(cell * 3.7)) - uSkyFx.z * 0.4;
-    float kind = hash11(cell * 11.3);
-    vec2 base = vec2(x / z * F, HOR - EYE / z * F);
-    float sc = F / z;
-    vec2 q = (p - base) / sc;
-    float fog = exp(-z * 0.03);
-    // its shadow on the ground
-    col *= 1.0 - 0.35 * (1.0 - smoothstep(0.0, 0.05, length(q * vec2(1.0, 4.0)) - 0.35)) * fog;
-    if (kind < 0.55) {
-      // a column, shaded round, a capital on top
-      float hgt = 2.2 + 1.5 * hash11(cell * 5.1);
-      if (abs(q.x) < 0.22 && q.y > 0.0 && q.y < hgt) {
-        float sh = 0.55 + 0.45 * cos(q.x / 0.22 * 1.4);
-        vec3 c = mix(vec3(0.75, 0.72, 0.65), sky2(0.1 + uSeed.y), 0.25) * sh;
-        c *= 0.9 + 0.1 * step(0.5, fract(q.y * 4.0));
-        col = mix(col, c, fog);
-      }
-      if (abs(q.x) < 0.3 && q.y > hgt && q.y < hgt + 0.15) col = mix(col, vec3(0.85, 0.82, 0.75) * (0.8 + 0.2 * step(0.0, q.x)), fog);
-    } else {
-      // a bush: a cluster of round green lumps
-      float b = 1e9;
-      for (int j = 0; j < 5; j++) { float fj = float(j); b = min(b, length(q - vec2((fj - 2.0) * 0.28, 0.25 + 0.2 * hash11(fj + cell))) - 0.3); }
-      if (b < 0.0) col = mix(col, vec3(0.15, 0.5, 0.15) * (0.7 + 0.5 * vnoise(q * 9.0 + cell)), fog);
+// one limb's colour
+vec3 limbBase(float id) {
+  if (id < 0.5) return sky2(uSeed.w);
+  if (id < 1.5) return mix(sky2(uSeed.w + 0.45) * 0.55, vec3(0.2, 0.22, 0.34), 0.45);
+  if (id < 2.5) return vec3(0.36, 0.2, 0.13);
+  if (id < 3.5) return vec3(0.93, 0.7, 0.55);
+  if (id < 5.5) return vec3(0.62, 0.66, 0.72);
+  if (id < 6.5) return vec3(0.34, 0.35, 0.4);
+  if (id < 7.5) return vec3(1.0, 0.72, 0.25);
+  if (id < 8.5) return sky2(uSeed.w + 0.5);
+  return vec3(1.0, 0.95, 0.7);
+}
+
+// the flyer: returns his colour, and in the alpha whether this pixel is his
+vec4 skyFlyer(vec2 p) {
+  vec4 res = vec4(0.0);
+  if (uSkyHero.w < 0.5) return res;
+  vec2 q = (p - uSkyHero.xy) / uSkyHero.z;
+  if (abs(q.x) > 1.5 || q.y < -0.5 || q.y > 1.9) return res;
+  float px = 1.0 / (ROWS * uSkyHero.z);
+  vec3 hair = mix(sky2(uSeed.x + 0.15), vec3(0.95, 0.66, 0.3), 0.72);
+  for (int i = 0; i < 27; i++) {
+    vec4 A = uSkyLimbA[i], B = uSkyLimbB[i];
+    float id = B.z;
+    if (B.x <= 0.0) continue;
+    if (id > 3.5 && id < 4.5) {
+      // the head: hair from behind, the face coming round as it turns to the screen
+      vec2 n = (q - A.xy) / B.x;
+      float l2 = dot(n, n);
+      if (l2 >= 1.0) continue;
+      float zn = sqrt(1.0 - l2);
+      float fz = sqrt(max(0.0, 1.0 - dot(A.zw, A.zw)));
+      float look = n.x * A.z + n.y * A.w - zn * fz;
+      float lit = dot(n, vec2(-0.55, 0.83));
+      vec3 c = look > 0.2 ? vec3(0.93, 0.7, 0.55) : hair;
+      c *= skTone(lit);
+      if (l2 > 0.8) c *= 0.5;
+      res = vec4(c, 1.0);
+      continue;
     }
+    vec2 pa = q - A.xy, ba = A.zw - A.xy;
+    float h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-5), 0.0, 1.0);
+    float r = mix(B.x, B.y, h);
+    vec2 off = pa - ba * h;
+    float d = length(off) - r;
+    if (d >= 0.0) continue;
+    float lit = dot(off / max(r, 1e-4), vec2(-0.55, 0.83));
+    vec3 c = limbBase(id);
+    if (id > 6.5 && id < 7.5) {
+      // his flames: white at the heart
+      c = mix(c, vec3(1.0, 0.97, 0.8), step(d, -r * 0.5));
+    } else if (id > 8.5) {
+      c = vec3(1.0, 0.97, 0.8);
+    } else {
+      c *= skTone(lit);
+      // a seam down each trouser leg, a shine on the metal
+      if (id > 0.5 && id < 1.5 && abs(dot(off, normalize(vec2(-ba.y, ba.x) + 1e-5)) / r - 0.35) < 0.14) c = mix(c, vec3(0.9), 0.5);
+      if (id > 4.5 && id < 6.5 && lit > 0.6) c = mix(c, vec3(1.0), 0.45);
+      if (d > -px * 1.1) c *= 0.42;
+    }
+    res = vec4(c, 1.0);
   }
+  return res;
+}
+
+// a sprite on the screen, in its own world-sized space: on the ground its base is at q = 0
+vec3 skySprite(vec3 col, vec2 p, int i, vec3 haze) {
+  vec4 s = uSkySpr[i], b = uSkySprB[i];
+  float sc = F / s.z;
+  vec2 q = (p - s.xy) / sc;
+  float kind = s.w;
+  float fog = exp(-s.z * 0.022);
+  float stage = uSkyFx.w;
+  vec3 c = col;
+  bool hit = false;
+  if (kind < 0.5) {
+    // a column: a base, a shaded round shaft in drums, a capital
+    float a = b.x;
+    vec3 stone = mix(vec3(0.82, 0.78, 0.7), sky2(0.1 + uSeed.y + stage * 0.2), 0.3);
+    if (q.y >= 0.0 && q.y < 0.17 && abs(q.x) < 0.48) { hit = true; c = stone * (q.x < 0.0 ? 1.1 : 0.72); }
+    else if (q.y >= 0.0 && q.y < a && abs(q.x) < 0.33) {
+      float u = q.x / 0.33;
+      hit = true;
+      c = stone * skTone(-u * 1.2 + 0.1) * (1.0 + 0.09 * sin(u * 16.0));
+      if (fract(q.y / 0.8) < 0.04) c *= 0.75;
+    }
+    else if (q.y >= a && q.y < a + 0.2 && abs(q.x) < 0.46 - (q.y - a) * -0.5) { hit = true; c = stone * (q.x < 0.0 ? 1.15 : 0.78); }
+  } else if (kind < 1.5) {
+    // a thicket: leaves in clumps, dark inside and lit on top
+    float a = b.x, best = 1e9;
+    vec2 cen = vec2(0.0);
+    for (int j = 0; j < 6; j++) {
+      float fj = float(j);
+      vec2 o = vec2((fj - 2.5) * 0.25, 0.26 + 0.34 * hash11(fj * 3.1 + b.y * 40.0) * (1.0 - abs(fj - 2.5) * 0.25)) * vec2(1.0, a / 0.7);
+      float dj = length(q - o) - 0.3;
+      if (dj < best) { best = dj; cen = o; }
+    }
+    if (best < 0.0 && q.y >= 0.0) {
+      hit = true;
+      vec3 leaf = mix(vec3(0.2, 0.72, 0.22), sky2(0.3 + uSeed.z + stage * 0.2), 0.2);
+      float touch = sin(q.x * 62.0 + sin(q.y * 31.0) * 2.0) * sin(q.y * 62.0 + sin(q.x * 27.0) * 2.0);
+      c = leaf * (0.72 + 0.5 * smoothstep(-0.25, 0.25, q.y - cen.y));
+      if (touch > 0.72) c = mix(c, vec3(0.78, 1.0, 0.45), 0.55);
+    }
+  } else if (kind < 2.5) {
+    // a boulder: facets, lit from above
+    float a = b.x;
+    vec2 g = q - vec2(0.0, a * 0.46);
+    float th = atan(g.y, g.x);
+    float rr = a * 0.62 * (1.0 + 0.14 * sin(th * 3.0 + b.y * 6.0) + 0.08 * sin(th * 7.0 + b.y * 11.0));
+    if (length(g) < rr && q.y >= 0.0) {
+      hit = true;
+      float facet = floor((th + 3.2) * 1.6 + b.y * 3.0);
+      vec3 stone = vec3(0.6, 0.58, 0.68);
+      c = stone * (0.62 + 0.55 * smoothstep(-0.5, 0.6, g.y / a) + 0.24 * (hash11(facet + b.y * 9.0) - 0.5));
+    }
+  } else if (kind < 3.5) {
+    // a tree: a trunk and a tall crown of clumps
+    float a = b.x;
+    if (abs(q.x) < 0.1 + 0.05 * step(q.y, 0.1) && q.y >= 0.0 && q.y < a * 0.35) { hit = true; c = vec3(0.45, 0.28, 0.16) * (q.x < 0.0 ? 1.15 : 0.65); }
+    float best = 1e9, cy = 0.0;
+    for (int j = 0; j < 7; j++) {
+      float fj = float(j);
+      vec2 o = vec2((hash11(fj + b.y * 31.0) - 0.5) * 0.55, a * (0.3 + 0.1 * fj));
+      float dj = length(q - o) - (0.46 - 0.035 * fj) * (0.7 + a * 0.1);
+      if (dj < best) { best = dj; cy = o.y; }
+    }
+    if (best < 0.0) {
+      hit = true;
+      vec3 leaf = mix(vec3(0.18, 0.7, 0.2), sky2(0.25 + uSeed.z + stage * 0.2), 0.2);
+      float touch = sin(q.x * 44.0 + sin(q.y * 23.0) * 2.0) * sin(q.y * 44.0 + sin(q.x * 19.0) * 2.0);
+      c = leaf * (0.7 + 0.52 * smoothstep(-0.3, 0.3, q.y - cy - q.x * 0.4));
+      if (touch > 0.72) c = mix(c, vec3(0.78, 1.0, 0.45), 0.5);
+    }
+  } else if (kind < 4.5) {
+    // a saucer, banking the way it goes: a dome on a disc, a ring of lights running round it
+    vec2 k = rot(b.x * 0.4) * q;
+    float disc = length(k * vec2(1.0, 3.2)) - 0.52;
+    float dome = max(length(k - vec2(0.0, 0.05)) - 0.24, -k.y + 0.02);
+    vec3 fc = sky2(0.9 + uSeed.x);
+    if (disc < 0.0) {
+      hit = true;
+      c = mix(vec3(0.85), fc, 0.6) * skTone(k.y * 8.0);
+      float lights = fract(k.x * 3.0 + b.y * 1.0);
+      if (abs(k.y + 0.03) < 0.045 && lights < 0.4) c = vec3(1.0, 0.95, 0.5);
+    }
+    if (dome < 0.0) { hit = true; c = vec3(0.55, 0.85, 1.0) * skTone(0.5 - k.x * 6.0); }
+  } else if (kind < 5.5) {
+    // a pod: a shell that parts to show a burning core
+    float open = b.x;
+    float l = length(q);
+    if (l < 0.72) {
+      float gap = 0.03 + 0.32 * open;
+      vec3 shell = sky2(0.72 + uSeed.x) * skTone(q.y * 2.0 - q.x);
+      if (abs(q.y) > gap) {
+        hit = true;
+        c = shell;
+        if (abs(abs(q.y) - gap - 0.06) < 0.02) c *= 0.5;
+      } else if (l < 0.5) {
+        hit = true;
+        c = mix(vec3(1.0, 0.25, 0.1), vec3(1.0, 1.0, 0.6), smoothstep(0.42, 0.1, l));
+      } else if (open < 0.1) {
+        hit = true;
+        c = vec3(0.08);
+      }
+    }
+  } else if (kind < 6.5) {
+    // a hopper: a striped ball, flattened as it lands
+    vec2 k = q * vec2(1.0 - 0.28 * b.x, 1.0 + 0.45 * b.x);
+    float l = length(k);
+    if (l < 0.55) {
+      hit = true;
+      vec3 ball = sky2(0.15 + uSeed.y);
+      float st = step(0.5, fract(k.y * 2.6 + b.y * 2.0));
+      c = mix(ball, vec3(0.95), st * 0.8) * skTone(dot(k, vec2(-0.7, 1.0)) * 2.2);
+      if (l > 0.5) c *= 0.45;
+    }
+  } else if (kind < 7.5) {
+    // an orb of the serpent: banded, its colour turning as it is hurt; the head has eyes
+    vec3 oc = mix(sky2(0.35 + b.y * 0.11 + uSeed.w), vec3(1.0), 0.18);
+    float l = length(q);
+    if (l < b.x) {
+      hit = true;
+      float u = l / b.x;
+      c = oc * skTone(dot(q / b.x, vec2(-0.55, 0.83)) * 1.6);
+      if (abs(u - 0.72) < 0.05) c *= 0.55;
+      if (u > 0.93) c *= 0.4;
+      if (b.z > 0.5) {
+        vec2 e = vec2(abs(q.x) - 0.38 * b.x, q.y - 0.22 * b.x) / b.x;
+        float el = length(e);
+        if (el < 0.2) c = vec3(1.0);
+        if (length(e - vec2(0.0, -0.03)) < 0.09) c = vec3(0.05);
+        if (abs(q.x) < 0.5 * b.x && abs(q.y + 0.42 * b.x) < 0.07 * b.x) c = vec3(0.1, 0.02, 0.02);
+      }
+    }
+    if (hit) return mix(haze, c, fog);
+    return col;
+  } else if (kind < 8.5) {
+    // his shot: a ringed ball, its colours flickering, nothing lost to haze
+    vec2 k = q * vec2(0.8, 1.05);
+    float l = length(k);
+    if (l < 0.34) {
+      vec3 ring = sky2(0.08 + b.y * 0.25 + uSeed.x);
+      c = l < 0.17 ? vec3(1.0, 1.0, 0.95) : (l < 0.25 ? mix(ring, vec3(1.0), 0.55) : ring);
+      return c;
+    }
+    return col;
+  } else if (kind < 9.5) {
+    // what is fired at him: a spiked ball, pulsing
+    float a = atan(q.y, q.x);
+    float l = length(q);
+    float rr = 0.26 + 0.09 * step(0.5, fract(a * 1.27 + b.x * 3.0)) + 0.03 * sin(b.x * 40.0);
+    if (l < rr) return l < 0.14 ? vec3(1.0, 1.0, 0.8) : vec3(1.0, 0.2, 0.15);
+    return col;
+  } else if (kind < 10.5) {
+    // a burst: a ball of fire going up in smoke
+    float since = b.x, size = b.y;
+    float u = since / 0.6;
+    float l = length(q) / size;
+    float n = vnoise(q * 5.0 / size + vec2(0.0, -since * 5.0) + float(i));
+    float rr = (0.25 + 0.75 * sqrt(u)) * (0.72 + 0.5 * n);
+    if (l < rr) {
+      float heat = (1.0 - l / rr) * 1.4 + (1.0 - u) * 0.9 - u * 0.6;
+      if (heat > 1.25) c = vec3(1.0, 1.0, 0.82);
+      else if (heat > 0.75) c = vec3(1.0, 0.78, 0.25);
+      else if (heat > 0.3) c = vec3(0.95, 0.36, 0.1);
+      else c = vec3(0.32, 0.26, 0.26);
+      if (u > 0.82 && hash12(floor(q * 30.0) + since) > 1.0 - (u - 0.82) * 5.5) return col;
+      return c;
+    }
+    return col;
+  } else {
+    // a spark, where a shot has glanced off
+    float l = abs(q.x) + abs(q.y);
+    float m = 0.5 * (1.0 - b.x / 0.25);
+    if (l < m && abs(q.x) * abs(q.y) < 0.012) return vec3(1.0, 1.0, 0.8);
+    return col;
+  }
+  if (hit) return mix(haze, c, fog);
   return col;
 }
 
 vec3 render(vec2 p, vec2 uv) {
-  float travel = uSkyFx.y * 1.5;                // (three metres every two beats: the ground runs with the music)
-  // the sky, pale toward the horizon; a far skyline on it
-  vec3 col = mix(sky2(0.55 + uSeed.y) * 0.9 + 0.1, sky2(0.7 + uSeed.y), smoothstep(HOR, 0.5, p.y));
-  float sk = HOR + 0.025 + 0.02 * step(0.5, hash11(floor(p.x * 30.0))) + 0.01 * sin(p.x * 40.0);
-  if (p.y > HOR && p.y < sk) col = mix(col, sky2(0.6 + uSeed.y) * 0.7, 0.6);
-  // the checkered plain, rushing toward the screen
-  if (p.y < HOR) {
-    float z = EYE * F / (HOR - p.y);
-    float x = p.x * z / F + uSkyFx.z * 0.4;
-    float chk = mod(floor(x / 1.5) + floor((z + travel) / 1.5), 2.0);
-    vec3 g = mix(sky2(0.2 + uSeed.z) * 0.7, sky2(0.25 + uSeed.z), chk);
-    col = mix(col, g, exp(-z * 0.025));
+  p = (floor(p * ROWS) + 0.5) / ROWS;           // about the arcade's own lines
+  float H = uSkyCam.x, E = uSkyCam.y, travel = uSkyFx.y, camX = uSkyFx.z, stage = uSkyFx.w;
+  float tint = stage * 0.17;
+  // the sky, pale toward the horizon
+  vec3 top = sky2(0.68 + uSeed.y + tint), low = sky2(0.55 + uSeed.y + tint) * 0.82 + 0.18;
+  vec3 col = mix(low, top, smoothstep(0.0, 0.55, p.y - H));
+  vec3 haze = low;
+  // two ranges on the horizon, the nearer sliding faster with the plain
+  float up = p.y - H;
+  if (up > 0.0 && up < 0.2) {
+    float x1 = p.x * 3.0 + camX * 0.04 + uSeed.x * 20.0;
+    float h1 = 0.035 + 0.05 * vnoise(vec2(x1, 1.7)) + 0.018 * vnoise(vec2(x1 * 3.5, 4.2));
+    if (up < h1) col = mix(low, sky2(0.6 + uSeed.y + tint) * 0.55, 0.65);
+    float x2 = p.x * 7.0 + camX * 0.12 + uSeed.y * 30.0;
+    float h2 = 0.012 + 0.03 * vnoise(vec2(x2, 7.1)) * (0.6 + 0.4 * step(0.5, fract(x2 * 2.0)));
+    if (up < h2) col = mix(sky2(0.3 + uSeed.z + tint) * 0.45, low * 0.5, 0.3);
   }
-  col = scenery(col, p, travel);
-  // the saucers: a dome on a disc, a light ringing them
-  for (int i = 0; i < 8; i++) {
-    vec4 f = uSkyFoes[i];
-    if (f.w < 0.5) continue;
-    float sc = F / f.z;
-    vec2 q = (p - f.xy) / sc;
-    float disc = length(q * vec2(1.0, 3.2)) - 0.32;
-    float dome = max(length(q - vec2(0.0, 0.04)) - 0.15, -q.y + 0.02);
-    vec3 fc = sky2(0.9 + uSeed.x);
-    col = mix(col, mix(vec3(0.85), fc, 0.6) * (0.7 + 0.4 * smoothstep(0.1, -0.1, q.y)), 1.0 - smoothstep(0.0, 0.02, disc));
-    col = mix(col, vec3(0.6, 0.85, 1.0), 1.0 - smoothstep(0.0, 0.02, dome));
-    col += fc * exp(-abs(disc) * 30.0) * 0.3;
-  }
-  // the serpent of orbs, far to near: each glowing, bursting in turn on the drop
-  for (int i = 7; i >= 0; i--) {
-    vec4 o = uSerp[i];
-    if (o.w < -0.9) continue;
-    float sc = F / o.z;
-    vec2 q = (p - o.xy) / sc;
-    vec3 oc = sky2(0.35 + float(i) * 0.04 + uSeed.w);
-    if (o.w < 0.0) {
-      float r = length(q) - (i == 0 ? 1.0 : 0.8);
-      col = mix(col, oc * (0.6 + 0.6 * smoothstep(0.3, -0.3, q.x + q.y)), 1.0 - smoothstep(0.0, 0.03, r));
-      col += oc * exp(-max(r, 0.0) * 8.0) * 0.25;
-      if (i == 0) col = mix(col, vec3(1.0), (1.0 - smoothstep(0.0, 0.03, min(length(q - vec2(0.33, 0.22)), length(q - vec2(-0.33, 0.22))) - 0.14)));
-    } else if (o.w < 0.8) {
-      float r = length(q);
-      col += mix(vec3(1.0, 0.95, 0.7), oc, smoothstep(0.0, 0.6, o.w)) * (1.0 - smoothstep(0.4 + o.w * 3.0, 0.6 + o.w * 3.0, r)) * (1.0 - o.w / 0.8);
+  int n = int(uSkyCount.x + 0.5), split = int(uSkyCount.y + 0.5);
+  // the plain: long stripes running to the horizon, crossed by dark bands rushing at the screen, and on it every shadow
+  if (p.y < H) {
+    float z = E * F / max(H - p.y, 0.0008);
+    float wx = p.x * z / F + camX;
+    float wz = z + travel;
+    float stripe = mod(floor(wx / 1.2), 2.0);
+    float band = mod(floor(wz / 1.0), 2.0);
+    vec3 g = mix(sky2(0.2 + uSeed.z + tint) * 0.72, sky2(0.26 + uSeed.z + tint), stripe);
+    g *= band > 0.5 ? 1.0 : 0.8;
+    g *= 1.0 + 0.05 * uKick;
+    float sh = 1.0;
+    for (int i = 0; i < 48; i++) {
+      if (i >= n) break;
+      vec4 s = uSkySpr[i];
+      if (s.w > 7.5 && s.w < 8.5) continue;
+      if (s.w > 9.5) continue;
+      float sc = F / s.z;
+      if (abs(p.x - s.x) > 1.3 * sc || abs(p.y - H + E * sc) > 0.5 * sc) continue;
+      vec2 q = (p - vec2(s.x, H - E * sc)) / sc;
+      float e = uSkySprB[i].w;
+      if (s.w < 0.5) e = 0.5;
+      else if (s.w < 3.5) e *= 0.72;
+      else if (s.w > 8.5) e = 0.3;
+      else e *= 0.75;
+      if (length(q * vec2(1.0, 1.0 + 3.0 * s.z / max(E * 4.0, 1.0))) < e) sh = 0.62;
     }
+    {
+      // his, at the foot of the screen, the same however high he is
+      vec2 q = (p - uSkyShade.xy) * vec2(1.0, 4.6);
+      if (length(q) < 0.16) sh = 0.55;
+    }
+    g *= sh;
+    col = mix(haze, g, exp(-z * 0.02));
   }
-  // shots: bright balls shrinking into the distance
-  for (int i = 0; i < 6; i++) {
-    vec4 s = uSkyShots[i];
-    if (s.w < 0.5) continue;
-    float r = length(p - s.xy) / (F / s.z);
-    col += vec3(1.0, 0.9, 0.5) * (1.0 - smoothstep(0.08, 0.14, r)) * 1.5 + vec3(1.0, 0.6, 0.2) * exp(-r * 6.0) * 0.4;
+  // everything standing or flying, far to near; he comes in his place among them
+  vec4 flyer = skyFlyer(p);
+  for (int i = 0; i < 48; i++) {
+    if (i == split && flyer.a > 0.5) col = flyer.rgb;
+    if (i >= n) break;
+    vec4 s = uSkySpr[i];
+    vec4 sb = uSkySprB[i];
+    float sc = F / s.z;
+    if (abs(p.x - s.x) > sb.w * sc) continue;
+    float dy = (p.y - s.y) / sc;
+    if (s.w < 3.5) { if (dy < -0.2 || dy > sb.x + 0.5) continue; }
+    else if (abs(dy) > sb.w) continue;
+    col = skySprite(col, p, i, haze);
   }
-  // bursts: a flash and a ring of sparks
-  for (int i = 0; i < 6; i++) {
-    vec4 b = uSkyBooms[i];
-    if (b.w > 0.7) continue;
-    vec2 q = (p - b.xy) / (F / b.z);
-    float r = length(q);
-    col += vec3(1.0, 0.85, 0.5) * exp(-r * 4.0) * exp(-b.w * 6.0) * 1.5;
-    col += vec3(1.0, 0.6, 0.2) * (1.0 - smoothstep(0.0, 0.08, abs(r - b.w * 2.2))) * (1.0 - b.w / 0.7);
-  }
-  // the flyer, from behind: his shadow on the ground, a jetpack and its flames, the jacket, the head, legs trailing,
-  // the blaster under his arm
-  vec2 h = uSkyHero.xy;
-  float hs = F / uSkyHero.w;
-  col *= 1.0 - 0.35 * (1.0 - smoothstep(0.0, 0.02, length((p - vec2(h.x, uSkyHero.z)) * vec2(1.0, 4.0)) - 0.09 * hs));
-  vec2 q = (p - h) / hs;
-  if (length(q) < 1.3) {
-    float lean = 0.12 * sin(uSkyFx.y * 3.14159 * 0.25);
-    q = rot(lean) * q;
-    // one silhouette of melted shapes: the jacket over shoulders and trunk, sleeves, the belt, two legs - one
-    // straight, one bent back at the knee as he flies - boots, the head seen from behind under its hair
-    float jk = skMin(sdSeg(q, vec2(-0.21, 0.47), vec2(0.21, 0.47)) - 0.085, sdSeg(q, vec2(0.0, 0.42), vec2(0.0, 0.04)) - 0.165, 0.06);
-    float slL = skMin(sdSeg(q, vec2(-0.25, 0.45), vec2(-0.36, 0.2)) - 0.068, sdSeg(q, vec2(-0.36, 0.2), vec2(-0.35, 0.0)) - 0.058, 0.03);
-    float slR = skMin(sdSeg(q, vec2(0.25, 0.45), vec2(0.33, 0.22)) - 0.068, sdSeg(q, vec2(0.33, 0.22), vec2(0.24, 0.1)) - 0.058, 0.03);
-    jk = skMin(jk, min(slL, slR), 0.04);
-    float handL = length(q - vec2(-0.35, -0.04)) - 0.05;
-    float lL = skMin(sdSeg(q, vec2(-0.09, -0.02), vec2(-0.12, -0.42)) - 0.085, sdSeg(q, vec2(-0.12, -0.42), vec2(-0.1, -0.76)) - 0.07, 0.04);
-    float lR = skMin(sdSeg(q, vec2(0.09, -0.02), vec2(0.15, -0.36)) - 0.085, sdSeg(q, vec2(0.15, -0.36), vec2(0.27, -0.56)) - 0.07, 0.04);
-    float legs = skMin(lL, lR, 0.03);
-    float boots = min(length((q - vec2(-0.1, -0.8)) * vec2(1.0, 0.8)) - 0.075, length((q - vec2(0.29, -0.6)) * vec2(0.9, 1.0)) - 0.075);
-    float neck = sdSeg(q, vec2(0.0, 0.5), vec2(0.0, 0.62)) - 0.05;
-    float head = length((q - vec2(0.0, 0.72)) * vec2(1.0, 0.9)) - 0.12;
-    float ears = min(length(q - vec2(-0.12, 0.7)) - 0.03, length(q - vec2(0.12, 0.7)) - 0.03);
-    // on his back the jetpack, its two nozzles, their flames; under his right arm the blaster
-    float pack = max(abs(q.x) - 0.15, abs(q.y - 0.25) - 0.17) - 0.05;
-    float nz = min(length(q - vec2(-0.08, 0.03)) - 0.045, length(q - vec2(0.08, 0.03)) - 0.045);
-    float fl = min(length((q - vec2(-0.08, -0.12)) * vec2(2.4, 0.7)) - 0.1, length((q - vec2(0.08, -0.12)) * vec2(2.4, 0.7)) - 0.1) - 0.03 * sin(uTime * 40.0);
-    float gun = sdSeg(q, vec2(0.18, 0.1), vec2(0.44, 0.16)) - 0.07;
-    vec3 jacket = sky2(0.0 + uSeed.w);
-    float lit = 0.75 + 0.3 * smoothstep(0.2, -0.2, q.x);
-    col = mix(col, vec3(1.0, 0.75, 0.3), 1.0 - smoothstep(0.0, 0.05, fl));
-    col = mix(col, vec3(1.0, 0.95, 0.75), 1.0 - smoothstep(0.0, 0.03, fl + 0.05));
-    col = mix(col, vec3(0.18, 0.22, 0.45) * lit, 1.0 - smoothstep(0.0, 0.015, legs));
-    col = mix(col, vec3(0.25, 0.15, 0.1) * lit, 1.0 - smoothstep(0.0, 0.015, boots));
-    col = mix(col, jacket * lit, 1.0 - smoothstep(0.0, 0.015, jk));
-    col = mix(col, vec3(0.15), (1.0 - smoothstep(0.0, 0.015, abs(q.y - 0.05) - 0.03)) * (1.0 - smoothstep(0.0, 0.015, jk)));   // the belt
-    col = mix(col, vec3(0.9, 0.7, 0.55) * lit, 1.0 - smoothstep(0.0, 0.015, min(min(handL, neck), ears)));
-    col = mix(col, vec3(0.85, 0.65, 0.3) * (0.8 + 0.3 * smoothstep(0.1, -0.1, q.x)), 1.0 - smoothstep(0.0, 0.015, head));   // the hair, from behind
-    col = mix(col, vec3(0.55, 0.58, 0.63) * (0.7 + 0.35 * smoothstep(0.1, -0.15, q.x + q.y * 0.3)), 1.0 - smoothstep(0.0, 0.015, pack));
-    col = mix(col, vec3(0.25, 0.25, 0.28), 1.0 - smoothstep(0.0, 0.015, nz));
-    col = mix(col, vec3(0.35, 0.36, 0.4) * lit, 1.0 - smoothstep(0.0, 0.015, gun));
-  }
-  // the score, top right
+  // the drop: a white flash, and the next stage
+  if (uSkyCam.w >= 0.0) col += vec3(1.0) * exp(-uSkyCam.w * 6.0) * 0.75;
+  // the score, top right; his lives, top left
   for (int k = 0; k < 6; k++) {
     int dg = int(mod(floor(uSkyFx.x / pow(10.0, float(5 - k))), 10.0));
-    col = mix(col, vec3(1.0, 0.95, 0.5), digit7((p - vec2(0.55 + float(k) * 0.045, 0.37)) / 0.04, dg));
+    col = mix(col, vec3(1.0, 0.95, 0.5), digit7((p - vec2(0.55 + float(k) * 0.045, 0.42)) / 0.04, dg));
+  }
+  for (int k = 0; k < 3; k++) {
+    if (float(k) >= uSkyCam.z) break;
+    vec2 q = p - vec2(-0.8 + float(k) * 0.05, 0.45);
+    if (length(q * vec2(1.0, 0.8)) < 0.016) col = sky2(uSeed.w);
   }
   return col;
 }
@@ -7465,24 +7654,28 @@ vec3 render(vec2 p, vec2 uv) {
 
 const skatepark = `
 // The skate park: a wooden half-pipe in a warehouse, the skater riding wall
-// to wall and up into the air at every bar line - a spin, a flip, a grab -
-// grinding along the coping through the build and going twice as high on the
+// to wall under gravity and up into the air at every lip - a spin, a grab -
+// waiting on the coping through the build and going twice as high on the
 // drop. The game runs as a simulation (src/core/sims.js), which places the
 // camera and the skater's limbs; this traces the ramp and the hall.
+#define STAGE_OPAQUE
 uniform vec4 uSkJ[16];      // the skater's joints in the hall: feet, knees, hip, neck, shoulders, elbows, hands, head
 uniform vec4 uSkB[4];       // the board: its centre, along it, its up, toward its toe edge
+uniform vec4 uSkV[7];       // the body's frames: trunk up, pelvis depth, shoulder line, trunk depth, head up, face, head side
+uniform vec4 uSkBound;      // a sphere about the whole of it
 uniform vec4 uSkHip;        // the hip, and how high in the air
 uniform vec4 uSkShadow;     // the point under the skater, in the hall; grinding
 uniform vec4 uCamE, uCamF, uCamR, uCamU;   // the camera: eye (and focal length), forward, right, up
 uniform vec4 uSkFx;         // score, combo, since the last landing, the last was the big one
 const float RF = 2.15, RR = 3.2, RV = 0.46, RL = 4.88;   // a real vert ramp's: the flat's half width, the transitions' radius, the vert, half its width
+const float HX = 12.0, HB = 7.88, HF = 14.0, HT = 9.0;   // the hall round it: its walls either side, behind, in front; its roof
 
 // the ray against the ramp: the flat, the two quarter pipes, the vert walls, the decks; t and the surface's normal
 float rampHit(vec3 ro, vec3 rd, out vec3 n) {
   float best = 1e9;
   n = vec3(0.0, 1.0, 0.0);
   // the flat and the floor round it
-  if (rd.y < 0.0) { float t = -ro.y / rd.y; vec3 p = ro + rd * t; if (abs(p.z) < RL + 6.0 && t > 0.0) { best = t; n = vec3(0.0, 1.0, 0.0); } }
+  if (rd.y < 0.0) { float t = -ro.y / rd.y; vec3 p = ro + rd * t; if (p.z > -HB && p.z < HF && abs(p.x) < HX && t > 0.0) { best = t; n = vec3(0.0, 1.0, 0.0); } }
   for (int s = -1; s <= 1; s += 2) {
     float sd = float(s);
     // the transition: inside a cylinder along z, centred at (sd*RF, RR)
@@ -7498,22 +7691,17 @@ float rampHit(vec3 ro, vec3 rd, out vec3 n) {
     float tv = (sd * (RF + RR) - ro.x) / rd.x;
     vec3 pv = ro + rd * tv;
     if (tv > 0.0 && tv < best && abs(pv.z) < RL && pv.y > RR && pv.y < RR + RV) { best = tv; n = vec3(-sd, 0.0, 0.0); }
-    // the deck on top
+    // the deck on top (the camera stays over the ramp, so the backs of the decks never show)
     float td = (RR + RV - ro.y) / rd.y;
     vec3 pd = ro + rd * td;
     if (td > 0.0 && td < best && abs(pd.z) < RL && pd.x * sd > RF + RR && pd.x * sd < RF + RR + 1.6) { best = td; n = vec3(0.0, 1.0, 0.0); }
-    // the side panels closing the ramp's ends, its profile cut in them
-    for (int e = -1; e <= 1; e += 2) {
-      float te = (float(e) * RL - ro.z) / rd.z;
-      vec3 pe = ro + rd * te;
-      float ax = pe.x * sd;
-      float top = ax < RF ? -1.0 : ax < RF + RR ? RR - sqrt(max(RR * RR - (ax - RF) * (ax - RF), 0.0)) : ax < RF + RR + 1.6 ? RR + RV : -1.0;
-      if (te > 0.0 && te < best && pe.y > 0.0 && pe.y < top) { best = te; n = vec3(0.0, 0.0, float(e)); }
-    }
-    // the deck's front, down to the floor
-    float tf = (sd * (RF + RR + 1.6) - ro.x) / rd.x;
-    vec3 pf = ro + rd * tf;
-    if (tf > 0.0 && tf < best && abs(pf.z) < RL && pf.y < RR + RV && pf.y > 0.0) { best = tf; n = vec3(sd, 0.0, 0.0); }
+  }
+  // the side panels closing the ramp's ends, its profile cut in them (seen only from outside: from over the ramp the curve is nearer)
+  for (int e = -1; e <= 1; e += 2) {
+    float te = (float(e) * RL - ro.z) / rd.z;
+    vec3 pe = ro + rd * te;
+    float ax = abs(pe.x);
+    if (te > 0.0 && te < best && pe.y > 0.0 && ax > RF && ax < RF + RR + 1.6 && pe.y < (ax < RF + RR ? RR - sqrt(max(RR * RR - (ax - RF) * (ax - RF), 0.0)) : RR + RV)) { best = te; n = vec3(0.0, 0.0, float(e)); }
   }
   return best;
 }
@@ -7528,8 +7716,23 @@ float cone(vec3 p, vec3 a, vec3 b, float r1, float r2) {
 float rbox(vec3 q, vec3 h, float r) { vec3 d = abs(q) - h + r; return length(max(d, 0.0)) + min(max(d.x, max(d.y, d.z)), 0.0) - r; }
 // the body's distance, and which part is nearest: 1 skin, 2 shirt, 3 trousers, 4 shoes, 5 soles, 6 hair, 7 deck top, 8 deck, 9 metal, 10 wheels
 float skSmin(float a, float b, float k) { float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0); return mix(b, a, h) - k * h * (1.0 - h); }
-// where the head looks: over the leading shoulder, down the board the way it rides
-vec3 faceDir() { return normalize(uSkB[1].xyz * 0.75 + uSkB[3].xyz * 0.65); }
+// a cheap shell round the figure, never nearer than it: a ray is stepped by this until it is close, and only then by the
+// figure itself, whose thirty-odd blended shapes are what cost
+float seg(vec3 p, vec3 a, vec3 b) {
+  vec3 pa = p - a, ba = b - a;
+  return length(pa - ba * clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0));
+}
+float skaterShell(vec3 p) {
+  float d = seg(p, uSkB[0].xyz - uSkB[1].xyz * 0.45, uSkB[0].xyz + uSkB[1].xyz * 0.45) - 0.25;         // the board and the shoes
+  d = min(d, seg(p, uSkJ[4].xyz, uSkJ[5].xyz) - 0.3);                                                  // the trunk
+  d = min(d, seg(p, uSkJ[6].xyz, uSkJ[7].xyz) - 0.16);                                                 // the shoulders
+  d = min(d, length(p - uSkJ[12].xyz) - 0.2);                                                          // the head
+  d = min(d, min(seg(p, uSkJ[13].xyz, uSkJ[2].xyz), seg(p, uSkJ[2].xyz, uSkJ[0].xyz)) - 0.17);         // the legs
+  d = min(d, min(seg(p, uSkJ[14].xyz, uSkJ[3].xyz), seg(p, uSkJ[3].xyz, uSkJ[1].xyz)) - 0.17);
+  d = min(d, min(seg(p, uSkJ[6].xyz, uSkJ[8].xyz), seg(p, uSkJ[8].xyz, uSkJ[10].xyz)) - 0.12);         // the arms
+  d = min(d, min(seg(p, uSkJ[7].xyz, uSkJ[9].xyz), seg(p, uSkJ[9].xyz, uSkJ[11].xyz)) - 0.12);
+  return d;
+}
 vec2 skater(vec3 p) {
   vec3 fF = uSkJ[0].xyz, fB = uSkJ[1].xyz, kF = uSkJ[2].xyz, kB = uSkJ[3].xyz, hip = uSkJ[4].xyz, neck = uSkJ[5].xyz;
   vec3 shF = uSkJ[6].xyz, shB = uSkJ[7].xyz, eF = uSkJ[8].xyz, eB = uSkJ[9].xyz, hF = uSkJ[10].xyz, hB = uSkJ[11].xyz, head = uSkJ[12].xyz;
@@ -7542,13 +7745,13 @@ vec2 skater(vec3 p) {
   vec3 hjF = uSkJ[13].xyz, hjB = uSkJ[14].xyz;
   float lF = skSmin(cone(p, fF, kF, 0.072, 0.082), cone(p, kF, hjF, 0.082, 0.1), 0.05);
   float lB = skSmin(cone(p, fB, kB, 0.072, 0.082), cone(p, kB, hjB, 0.082, 0.1), 0.05);
-  vec3 pu = normalize(neck - hip), pd = normalize(cross(al, pu));
+  vec3 pu = uSkV[0].xyz, pd = uSkV[1].xyz;
   vec3 pq = p - (hip + pu * 0.035);
   float pelvis = (length(vec3(dot(pq, al), dot(pq, pu), dot(pq, pd)) / vec3(0.17, 0.12, 0.11)) - 1.0) * 0.11;
   float tr = skSmin(skSmin(lF, lB, 0.03), pelvis, 0.07);
   // the T-shirt: a back with shoulders - widest across them, narrower at the waist, shallow from chest to back - the
   // trapezius sloping from the neck down to each shoulder, the shoulders rounded, short sleeves
-  vec3 sa = normalize(shF - shB), tu = normalize(neck - hip), dp = normalize(cross(sa, tu));
+  vec3 sa = uSkV[2].xyz, tu = uSkV[0].xyz, dp = uSkV[3].xyz;
   vec3 top = (shF + shB) * 0.5 - tu * 0.05, base = hip + tu * 0.04;
   // the trunk as two eggs melted into one - the chest, wide at the shoulders, and the belly, narrower - and a bar
   // across the shoulders, all blended deeply so no seam shows between them
@@ -7567,8 +7770,7 @@ vec2 skater(vec3 p) {
   float arms = min(aF, aB);
   // the head on its neck: the neck out of the shoulders, the head an egg, a nose and ears
   vec3 hq = p - head;
-  vec3 hu = normalize(head - neck), face = faceDir(), side = normalize(cross(hu, face));
-  vec3 lh = vec3(dot(hq, side), dot(hq, hu), dot(hq, face));
+  vec3 lh = vec3(dot(hq, uSkV[6].xyz), dot(hq, uSkV[4].xyz), dot(hq, uSkV[5].xyz));
   float hd = (length(lh / vec3(0.092, 0.124, 0.108)) - 1.0) * 0.092;
   hd = skSmin(hd, length(lh - vec3(0.0, -0.01, 0.1)) - 0.018, 0.012);
   hd = min(hd, min(length(lh - vec3(0.094, 0.0, -0.005)) - 0.022, length(lh - vec3(-0.094, 0.0, -0.005)) - 0.022));
@@ -7610,9 +7812,8 @@ vec2 skater(vec3 p) {
 vec3 skaterColour(float m, vec3 p) {
   if (m < 1.5) {
     // skin; on the face, the eyes, the brows and the mouth
-    vec3 head = uSkJ[12].xyz, hu = normalize(head - uSkJ[5].xyz), face = faceDir(), side = normalize(cross(hu, face));
-    vec3 hq = p - head;
-    vec3 lh = vec3(dot(hq, side), dot(hq, hu), dot(hq, face));
+    vec3 hq = p - uSkJ[12].xyz;
+    vec3 lh = vec3(dot(hq, uSkV[6].xyz), dot(hq, uSkV[4].xyz), dot(hq, uSkV[5].xyz));
     vec3 skin = vec3(0.85, 0.62, 0.48);
     if (length(hq) < 0.13 && lh.z > 0.05) {
       float eyes = min(length(lh.xy - vec2(0.035, 0.02)), length(lh.xy - vec2(-0.035, 0.02)));
@@ -7627,7 +7828,7 @@ vec3 skaterColour(float m, vec3 p) {
   if (m < 2.5) {
     // the shirt in the seed's colour, a band printed across the chest in another
     vec3 hip = uSkJ[4].xyz, neck = uSkJ[5].xyz;
-    float h = dot(p - hip, normalize(neck - hip)) / max(length(neck - hip), 0.01);
+    float h = dot(p - hip, uSkV[0].xyz) / max(length(neck - hip), 0.01);
     vec3 shirt = unblack(pal(0.3 + uSeed.z)) * 0.9 + 0.1;
     return mix(shirt, unblack(pal(0.05 + uSeed.w)), step(0.52, h) * step(h, 0.66) * 0.85);
   }
@@ -7641,27 +7842,45 @@ vec3 skaterColour(float m, vec3 p) {
   return vec3(0.95, 0.93, 0.85);                                      // wheels
 }
 vec3 skaterNormal(vec3 p) {
-  vec2 e = vec2(0.002, 0.0);
-  return normalize(vec3(skater(p + e.xyy).x - skater(p - e.xyy).x, skater(p + e.yxy).x - skater(p - e.yxy).x, skater(p + e.yyx).x - skater(p - e.yyx).x));
+  // (four samples, on a tetrahedron's corners, in a loop so the compiler keeps one copy of the figure)
+  vec3 n = vec3(0.0);
+  for (int i = 0; i < 4; i++) {
+    vec3 e = 0.5773 * (2.0 * vec3(float((i + 3) >> 1 & 1), float(i >> 1 & 1), float(i & 1)) - 1.0);
+    n += e * skater(p + e * 0.003).x;
+  }
+  return normalize(n);
+}
+
+// the hall round the ramp, now the camera looks every way: walls of the seed's colours in big painted blocks, lamps along them, a roof of girders
+vec3 hall(vec3 ro, vec3 rd) {
+  float tx = (sign(rd.x) * HX - ro.x) / rd.x, tz = ((rd.z < 0.0 ? -HB : HF) - ro.z) / rd.z, ty = rd.y > 0.0 ? (HT - ro.y) / rd.y : 1e9;
+  if (ty < tx && ty < tz) {
+    vec3 w = ro + rd * ty;
+    vec3 c = vec3(0.07, 0.07, 0.09) * (0.6 + 0.4 * step(0.12, abs(fract(w.z * 0.25) - 0.5)));
+    c = mix(c, vec3(0.2, 0.19, 0.2), 1.0 - smoothstep(0.03, 0.06, abs(fract(w.x * 0.25) - 0.5)));
+    c += vec3(1.0, 0.95, 0.8) * exp(-length(fract(w.xz * vec2(0.125, 0.167)) - 0.5) * 22.0) * (1.2 + 0.8 * uKick);
+    return c;
+  }
+  bool side = tx < tz;
+  vec3 w = ro + rd * min(tx, tz);
+  float along = side ? w.z : w.x;
+  float wall = side ? sign(rd.x) * 5.0 : sign(rd.z) * 11.0;
+  vec2 blk = floor(vec2(along, w.y) * vec2(0.35, 0.5));
+  vec3 paint = unblack(pal(hash12(blk + uSeed.xy * 9.0 + wall)));
+  vec3 c = mix(vec3(0.12, 0.11, 0.12), paint * 0.55, step(0.55, hash12(blk + 3.0 + wall)));
+  c *= 0.7 + 0.3 * step(0.06, abs(fract(w.y * 0.5) - 0.5));
+  c += vec3(1.0, 0.95, 0.8) * exp(-length(vec2(fract(along * 0.18) - 0.5, (w.y - 6.0) * 0.18)) * 18.0) * (0.6 + 0.4 * uKick);
+  return c;
 }
 
 vec3 render(vec2 p, vec2 uv) {
   vec3 ro = uCamE.xyz;
   vec3 rd = normalize(uCamF.xyz * uCamE.w + uCamR.xyz * p.x + uCamU.xyz * p.y);
-  // the hall: a dark back wall of the seed's colours in big painted blocks, rafters, lamps
   vec3 col = vec3(0.05, 0.05, 0.07);
-  float tw = (-RL - 3.0 - ro.z) / rd.z;
-  if (tw > 0.0) {
-    vec3 w = ro + rd * tw;
-    vec2 blk = floor(w.xy * vec2(0.35, 0.5));
-    vec3 paint = unblack(pal(hash12(blk + uSeed.xy * 9.0)));
-    col = mix(vec3(0.12, 0.11, 0.12), paint * 0.55, step(0.55, hash12(blk + 3.0)));
-    col *= 0.7 + 0.3 * step(0.06, abs(fract(w.y * 0.5) - 0.5));
-    col += vec3(1.0, 0.95, 0.8) * exp(-length(vec2(fract(w.x * 0.18) - 0.5, (w.y - 6.0) * 0.18)) * 18.0) * (0.6 + 0.4 * uKick);
-  }
   vec3 n;
   float t = rampHit(ro, rd, n);
-  if (t < 1e8) {
+  if (t >= 1e8) col = hall(ro, rd);
+  else {
     vec3 h = ro + rd * t;
     bool ramp = abs(h.z) < RL && (abs(h.x) < RF + RR + 1.6 || h.y > 0.01);
     vec3 wood = vec3(0.72, 0.52, 0.3);
@@ -7681,34 +7900,38 @@ vec3 render(vec2 p, vec2 uv) {
     col *= 1.0 - 0.45 * (1.0 - smoothstep(0.25, 0.6, sh)) * (1.0 - 0.25 * min(uSkHip.w, 2.0));
     col = mix(col, vec3(0.05, 0.05, 0.07), 1.0 - exp(-t * 0.025));
   }
-  // the coping: a steel pipe along each lip, catching the light; sparks along it in a grind
+  // the coping: a steel pipe along each lip, catching the light
   for (int s = -1; s <= 1; s += 2) {
-    vec3 a = vec3(float(s) * (RF + RR), RR + RV, -RL), b = vec3(float(s) * (RF + RR), RR + RV, RL);
-    vec3 da = a - ro, db = b - ro;
-    float za = dot(da, uCamF.xyz), zb = dot(db, uCamF.xyz);
-    if (za > 0.1 && zb > 0.1) {
-      vec2 A = vec2(dot(da, uCamR.xyz), dot(da, uCamU.xyz)) / za * uCamE.w;
-      vec2 B = vec2(dot(db, uCamR.xyz), dot(db, uCamU.xyz)) / zb * uCamE.w;
-      float d = sdSeg(p, A, B);
-      col = mix(col, vec3(0.85, 0.88, 0.92), 1.0 - smoothstep(0.003, 0.006, d));
+    vec2 oc = ro.xy - vec2(float(s) * (RF + RR), RR + RV);
+    float a = dot(rd.xy, rd.xy), bq = dot(oc, rd.xy), h = bq * bq - a * (dot(oc, oc) - 0.0016);
+    if (h > 0.0) {
+      float tc = (-bq - sqrt(h)) / a;
+      if (tc > 0.0 && tc < t && abs(ro.z + rd.z * tc) < RL) {
+        t = tc;
+        vec2 nc = (oc + rd.xy * tc) / 0.04;
+        col = vec3(0.55, 0.58, 0.62) * (0.5 + 0.5 * max(nc.y, 0.0)) + vec3(0.5) * pow(max(nc.y, 0.0), 6.0);
+        col = mix(col, vec3(0.05, 0.05, 0.07), 1.0 - exp(-tc * 0.025));
+      }
     }
   }
   // the skater: marched where the ray passes near him, in front of whatever of the ramp is behind him
   {
-    vec3 c = uSkHip.xyz;
-    vec3 oc = ro - c;
-    float bb = dot(oc, rd), cc = dot(oc, oc) - 1.6 * 1.6;
+    vec3 oc = ro - uSkBound.xyz;
+    float bb = dot(oc, rd), cc = dot(oc, oc) - uSkBound.w * uSkBound.w;
     float hh = bb * bb - cc;
     if (hh > 0.0) {
       float ts = max(-bb - sqrt(hh), 0.0), te = -bb + sqrt(hh);
-      vec2 hit = vec2(0.0);
-      for (int k = 0; k < 64; k++) {
+      vec2 hit = vec2(1.0, 0.0);
+      for (int k = 0; k < 48; k++) {
         if (ts > te || ts > t) break;
-        hit = skater(ro + rd * ts);
-        if (hit.x < 0.0015) break;
+        vec3 q = ro + rd * ts;
+        float shell = skaterShell(q);
+        if (shell > 0.05) { ts += shell; continue; }
+        hit = skater(q);
+        if (hit.x < 0.004) break;
         ts += hit.x * 0.8;
       }
-      if (hit.x < 0.0015 && ts < t && ts < te) {
+      if (hit.x < 0.004 && ts < t && ts < te) {
         vec3 sp = ro + rd * ts, sn = skaterNormal(sp);
         vec3 L = normalize(vec3(0.4, 1.0, 0.5));
         float dif = max(dot(sn, L), 0.0), rim = pow(1.0 - max(dot(sn, -rd), 0.0), 3.0);
@@ -7722,7 +7945,7 @@ vec3 render(vec2 p, vec2 uv) {
   if (uSkShadow.w > 0.5) {
     vec3 sp = uSkShadow.xyz;
     vec3 d0 = sp - ro;
-    float z0 = dot(d0, uCamF.xyz);
+    float z0 = max(dot(d0, uCamF.xyz), 0.1);
     vec2 S = vec2(dot(d0, uCamR.xyz), dot(d0, uCamU.xyz)) / z0 * uCamE.w;
     for (int j = 0; j < 8; j++) {
       float fj = float(j), a = fj * 0.8 + uTime * 9.0, r = fract(uTime * 3.0 + hash11(fj)) * 0.05;
@@ -7730,6 +7953,7 @@ vec3 render(vec2 p, vec2 uv) {
     }
   }
   // the hud: the score, the combo counted up through the phrase, banked with a flash on the drop
+  if (p.y < 0.28 || abs(p.x) < 0.6) return col;
   for (int k = 0; k < 5; k++) {
     int dg = int(mod(floor(uSkFx.x / pow(10.0, float(4 - k))), 10.0));
     col = mix(col, vec3(1.0), digit7((p - vec2(-0.84 + float(k) * 0.045, 0.37)) / 0.04, dg));
@@ -7882,112 +8106,276 @@ vec3 render(vec2 p, vec2 uv) {
 `;
 
 const tanks = `
-// The wireframe tank: the battlefield seen through a tank's sight, every
-// line in green as the black-and-white vector tube showed it through its
-// green overlay, the radar and the score in red behind the strip of red at the
-// top. The game runs as a simulation (src/core/sims.js), which projects the
-// world: the tank rolls on and comes round after the enemy on the beat, fires
-// on the backbeat once it is in the sight, and the enemy flies apart; the
-// radar sweeps round once a bar.
-uniform vec4 uSeg[128];   // the world's lines on the screen: from, to
-uniform vec4 uTank;       // lines, how near the sight is to the enemy (1 on it), since it fired, score
-uniform vec4 uBlip;       // the enemy round the tank: across, ahead, there
-uniform vec4 uMoon;       // the moon on the screen: x, y, in view; since the last blast
-const float HZ = -0.03, TOP = 0.29;
+// The wireframe tank, as memory has it: the battlefield through a tank's sight,
+// its lines of light now on solid, lit shapes standing on a ground that runs to
+// the horizon. The game runs as a simulation (src/core/sims.js), which works out
+// the world, hides what stands behind what, and hands over its lines and faces
+// on the screen. The enemy closes in; the tank holds its fire until it is near,
+// fires on the backbeat - the view kicks, the gun recoils - and on the next beat
+// the enemy goes up: a fireball, a ring along the ground, the ground lit round
+// it, its pieces flung, its turret thrown high, a scorch left behind.
+uniform vec4 uSeg[180];     // the world's lines on the screen: from, to
+uniform float uSegK[180];   // each: what it is (0 the plain, 1 the enemy, 2 hot, 3 the mountains) + how bright
+uniform vec4 uFace[72];     // the faces, far to near: four corners on the screen, in two vec4s
+uniform float uFaceK[36];   // each: what it is (0 the plain, 1 the enemy) + how lit
+uniform vec4 uTank;         // lines, how near the sight is to the enemy (1 on it), since it fired, score
+uniform vec4 uTankCam;      // the tank: x, z, heading; faces
+uniform vec4 uTankFx;       // the view: roll, shake across, shake up; since the last burst + 100 x its kind
+uniform vec4 uTarget;       // the enemy's outline on the screen: middle x, y, half its width; how far off (below 0: not in view)
+uniform float uTargetH;     // half its height
+uniform vec4 uBlip;         // the enemy round the tank: across, ahead, there
+uniform vec4 uMoon;         // the moon on the screen: x, y, in view
+uniform vec4 uTBlasts[4];   // round the tank: across, ahead, since, kind (below 0 none, 0 a shell, 1 the enemy, 2 on the drop, 3 its gun)
+uniform float uTBlastH[4];  // how high above the ground each went up
+uniform vec4 uTShell[2];    // shell heads on the screen: x, y, size, whose (0 none)
+const float HZ = 0.1, EYE = 2.7, FL = 1.45, CELL = 6.0;
 float lineGlow(float d, float w) { return 1.0 - smoothstep(w * 0.4, w, d); }
+float sideOf(vec2 a, vec2 b, vec2 p) { return (b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x); }
 
 vec3 render(vec2 p, vec2 uv) {
-  vec3 col = vec3(0.0);
-  vec3 green = vec3(0.1, 1.0, 0.2), red = vec3(1.0, 0.12, 0.08);
-  float lw = 0.003;
-  if (p.y < TOP) {
-    // the horizon, then the world's lines
-    float d = abs(p.y - HZ);
-    int n = int(uTank.x);
-    for (int i = 0; i < 128; i++) {
-      if (i >= n) break;
-      vec4 s = uSeg[i];
-      vec2 lo = min(s.xy, s.zw) - 0.01, hi = max(s.xy, s.zw) + 0.01;
-      if (p.x < lo.x || p.y < lo.y || p.x > hi.x || p.y > hi.y) continue;
-      d = min(d, sdSeg(p, s.xy, s.zw));
-    }
-    col += green * lineGlow(d, lw);
-    // the moon over the mountains: a crescent, its outline drawn by the beam
+  vec3 green = vec3(0.18, 1.0, 0.42), red = vec3(1.0, 0.14, 0.1), hot = vec3(1.0, 0.72, 0.36), foe = vec3(1.0, 0.4, 0.14);
+  // the last burst punches the view in
+  float since = uTankFx.w > 900.0 ? 99.0 : mod(uTankFx.w, 100.0);
+  float bKind = floor(uTankFx.w / 100.0);
+  float punch = bKind > 0.5 && bKind < 3.0 ? exp(-since * 8.0) * (bKind > 1.5 ? 1.6 : 1.0) : 0.0;
+  // what is out in the world moves with the view; the sight and the dials stay on the glass
+  vec2 w = rot(uTankFx.x) * p * (1.0 - 0.018 * uKick - 0.05 * punch) + uTankFx.yz;
+  float h = uTankCam.z, ch = cos(h), sh = sin(h);
+  vec3 col;
+  float z = 0.0;
+  vec2 g = vec2(0.0);
+  if (w.y >= HZ) {
+    // the sky: dark overhead, a glow along the horizon that breathes with the bass, stars turning with the hull
+    float up = w.y - HZ;
+    col = mix(vec3(0.006, 0.05, 0.05), vec3(0.003, 0.006, 0.026), smoothstep(0.0, 0.34, up));
+    vec2 sq = vec2(w.x + h * FL, w.y) * 46.0;
+    vec2 sg = floor(sq);
+    float st = hash12(sg + uSeed.xy * 11.0);
+    if (st > 0.93) col += vec3(0.55, 0.8, 0.75) * (st - 0.93) * 14.0 * (1.0 - smoothstep(0.02, 0.09, length(sq - sg - 0.5))) * smoothstep(0.02, 0.14, up) * (0.6 + 0.6 * uHat);
+    // the moon: a crescent, lit, with a halo
     if (uMoon.z > 0.5) {
-      vec2 q = p - uMoon.xy;
-      float m = max(length(q) - 0.032, -(length(q - vec2(0.013, 0.008)) - 0.028));
-      col += green * lineGlow(abs(m), lw) * 0.9;
+      vec2 q = w - uMoon.xy;
+      float rm = length(q);
+      float m = max(rm - 0.038, -(length(q - vec2(0.016, 0.01)) - 0.033));
+      col += vec3(0.7, 1.0, 0.82) * (1.0 - smoothstep(0.0, 0.003, m)) * 0.95;
+      col += green * exp(-rm * 18.0) * 0.12;
     }
-    // a blast: the screen lit for a moment
-    col += green * exp(-uMoon.w * 9.0) * 0.12;
-    // the sight: a post above and below, and brackets that close in on the enemy, lit as it fires
-    float lock = uTank.y;
-    float gap = mix(0.16, 0.07, lock);
-    float ds = min(sdSeg(p, vec2(0.0, HZ + 0.075), vec2(0.0, HZ + 0.2)), sdSeg(p, vec2(0.0, HZ - 0.075), vec2(0.0, HZ - 0.2)));
-    for (int sx = -1; sx <= 1; sx += 2) {
-      float x = float(sx) * gap;
-      ds = min(ds, sdSeg(p, vec2(x, HZ - 0.06), vec2(x, HZ + 0.06)));
-      ds = min(ds, sdSeg(p, vec2(x, HZ + 0.06), vec2(x - float(sx) * 0.03, HZ + 0.06)));
-      ds = min(ds, sdSeg(p, vec2(x, HZ - 0.06), vec2(x - float(sx) * 0.03, HZ - 0.06)));
-    }
-    col += green * lineGlow(ds, lw) * (0.8 + 0.6 * exp(-uTank.z * 6.0) + 0.3 * uSnare);
   } else {
-    // the strip at the top: the radar, its sweep going round once a bar, the enemy a dot it lights up
-    vec2 rc = vec2(0.0, 0.395);
-    vec2 q = p - rc;
-    float r = length(q);
-    float dr = abs(r - 0.085);
-    float sweep = uBar * 6.28318;
-    vec2 sd = vec2(sin(sweep), cos(sweep));
-    dr = min(dr, sdSeg(p, rc, rc + sd * 0.085));
-    col += red * lineGlow(dr, lw);
-    // its trail, fading behind the sweep
-    float a = atan(q.x, q.y);
-    float behind = mod(sweep - a, 6.28318);
-    col += red * 0.25 * step(r, 0.085) * exp(-behind * 3.0) * smoothstep(0.0, 0.01, r);
-    if (uBlip.z > 0.5) {
-      vec2 b = uBlip.xy / 90.0 * 0.085;
-      if (length(b) > 0.08) b = normalize(b) * 0.08;
-      float ba = mod(sweep - atan(b.x, b.y), 6.28318);
-      col += red * (1.0 - smoothstep(0.003, 0.006, length(q - b))) * (0.3 + 1.2 * exp(-ba * 2.0));
-    }
-    // the line under the strip
-    col += red * lineGlow(abs(p.y - (TOP + 0.01)), lw) * 0.7;
-    // the score, right
-    for (int k = 0; k < 5; k++) {
-      int dg = int(mod(floor(uTank.w / pow(10.0, float(4 - k))), 10.0));
-      col = max(col, red * digit7((p - vec2(0.48 + float(k) * 0.05, 0.36)) / 0.045, dg));
+    // the ground: its grid runs to the horizon and slides by as the tank rolls, each line one thin line on the screen
+    z = EYE * FL / max(HZ - w.y, 1e-3);
+    g = vec2(w.x * z / FL, z);
+    vec2 wp = uTankCam.xy + vec2(g.x * ch + g.y * sh, -g.x * sh + g.y * ch);
+    float dz = z * z / (EYE * FL), cx = w.x / FL * dz;
+    vec2 dX = vec2(ch, -sh) * z / FL;
+    vec2 dY = vec2(cx * ch + dz * sh, -cx * sh + dz * ch);
+    vec2 gr = vec2(length(vec2(dX.x, dY.x)), length(vec2(dX.y, dY.y)));
+    vec2 cd = abs(fract(wp / CELL + 0.5) - 0.5) * CELL / gr;
+    // (each family of lines fades on its own as its lines crowd together)
+    vec2 far = smoothstep(vec2(0.008), vec2(0.035), CELL / gr);
+    float vis = exp(-z * 0.009);
+    float gl = max(lineGlow(cd.x, 0.0026) * far.x, lineGlow(cd.y, 0.0026) * far.y);
+    float gh = max(exp(-cd.x * 150.0) * far.x, exp(-cd.y * 150.0) * far.y);
+    // a wave of light runs out across it once a bar
+    float wave = exp(-abs(z - fract(uBar) * 72.0) * 0.32);
+    col = vec3(0.005, 0.038, 0.028) + green * exp(-(HZ - w.y) * 9.0) * 0.13;
+    col += green * (gl * (0.36 + 0.34 * uKick + 0.7 * wave) + gh * (0.09 + 0.1 * wave)) * vis;
+    // what a burst does to the ground: lights it, runs a ring along it, leaves a scorch
+    for (int k = 0; k < 4; k++) {
+      vec4 b = uTBlasts[k];
+      if (b.w < -0.5 || b.w > 2.5) continue;
+      float size = b.w < 0.5 ? 0.55 : (b.w < 1.5 ? 1.0 : 1.6);
+      float gd = length(g - b.xy);
+      float cr = gd / (2.6 * size);
+      col *= 1.0 - 0.8 * (1.0 - smoothstep(0.75, 1.15, cr)) * smoothstep(0.1, 0.5, b.z) * (1.0 - smoothstep(4.5, 6.3, b.z));
+      col += hot * exp(-gd * 0.17 / size) * exp(-b.z * 3.4) * 1.3 * size;
+      float ring = abs(gd - b.z * 34.0 * size) / gr.y;
+      col += hot * (lineGlow(ring, 0.006) + exp(-ring * 60.0) * 0.4) * exp(-b.z * 3.6) * 0.9;
+      col += hot * exp(-abs(cr - 1.0) * 16.0) * exp(-b.z * 1.4) * 0.45;
     }
   }
+  // the horizon
+  float dh = abs(w.y - HZ);
+  col += green * (lineGlow(dh, 0.0026) * 0.75 + exp(-dh * 48.0) * (0.2 + 0.16 * uBass));
+
+  // the solids' faces: each lit from one side, the nearer over the farther, hiding the ground and the sky
+  int nf = int(uTankCam.w);
+  for (int i = 0; i < 36; i++) {
+    if (i >= nf) break;
+    vec4 A = uFace[2 * i], B = uFace[2 * i + 1];
+    if (sideOf(A.xy, A.zw, w) < 0.0 || sideOf(A.zw, B.xy, w) < 0.0 || sideOf(B.xy, B.zw, w) < 0.0 || sideOf(B.zw, A.xy, w) < 0.0) continue;
+    float k = uFaceK[i], lit = fract(k);
+    if (k < 1.0) col = vec3(0.008, 0.07, 0.05) + vec3(0.03, 0.42, 0.25) * lit;
+    else col = vec3(0.075, 0.016, 0.008) + vec3(0.72, 0.22, 0.06) * lit;
+    col += hot * (0.14 * punch + 0.1 * exp(-uTank.z * 14.0));
+  }
+
+  // the world's lines over them, the near thicker and brighter, each with its glow
+  vec3 lines = vec3(0.0);
+  int n = int(uTank.x);
+  for (int i = 0; i < 180; i++) {
+    if (i >= n) break;
+    vec4 s = uSeg[i];
+    vec2 lo = min(s.xy, s.zw) - 0.03, hi = max(s.xy, s.zw) + 0.03;
+    if (w.x < lo.x || w.y < lo.y || w.x > hi.x || w.y > hi.y) continue;
+    float d = sdSeg(w, s.xy, s.zw);
+    float k = uSegK[i], lit = fract(k), wd = 0.0015 + 0.0032 * lit;
+    vec3 c = green;
+    if (k >= 3.0) c = vec3(0.13, 0.72, 0.5);
+    else if (k >= 2.0) c = mix(foe, vec3(1.0, 0.9, 0.62), lit);
+    else if (k >= 1.0) c = foe;
+    lines = max(lines, c * ((1.0 - smoothstep(wd * 0.4, wd, d)) * (0.4 + 1.1 * lit) + exp(-d * 105.0) * 0.34 * lit));
+  }
+  col += lines * (1.0 + 0.3 * uKick);
+
+  // the fire: a burst's ball, its white heart, its rays and the ring in the air; the enemy's gun going off
+  for (int k = 0; k < 4; k++) {
+    vec4 b = uTBlasts[k];
+    if (b.w < -0.5 || b.y < 1.0) continue;
+    float sc = FL / b.y;
+    if (b.w > 2.5) {
+      vec2 c = vec2(b.x * sc, HZ + (1.82 - EYE) * sc);
+      float r = length(w - c);
+      col += vec3(1.0, 0.8, 0.45) * exp(-r / (0.75 * sc)) * exp(-b.z * 16.0) * 2.4;
+      continue;
+    }
+    if (b.z > 1.5) continue;
+    float size = b.w < 0.5 ? 0.36 : (b.w < 1.5 ? 1.0 : 1.6);
+    vec2 c = vec2(b.x * sc, HZ + (uTBlastH[k] + 0.3 * (1.0 - step(0.5, b.w)) - EYE) * sc);
+    float R = sc * size * (0.8 + 6.0 * (1.0 - exp(-b.z * 4.2)));
+    vec2 d = w - c;
+    float r = length(d);
+    float fade = exp(-b.z * 3.1);
+    if (r < R * 2.4) {
+      float nz = fbm(d / max(R, 1e-3) * 2.4 + vec2(b.z * 1.6, -b.z * 2.6) + float(k) * 5.1);
+      float body = 1.0 - smoothstep(0.2, 1.0, r / R * (1.3 - 0.7 * nz));
+      col += mix(vec3(1.0, 0.22, 0.03), vec3(1.0, 0.82, 0.42), body * body) * body * fade * 2.3;
+      col += vec3(1.0, 0.96, 0.85) * exp(-r / (R * 0.2)) * exp(-b.z * 10.0) * 3.2;
+      float a = atan(d.y, d.x);
+      float ray = pow(max(0.0, cos(a * 5.0 + b.x * 9.0)), 22.0) + pow(max(0.0, cos(a * 8.0 + b.y * 7.0)), 30.0);
+      col += hot * ray * exp(-r / (R * 0.9)) * exp(-b.z * 5.0) * 1.3;
+    }
+    col += hot * exp(-abs(r - R * 1.55) * 70.0) * exp(-b.z * 5.0);
+    // the whole view lit for a moment
+    col += hot * exp(-b.z * 11.0) * (b.w < 0.5 ? 0.05 : 0.2 * size);
+  }
+  // the shells' bright heads
+  for (int k = 0; k < 2; k++) {
+    vec4 s = uTShell[k];
+    if (s.w < 0.5) continue;
+    float r = length(w - s.xy);
+    col += vec3(1.0, 0.9, 0.65) * (exp(-r / max(s.z * 0.28, 0.004)) * 2.4 + exp(-r / max(s.z * 1.1, 0.012)) * 0.5);
+  }
+
+  // the sight: at rest level with the horizon; as the gun comes round to the enemy it comes down onto it and frames it
+  float lock = uTank.y;
+  float on = uTarget.w > 0.0 ? smoothstep(0.4, 0.92, lock) : 0.0;
+  vec2 sp = mix(p, w, on);
+  vec2 sc = mix(vec2(0.0, HZ), uTarget.xy, on);
+  float hw = mix(mix(0.16, 0.075, lock), uTarget.z, on), hh = mix(0.06, uTargetH, on);
+
+  // on the glass from here on. The gun out in front, over the nose, laid on the sight: it runs back as it fires, its flash at the tip
+  float kick = exp(-uTank.z * 9.0);
+  vec2 gBase = vec2(0.0, -0.5);
+  vec2 gDir = normalize(sc - gBase), gSide = vec2(-gDir.y, gDir.x);
+  float gLen = 0.2 - 0.03 * kick;
+  vec2 tip = gBase + gDir * gLen;
+  float gAlong = dot(p - gBase, gDir), gAcross = dot(p - gBase, gSide);
+  float gw = mix(0.075, 0.03, clamp(gAlong / gLen, 0.0, 1.0));
+  if (gAlong < gLen && abs(gAcross) < gw) col = vec3(0.006, 0.05, 0.035) + green * 0.1 * (1.0 - abs(gAcross) / gw);
+  float gd = min(min(sdSeg(p, gBase - gSide * 0.075, tip - gSide * 0.03), sdSeg(p, gBase + gSide * 0.075, tip + gSide * 0.03)), sdSeg(p, tip - gSide * 0.03, tip + gSide * 0.03));
+  col += green * (lineGlow(gd, 0.0034) * 1.1 + exp(-gd * 100.0) * 0.28);
+  float fr = length(p - tip);
+  float fa = atan(dot(p - tip, gSide), dot(p - tip, gDir));
+  col += vec3(1.0, 0.92, 0.6) * exp(-uTank.z * 15.0) * (exp(-fr * 16.0) * 3.0 + pow(max(0.0, cos(fa * 3.0)), 12.0) * exp(-fr * 5.5) * 1.8);
+  col += hot * exp(-uTank.z * 18.0) * 0.2;
+
+  // a post above and below, and brackets either side, lit as it fires
+  float ds = min(sdSeg(sp, sc + vec2(0.0, hh + 0.015), sc + vec2(0.0, hh + 0.125)), sdSeg(sp, sc - vec2(0.0, hh + 0.015), sc - vec2(0.0, hh + 0.125)));
+  for (int sx = -1; sx <= 1; sx += 2) {
+    float x = float(sx) * hw;
+    ds = min(ds, sdSeg(sp, sc + vec2(x, -hh), sc + vec2(x, hh)));
+    ds = min(ds, sdSeg(sp, sc + vec2(x, hh), sc + vec2(x - float(sx) * 0.03, hh)));
+    ds = min(ds, sdSeg(sp, sc + vec2(x, -hh), sc + vec2(x - float(sx) * 0.03, -hh)));
+  }
+  vec3 sightC = mix(green, vec3(1.0, 0.85, 0.3), smoothstep(0.85, 1.0, lock));
+  col += sightC * (lineGlow(ds, 0.0028) + exp(-ds * 120.0) * 0.22) * (0.75 + 0.7 * exp(-uTank.z * 6.0) + 0.35 * uSnare);
+
+  // the mark round the enemy before the sight is on it, and how far off it is: amber once it is in range
+  if (uTarget.w > 0.0) {
+    vec2 q = abs(w - uTarget.xy);
+    float sz = uTarget.z;
+    float box = abs(max(q.x - sz, q.y - uTargetH));
+    float corner = step(sz * 0.62, q.x) * step(uTargetH * 0.62, q.y);
+    vec3 mc = mix(vec3(0.4, 1.0, 0.6), vec3(1.0, 0.72, 0.15), step(uTarget.w, 18.0));
+    col += mc * (1.0 - smoothstep(0.001, 0.0034, box)) * corner * (0.65 + 0.5 * uSnare) * (1.0 - on);
+    int rg = int(min(uTarget.w, 99.0));
+    vec2 rp = w - uTarget.xy - vec2(sz + 0.012, uTargetH - 0.05);
+    col += mc * digit7(rp / 0.026, rg / 10);
+    col += mc * digit7((rp - vec2(0.032, 0.0)) / 0.026, rg - 10 * (rg / 10));
+  }
+
+  // the radar over it all, top middle: its sweep goes round once a bar, the enemy a dot it lights
+  vec2 rc = vec2(0.0, 0.392);
+  vec2 q = p - rc;
+  float r = length(q);
+  if (r < 0.087) col *= 0.28;
+  float sweep = uBar * 6.28318;
+  vec2 sd = vec2(sin(sweep), cos(sweep));
+  float dr = min(abs(r - 0.085), sdSeg(p, rc, rc + sd * 0.085));
+  col += red * (lineGlow(dr, 0.0028) + exp(-dr * 110.0) * 0.3);
+  float a = atan(q.x, q.y);
+  float behind = mod(sweep - a, 6.28318);
+  col += red * 0.32 * step(r, 0.085) * exp(-behind * 3.0) * smoothstep(0.0, 0.01, r);
+  if (uBlip.z > 0.5) {
+    vec2 b = uBlip.xy / 60.0 * 0.085;
+    if (length(b) > 0.08) b = normalize(b) * 0.08;
+    float ba = mod(sweep - atan(b.x, b.y), 6.28318);
+    float bd = length(q - b);
+    col += red * ((1.0 - smoothstep(0.003, 0.006, bd)) * (0.5 + 1.3 * exp(-ba * 2.0)) + exp(-bd * 70.0) * 0.5 * exp(-ba * 1.2));
+  }
+  // the score, top right: it flares on a kill
+  float sb = exp(-since * 5.0) * step(0.5, bKind) * step(bKind, 2.5);
+  for (int k = 0; k < 5; k++) {
+    int dg = int(mod(floor(uTank.w / pow(10.0, float(4 - k))), 10.0));
+    col += mix(red, vec3(1.0, 0.85, 0.5), sb) * digit7((p - vec2(0.6 + float(k) * 0.05, 0.385)) / 0.045, dg) * (0.95 + sb);
+  }
+  col += green * uSnare * 0.012;
   return col;
 }
 `;
 
 const tube = `
-// The vector tube: a tube seen from its open end, its lanes running down to a
-// point, drawn by the colour vector tube's beam. The game runs as a simulation
+// The vector tube, as memory has it: a tube seen from its open end, filling the
+// screen, its lanes running down to a burning point, its walls lit and pulsing
+// on the beat, each new shape its own colour. The game runs as a simulation
 // (src/core/sims.js): things climb the lanes a step on each beat, the claw on
-// the rim slides after the nearest and fires down its lane on the backbeats;
-// on the drop it dives down the tube into the next shape.
+// the rim slides after the nearest and fires down its lane on the backbeats, the
+// shots lighting the lane as they go; what is hit goes up in a flash, a ring and
+// rays. Outside the tube stars stream past and each beat sends the tube's own
+// outline rippling out across the dark. On the drop the claw dives down the
+// tube into the next shape.
 uniform vec2 uRim[17];     // the rim's points, in the shape's own units
 uniform vec4 uTube;        // lanes, closed, how high it vanishes, level
 uniform vec4 uClaw;        // its lane, there, since the dive, score
 uniform vec4 uFoes[8];     // lane, depth (0 the rim, 1 the far end), kind, there
 uniform vec4 uTShots[8];   // lane, depth, flying
 uniform vec4 uTBooms[6];   // lane, depth, since, kind (0 shot, 1 zapped, 2 the claw)
-uniform vec4 uTubeFx;      // since the claw was caught, seconds a bar, how far through the dive (-1 none)
-const vec2 TC = vec2(0.0, -0.03);
-const float TS = 0.37;
+uniform vec4 uTubeFx;      // since the claw was caught, seconds a bar, how far through the dive (-1 none), since the last shot
+const vec2 TC = vec2(0.0, 0.0);
+const vec2 TS = vec2(0.76, 0.44);          // wider than high, as the screen is
+
+float gZoom = 1.0;      // the zoom of this frame, worked out once
+vec2 gLook = vec2(0.0); // the far end leans toward the claw, as if the view rode with it
 
 float tubeZoom() {
-  // the dive: the tube rushes past; then the next one opens out of the dark
+  // the dive: the tube rushes past; then the next one springs open out of the dark
   float w = uTubeFx.z;
   if (w >= 0.0) return 1.0 + 9.0 * w * w;
-  float since = (uClaw.z - uTubeFx.y) / max(uTubeFx.y, 0.1);
-  return since >= 0.0 && since < 0.35 ? mix(0.15, 1.0, smoothstep(0.0, 0.35, since)) : 1.0;
+  float s = (uClaw.z - uTubeFx.y) / max(uTubeFx.y, 0.1) / 0.35;
+  if (s < 0.0 || s >= 1.0) return 1.0;
+  return mix(0.15, 1.0, 1.0 - pow(1.0 - s, 3.0) * cos(s * 7.0));
 }
-vec2 vanish() { return TC + vec2(0.0, uTube.z * 0.4); }
-float gZoom = 1.0;      // the zoom of this frame, worked out once
+vec2 vanish() { return TC + vec2(0.0, uTube.z * TS.y * 1.08) + gLook; }
 vec2 rimPt(int i) { return TC + uRim[i] * TS; }
 // a point on the tube: lane edge i at depth z (0 the rim, 1 the far end)
 vec2 tubePt(vec2 rim, float z) {
@@ -8004,133 +8392,243 @@ vec2 edgeAt(float x) {
   return mix(rimPt(i), rimPt(min(j, 16)), x - fx);
 }
 float lineGlow(float d, float w) { return 1.0 - smoothstep(w * 0.4, w, d); }
+// how many lanes apart two places are round the tube
+float lanesApart(float a, float b) {
+  float d = abs(a - b);
+  if (uTube.y > 0.5) d = min(d, uTube.x - d);
+  return d;
+}
+// each new shape its own colour, the first from the seed
+vec3 tubeColour(float level) {
+  float i = mod(level + floor(uSeed.x * 5.0), 5.0);
+  if (i < 1.0) return vec3(0.1, 0.32, 1.0);
+  if (i < 2.0) return vec3(0.62, 0.14, 1.0);
+  if (i < 3.0) return vec3(0.03, 0.8, 1.0);
+  if (i < 4.0) return vec3(1.0, 0.12, 0.55);
+  return vec3(0.1, 1.0, 0.5);
+}
+// stars streaming out of the point the tube vanishes to, in wedges round it
+float streaks(float a, float r, float cells, float speed, float sd) {
+  float u = a * cells / 6.28318;
+  float h = hash11(floor(u) + sd);
+  float head = fract(h * 7.0 + uTime * speed * (0.4 + h));
+  float at = head * head * 1.3;
+  float d = abs(fract(u) - 0.5) * 6.28318 / cells * r;
+  float len = 0.008 + at * 0.13 * (0.6 + speed);
+  return (1.0 - smoothstep(0.0, 0.0012 + at * 0.0032, d)) * (1.0 - smoothstep(0.0, len, abs(r - at))) * smoothstep(0.02, 0.2, head) * step(0.35, h);
+}
 
 vec3 render(vec2 p, vec2 uv) {
-  vec3 col = vec3(0.0);
-  gZoom = tubeZoom();
+  // the claw caught: the view shakes
+  float hurt = exp(-uTubeFx.x * 6.0);
+  float jt = floor(uTime * 40.0);
+  p += (vec2(hash11(jt), hash11(jt + 9.0)) - 0.5) * hurt * 0.05;
+  gZoom = tubeZoom() * (1.0 + 0.034 * uKick + 0.012 * uBass);
+  gLook = (edgeAt(uClaw.x + 0.5) - TC) * 0.07;
   int n = int(uTube.x);
   bool closed = uTube.y > 0.5;
-  float lw = 0.0032;
-  float fade = uTubeFx.z >= 0.0 ? 1.0 - smoothstep(0.55, 0.95, uTubeFx.z) : 1.0;
-  vec3 blue = vec3(0.1, 0.25, 1.0), yellow = vec3(1.0, 1.0, 0.1);
+  float lw = 0.0034;
+  bool diving = uTubeFx.z >= 0.0;
+  float fade = diving ? 1.0 - smoothstep(0.55, 0.95, uTubeFx.z) : 1.0;
+  vec3 tubeC = tubeColour(uTube.w), yellow = vec3(1.0, 0.95, 0.15), white = vec3(1.0);
+  vec2 v = vanish();
+  vec2 q = p - v;
+  float r = length(q), ang = atan(q.y, q.x);
 
-  // the tube: its lanes' edges, the rim, the far end
+  // the tube: its lanes' edges, the rim, the far end; and where this pixel falls on its wall, seen from the far point
   float dLane = 1e9, dRim = 1e9;
+  float lane = -1.0, s = 0.0;
   int edges = closed ? n : n + 1;
-  // (only near the tube: it reaches at most 1.3 of its scale from the point it vanishes to)
-  bool nearTube = length(p - vanish()) < (1.3 * TS + 0.45 * TS) * gZoom + 0.02;
   for (int i = 0; i < 17; i++) {
-    if (i >= edges || !nearTube) break;
-    vec2 r = rimPt(i);
-    dLane = min(dLane, sdSeg(p, tubePt(r, 0.0), tubePt(r, 1.0)));
+    if (i >= edges) break;
+    vec2 ri = rimPt(i);
+    vec2 a = tubePt(ri, 0.0);
+    dLane = min(dLane, sdSeg(p, a, tubePt(ri, 1.0)));
     if (i < n) {
       int j = i + 1;
       if (closed && j >= n) j = 0;
-      vec2 r2 = rimPt(j);
-      dRim = min(dRim, sdSeg(p, tubePt(r, 0.0), tubePt(r2, 0.0)));
-      dLane = min(dLane, sdSeg(p, tubePt(r, 1.0), tubePt(r2, 1.0)));
+      vec2 rj = rimPt(j);
+      vec2 b = tubePt(rj, 0.0);
+      dRim = min(dRim, sdSeg(p, a, b));
+      if (r < 0.27 * gZoom) dLane = min(dLane, sdSeg(p, tubePt(ri, 1.0), tubePt(rj, 1.0)));   // (the far rim is small: only near it)
+      if (lane < 0.0) {
+        vec2 av = a - v, bv = b - v;
+        float det = av.x * bv.y - av.y * bv.x;
+        if (abs(det) > 1e-7) {
+          float al = (q.x * bv.y - q.y * bv.x) / det, be = (av.x * q.y - av.y * q.x) / det;
+          if (al >= 0.0 && be >= 0.0 && al + be > 1e-5) { s = al + be; lane = float(i) + be / s; }
+        }
+      }
     }
   }
-  col += blue * lineGlow(min(dLane, dRim), lw) * fade;
-  // the zap of the snare lights the rim
-  col += vec3(0.6, 0.6, 1.0) * lineGlow(dRim, lw * 1.4) * uSnare * 0.8 * fade;
+  bool onWall = lane >= 0.0 && s <= 1.0 && s >= 0.16;
+  float z = onWall ? (1.0 / s - 1.0) / 5.25 : 0.0;
+  float beat = fract(uBeat);
+  // the dark round the tube, where the wall does not cover it: a slow haze in the tube's colour, stars streaming past
+  vec3 col = vec3(0.0);
+  if (!onWall) {
+    float haze = fbm(p * 2.3 + vec2(uTime * 0.03, -uTime * 0.02) + uSeed.xy * 9.0);
+    col = vec3(0.004, 0.004, 0.02) + mix(tubeC, vec3(0.7, 0.12, 0.6), 0.5 + 0.5 * sin(p.x * 2.1 + p.y * 3.3 - uTime * 0.11)) * haze * haze * 0.26;
+    float go = diving ? 2.4 : 0.34 + 0.3 * uEnergy;
+    col += vec3(0.65, 0.78, 1.0) * (streaks(ang, r, 44.0, go, 3.0) + streaks(ang + 0.07, r, 71.0, go * 0.7, 11.0) * 0.6) * (diving ? 1.4 : 0.55 + 0.5 * uHat);
+  }
+  if (lane >= 0.0 && s > 1.0) {
+    // outside the rim: the tube's own outline rippling out on each beat, and slower once a bar
+    float e = s - 1.0, to = r / s;
+    float d1 = abs(e - beat * 1.15) * to, d2 = abs(e - fract(uBar) * 2.0) * to;
+    float fall = 1.0 / (1.0 + e * 2.5);
+    col += tubeC * (lineGlow(d1, 0.0034) * 0.85 + exp(-d1 * 55.0) * 0.26) * (1.0 - beat) * (1.0 - beat) * fall * fade;
+    col += mix(tubeC, white, 0.25) * (lineGlow(d2, 0.004) * 0.8 + exp(-d2 * 40.0) * 0.28) * (1.0 - fract(uBar)) * fall * fade;
+    // the rim's own light falling on the dark
+    col += tubeC * exp(-e * 5.0) * (0.09 + 0.2 * uKick) * fade;
+  }
+  if (onWall) {
+    // the wall: every other lane a shade lighter, darker toward the far end, rungs across it, a pulse climbing it each beat
+    float alt = mod(floor(lane), 2.0);
+    col = tubeC * (0.075 + 0.065 * alt) * (1.0 - z * 0.45) + vec3(0.003, 0.003, 0.012);
+    float rd = abs(fract(z * 7.0 + 0.5) - 0.5) / 7.0 * 5.25 * s * r;
+    col += tubeC * lineGlow(rd, 0.0022) * 0.34 * (0.6 + 0.4 * s);
+    float dp = z - (1.0 - beat);
+    col += mix(tubeC, white, 0.15) * exp(-dp * dp * 70.0) * (0.45 - 0.2 * beat) * (0.5 + uKick * 0.8);
+    col += tubeC * uSnare * 0.2 * (1.0 - z);
+    // the claw's lane, a beam of its light down it
+    if (uClaw.y > 0.5 && !diving) {
+      float dl = lanesApart(lane, uClaw.x + 0.5);
+      col += yellow * exp(-dl * dl * 5.5) * (0.17 + 0.4 * exp(-uTubeFx.w * 8.0)) * (1.0 - z * 0.5);
+    }
+    col *= fade;
+  }
+  // the far point burning, with the bass
+  col += mix(tubeC, white, 0.5) * exp(-r / max(0.05 * gZoom, 0.01)) * (0.55 + 1.4 * uBass + 0.5 * uKick) * fade;
 
-  // the claw's lane, its edges lit yellow; the claw itself on the rim
-  if (uClaw.y > 0.5 && uTubeFx.z < 0.0) {
+  col += tubeC * (lineGlow(dLane, lw) * 1.05 + exp(-dLane * 125.0) * 0.2) * fade * (1.0 + 0.45 * uKick);
+  // the rim: thick and bright, kicking with the beat, flaring white on the snare
+  col += mix(tubeC, white, 0.32 + 0.55 * uSnare) * (lineGlow(dRim, lw * 1.5) * 1.5 + exp(-dRim * 72.0) * (0.3 + 0.55 * uKick)) * fade;
+
+  // the claw's lane's edges lit yellow; the claw itself on the rim, glowing, its gun flashing as it fires
+  if (uClaw.y > 0.5 && !diving) {
     float c = uClaw.x;
     vec2 e0 = edgeAt(c), e1 = edgeAt(c + 1.0);
     float dl = min(sdSeg(p, tubePt(e0, 0.0), tubePt(e0, 1.0)), sdSeg(p, tubePt(e1, 0.0), tubePt(e1, 1.0)));
-    col = mix(col, yellow * 0.7, lineGlow(dl, lw));
+    col = mix(col, yellow * 0.85, lineGlow(dl, lw));
     vec2 a = tubePt(e0, 0.0), b = tubePt(e1, 0.0);
     vec2 m = (a + b) * 0.5, ab = b - a;
-    vec2 o = normalize(m - vanish());
+    vec2 o = normalize(m - v);
     vec2 tl = a + ab * 0.2 + o * 0.055, tr = b - ab * 0.2 + o * 0.055, notch = m + o * 0.022;
     float dc = min(min(sdSeg(p, a, tl), sdSeg(p, tl, notch)), min(sdSeg(p, notch, tr), sdSeg(p, tr, b)));
     dc = min(dc, min(sdSeg(p, a, m - o * 0.012), sdSeg(p, m - o * 0.012, b)));
-    col = mix(col, yellow * 1.3, lineGlow(dc, lw * 1.2));
+    col = mix(col, yellow * 1.5, lineGlow(dc, lw * 1.3));
+    col += yellow * exp(-dc * 80.0) * (0.45 + 0.4 * uKick);
+    col += vec3(1.0, 0.95, 0.6) * exp(-length(p - m) * 34.0) * exp(-uTubeFx.w * 20.0) * 2.4;
   }
 
-  // the climbers: red zigzags, magenta spinners, green orbs, each as wide as its lane
+  // the climbers: red zigzags, magenta spinners, green orbs, each as wide as its lane, its light on the wall round it
   for (int k = 0; k < 8; k++) {
     vec4 f = uFoes[k];
     if (f.w < 0.5) continue;
+    vec3 fc;
+    if (f.z < 0.5) fc = vec3(1.0, 0.1, 0.1);
+    else if (f.z < 1.5) fc = vec3(1.0, 0.1, 1.0);
+    else fc = vec3(0.1, 1.0, 0.2);
+    if (onWall) {
+      float dl = lanesApart(lane, f.x + 0.5), dd = z - f.y;
+      col += fc * exp(-dl * dl * 7.0 - dd * dd * 40.0) * 0.5 * (0.7 + 0.5 * uKick);
+    }
     vec2 e0 = tubePt(edgeAt(f.x), f.y), e1 = tubePt(edgeAt(f.x + 1.0), f.y);
     vec2 c = (e0 + e1) * 0.5, u = (e1 - e0) * 0.5;
     float wl = length(u);
-    if (length(p - c) > wl * 1.6 + 0.01) continue;
-    vec2 v = normalize(c - vanish()) * wl;
+    if (length(p - c) > wl * 2.0 + 0.035) continue;
+    vec2 w = normalize(c - v) * wl;
     float d = 1e9;
-    vec3 fc;
     if (f.z < 0.5) {
-      fc = vec3(1.0, 0.1, 0.1);
-      vec2 P0 = c - u * 0.95, P1 = c - u * 0.45 + v * 0.55, P2 = c, P3 = c + u * 0.45 + v * 0.55, P4 = c + u * 0.95;
+      vec2 P0 = c - u * 0.95, P1 = c - u * 0.45 + w * 0.55, P2 = c, P3 = c + u * 0.45 + w * 0.55, P4 = c + u * 0.95;
       d = min(min(sdSeg(p, P0, P1), sdSeg(p, P1, P2)), min(sdSeg(p, P2, P3), sdSeg(p, P3, P4)));
-      d = min(d, min(sdSeg(p, P0, c - v * 0.3), sdSeg(p, c - v * 0.3, P4)));
+      d = min(d, min(sdSeg(p, P0, c - w * 0.3), sdSeg(p, c - w * 0.3, P4)));
     } else if (f.z < 1.5) {
-      fc = vec3(1.0, 0.1, 1.0);
       mat2 R = rot(uTime * 4.0 + float(k));
-      vec2 q = R * ((p - c) / (wl * 0.6));
-      d = abs(max(abs(q.x), abs(q.y)) - 1.0) * wl * 0.6;
-      d = min(d, abs(abs(q.x + q.y) - 0.0) * wl * 0.42 + step(1.0, max(abs(q.x), abs(q.y))));
+      vec2 sq = R * ((p - c) / (wl * 0.6));
+      d = abs(max(abs(sq.x), abs(sq.y)) - 1.0) * wl * 0.6;
+      d = min(d, abs(abs(sq.x + sq.y) - 0.0) * wl * 0.42 + step(1.0, max(abs(sq.x), abs(sq.y))));
     } else {
-      fc = vec3(0.1, 1.0, 0.2);
-      vec2 q = p - c;
-      d = abs(length(q) - wl * 0.35);
-      for (int s = 0; s < 6; s++) {
-        float a = float(s) * 1.0472 + uTime * 2.0;
+      vec2 oq = p - c;
+      d = abs(length(oq) - wl * 0.35);
+      for (int sp = 0; sp < 6; sp++) {
+        float a = float(sp) * 1.0472 + uTime * 2.0;
         vec2 dir = vec2(cos(a), sin(a));
         d = min(d, sdSeg(p, c + dir * wl * 0.35, c + dir * wl * 0.62));
       }
     }
-    col = mix(col, fc, lineGlow(d, lw));
+    col += fc * (lineGlow(d, lw * 1.15) * 1.5 + exp(-d * 95.0) * 0.55);
   }
 
-  // the shots: short yellow dashes down the lane
+  // the shots: white-hot heads, a tail back up the lane, the lane lit as they pass
   for (int k = 0; k < 8; k++) {
-    vec4 s = uTShots[k];
-    if (s.z < 0.5) continue;
-    vec2 a = tubePt((edgeAt(s.x) + edgeAt(s.x + 1.0)) * 0.5, s.y);
-    vec2 b = tubePt((edgeAt(s.x) + edgeAt(s.x + 1.0)) * 0.5, s.y + 0.06);
-    col = mix(col, yellow * 1.4, lineGlow(sdSeg(p, a, b), lw * 1.3));
+    vec4 sh = uTShots[k];
+    if (sh.z < 0.5) continue;
+    if (onWall) {
+      float dl = lanesApart(lane, sh.x + 0.5), dd = z - sh.y;
+      col += yellow * exp(-dl * dl * 9.0 - dd * dd * 26.0) * 0.5;
+    }
+    vec2 mid = (edgeAt(sh.x) + edgeAt(sh.x + 1.0)) * 0.5;
+    vec2 a = tubePt(mid, sh.y), b = tubePt(mid, max(0.0, sh.y - 0.1));
+    float d = sdSeg(p, a, b);
+    col += vec3(1.0, 1.0, 0.7) * (lineGlow(d, lw * 1.6) * 1.8 + exp(-d * 85.0) * 0.5);
+    col += white * exp(-length(p - a) * 110.0) * 1.2;
   }
 
-  // bursts: rays flung out from where one was hit; the claw caught, a great star of every colour
+  // bursts: a flash, a ring and rays flung out from where one was hit; the claw caught, a great star of every colour
   for (int k = 0; k < 6; k++) {
     vec4 b = uTBooms[k];
-    if (b.z > 0.7) continue;
+    if (b.z > 1.0) continue;
     vec2 c = tubePt((edgeAt(b.x) + edgeAt(b.x + 1.0)) * 0.5, b.y);
-    float big = b.w > 1.5 ? 3.0 : 1.0;
-    float r0 = b.z * 0.18 * big / (1.0 + 3.0 * b.y), r1 = r0 + 0.03 * big / (1.0 + 3.0 * b.y);
-    if (length(p - c) > r1 + 0.01) continue;
+    float big = b.w > 1.5 ? 3.2 : 1.0;
+    float near = big / (1.0 + 2.2 * b.y);
+    vec3 bc;
+    if (b.w > 1.5) bc = vec3(hash11(floor(uTime * 12.0)) > 0.5 ? 1.0 : 0.25, 1.0, hash11(floor(uTime * 12.0) + 3.0) > 0.5 ? 1.0 : 0.25);
+    else if (b.w > 0.5) bc = vec3(1.0, 1.0, 1.0);
+    else bc = vec3(1.0, 0.82, 0.25);
+    float rb = length(p - c);
+    col += mix(bc, white, 0.5) * exp(-rb / (0.05 * near)) * exp(-b.z * 9.0) * 3.0;
+    float dr = abs(rb - b.z * 0.42 * near);
+    col += bc * (lineGlow(dr, lw * 1.2) * 0.9 + exp(-dr * 70.0) * 0.5) * exp(-b.z * 4.2);
+    col += bc * (b.w > 1.5 ? 0.3 : 0.035) * exp(-b.z * 8.0);
+    if (rb > (b.z * 0.42 + 0.1) * near + 0.03) continue;
+    float r0 = b.z * 0.3 * near, r1 = r0 + 0.075 * near * (1.0 - b.z * 0.5);
     float d = 1e9;
-    for (int s = 0; s < 8; s++) {
-      float a = float(s) * 0.7854 + hash11(float(k) + b.x * 7.0) * 0.6;
+    for (int sp = 0; sp < 10; sp++) {
+      float a = float(sp) * 0.62832 + hash11(float(k) + b.x * 7.0) * 0.6;
+      float len = 0.65 + 0.35 * hash11(float(sp) + b.x);
       vec2 dir = vec2(cos(a), sin(a));
-      d = min(d, sdSeg(p, c + dir * r0, c + dir * r1));
+      d = min(d, sdSeg(p, c + dir * r0 * len, c + dir * r1 * len));
     }
-    vec3 bc = b.w > 1.5 ? vec3(hash11(floor(uTime * 12.0)) > 0.5 ? 1.0 : 0.2, 1.0, hash11(floor(uTime * 12.0) + 3.0) > 0.5 ? 1.0 : 0.2) : b.w > 0.5 ? vec3(1.0, 1.0, 1.0) : vec3(1.0, 1.0, 0.3);
-    col = mix(col, bc, lineGlow(d, lw * 1.2) * (1.0 - b.z / 0.7));
+    col += bc * (lineGlow(d, lw * 1.2) * 1.4 + exp(-d * 90.0) * 0.4) * (1.0 - b.z);
   }
 
-  // the dive: streaks rushing out of the vanishing point
-  if (uTubeFx.z >= 0.0) {
-    vec2 q = p - vanish();
-    float a = atan(q.y, q.x), r = length(q);
-    float id = floor(a * 40.0 / 6.28318);
-    float h = hash11(id + 7.0);
-    float head = fract(h + uTubeFx.z * (1.5 + h));
-    float streak = (1.0 - smoothstep(0.0, 0.003 + r * 0.004, abs(fract(a * 40.0 / 6.28318) - 0.5) * r * 0.16)) * step(abs(r - head * 0.9), 0.05 + head * 0.08);
-    col = mix(col, vec3(1.0), streak * (1.0 - uTubeFx.z * 0.7));
+  // the dive: a flash as it goes, the tube's outline rushing past over and over, the stars gone to streaks
+  if (diving) {
+    float w = uTubeFx.z;
+    col += white * exp(-w * 18.0) * 0.4;
+    if (lane >= 0.0) {
+      float rings = abs(fract(log(max(s, 1e-3)) * 1.6 - w * 7.0) - 0.5);
+      col += mix(tubeC, white, 0.4) * lineGlow(rings * 0.2, 0.014) * (1.0 - w * 0.75);
+    }
+    col += white * (streaks(ang, r, 40.0, 2.8, 7.0) + streaks(ang + 0.03, r, 63.0, 3.6, 17.0)) * (1.0 - w * 0.7);
+  } else {
+    // the next one opening: a last flash of its colour
+    float op = (uClaw.z - uTubeFx.y) / max(uTubeFx.y, 0.1);
+    if (op >= 0.0 && op < 0.5) col += tubeC * exp(-op * 12.0) * 0.55;
   }
+  // caught: the edges flare red
+  col = mix(col, vec3(1.0, 0.1, 0.06), hurt * 0.5 * smoothstep(0.25, 0.9, length(p)));
 
   // the score, top left, in green; the level beside it
   for (int k = 0; k < 5; k++) {
     int dg = int(mod(floor(uClaw.w / pow(10.0, float(4 - k))), 10.0));
-    col = max(col, vec3(0.1, 1.0, 0.2) * digit7((p - vec2(-0.84 + float(k) * 0.045, 0.37)) / 0.04, dg));
+    col += vec3(0.1, 1.0, 0.25) * digit7((p - vec2(-0.89 + float(k) * 0.033, 0.43)) / 0.027, dg) * 1.2;
   }
   int lv = int(mod(uTube.w + 1.0, 100.0));
-  col = max(col, vec3(0.2, 0.4, 1.0) * digit7((p - vec2(-0.58, 0.385)) / 0.03, lv / 10) * float(lv >= 10));
-  col = max(col, vec3(0.2, 0.4, 1.0) * digit7((p - vec2(-0.545, 0.385)) / 0.03, lv - 10 * (lv / 10)));
+  col += tubeC * digit7((p - vec2(-0.89, 0.385)) / 0.022, lv / 10) * float(lv >= 10);
+  col += mix(tubeC, white, 0.3) * digit7((p - vec2(-0.862, 0.385)) / 0.022, lv - 10 * (lv / 10));
   return col;
 }
 `;
@@ -8424,12 +8922,12 @@ export const STYLE_INFO = {
   paddles:     'Neon paddles on the beat; on an accent a paddle misses and blows up',
   invaders:    'A seed-made formation on the beat; aliens burst on the kick',
   rocks:       'A vector ship that flies, dodges and splits the rocks it hits',
-  skatepark:   'A skater on a half-pipe in a warehouse: a trick at every bar line, a grind along the coping through the build, a huge air on the drop, the combo counter',
-  skyrush:     'A jetpack flyer seen from behind over a checkered plain: saucers in waves on the bar, a shot on every beat, a serpent of orbs bursting on the drop',
+  skatepark:   'A skater on a half-pipe in a warehouse, moved by gravity and its own pumping, the camera chasing behind it: an air at every lip, a grind along the coping through the build, a huge air on the drop, the combo counter',
+  skyrush:     'A jetpack flyer free over a checkered plain, running a stride to the beat, seen from another side wherever he goes; the horizon rises with him, foes fly set ways and fire where he was, low things trip him and a serpent of orbs closes each stage, bursting on the drop',
   artillery:   'Two teams of beetles on an island: missiles, grenades and bounces in real physics, each blast solved to land on the snare, the camera zooming and following every shot',
   football:    'Football seen from above, the camera on the ball: a pass on every beat, a run down the wing through the build, the header in on the drop, the crowd going up',
-  tanks:       'A battlefield of green lines through a tank\'s sight: the tank comes round after the enemy on the beat, fires on the backbeat, the radar sweeping once a bar',
-  tube:        'A claw on the rim of a glowing tube, things climbing its lanes on the beat, the shots on the backbeat, a dive down the tube on the drop',
+  tanks:       'A battlefield of solid, lit shapes through a tank\'s sight: an enemy closing in round what stands in its way, the shot held until it is near, fired on the backbeat, the fireball on the next beat',
+  tube:        'A claw on the rim of a tube of light filling the screen, things climbing its lanes on the beat, the shots on the backbeat, its outline rippling out into the stars, a dive down the tube on the drop',
   crossing:    'A hopper crossing traffic and a river of logs to the bays of the far bank, a hop and a step of the traffic on every beat',
   maze:        'A chomper hunting dots round a neon maze, three wisps on the chase',
   bricks:      'A neon brick wall broken on the rhythm by a ball that goes anywhere',

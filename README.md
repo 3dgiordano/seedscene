@@ -16,7 +16,7 @@ Then ride it through half a century, from 1972 to now.**
 
 ![THE JOURNEY: every era from the arcade to the 64k intro, each with its own card, scenes and music](docs/gallery/journey.gif)
 
-`v0.2` · 7 eras · 58 scenes · 36 music styles · 16 displays · 6 sound boards · endless autoplay · runs in your browser · renders to mp4 ·
+`v0.2` · 7 eras · 58 scenes · 36 music styles · 17 displays · 6 sound boards · endless autoplay · runs in your browser · renders to mp4 ·
 no assets, only maths · built with [3dgiordano/agent-plugins](https://github.com/3dgiordano/agent-plugins)
 
 </div>
@@ -166,6 +166,7 @@ yesterday's screens.
 | `arcade` **ARCADE** | the coin-op raster monitor: a few hard, bright colours, heavy bloom, a curved tube |
 | `vector` **VECTOR** | the black-and-white vector monitor: a beam drawing only lines - the outlines of whatever a picture fills - on unlit phosphor, blue-white, sixteen intensities, a glow round every line |
 | `colorvector` **COLOR VECTOR** | the colour vector monitor: lines and outlines only, in seven colours - three guns each on or off - at any intensity |
+| `neonvector` **NEON VECTOR** | the colour vector tube as memory has it: lines of light in any colour, a wide glow round them, and fills and flashes the real beam could never draw |
 | `mono` **MONO** | green phosphor on black, the office PC before colour |
 | `c64` **C64** | the 8-bit home computer's 16 colours, on the family TV |
 | `vhs` **VHS** | a film or a series on tape, played back well: soft brightness the deck sharpens back, colour smeared wide and a little late, lines that wave, the heads switching at the bottom |
@@ -355,19 +356,23 @@ waiting on the verge, now and then misjudging a car; five bays filled light up
 on the drop. In **tube** the climbers take a rung up the lanes on each beat,
 the claw on the rim fires down its lane on the backbeat, and on the drop it
 dives down the tube into the next shape. In **tanks** the tank comes round
-after the enemy on the beat and fires on the backbeat once it is in the sight,
-the radar sweeping once a bar. In **football** every pass lands on a beat, a
+after the enemy on the beat, fires on the backbeat once it is near and in the
+sight, and the enemy goes up on the next beat, the radar sweeping once a bar. In **football** every pass lands on a beat, a
 winger goes down the line through the build, and the header goes in on the
-drop. In **skatepark** the skater reaches a lip on a bar line as often as a
-real crossing allows and does an air there, its time aloft set by gravity,
-grinds along the coping before the drop, and goes twice as high on it, the
-combo banked. In **artillery** two sides of beetles fight from the ends of an island in real
+drop. In **skatepark** the skater is moved by forces, gravity, friction, drag
+and its own pumping, and gravity sets the time of a crossing, so the peak of each air
+comes on the nearest eighth or sixteenth, the time left over in a phrase is
+spent grinding on the coping, and it pumps back up to a 540 on the drop, the
+combo banked. The camera chases it with a weight of its own, and cuts once, to
+the 540 seen from the flat. In **artillery** two sides of beetles fight from the ends of an island in real
 physics: wind, bounces, fuses, blasts that throw them into the sea. Each shot is
 solved to land on the snare, the big ones on the drop, and the camera zooms and
-follows it. In **skyrush** a
-wave of saucers comes in on each bar and the flyer fires on every beat, each
-shot reaching its saucer on the next; a serpent of orbs weaves in through the
-build and bursts on the drop. Same seed, same game, move for move.
+follows it. In **skyrush** the flyer goes where he likes on the screen and is seen
+from another side wherever he goes, running a stride to the beat on the ground;
+the horizon rises with him. Rows of scenery pass him on the beat, his shots land on
+the eighths, foes fly set ways and fire where he was, low things trip him and
+tall ones throw him down for exactly a bar; a serpent of orbs closes each stage
+and bursts on the drop. Same seed, same game, move for move.
 
 They are homages, drawn from nothing but maths — no sprite, no maze, no
 character and no tune is copied from any game. The creatures in the
@@ -391,7 +396,7 @@ Era by era, oldest first. Each one is a memory of its time, made from scratch.
 | ![maze](docs/gallery/maze.png) | ![lcd](docs/gallery/lcd.png) | ![crossing](docs/gallery/crossing.png) |
 | **maze** — the dot-chomping maze chase, in neon: a chomper hunting dots round a mirrored maze, three wisps on its tail, a new maze each time it is cleared. `--scene maze --era 1972 --seed powerpill` | **lcd** — the juggling LCD handheld of 1980, the whole device: a maroon case, round red buttons, a juggler in black segments, the balls hopping cell by cell into a hand on the beat. `--scene lcd --era 1972 --seed juggler` | **crossing** — the road-crossing game of the early-80s arcades, in neon: a hopper crossing traffic and a river of logs to the bays of the far bank, every lane and every hop stepping on the beat. `--scene crossing --era 1972 --seed frogs` |
 | ![tube](docs/gallery/tube.png) | ![tanks](docs/gallery/tanks.png) |   |
-| **tube** — the tube shooter of the colour vector arcades, in glowing lines: a claw on the rim of a tube of many shapes, things climbing its lanes toward it; a dive down the tube on every drop. `--scene tube --era 1972 --seed tempo` | **tanks** — the wireframe tank battle of the vector arcades, through the gunner's sight: green mountains, a moon, blocks and pyramids, the radar in red above; the enemy blown apart on the backbeat. `--scene tanks --era 1972 --seed radar` |   |
+| **tube** — the tube shooter of the colour vector arcades, as memory has it: a claw on the rim of a tube of light filling the screen, things climbing its lanes; a dive down the tube on every drop. `--scene tube --era 1972 --seed tempo` | **tanks** — the wireframe tank battle of the vector arcades, through the gunner's sight: solid, lit shapes on a sliding grid, an enemy closing in round blocks and pyramids; it goes up in a fireball on the beat. `--scene tanks --era 1972 --seed radar` |   |
 
 ### 1982–1989 · home computers, arcades and the video shop
 
@@ -404,7 +409,7 @@ Era by era, oldest first. Each one is a memory of its time, made from scratch.
 | ![timecar](docs/gallery/timecar.png) | ![moonbike](docs/gallery/moonbike.png) | ![dottunnel](docs/gallery/dottunnel.png) |
 | **timecar** — the time-travel car of the 80s, as an idea: a stainless wedge charging two onlookers across a wet night parking lot, its readout reaching 88 on the music's big moment, then gone in a burst, leaving trails of fire. `--scene timecar --era 1982 --seed gigawatts` | **moonbike** — the boy and his friend from the stars, as an idea: a bicycle crossing a huge pale moon in silhouette, a bundle in the basket, its wheels turning a turn a beat. `--scene moonbike --era 1982 --seed moonride` | **dottunnel** — the dot tunnels of the 8-bit demos: rings of dots rushing down a snaking tunnel. `--scene dottunnel --era 1982 --seed warpspeed` |
 | ![plasma](docs/gallery/plasma.png) | ![ball](docs/gallery/ball.png) | ![skyrush](docs/gallery/skyrush.png) |
-| **plasma** — the plasma every demo of the 80s and 90s had: sine waves melting through a cycling palette. *Also 1990–1993 · 1994–1996.* `--scene plasma --era 1982 --seed 1989` | **ball** — the bouncing checkered ball of the Amiga's first demos: red and white, spinning on its tilted axis, bouncing across a grid room and landing on every beat. `--scene ball --era 1982 --seed boing` | **skyrush** — the behind-view arcade shooters of the 80s: a jetpack flyer over a checkered plain rushing at you, columns and bushes going by, saucers in waves; a serpent of orbs bursting on the drop. `--scene skyrush --era 1982 --seed checker` |
+| **plasma** — the plasma every demo of the 80s and 90s had: sine waves melting through a cycling palette. *Also 1990–1993 · 1994–1996.* `--scene plasma --era 1982 --seed 1989` | **ball** — the bouncing checkered ball of the Amiga's first demos: red and white, spinning on its tilted axis, bouncing across a grid room and landing on every beat. `--scene ball --era 1982 --seed boing` | **skyrush** — the behind-view arcade shooters of the 80s: a jetpack flyer free over a rushing checkered plain, seen from another side wherever he goes; saucers on set ways, things to trip on, a serpent of orbs bursting on the drop. `--scene skyrush --era 1982 --seed checker` |
 
 ### 1990–1993 · the demoscene's golden years
 
@@ -620,7 +625,7 @@ seedscene info    [options]     show what a seed composes
 | `--seed <word>` | anything at all; the same word always gives the same demo | random |
 | `--scene <name>` | one of the fifty-eight scenes (`--style`, its old name, works too) | chosen by the seed - one of the era's, if the era is given |
 | `--era <name>` | `auto` `1972` `1982` `1990` `1994` `1997` `2000` `2010` — or any year inside one, or its old name (`arcade` `c64` `amiga` `dos` `console` `handheld` `y2k` `modern`) | an era the scene belongs to |
-| `--display <name>` | `auto` `bw` `arcade` `vector` `colorvector` `mono` `c64` `vhs` `ega` `amiga` `vga` `snes` `composite` `gameboy` `nokia` `svga` `modern` | the screen: on `auto` each scene its own, or its era's |
+| `--display <name>` | `auto` `bw` `arcade` `vector` `colorvector` `neonvector` `mono` `c64` `vhs` `ega` `amiga` `vga` `snes` `composite` `gameboy` `nokia` `svga` `modern` | the screen: on `auto` each scene its own, or its era's |
 | `--board <name>` | `auto` `hifi` `paula` `opl3` `awe32` `ym` `sid` | the sound board: on `auto` each scene its own, or its era's |
 | `--music <name>` | `auto` or one of the thirty-six styles | music of the era |
 | `--res <WxH\|preset>` | `854x480`, or `240p` `360p` `480p` `576p` `720p` `1080p` (or `--width` and `--height`) | `480p` |

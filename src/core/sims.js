@@ -3406,6 +3406,7 @@ export class TubeSim extends PlannedSim {
     for (let i = 0; i < TUBE_BOOMS; i++) { const b = bl[i]; booms.set(b ? [b.lane, b.depth, t - b.t, b.kind] : [0, 0, 99, 0], i * 4); }
     const warp = recent(this.warps, t, 1)[0], death = recent(this.deaths, t, 1)[0];
     const clawGone = t < this.down && (!warp || t >= warp.t) && death && t - death.t < this.grid.barSec * 2 && t < this.down;
+    const lastShot = this.shots.reduce((w, s) => (s.t0 <= t && s.t0 > w ? s.t0 : w), -1);
     return {
       uRim: { v: rim, kind: '2fv' },
       uTube: { v: [L.shape.lanes, L.shape.closed ? 1 : 0, L.shape.vanish, L.level], kind: '4f' },
@@ -3413,7 +3414,7 @@ export class TubeSim extends PlannedSim {
       uFoes: { v: foes, kind: '4fv' },
       uTShots: { v: shots, kind: '4fv' },
       uTBooms: { v: booms, kind: '4fv' },
-      uTubeFx: { v: [death ? t - death.t : 99, this.grid.barSec, warp && t - warp.t < this.grid.barSec ? (t - warp.t) / this.grid.barSec : -1, 0], kind: '4f' },
+      uTubeFx: { v: [death ? t - death.t : 99, this.grid.barSec, warp && t - warp.t < this.grid.barSec ? (t - warp.t) / this.grid.barSec : -1, lastShot < 0 ? 99 : t - lastShot], kind: '4f' },
     };
   }
 
@@ -3421,84 +3422,271 @@ export class TubeSim extends PlannedSim {
 }
 
 // ---------------------------------------------------------------------------
-// The wireframe tank: a battlefield of lines through a tank's sight
+// The wireframe tank: a battlefield of solid, lit shapes through a tank's sight
 // ---------------------------------------------------------------------------
 
-export const TANK_SEGS = 128;
+export const TANK_SEGS = 180;
+export const TANK_FACES = 36;
+export const TANK_BLASTS = 4;
+export const TANK_WORLD = 240;               // the battlefield repeats every this many units, so it never runs out
+export const TANK_REACH = 5.6;               // how far a tank keeps its middle from anything: its length, with the gun swung round
 const TANK_F = 1.45;                         // the sight's focal length, in screen units
-const TANK_EYE = 1.0;                        // how high the gunner sits
-const TANK_HORIZON = -0.03;                  // where level ground meets the sky on the screen
-const TANK_TOP = 0.29;                       // the world stops under the strip of the radar and the score
-const TANK_WORLD = 240;                      // the battlefield repeats every this many units, so it never runs out
-const TANK_TURN = 0.42;                           // radians the hull comes round in a beat, at most
-const SHELL = 34;                            // units a shell flies in a beat
+const TANK_EYE = 2.7;                        // how high the gunner sits: over the enemy's turret, looking down on it
+const TANK_HORIZON = 0.1;                    // where level ground meets the sky on the screen
+const TANK_TURN = 0.42;                      // radians the hull comes round in a beat, at most
+const TANK_ROLL = 1.4;                       // units it rolls in a beat
+const TANK_FOE_ROLL = 2.0;                   // the enemy's, closing in
+export const TANK_RANGE = 18;                // it holds its fire until the enemy is this near, large in the sight
+const TANK_CLOSE = 11.5;                       // the enemy comes no closer than this while it can see the tank
+const TANK_APART = 10;                       // and neither ever gets nearer than this
+const SHELL = 26;                            // units an enemy shell flies in a beat
+const SHELL_G = 14;                          // gravity on a shell, in units a second a second
+const TANK_NEAR = 0.6;                       // the near plane
+const TANK_GUN = [1.54, 4.2];                // the tank's own muzzle, how high and how far ahead: on the screen, the tip of the gun drawn there
 
-// models: edges between corners, in their own units (x across, y up, z forward)
-function boxEdges(w, h, d, x = 0, y = 0, z = 0, taper = 0) {
-  const c = [];
-  for (const yy of [0, h]) for (const zz of [-d / 2, d / 2]) for (const xx of [-w / 2, w / 2]) {
-    const k = yy > 0 ? 1 - taper : 1;
-    c.push([x + xx * k, y + yy, z + zz * k]);
+// The shapes are solids, not bare lines: convex parts with faces, so what is behind a face can be hidden and a
+// face can be lit. Each face's corners run counter-clockwise from outside.
+const sub3 = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const cross3 = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const dot3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+function solid(v, faces) {
+  const c = v.reduce((s, p) => [s[0] + p[0] / v.length, s[1] + p[1] / v.length, s[2] + p[2] / v.length], [0, 0, 0]);
+  const f = faces.map((ids) => {
+    const a = v[ids[0]], n = cross3(sub3(v[ids[1]], a), sub3(v[ids[2]], a));
+    return dot3(n, sub3(a, c)) < 0 ? ids.slice().reverse() : ids;
+  });
+  const edges = new Map();
+  f.forEach((ids, k) => ids.forEach((a, j) => {
+    const b = ids[(j + 1) % ids.length], key = Math.min(a, b) * 100 + Math.max(a, b);
+    if (!edges.has(key)) edges.set(key, { a, b, f: [] });
+    edges.get(key).f.push(k);
+  }));
+  return { v, f, e: [...edges.values()], c };
+}
+const BOX_FACES = [[0, 1, 3, 2], [4, 5, 7, 6], [0, 1, 5, 4], [2, 3, 7, 6], [0, 2, 6, 4], [1, 3, 7, 5]];
+// a block: a footprint at its foot and another at its top, each a width and how far it runs to the rear and the front
+function block({ w0, r0, f0, w1 = w0, r1 = r0, f1 = f0, y0 = 0, y1, x = 0, z = 0 }) {
+  const v = [];
+  for (const [yy, w, re, fr] of [[y0, w0, r0, f0], [y1, w1, r1, f1]]) {
+    for (const zz of [re, fr]) for (const xx of [-w / 2, w / 2]) v.push([x + xx, yy, z + zz]);
   }
-  const e = [[0, 1], [2, 3], [0, 2], [1, 3], [4, 5], [6, 7], [4, 6], [5, 7], [0, 4], [1, 5], [2, 6], [3, 7]];
-  return e.map(([a, b]) => [c[a], c[b]]);
+  return solid(v, BOX_FACES);
 }
-function pyramidEdges(w, h) {
-  const b = [[-w / 2, 0, -w / 2], [w / 2, 0, -w / 2], [w / 2, 0, w / 2], [-w / 2, 0, w / 2]], top = [0, h, 0];
-  return [[b[0], b[1]], [b[1], b[2]], [b[2], b[3]], [b[3], b[0]], ...b.map((p) => [p, top])];
+const cuboid = (w, h, d) => block({ w0: w, r0: -d / 2, f0: d / 2, y1: h });
+function pyramid(w, h) {
+  const a = w / 2;
+  return solid([[-a, 0, -a], [a, 0, -a], [a, 0, a], [-a, 0, a], [0, h, 0]], [[0, 1, 2, 3], [0, 1, 4], [1, 2, 4], [2, 3, 4], [3, 0, 4]]);
 }
-// the enemy: a low hull, wider at the tracks than on top, a turret and its gun - drawn here, no one's tank
-const TANK_MODEL = [
-  ...boxEdges(3.2, 1.0, 4.6, 0, 0, 0, 0.18),
-  ...boxEdges(1.7, 0.7, 2.0, 0, 1.0, -0.3, 0.12),
-  [[0, 1.35, 0.7], [0, 1.35, 3.4]],
-  [[-0.12, 1.25, 0.7], [-0.12, 1.25, 3.4]],
+// The enemy: drawn here, no one's tank. Long and low, tracks the whole length of it and sloped at both ends, the hull
+// sloped down to the front between them, a low turret set back that turns on its own, a long gun well past the nose.
+const TRACK_X = 1.38;
+const TANK_BODY = [
+  block({ w0: 0.92, r0: -2.35, f0: 2.45, r1: -2.95, f1: 3.05, y1: 0.98, x: -TRACK_X }),
+  block({ w0: 0.92, r0: -2.35, f0: 2.45, r1: -2.95, f1: 3.05, y1: 0.98, x: TRACK_X }),
+  block({ w0: 2.5, r0: -2.85, f0: 3.0, w1: 2.1, r1: -2.45, f1: 0.95, y0: 0.5, y1: 1.5 }),
 ];
-const OBSTACLES = [() => boxEdges(4, 4, 4), () => pyramidEdges(5, 5.5), () => boxEdges(7, 1.8, 2.5), () => pyramidEdges(3, 7)];
+const TANK_TURRET_AT = -0.45;                // where the turret turns, back of the hull's middle
+const TANK_TOP = [
+  block({ w0: 2.1, r0: -1.3, f0: 1.15, w1: 1.45, r1: -1.05, f1: 0.5, y0: 1.5, y1: 2.25 }),
+  block({ w0: 0.2, r0: 0.7, f0: 4.0, y0: 1.72, y1: 1.92 }),
+  block({ w0: 0.32, r0: 4.0, f0: 4.65, y0: 1.66, y1: 1.98 }),
+];
+const TANK_MUZZLE = [0, 1.82, 4.65];
+// the blocks and pyramids of the plain
+const OBSTACLES = [() => cuboid(4.4, 4.2, 4.4), () => pyramid(6, 6), () => cuboid(8, 2.0, 3), () => pyramid(3.6, 7.5), () => cuboid(3, 6.5, 3)];
+
+const hypot2 = (x, z) => Math.sqrt(x * x + z * z);
+/** Counter-clockwise convex hull of points on the screen. */
+function hull2(pts) {
+  const p = pts.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  if (p.length < 3) return p;
+  const side = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lo = [], hi = [];
+  for (const q of p) { while (lo.length > 1 && side(lo[lo.length - 2], lo[lo.length - 1], q) <= 0) lo.pop(); lo.push(q); }
+  for (let i = p.length - 1; i >= 0; i--) { const q = p[i]; while (hi.length > 1 && side(hi[hi.length - 2], hi[hi.length - 1], q) <= 0) hi.pop(); hi.push(q); }
+  return lo.slice(0, -1).concat(hi.slice(0, -1));
+}
+/** A line on the screen with what a convex shape in front of it hides taken out: nothing, or one or two lines left. */
+function cutBehind(a, b, h) {
+  if (h.pts.length < 3) return [[a, b]];
+  if (Math.max(a[0], b[0]) < h.lo[0] || Math.min(a[0], b[0]) > h.hi[0] || Math.max(a[1], b[1]) < h.lo[1] || Math.min(a[1], b[1]) > h.hi[1]) return [[a, b]];
+  let t0 = 0, t1 = 1;
+  const n = h.pts.length;
+  for (let i = 0; i < n; i++) {
+    const A = h.pts[i], B = h.pts[(i + 1) % n];
+    const ex = B[0] - A[0], ey = B[1] - A[1];
+    const s0 = ex * (a[1] - A[1]) - ey * (a[0] - A[0]) - 1e-5, s1 = ex * (b[1] - A[1]) - ey * (b[0] - A[0]) - 1e-5;
+    if (s0 < 0 && s1 < 0) return [[a, b]];
+    if (s0 < 0) t0 = Math.max(t0, s0 / (s0 - s1));
+    else if (s1 < 0) t1 = Math.min(t1, s0 / (s0 - s1));
+  }
+  if (t0 >= t1) return [[a, b]];
+  const at = (t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+  const out = [];
+  if (t0 > 1e-4) out.push([a, at(t0)]);
+  if (t1 < 1 - 1e-4) out.push([at(t1), b]);
+  return out;
+}
+/** A line on the screen cut to the board and a little past it (so it can roll and shake), or null. */
+function cutToBoard(a, b) {
+  let t0 = 0, t1 = 1;
+  const dx = b[0] - a[0], dy = b[1] - a[1];
+  for (const [p, q] of [[-dx, a[0] + 1.15], [dx, 1.15 - a[0]], [-dy, a[1] + 0.8], [dy, 0.8 - a[1]]]) {
+    if (Math.abs(p) < 1e-9) { if (q < 0) return null; continue; }
+    const r = q / p;
+    if (p < 0) { if (r > t1) return null; t0 = Math.max(t0, r); } else { if (r < t0) return null; t1 = Math.min(t1, r); }
+  }
+  return [[a[0] + dx * t0, a[1] + dy * t0], [a[0] + dx * t1, a[1] + dy * t1]];
+}
 
 /**
  * The wireframe tank: the battlefield seen through the gunner's sight -
  * mountains round the horizon, a moon, blocks and pyramids, and an enemy tank
- * somewhere about. The tank rolls forward and comes round after the enemy on
- * the beat; once it is in the sight it fires on the backbeat, where the snare
- * is, and the enemy flies apart where the shell lands. The radar sweeps round
- * once a bar; the enemy fires back now and then, its shells going past.
+ * closing in. Both tanks are things in that world: they steer round what stands
+ * in their way and are never let into it. The enemy comes on with its turret
+ * tracking the tank; the tank comes round after it on the beat and holds its
+ * fire until it is near, large in the sight and with nothing between them; then
+ * it fires on the backbeat, where the snare is, the shell lands on the next beat
+ * and the enemy flies apart. The radar sweeps round once a bar. The enemy fires
+ * back now and then, its turret laid a little to one side of the tank. Every shell
+ * leaves its gun's muzzle and flies under gravity until it meets the ground or a
+ * block or pyramid, where it bursts.
  */
 export class TankSim extends PlannedSim {
   reset() {
     const r = new Rng(this.seed, 'tank-field');
     this.rng = new Rng(this.seed, 'tank-sim');
-    this.obstacles = Array.from({ length: 14 }, () => {
-      const a = r.float(0, Math.PI * 2), d = r.float(18, TANK_WORLD / 2);
-      return { x: Math.sin(a) * d, z: Math.cos(a) * d, rot: r.float(0, Math.PI), edges: r.pick(OBSTACLES)() };
-    });
+    // the blocks and pyramids, each far enough from the next for a tank to pass between
+    this.obstacles = [];
+    const across = (a, b) => hypot2(wrapTo(a.x - b.x, TANK_WORLD / 2), wrapTo(a.z - b.z, TANK_WORLD / 2));
+    for (let tries = 0; this.obstacles.length < 30 && tries < 900; tries++) {
+      const s = r.pick(OBSTACLES)(), rot = r.float(0, Math.PI);
+      const c = Math.cos(rot), sn = Math.sin(rot);
+      const v = s.v.map((P) => [P[0] * c + P[2] * sn, P[1], -P[0] * sn + P[2] * c]);
+      const o = { x: r.float(-TANK_WORLD / 2, TANK_WORLD / 2), z: r.float(-TANK_WORLD / 2, TANK_WORLD / 2), s, v, r: Math.max(...v.map((P) => hypot2(P[0], P[2]))) };
+      if (hypot2(o.x, o.z) < o.r + TANK_REACH + 4) continue;
+      if (this.obstacles.some((q) => across(o, q) < o.r + q.r + TANK_REACH * 2 + 1)) continue;
+      this.obstacles.push(o);
+    }
     // the mountains: a ring of ridges at the horizon, higher in ranges
     this.ridge = [];
     const phase = r.float(0, 6);
-    for (let i = 0; i < 96; i++) {
+    for (let i = 0; i < 72; i++) {
       // peaks and saddles in turn, higher where a range rises
-      const range = 0.55 + 0.45 * Math.sin(i / 96 * Math.PI * 2 * 3 + phase);
-      this.ridge.push(i % 2 ? range * r.float(0.045, 0.1) : range * r.float(0.0, 0.03));
+      const range = 0.55 + 0.45 * Math.sin(i / 72 * Math.PI * 2 * 3 + phase);
+      this.ridge.push(i % 2 ? range * r.float(0.07, 0.15) : range * r.float(0.01, 0.045));
     }
     this.moon = r.float(0, Math.PI * 2);
+    const sun = r.float(0, Math.PI * 2);
+    this.light = [Math.sin(sun) * 0.62, 0.62, Math.cos(sun) * 0.48];   // what lights the faces, from high up on one side
     this.clock = 0;
     this.kept = 0;
     this.score = 0;
     this.heading = new Track(0);
     this.pos = [{ t: -1e9, x: 0, z: 0, h: 0 }];   // where the tank is at each beat
     this.x = 0; this.z = 0; this.h = 0;
-    this.foe = null;                // {x, z, h, keys: [{t, x, z, h}], born}
+    this.foe = null;                // {x, z, h, g, d, side, keys: [{t, x, z, h, g, d}], born}
     this.foes = [];                 // every enemy, kept while it can still be seen
-    this.shells = [];               // {t0, t1, x0, z0, x1, z1, mine}
-    this.blasts = [];               // {t, x, z, h}
-    this.shots = [];                // {t} the tank's own, for the sight's flash
+    this.shells = [];               // {t0, t1, x0, y0, z0, x1, y1, z1, mine}
+    this.blasts = [];               // {t, x, z, h, g, big, kind: 0 a shell bursting, 1 the enemy, 2 the enemy on the drop}
+    this.muzzles = [];              // {t, x, z} the enemy's gun going off
+    this.shots = [];                // {t, range} the tank's own
     this.next = 0;                  // when the next enemy rolls in
   }
 
+  /** An obstacle's copy nearest a place: the world repeats. */
+  nearCopy(o, x, z) {
+    return [o.x + Math.round((x - o.x) / TANK_WORLD) * TANK_WORLD, o.z + Math.round((z - o.z) / TANK_WORLD) * TANK_WORLD];
+  }
+
+  /** The nearest place to (x, z) that a tank fits: pushed straight out of anything it would be in. */
+  clear(x, z) {
+    for (const o of this.obstacles) {
+      const [cx, cz] = this.nearCopy(o, x, z);
+      const dx = x - cx, dz = z - cz, d = hypot2(dx, dz), R = o.r + TANK_REACH;
+      if (d < R) { const k = R / Math.max(d, 1e-3); x = cx + dx * k; z = cz + dz * k; }
+    }
+    return [x, z];
+  }
+
+  /** Whether nothing stands on the line between two places. */
+  lineClear(x0, z0, x1, z1) {
+    return this.lineHit(x0, z0, x1, z1) === null;
+  }
+
+  /** How far along the line (0 to 1) it first meets an obstacle, or null. */
+  lineHit(x0, z0, x1, z1) {
+    const dx = x1 - x0, dz = z1 - z0, L2 = dx * dx + dz * dz;
+    let best = null;
+    for (const o of this.obstacles) {
+      const [cx, cz] = this.nearCopy(o, (x0 + x1) / 2, (z0 + z1) / 2);
+      const fx = x0 - cx, fz = z0 - cz;
+      const b = (fx * dx + fz * dz) / Math.max(L2, 1e-9), c = (fx * fx + fz * fz - o.r * o.r) / Math.max(L2, 1e-9);
+      const disc = b * b - c;
+      if (disc < 0) continue;
+      const u = -b - Math.sqrt(disc);
+      if (u > 1) continue;
+      if (u < 0 && -b + Math.sqrt(disc) < 0) continue;
+      const hit = Math.max(0, u);
+      if (best === null || hit < best) best = hit;
+    }
+    return best;
+  }
+
+  /** The heading to steer for: the one wanted, or if something stands in its way, the one that just passes it. */
+  around(x, z, want, step) {
+    let best = null;
+    for (const o of this.obstacles) {
+      const [cx, cz] = this.nearCopy(o, x, z);
+      const dx = cx - x, dz = cz - z, d = hypot2(dx, dz), R = o.r + TANK_REACH + 0.5;
+      if (d > R + step * 7) continue;
+      const to = Math.atan2(dx, dz), off = angDiff(want, to);
+      if (Math.abs(off) >= Math.PI / 2 || d * Math.abs(Math.sin(off)) >= R) continue;
+      if (!best || d < best.d) best = { d, to, off, R };
+    }
+    if (!best) return want;
+    const side = best.off >= 0 ? 1 : -1;
+    return best.to + side * Math.asin(Math.min(1, best.R / Math.max(best.d, 1e-3)));
+  }
+
+  /** Where the enemy lays its gun, round the tank: ahead of it, or now and then past it, and always to one side. */
+  layOff() {
+    return { ahead: this.rng.bool(0.25) ? -6 : this.rng.float(4, 7), wide: this.rng.float(3, 5.5) * (this.rng.bool() ? 1 : -1) };
+  }
+
+  /** A shell at u of its flight (0 the muzzle, 1 where it was aimed): straight over the ground, falling under gravity. */
+  shellAt(s, u) {
+    return [
+      s.x0 + (s.x1 - s.x0) * u,
+      s.y0 + (s.y1 - s.y0) * u + 0.5 * SHELL_G * s.T * s.T * u * (1 - u),
+      s.z0 + (s.z1 - s.z0) * u,
+    ];
+  }
+
+  /** Where a shell's flight first meets a block or a pyramid, its real faces: how far along and how high, or null. */
+  shellHit(s) {
+    for (let k = 1; k <= 48; k++) {
+      const u = k / 48, P = this.shellAt(s, u);
+      for (const o of this.obstacles) {
+        const [cx, cz] = this.nearCopy(o, P[0], P[2]);
+        const Q = [P[0] - cx, P[1], P[2] - cz];
+        if (hypot2(Q[0], Q[2]) > o.r) continue;
+        const inside = o.s.f.every((ids) => {
+          const a = o.v[ids[0]];
+          return dot3(cross3(sub3(o.v[ids[1]], a), sub3(o.v[ids[2]], a)), sub3(Q, a)) <= 0;
+        });
+        if (inside) return { u, y: P[1] };
+      }
+    }
+    return null;
+  }
+
   spawn(g) {
-    const a = this.h + this.rng.float(-2.2, 2.2), d = this.rng.float(55, 80);
-    const f = { x: this.x + Math.sin(a) * d, z: this.z + Math.cos(a) * d, h: a + Math.PI + this.rng.float(-0.6, 0.6), keys: [], born: g };
-    f.keys.push({ t: g, x: f.x, z: f.z, h: f.h });
+    const a = this.h + this.rng.float(-1.25, 1.25), d = this.rng.float(34, 48);
+    const [x, z] = this.clear(this.x + Math.sin(a) * d, this.z + Math.cos(a) * d);
+    const h = Math.atan2(this.x - x, this.z - z) + this.rng.float(-0.4, 0.4);
+    const f = { x, z, h, g: h, d: 0, side: this.rng.bool() ? 1 : -1, keys: [], fires: [], miss: this.layOff(), born: g };
+    f.keys.push({ t: g, x, z, h, g: h, d: 0 });
     this.foe = f;
     this.foes.push(f);
   }
@@ -3510,47 +3698,97 @@ export class TankSim extends PlannedSim {
     const perBar = Math.ceil(this.grid.steps / 4);
     const inBar = Math.round(((g / this.grid.barSec) % 1) * perBar) % perBar;
     if (!this.foe && g >= this.next) this.spawn(g);
-    let fire = false;
+    let fire = false, aim, hold = false;
     if (this.foe) {
       const f = this.foe;
-      // the enemy comes on, turning toward the tank and away again
+      // the enemy comes on, weaving; close up it holds where it can see the tank, or goes round to where it can
       const toMe = Math.atan2(this.x - f.x, this.z - f.z);
-      f.h += Math.max(-0.25, Math.min(0.25, angDiff(toMe + Math.sin(g * 0.7) * 0.6, f.h)));
-      const dist = Math.hypot(this.x - f.x, this.z - f.z);
-      if (dist > 22) { f.x += Math.sin(f.h) * 1.4; f.z += Math.cos(f.h) * 1.4; }
-      f.keys.push({ t: g, x: f.x, z: f.z, h: f.h });
-      // now and then it fires, and misses
-      if (dist < 60 && this.rng.bool(0.12) && !this.shells.some((s) => !s.mine && s.t1 > g)) {
-        const miss = this.rng.bool() ? 3 : -3;
-        const side = [Math.cos(this.h) * miss, -Math.sin(this.h) * miss];
-        this.shells.push({ t0: g, t1: g + dist / SHELL * spb * 1.2, x0: f.x, z0: f.z, x1: this.x + side[0] - (f.x - this.x) * 0.3, z1: this.z + side[1] - (f.z - this.z) * 0.3, mine: false });
+      const far = hypot2(this.x - f.x, this.z - f.z);
+      const seen = this.lineClear(f.x, f.z, this.x, this.z);
+      let wants = toMe + Math.sin(g * 0.7) * 0.5, step = TANK_FOE_ROLL;
+      if (far <= TANK_CLOSE) { if (seen) step = 0; else wants = toMe + f.side * Math.PI / 2; }
+      if (step) wants = this.around(f.x, f.z, wants, step);
+      const tf = Math.max(-0.35, Math.min(0.35, angDiff(wants, f.h)));
+      f.h += tf;
+      if (step) {
+        const go = step * (1 - 0.4 * Math.abs(tf) / 0.35);
+        const [nx, nz] = this.clear(f.x + Math.sin(f.h) * go, f.z + Math.cos(f.h) * go);
+        if (hypot2(nx - this.x, nz - this.z) >= TANK_APART) { f.d += hypot2(nx - f.x, nz - f.z); f.x = nx; f.z = nz; }
       }
-      // the tank comes round after it
+      // its turret comes round to where it means to land a shell, a little to one side of the tank
+      const dist = hypot2(this.x - f.x, this.z - f.z);
+      const ux = (f.x - this.x) / dist, uz = (f.z - this.z) / dist;
+      const ax = this.x + ux * f.miss.ahead + uz * f.miss.wide, az = this.z + uz * f.miss.ahead - ux * f.miss.wide;
+      const px = f.x + Math.sin(f.h) * TANK_TURRET_AT, pz = f.z + Math.cos(f.h) * TANK_TURRET_AT;
+      const lay = Math.atan2(ax - px, az - pz);
+      f.g += Math.max(-0.5, Math.min(0.5, angDiff(lay, f.g)));
+      f.keys.push({ t: g, x: f.x, z: f.z, h: f.h, g: f.g, d: f.d });
+      // laid, and not yet on top of the tank, it fires now and then: the shell leaves the muzzle along the gun and
+      // flies to the ground beside the tank, unless it meets a block or a pyramid on the way
+      if (dist >= 22 && dist < 44 && Math.abs(angDiff(lay, f.g)) < 0.05 && this.rng.bool(0.22) && !this.shells.some((s) => !s.mine && s.t1 > g)) {
+        const sg = Math.sin(f.g), cg = Math.cos(f.g);
+        const mx = px + sg * TANK_MUZZLE[2], mz = pz + cg * TANK_MUZZLE[2];
+        const reach = hypot2(ax - px, az - pz) - TANK_MUZZLE[2];
+        const T = this.grid.next(g + Math.max(0.3, reach / SHELL) * spb - 1e-6, 2) - g;
+        const shell = { t0: g, T, t1: g + T, x0: mx, y0: TANK_MUZZLE[1], z0: mz, x1: mx + sg * reach, y1: 0, z1: mz + cg * reach, mine: false, by: f };
+        const hit = this.shellHit(shell);
+        // (with a block or a pyramid right in front of the gun it holds its fire)
+        if (!hit || hit.u * reach >= 10) {
+          if (hit) shell.t1 = g + T * hit.u;
+          const end = this.shellAt(shell, hit ? hit.u : 1);
+          this.shells.push(shell);
+          this.blasts.push({ t: shell.t1, x: end[0], y: Math.max(0, end[1]), z: end[2], h: 0, g: 0, kind: 0 });
+          this.muzzles.push({ t: g, x: mx, z: mz });
+          f.fires.push(g);
+          f.miss = this.layOff();
+        }
+      }
+      // the tank comes round after it: straight at it when it can shoot, round whatever is in the way when not
       const want = Math.atan2(f.x - this.x, f.z - this.z);
-      const d = angDiff(want, this.h);
-      const turn = Math.max(-TANK_TURN, Math.min(TANK_TURN, d));
+      const open = this.lineClear(this.x, this.z, f.x, f.z);
+      const inRange = dist <= TANK_RANGE;
+      aim = open && inRange ? want : this.around(this.x, this.z, want, TANK_ROLL);
+      const turn = Math.max(-TANK_TURN, Math.min(TANK_TURN, angDiff(aim, this.h)));
       this.heading.set(g, this.h);
       this.h += turn;
       this.heading.set(g + spb * 0.6, this.h);
-      // in the sight: it fires on the backbeat, and the shell lands where the enemy is
+      hold = open && inRange;
+      // near, in the sight and nothing between: it fires on the backbeat, the shell landing on the next beat
       const busy = this.shells.some((s) => s.mine && s.t1 > g);
-      if (Math.abs(angDiff(want, this.h)) < 0.04 && dist < 75 && inBar % 2 === 1 && !busy) {
-        const t1 = g + Math.max(0.3, dist / SHELL) * spb;
-        this.shells.push({ t0: g, t1, x0: this.x, z0: this.z, x1: f.x, z1: f.z, mine: true });
-        this.shots.push({ t: g });
-        this.blasts.push({ t: t1, x: f.x, z: f.z, h: f.h, big: this.grid.isAccent(this.grid.next(t1 - 1e-6, 16)) });
+      // (the view must already be on it: the shell leaves the gun as it is seen, not as it will be)
+      if (open && inRange && Math.abs(angDiff(want, this.h)) < 0.04 && Math.abs(turn) < 0.05 && inBar % 2 === 1 && !busy) {
+        const t1 = g + spb;
+        // (the enemy rolls on while the shell flies, if that leaves the two apart)
+        let [lx, lz] = this.clear(f.x + Math.sin(f.h) * (step ? TANK_FOE_ROLL : 0), f.z + Math.cos(f.h) * (step ? TANK_FOE_ROLL : 0));
+        if (hypot2(lx - this.x, lz - this.z) < TANK_APART) { lx = f.x; lz = f.z; }
+        // (the shell leaves the gun where the gun is now: the hull's last small turn is still to come)
+        const h0 = this.h - turn;
+        const gx = this.x + Math.sin(h0) * TANK_GUN[1], gz = this.z + Math.cos(h0) * TANK_GUN[1];
+        this.shells.push({ t0: g, T: spb, t1, x0: gx, y0: TANK_GUN[0], z0: gz, x1: lx, y1: 1.2, z1: lz, mine: true });
+        this.shots.push({ t: g, range: dist });
+        this.blasts.push({ t: t1, x: lx, y: 1.2, z: lz, h: f.h, g: f.g, kind: this.grid.isAccent(t1) ? 2 : 1 });
         f.dead = t1;
-        f.keys.push({ t: t1, x: f.x, z: f.z, h: f.h, gone: true });
+        f.keys.push({ t: t1, x: lx, z: lz, h: f.h, g: f.g, d: f.d + hypot2(lx - f.x, lz - f.z), gone: true });
         this.score += 1000;
         this.foe = null;
-        this.next = Math.ceil((t1 + this.grid.barSec) / this.grid.barSec) * this.grid.barSec;
+        this.next = Math.ceil((t1 + this.grid.barSec * 0.5) / this.grid.barSec) * this.grid.barSec;
         fire = true;
       }
+    } else {
+      // nothing to shoot: it rolls on, looking about (once its last shell has landed)
+      hold = this.shells.some((s) => s.mine && s.t1 >= g - 1e-6);   // (a step is taken over the beat before it: this one too)
+      aim = hold ? this.h : this.around(this.x, this.z, this.h + Math.sin(g * 0.31) * 0.3, TANK_ROLL);
+      const turn = Math.max(-TANK_TURN, Math.min(TANK_TURN, angDiff(aim, this.h)));
+      this.heading.set(g, this.h);
+      this.h += turn;
+      this.heading.set(g + spb * 0.6, this.h);
     }
-    // it rolls forward when it is not turning hard
-    if (!fire && (!this.foe || Math.abs(angDiff(Math.atan2(this.foe.x - this.x, this.foe.z - this.z), this.h)) < 0.3)) {
-      this.x += Math.sin(this.h) * 1.2;
-      this.z += Math.cos(this.h) * 1.2;
+    // it rolls forward, slower through a hard turn; it stops to shoot, and is never let into anything
+    if (!fire && !hold) {
+      const off = Math.abs(angDiff(aim, this.h));
+      const go = TANK_ROLL * (1 - 0.7 * Math.min(1, off / 0.6));
+      const [nx, nz] = this.clear(this.x + Math.sin(this.h) * go, this.z + Math.cos(this.h) * go);
+      if (!this.foe || hypot2(nx - this.foe.x, nz - this.foe.z) >= TANK_APART) { this.x = nx; this.z = nz; }
     }
     this.pos.push({ t: g, x: this.x, z: this.z, h: this.h });
   }
@@ -3561,7 +3799,8 @@ export class TankSim extends PlannedSim {
     this.foes = this.foes.filter((f) => !f.dead || f.dead > t - 3);
     for (const f of this.foes) while (f.keys.length > 3 && f.keys[1].t < t - 2) f.keys.shift();
     this.shells = this.shells.filter((s) => s.t1 > t - 1);
-    this.blasts = this.blasts.filter((b) => b.t > t - 4);
+    this.blasts = this.blasts.filter((b) => b.t > t - 7);
+    this.muzzles = this.muzzles.filter((b) => b.t > t - 2);
     this.shots = this.shots.filter((b) => b.t > t - 2);
     this.heading.forget(t - 2);
   }
@@ -3581,96 +3820,271 @@ export class TankSim extends PlannedSim {
     if (i < 0 || f.keys[i].gone) return null;
     const a = f.keys[i], b = f.keys[Math.min(i + 1, f.keys.length - 1)];
     const u = b.t > a.t ? Math.min(1, (t - a.t) / (b.t - a.t)) : 0;
-    return { x: a.x + (b.x - a.x) * u, z: a.z + (b.z - a.z) * u, h: a.h + angDiff(b.h, a.h) * u };
+    return { x: a.x + (b.x - a.x) * u, z: a.z + (b.z - a.z) * u, h: a.h + angDiff(b.h, a.h) * u, g: a.g + angDiff(b.g, a.g) * u, d: a.d + (b.d - a.d) * u };
   }
 
   uniforms(t) {
     this.advanceTo(t);
     const me = this.placeAt(t);
     const sh = Math.sin(me.h), ch = Math.cos(me.h);
-    const segs = [];
-    // a segment of the world, projected through the sight and cut at the near plane and the screen's edges
-    const put = (A, B) => {
-      if (segs.length >= TANK_SEGS * 4) return;
-      const cam = (P) => {
-        const dx = P[0] - me.x, dz = P[2] - me.z;
-        return [dx * ch - dz * sh, P[1] - TANK_EYE, dx * sh + dz * ch];
-      };
-      let a = cam(A), b = cam(B);
-      const near = 0.6;
-      if (a[2] < near && b[2] < near) return;
-      if (a[2] < near) { const u = (near - a[2]) / (b[2] - a[2]); a = a.map((v, k) => v + (b[k] - v) * u); }
-      if (b[2] < near) { const u = (near - b[2]) / (a[2] - b[2]); b = b.map((v, k) => v + (a[k] - v) * u); }
-      const pa = [a[0] / a[2] * TANK_F, TANK_HORIZON + a[1] / a[2] * TANK_F], pb = [b[0] / b[2] * TANK_F, TANK_HORIZON + b[1] / b[2] * TANK_F];
-      if (Math.max(pa[0], pb[0]) < -1 || Math.min(pa[0], pb[0]) > 1) return;
-      segs.push(pa[0], pa[1], pb[0], pb[1]);
+    const cam = (P) => {
+      const dx = P[0] - me.x, dz = P[2] - me.z;
+      return [dx * ch - dz * sh, P[1] - TANK_EYE, dx * sh + dz * ch];
     };
-    // the world repeats, so it never runs out: each thing is placed at its copy nearest the tank
-    const near = (v, c) => v + Math.round((c - v) / TANK_WORLD) * TANK_WORLD;
-    const model = (edges, x, z, rot, lift = [0, 0, 0], spin = 0) => {
-      const c = Math.cos(rot), s = Math.sin(rot);
-      for (const [p, q] of edges) {
-        const w = (P) => [x + P[0] * c + P[2] * s + lift[0], P[1] + lift[1], z - P[0] * s + P[2] * c + lift[2]];
-        put(w(p), w(q));
-      }
+    const onScreen = (c) => [c[0] / c[2] * TANK_F, TANK_HORIZON + c[1] / c[2] * TANK_F];
+    const lightC = [this.light[0] * ch - this.light[2] * sh, this.light[1], this.light[0] * sh + this.light[2] * ch];
+
+    // ---- the solids in view, as parts: each with its lit faces, its visible edges and its outline on the screen
+    const part = (s, place, kind, far) => {
+      const V = s.v.map((P) => cam(place(P)));
+      if (V.every((c) => c[2] < TANK_NEAR)) return null;
+      const front = s.f.map((ids) => {
+        const a = V[ids[0]];
+        return dot3(cross3(sub3(V[ids[1]], a), sub3(V[ids[2]], a)), a) < 0;
+      });
+      const polys = [], every = [];
+      s.f.forEach((ids, k) => {
+        if (!front[k]) return;
+        // cut at the near plane
+        const pts = [];
+        ids.forEach((id, j) => {
+          const a = V[id], b = V[ids[(j + 1) % ids.length]];
+          if (a[2] >= TANK_NEAR) pts.push(a);
+          if ((a[2] < TANK_NEAR) !== (b[2] < TANK_NEAR)) {
+            const u = (TANK_NEAR - a[2]) / (b[2] - a[2]);
+            pts.push([a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, TANK_NEAR]);
+          }
+        });
+        if (pts.length < 3) return;
+        const n = cross3(sub3(V[ids[1]], V[ids[0]]), sub3(V[ids[2]], V[ids[0]]));
+        const shade = Math.max(0, dot3(n, lightC) / Math.max(Math.sqrt(dot3(n, n)), 1e-6));
+        const scr = pts.map(onScreen);
+        scr.forEach((q) => every.push(q));
+        polys.push({ scr, shade });
+      });
+      const hullPts = hull2(every);
+      const lo = [Math.min(...hullPts.map((q) => q[0])), Math.min(...hullPts.map((q) => q[1]))];
+      const hi = [Math.max(...hullPts.map((q) => q[0])), Math.max(...hullPts.map((q) => q[1]))];
+      return { s, V, front, polys, hull: { pts: hullPts, lo, hi }, kind, far };
     };
+    const objects = [];
+    for (const o of this.obstacles) {
+      const [x, z] = this.nearCopy(o, me.x, me.z);
+      const dx = x - me.x, dz = z - me.z, cz = dx * sh + dz * ch, cx = dx * ch - dz * sh;
+      if (hypot2(dx, dz) > 105 || cz < -o.r || Math.abs(cx) - o.r > Math.max(cz, 0) * 0.95 + 0.5) continue;
+      const P = part({ ...o.s, v: o.v }, (Q) => [Q[0] + x, Q[1], Q[2] + z], 0, hypot2(dx, dz));
+      if (P) objects.push({ far: hypot2(dx, dz), parts: [P] });
+    }
+    let target = null;
     for (const f of this.foes) {
       const at = this.foeAt(f, t);
-      if (at) model(TANK_MODEL, at.x, at.z, at.h);
+      if (!at) continue;
+      const dx = at.x - me.x, dz = at.z - me.z, far = hypot2(dx, dz);
+      const c = Math.cos(at.h), s = Math.sin(at.h), cg = Math.cos(at.g), sg = Math.sin(at.g);
+      const onBody = (P) => [at.x + P[0] * c + P[2] * s, P[1], at.z - P[0] * s + P[2] * c];
+      const px = at.x + s * TANK_TURRET_AT, pz = at.z + c * TANK_TURRET_AT;
+      const onTop = (P) => [px + P[0] * cg + P[2] * sg, P[1], pz - P[0] * sg + P[2] * cg];
+      // the gun runs back into the turret as it fires
+      const fired = f.fires.reduce((w, q) => (q <= t ? q : w), -99);
+      const back = 0.75 * Math.exp(-(t - fired) * 9);
+      const onGun = (P) => onTop([P[0], P[1], P[2] - back]);
+      const parts = [];
+      for (const q of TANK_BODY) { const P = part(q, onBody, 1, 0); if (P) parts.push(P); }
+      TANK_TOP.forEach((q, i) => { const P = part(q, i ? onGun : onTop, 1, 0); if (P) parts.push(P); });
+      if (!parts.length) continue;
+      // painted far to near: the far track, the hull, the near track, then the turret and the gun, by which is nearer
+      const dist = (Q) => { const m = sub3(Q, [me.x, TANK_EYE, me.z]); return dot3(m, m); };
+      const lT = dist(onBody([-TRACK_X, 0.5, 0])), rT = dist(onBody([TRACK_X, 0.5, 0]));
+      const gun = dist(onTop([0, 1.8, 2.4])), top = dist(onTop([0, 1.8, -0.1]));
+      const order = [lT > rT ? 0 : 1, 2, lT > rT ? 1 : 0, ...(gun > top ? [4, 5, 3] : [3, 4, 5])];
+      const named = [...TANK_BODY, ...TANK_TOP];
+      const sorted = order.map((i) => parts.find((P) => P.s === named[i])).filter(Boolean);
+      objects.push({ far, parts: sorted, foe: at, onBody });
+      {
+        // the enemy's outline on the screen, without its gun: what the sight frames, for as long as it is there to see
+        // (not this.foe: the game is planned ahead of what is shown, and that one may already be done for)
+        const held = parts.filter((P) => P.s === TANK_BODY[0] || P.s === TANK_BODY[1] || P.s === TANK_BODY[2] || P.s === TANK_TOP[0]);
+        const lo = [Math.min(...held.map((P) => P.hull.lo[0])), Math.min(...held.map((P) => P.hull.lo[1]))];
+        const hi = [Math.max(...held.map((P) => P.hull.hi[0])), Math.max(...held.map((P) => P.hull.hi[1]))];
+        target = { at, far, lo, hi };
+      }
     }
-    for (const o of this.obstacles) {
-      const x = near(o.x, me.x), z = near(o.z, me.z);
-      const dx = x - me.x, dz = z - me.z;
-      if (dx * sh + dz * ch < 1 || Math.hypot(dx, dz) > 115) continue;
-      model(o.edges, x, z, o.rot);
-    }
-    // blasts: the enemy's lines flung apart, tumbling and falling
+    objects.sort((a, b) => b.far - a.far);
+    const drawn = objects.flatMap((O) => O.parts.map((P) => ({ P, O })));
+
+    // ---- the lines, near ones brighter and thicker; whatever a part painted later stands in front of is hidden
+    const enemy = [], world = [], hot = [], peaks = [];
+    const fog = (z) => Math.max(0.22, Math.min(0.98, 1.15 * Math.exp(-z / 62)));
+    const emit = (to, a, b, kind, bright, from) => {
+      const C = cutToBoard(a, b);
+      if (!C) return;
+      let pieces = [C];
+      for (let j = from; j < drawn.length && pieces.length; j++) pieces = pieces.flatMap(([u, v]) => cutBehind(u, v, drawn[j].P.hull));
+      for (const [u, v] of pieces) to.push(u[0], u[1], v[0], v[1], kind + Math.min(0.98, bright));
+    };
+    const line3 = (a, b, to, kind, bright, from) => {
+      if (a[2] < TANK_NEAR && b[2] < TANK_NEAR) return;
+      if (a[2] < TANK_NEAR) { const u = (TANK_NEAR - a[2]) / (b[2] - a[2]); a = a.map((v, k) => v + (b[k] - v) * u); }
+      if (b[2] < TANK_NEAR) { const u = (TANK_NEAR - b[2]) / (a[2] - b[2]); b = b.map((v, k) => v + (a[k] - v) * u); }
+      emit(to, onScreen(a), onScreen(b), kind, bright, from);
+    };
+    drawn.forEach(({ P, O }, i) => {
+      const to = P.kind ? enemy : world;
+      for (const e of P.s.e) {
+        if (!e.f.some((k) => P.front[k])) continue;
+        const a = P.V[e.a], b = P.V[e.b];
+        line3(a, b, to, P.kind, fog((a[2] + b[2]) / 2), i + 1);
+      }
+      // the road wheels on the side of a track it can see, turning as the tank rolls
+      if (P.kind && O.foe && O.far < 34 && (P.s === TANK_BODY[0] || P.s === TANK_BODY[1])) {
+        const x0 = P.s === TANK_BODY[0] ? -TRACK_X - 0.46 : TRACK_X + 0.46;
+        const outer = cam(O.onBody([x0 * 2, 0.45, 0])), side = cam(O.onBody([x0, 0.45, 0]));
+        if (dot3(sub3(outer, side), side) < 0) {
+          const spin = O.foe.d / 0.33;
+          for (let w = 0; w < 5; w++) {
+            const wz = -1.92 + w * 0.97;
+            for (let k = 0; k < 6; k++) {
+              const a0 = spin + k / 6 * Math.PI * 2, a1 = spin + (k + 1) / 6 * Math.PI * 2;
+              const A = cam(O.onBody([x0, 0.42 + Math.sin(a0) * 0.33, wz + Math.cos(a0) * 0.33]));
+              const B = cam(O.onBody([x0, 0.42 + Math.sin(a1) * 0.33, wz + Math.cos(a1) * 0.33]));
+              line3(A, B, to, P.kind, fog(A[2]) * 0.8, i + 1);
+            }
+          }
+        }
+      }
+    });
+    // what is thrown up: a burst flings the enemy's lines apart, tumbling and falling; its turret goes up whole
     for (const b of this.blasts) {
       const e = t - b.t;
-      if (e < 0 || e > 2.2) continue;
+      if (b.kind < 1 || e < 0 || e > 2.2) continue;
       const r = new Rng(this.seed, 'blast' + Math.round(b.t * 1000));
-      TANK_MODEL.forEach(([p, q], k) => {
+      const c = Math.cos(b.h), s = Math.sin(b.h);
+      const power = b.kind > 1 ? 1.5 : 1;
+      const heat = Math.max(0.12, 1 - e / 2.2);
+      const inWorld = (P, lift) => [b.x + P[0] * c + P[2] * s + lift[0], P[1] + lift[1], b.z - P[0] * s + P[2] * c + lift[2]];
+      TANK_BODY.forEach((q) => q.e.forEach((ed, k) => {
+        const v = [r.float(-7, 7) * power, r.float(5, 12) * power, r.float(-7, 7) * power];
+        const spin = r.float(-7, 7) * e, cs = Math.cos(spin), sn = Math.sin(spin);
         if (k % 2) return;
-        const v = [r.float(-5, 5), r.float(4, 9), r.float(-5, 5)];
-        const lift = [v[0] * e, Math.max(-0.2, v[1] * e - 9 * e * e), v[2] * e];
-        const spin = r.float(-6, 6) * e, c = Math.cos(spin), s = Math.sin(spin);
-        const m = [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2, (p[2] + q[2]) / 2];
-        const tw = (P) => [m[0] + (P[0] - m[0]) * c - (P[1] - m[1]) * s, m[1] + (P[0] - m[0]) * s + (P[1] - m[1]) * c, P[2]];
-        model([[tw(p), tw(q)]], b.x, b.z, b.h, lift);
-      });
+        const lift = [v[0] * e, Math.max(-0.3, v[1] * e - 9 * e * e), v[2] * e];
+        const A = q.v[ed.a], B = q.v[ed.b], m = [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2, (A[2] + B[2]) / 2];
+        const tw = (P) => [m[0] + (P[0] - m[0]) * cs - (P[1] - m[1]) * sn, m[1] + (P[0] - m[0]) * sn + (P[1] - m[1]) * cs, P[2]];
+        line3(cam(inWorld(tw(A), lift)), cam(inWorld(tw(B), lift)), hot, 2, heat, drawn.length);
+      }));
+      const topUp = Math.max(0, 11 * power * e - 7 * e * e);
+      if (topUp > 0 || e < 0.5) {
+        const spin = e * 3.5 * r.float(0.6, 1.4), cs = Math.cos(spin), sn = Math.sin(spin);
+        const cg = Math.cos(b.g), sg = Math.sin(b.g);
+        const dx = r.float(-3, 3) * e, dz = r.float(-3, 3) * e;
+        const tumble = (P) => {
+          const y = P[1] - 1.8;
+          const z = P[2] * cs - y * sn, yy = P[2] * sn + y * cs + 1.8;
+          return [b.x + dx + P[0] * cg + z * sg, yy + topUp, b.z + dz - P[0] * sg + z * cg];
+        };
+        for (const q of TANK_TOP) for (const ed of q.e) line3(cam(tumble(q.v[ed.a])), cam(tumble(q.v[ed.b])), hot, 2, heat, drawn.length);
+      }
     }
-    // shells: a short line on its way
+    // shells: a hot line on its way, a bright head on it
+    const heads = [];
     for (const s of this.shells) {
       if (t < s.t0 || t >= s.t1) continue;
-      const u = (t - s.t0) / (s.t1 - s.t0), u2 = Math.min(1, u + 0.05);
-      const y = s.mine ? 0.8 : 1.1;
-      put([s.x0 + (s.x1 - s.x0) * u, y, s.z0 + (s.z1 - s.z0) * u], [s.x0 + (s.x1 - s.x0) * u2, y, s.z0 + (s.z1 - s.z0) * u2]);
+      const u = (t - s.t0) / s.T, back = Math.max(0, u - 0.14);
+      const H = cam(this.shellAt(s, u)), Tl = cam(this.shellAt(s, back));
+      line3(Tl, H, hot, 2, 0.98, drawn.length);
+      if (H[2] > TANK_NEAR) { const q = onScreen(H); heads.push(q[0], q[1], Math.min(0.09, 0.28 / H[2]), s.mine ? 1 : 2); }
     }
-    // the mountains, at the horizon all round
+    // the mountains, at the horizon all round, behind everything
     for (let i = 0; i < this.ridge.length; i++) {
       const a0 = i / this.ridge.length * Math.PI * 2, a1 = (i + 1) / this.ridge.length * Math.PI * 2;
       const d0 = angDiff(a0, me.h), d1 = angDiff(a1, me.h);
-      if (Math.abs(d0) > 1.0 || Math.abs(d1) > 1.0 || segs.length >= TANK_SEGS * 4) continue;
-      segs.push(Math.tan(d0) * TANK_F, TANK_HORIZON + this.ridge[i], Math.tan(d1) * TANK_F, TANK_HORIZON + this.ridge[(i + 1) % this.ridge.length]);
+      if (Math.abs(d0) > 1.0 || Math.abs(d1) > 1.0) continue;
+      emit(peaks, [Math.tan(d0) * TANK_F, TANK_HORIZON + this.ridge[i]], [Math.tan(d1) * TANK_F, TANK_HORIZON + this.ridge[(i + 1) % this.ridge.length]], 3, 0.7, 0);
     }
-    const n = segs.length / 4;
-    const arr = new Float32Array(TANK_SEGS * 4);
-    arr.set(segs);
-    // the radar: where the enemy is, round the tank
-    const f = this.foe && this.foeAt(this.foe, t) ? this.foeAt(this.foe, t) : null;
-    let blip = [0, 0, 0, 0];
-    if (f) {
-      const dx = f.x - me.x, dz = f.z - me.z;
-      blip = [dx * ch - dz * sh, dx * sh + dz * ch, 1, 0];
+    // the enemy and the shells first, then the plain near to far, the mountains last: if the lines run out it is at the far end
+    const nearFirst = [];
+    for (let k = world.length - 5; k >= 0; k -= 5) nearFirst.push(world[k], world[k + 1], world[k + 2], world[k + 3], world[k + 4]);
+    const all = [...hot, ...enemy, ...nearFirst, ...peaks];
+    const n = Math.min(TANK_SEGS, all.length / 5);
+    const arr = new Float32Array(TANK_SEGS * 4), segK = new Float32Array(TANK_SEGS);
+    for (let i = 0; i < n; i++) { for (let k = 0; k < 4; k++) arr[i * 4 + k] = all[i * 5 + k]; segK[i] = all[i * 5 + 4]; }
+
+    // ---- the faces, far to near, each a quad on the screen (the near ones win if there are too many)
+    const quads = [];
+    for (const { P } of drawn) {
+      for (const poly of P.polys) {
+        const area = poly.scr.reduce((s, q, i, a) => { const w = a[(i + 1) % a.length]; return s + q[0] * w[1] - w[0] * q[1]; }, 0);
+        const pts = area < 0 ? poly.scr.slice().reverse() : poly.scr;
+        // (cut at the near plane a quad can have five corners: split in two)
+        for (let j = 0; j + 2 < pts.length; j += 2) {
+          const q = [pts[0], pts[j + 1], pts[j + 2], pts[Math.min(j + 3, pts.length - 1)]];
+          quads.push({ q, k: P.kind + Math.min(0.98, poly.shade * fog(P.V.reduce((sum, c) => sum + c[2], 0) / P.V.length)) });
+        }
+      }
     }
-    const want = f ? Math.abs(angDiff(Math.atan2(f.x - me.x, f.z - me.z), me.h)) : 9;
-    const shot = recent(this.shots, t, 1)[0], blast = recent(this.blasts, t, 1)[0];
+    const faces = quads.slice(-TANK_FACES);
+    const fA = new Float32Array(TANK_FACES * 8), fK = new Float32Array(TANK_FACES);
+    faces.forEach((F, i) => { fA.set([...F.q[0], ...F.q[1], ...F.q[2], ...F.q[3]], i * 8); fK[i] = F.k; });
+
+    // ---- the bursts, and what they do to the view
+    const rel = (x, z) => {
+      const dx = x - me.x, dz = z - me.z;
+      return [dx * ch - dz * sh, dx * sh + dz * ch];
+    };
+    const bl = new Float32Array(TANK_BLASTS * 4).fill(-1), blH = new Float32Array(TANK_BLASTS);
+    const live = [
+      ...this.muzzles.filter((m) => t >= m.t && t - m.t < 0.3).map((m) => ({ ...m, kind: 3 })),
+      ...this.blasts.filter((b) => t >= b.t && t - b.t < 6.5),
+    ].sort((a, b) => b.t - a.t).slice(0, TANK_BLASTS);
+    let sx = 0, sy = 0, roll = 0;
+    let lastBlast = 99, lastKind = 0;
+    live.forEach((b, i) => {
+      const e = t - b.t, [cx, cz] = rel(b.x, b.z);
+      bl.set([cx, cz, e, b.kind], i * 4);
+      blH[i] = b.y || 0;
+      if (b.kind < 3) {
+        const shake = (b.kind === 2 ? 1.6 : b.kind === 1 ? 1 : 0.55) * Math.min(1, 16 / Math.max(hypot2(cx, cz), 1)) * Math.exp(-e * 7);
+        sx += shake * 0.014 * Math.sin(e * 71); sy += shake * 0.014 * Math.cos(e * 53); roll += shake * 0.016 * Math.sin(e * 37);
+        if (e < lastBlast) { lastBlast = e; lastKind = b.kind; }
+      }
+    });
+    // the gun's kick; a lean into a turn; the hull's rock as it rolls
+    const shot = recent(this.shots, t, 1)[0];
+    const since = shot ? t - shot.t : 99;
+    sy += 0.03 * Math.exp(-since * 9);
+    roll -= Math.max(-0.05, Math.min(0.05, (this.heading.at(t + 0.06) - this.heading.at(t - 0.06)) / 0.12 * 0.035));
+    sy += 0.004 * Math.sin(t / this.grid.spb * Math.PI * 2);
+
+    // ---- the sight on the enemy, and the radar
+    let aimAt = [0, 0, 0, -1], aimH = 0, blip = [0, 0, 0, 0], off = 9;
+    if (target) {
+      const { at, far } = target;
+      const dx = at.x - me.x, dz = at.z - me.z, cx = dx * ch - dz * sh, cz = dx * sh + dz * ch;
+      blip = [cx, cz, 1, 0];
+      off = Math.abs(angDiff(Math.atan2(dx, dz), me.h));
+      if (cz > 2) {
+        const { lo, hi } = target;
+        aimAt = [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, Math.min(0.5, (hi[0] - lo[0]) / 2 + 0.018), far];
+        aimH = Math.min(0.4, (hi[1] - lo[1]) / 2 + 0.018);
+      }
+    }
+    const shells2 = new Float32Array(8);
+    shells2.set(heads.slice(0, 8));
     const md = angDiff(this.moon, me.h);
     return {
       uSeg: { v: arr, kind: '4fv' },
-      uTank: { v: [n, Math.max(0, 1 - want / 0.5), shot ? t - shot.t : 99, this.score % 100000], kind: '4f' },
+      uSegK: { v: segK, kind: '1fv' },
+      uFace: { v: fA, kind: '4fv' },
+      uFaceK: { v: fK, kind: '1fv' },
+      uTank: { v: [n, Math.max(0, 1 - off / 0.5), since, (this.score - 1000 * this.blasts.filter((b) => b.kind > 0 && b.t > t).length) % 100000], kind: '4f' },
+      uTankCam: { v: [wrapTo(me.x, TANK_WORLD / 2), wrapTo(me.z, TANK_WORLD / 2), me.h, faces.length], kind: '4f' },
+      uTankFx: { v: [roll, sx, sy, lastBlast < 99 ? lastBlast + lastKind * 100 : 999], kind: '4f' },
+      uTarget: { v: aimAt, kind: '4f' },
+      uTargetH: { v: aimH, kind: '1f' },
       uBlip: { v: blip, kind: '4f' },
-      uMoon: { v: [Math.tan(md) * TANK_F, TANK_HORIZON + 0.2, Math.abs(md) < 0.9 ? 1 : 0, blast ? t - blast.t : 99], kind: '4f' },
+      uMoon: { v: [Math.tan(md) * TANK_F, TANK_HORIZON + 0.25, Math.abs(md) < 0.9 ? 1 : 0, 0], kind: '4f' },
+      uTBlasts: { v: bl, kind: '4fv' },
+      uTBlastH: { v: blH, kind: '1fv' },
+      uTShell: { v: shells2, kind: '4fv' },
     };
   }
 }
@@ -3882,7 +4296,21 @@ const RAMP_L = 4.88;                                 // half its width along the
 const GRAV = 9.81;
 const RAMP_LIP = RAMP_F + RAMP_R;                   // where the coping runs
 const RAMP_TOP = RAMP_R + RAMP_V;
-const SKATE_FOCAL = 1.6;
+const SKATE_FOCAL = 1.5, SKATE_DROP_FOCAL = 2.6;     // the chase, wide; the shot from the flat on the drop, long
+// the chase: how far behind along the ramp, how far off the surface, how far ahead of the skater it looks; how quickly the camera and its aim catch up (the
+// spring's rate, a second), its lean with the wall, and the samples of the skater's recent past that spring is worked out from
+const SK_CAM_BACK = 3.4, SK_CAM_OFF = 1.6, SK_CAM_AHEAD = 3, SK_CAM_RATE = 6, SK_CAM_AIM = 8, SK_CAM_LEAN = 0.5, SK_CAM_N = 14, SK_CAM_STEP = 0.07;
+// the forces on the wheels: the rolling friction Kogelbauer et al. measured, drag on 0.5 m2 of a 75 kg skater, steel on the coping
+const SK_MU = 0.02, SK_DRAG = 0.5 * 1.2 * 0.5 / 75, SK_GRIND = 0.25 * GRAV;
+// the centre of mass over the board: at the lip; standing tall, arms up; the most a crossing can raise it from a full crouch
+const SK_HLIP = 0.9, SK_HTOP = 1.05, SK_EMAX = 0.55;
+const SK_DT = 1 / 120;                               // the physics' fixed step, a second
+// up onto the coping the board stops and the body swings up over it, its centre of mass rising some 87 cm: it takes that
+// much speed at the lip to get there, in the time the swing takes, and it gives it all back dropping in
+const SK_RISE = 0.87, SK_SWING = 1.32, SK_VLIP = Math.sqrt(2 * GRAV * SK_RISE), SK_POP = 2 * SK_SWING * SK_HLIP / SK_VLIP;
+const SK_LAP = 2.8;                                  // wall to wall and through the air, peak to peak: as gravity gives it
+const SK_TUNE = 0.08;                                // how far a peak may fall from its mark: the eye cannot place a peak any closer
+const SK_HOLD = 0.35, SK_HOLD_MAX = 2.2;             // the shortest grind; the longest wait up there
 
 /** A point of the ramp's profile, a distance s along it from the middle of the flat (negative: the left side). */
 function rampPoint(s) {
@@ -3913,158 +4341,435 @@ const AIR_540 = { name: '540', turn: 1.5, dir: -1, hand: 'back', edge: 'toe', pt
 const GRIND = { name: '50-50', turn: 0, dir: 0, hand: null, edge: null, pts: 250 };
 
 /**
+ * A crossing, lip to lip, as forces make it: the skater's centre of mass under gravity, rolling friction and drag, a
+ * variable-length pendulum on the curves (Kogelbauer et al., "Mechanical optimization of skateboard pumping", Phys.
+ * Rev. Research 2024, whose equation and whose friction these are: (L-h)th'' - 2h'th' + g sin th = 0, mu 0.02, the
+ * load on the wheels g cos th + (L-h)th'^2), with h the height of the centre of mass over the board. Standing up
+ * against the load pumps speed in, crouching under it takes speed out, so `e` is how hard this crossing pumps: above
+ * zero crouched from the landing, as low as e asks, and standing up after the lowest point; below zero tall to the
+ * bottom and crouching up the far curve, to die away at the lip. It runs left to right; `keep` keeps the path:
+ * where the board is along the ramp, h, the speed of the centre of mass and the load, four numbers a step.
+ */
+function skateRide(v0, e, keep) {
+  const hLow = e > 0 ? SK_HTOP - e : SK_HTOP, hEnd = e > 0 ? SK_HTOP : SK_HTOP + e;
+  const reach = RAMP_V + RAMP_R * Math.PI * 0.15, HALF_PI = Math.PI / 2;
+  const hOf = (ph, q) => {
+    if (ph === 0) return SK_HLIP + (hLow - SK_HLIP) * smooth01(q / reach);
+    if (ph === 1) return SK_HLIP + (hLow - SK_HLIP) * smooth01((RAMP_V + RAMP_R * (q + HALF_PI)) / reach);
+    if (ph === 2) return hLow;
+    if (ph === 3) return hLow + (hEnd - hLow) * smooth01((q - 0.02) / 1.05);
+    return hEnd + (SK_HLIP - hEnd) * smooth01(q / RAMP_V);
+  };
+  const out = keep ? [-RAMP_S, SK_HLIP, v0, 0] : null, dt = SK_DT;
+  let t = 0, v = v0, ph = 0, q = 0, om = 0, h = SK_HLIP, n = 0;
+  for (let i = 0; i < 1200; i++) {
+    const was = q;
+    if (ph === 1 || ph === 3) {
+      const dh = (hOf(ph, q + 1e-3) - hOf(ph, q - 1e-3)) / 2e-3;
+      const acc = (o, a) => {
+        const r = RAMP_R - hOf(ph, a), N = GRAV * Math.cos(a) + r * o * o;
+        return (2 * dh * o * o - GRAV * Math.sin(a) - SK_MU * Math.max(N, 0) - SK_DRAG * r * r * o * o) / r;
+      };
+      const k = acc(om, q), om2 = om + k * dt / 2;
+      q += om2 * dt;
+      om += acc(om2, was + om * dt / 2) * dt;
+      if (om <= 0) return null;                       // it never got there
+      h = hOf(ph, q);
+      v = om * (RAMP_R - h);
+      n = GRAV * Math.cos(q) + (RAMP_R - h) * om * om;
+      if (ph === 1 && q >= 0) { ph = 2; q = -RAMP_F; }
+      else if (ph === 3 && q >= HALF_PI) { ph = 4; q = 0; }
+    } else if (ph === 2) {
+      h = hLow; n = GRAV;
+      v += (-SK_MU * GRAV - SK_DRAG * v * v) * dt;
+      q += v * dt;
+      if (q >= RAMP_F) { ph = 3; q = 0; om = v / (RAMP_R - hOf(3, 0)); }
+    } else {
+      // the vert: nothing pressing the wheels to it, only gravity along it
+      h = hOf(ph, q); n = 0;
+      const a = (ph === 0 ? GRAV : -GRAV) - SK_DRAG * v * v;
+      const v1 = v + a * dt;
+      if (ph === 4 && v1 <= 0) return null;
+      q += (v + v1) / 2 * dt;
+      v = v1;
+      if (ph === 0 && q >= RAMP_V) { ph = 1; q = -HALF_PI; om = v / (RAMP_R - hOf(1, q)); }
+      else if (ph === 4 && q >= RAMP_V) {
+        const over = (q - RAMP_V) / Math.max(v, 0.1);
+        if (!out) return { t: t + dt - over, v, data: null };
+        out.push(RAMP_S, SK_HLIP, v, 0);
+        // (round a curve the board runs faster than the centre of mass, its radius being the larger; a body eases into
+        // that over a moment, so where the curve begins and ends the board's own speed is smoothed over a tenth of a second)
+        const data = Float32Array.from(out), N = data.length / 4;
+        for (let a = 1; a < N - 1; a++) {
+          const w = Math.min(a, N - 1 - a, 6);
+          let sum = 0;
+          for (let b = a - w; b <= a + w; b++) sum += out[b * 4];
+          data[a * 4] = sum / (2 * w + 1);
+        }
+        return { t: t + dt - over, v, data };
+      }
+    }
+    t += dt;
+    if (out) {
+      const arc = RAMP_R * HALF_PI;
+      const s = ph === 0 ? q - RAMP_S : ph === 1 ? -RAMP_F + RAMP_R * q : ph === 2 ? q : ph === 3 ? RAMP_F + RAMP_R * q : RAMP_F + arc + q;
+      out.push(s, h, v, n);
+    }
+  }
+  return null;
+}
+
+/** How hard to pump to come up to the far lip at speed v1, and what that crossing takes; null if no pump reaches it. */
+function skateArrive(v0, v1) {
+  let lo = -SK_EMAX, hi = SK_EMAX;
+  const top = skateRide(v0, hi);
+  if (!top || top.v < v1) return null;
+  const low = skateRide(v0, lo);
+  if (low && low.v > v1) return { e: lo, t: low.t, v: low.v };      // (it cannot shed that much: it arrives faster)
+  // (the speed at the lip is close to a straight line in e, so a few interpolations find it)
+  let best = top, bestE = hi, vLo = low ? low.v : 0, vHi = top.v;
+  for (let k = 0; k < 4 && Math.abs(best.v - v1) > 0.01; k++) {
+    const m = Math.max(lo + 0.01, Math.min(hi - 0.01, lo + (hi - lo) * (v1 - vLo) / Math.max(vHi - vLo, 1e-3)));
+    const r = skateRide(v0, m);
+    if (!r || r.v < v1) { lo = m; vLo = r ? r.v : vLo; } else { hi = m; vHi = r.v; }
+    if (r) { best = r; bestE = m; }
+  }
+  return { e: bestE, t: best.t, v: best.v };
+}
+
+/**
+ * The crossings back up from the coping: dropping in with the speed of that fall, pumping as hard as it can each time. It
+ * comes out the same every time, so the time it takes is known before it goes up there: for each crossing, the
+ * air it reaches and the time from dropping in to that air's peak.
+ */
+let skateClimbMemo = null;
+function skateClimb() {
+  if (skateClimbMemo) return skateClimbMemo;
+  skateClimbMemo = [];
+  let v = SK_VLIP, sum = 0, half0 = 0;
+  for (let k = 0; k < 4; k++) {
+    const top = skateRide(v, SK_EMAX);
+    const ride = skateArrive(v, Math.sqrt(2 * GRAV * Math.min(2.4, top.v * top.v / (2 * GRAV) * 0.98)));
+    const h = ride.v * ride.v / (2 * GRAV), half = Math.sqrt(2 * h / GRAV);
+    sum += half0 + ride.t + half;
+    skateClimbMemo.push({ ride, h, half, sum });
+    v = ride.v; half0 = half;
+  }
+  return skateClimbMemo;
+}
+
+/**
  * The skate park: a vert ramp in a warehouse built to a real one's measures,
- * the skater life size, riding wall to wall - a crossing taking the two
- * seconds or more a skater takes - and reaching a lip on a bar line, aiming
- * for the accented one, where it goes straight up off the
- * vert into an air - a backside or frontside air, an indy, a melon, a method, a
- * mute - turning half round in the air to come down the wall going forward, a
- * little along the ramp from where it went up, landing on the beat. On the
- * walls it rides square to the surface, crouching deepest in the transition and
- * standing up into the vert, arms out for balance. Through the build it grinds
- * along the coping on both trucks (a 50-50), board along the pipe; on the drop
- * - the accented bar - it goes up twice as high for a 540, and the combo
- * counted up through the phrase is banked. (Drawn from Wikipedia's articles on
- * aerials, grinds and the vert ramp, and a sequence photograph of a vert air.)
+ * the skater life size, every metre of it moved by forces. It falls down the
+ * wall speeding up, rides fastest across the flat, slows up the far wall, and
+ * leaves the lip at the speed that takes it as high as it goes, its centre of
+ * mass on a parabola, to land at the speed it left at. Pumping is what keeps
+ * it going: friction and drag take about a metre of height from each crossing,
+ * and it gains at most some 60 cm over that, so height is built up over a
+ * phrase. A crossing's time is gravity's, not the music's: wall to wall and
+ * through the air takes 2.7 to 2.9 s, whatever the height and whatever the
+ * tempo, as a pendulum keeps its time. So the peak of each air comes on the
+ * eighth (or else the sixteenth) nearest, its height chosen to fit, and the time
+ * left over in a phrase is spent on the coping, where a skater can wait: a
+ * 50-50 along the pipe, slowing on the steel, stalling if it stops. From there
+ * it falls back in, and pumps its way up over the crossings left, to a 540 at
+ * the top of an accented bar, the combo counted up through the phrase banked. The airs are as before (Wikipedia, "Aerial
+ * (skateboarding)"): straight up off the vert, half a turn about the body's own
+ * length, a hand on the board's edge.
  */
 export class SkateSim extends PlannedSim {
   reset() {
     this.rng = new Rng(this.seed, 'skate-sim');
+    this.camPhase = new Rng(this.seed, 'skate-cam').float(0, Math.PI * 2);
     this.clock = 0;
     this.kept = 0;
     this.score = 0;
     this.combo = 0;
-    this.bars = [];               // per bar line: {t, side, kind: 'air'|'grind'|'big', trick, z, z1, combo, score, air}
+    this.sinceGrind = 0;
+    this.climb = 0;
+    this.climbFrom = 0;
+    this.bars = [];               // per lip: {t, side, kind, trick, z, z1, vzIn, vzOut, combo, score, air, h, vOut, spin, ride}
   }
 
-  /**
-   * The next bar line it reaches a lip on: a crossing, lip to lip (some fifteen metres), takes at least about two
-   * seconds as skaters ride it, so at a fast tempo it is every second or third bar; an accented bar near enough is
-   * aimed for, so the big air lands on the drop.
-   */
-  nextHit(t) {
+  /** The first accented bar line after t, if any within reach of the planning. */
+  nextAccent(t) {
     const bar = this.grid.barSec;
-    const k = Math.max(1, Math.ceil(3.2 / bar));
-    for (let j = Math.max(1, k - 1); j <= k + 1; j++) if (this.grid.isAccent(t + j * bar)) return t + j * bar;
-    return t + k * bar;
+    for (let b = Math.floor(t / bar) + 1, end = b + 256; b < end; b++) {
+      if (b * bar > t + 1e-3 && this.grid.isAccent(b * bar)) return b * bar;
+    }
+    return null;
   }
 
-  /** An air's time aloft for its height, as gravity sets it - its half rounded to the eighths, so it lands on one. */
-  airOf(h) {
+  /** A lip's place along the ramp and how it moves there: airs drift a little, grinds slide toward the middle. */
+  placeLip(hit) {
+    const prev = this.bars[this.bars.length - 1];
+    const z = Math.max(-2.6, Math.min(2.6, prev.z1 + this.rng.float(-0.8, 0.8)));
+    if (hit.kind === 'grind') {
+      // both trucks on the steel, slowing as the friction takes it (steel on steel, about 0.25: an assumption); stalled if
+      // it stops. It comes up the wall and falls back in at the speed along the pipe it has at each end
+      const dir = z > 0 ? -1 : 1, T = hit.air * 2 - 2 * SK_POP;
+      const vzIn = Math.min(2.6, SK_GRIND * T + 0.3);
+      const vzOut = Math.max(0, vzIn - SK_GRIND * T);
+      const stop = Math.min(T, vzIn / SK_GRIND);
+      const z1 = z + dir * (vzIn * SK_POP + vzIn * stop - SK_GRIND * stop * stop / 2 + vzOut * SK_POP);
+      Object.assign(hit, { z, dirZ: dir, vzIn: dir * vzIn, vzOut: dir * vzOut, z1, slide: T });
+      return;
+    }
+    const drift = (this.rng.bool() ? 1 : -1) * this.rng.float(0.7, 1.3);
+    const z1 = Math.max(-3.3, Math.min(3.3, z + drift));
+    const vz = (z1 - z) / (2 * hit.air);
+    const al = norm3([0, hit.vOut, vz]), end = norm3([0, -hit.vOut, vz]), up = [-hit.side, 0, 0];
+    // the turn to bring the board round to where it is going when it lands
+    const b = cross3(up, al), base = Math.atan2(dot3(end, b), dot3(end, al));
+    const want = hit.trick.dir * hit.trick.turn * Math.PI * 2;
+    Object.assign(hit, { z, z1, vzIn: vz, vzOut: vz, al0: al, spin: base + Math.round((want - base) / (Math.PI * 2)) * Math.PI * 2 });
+  }
+
+  /** The air to go up into, its height chosen so its peak comes on the nearest eighth or sixteenth, if any height can. */
+  planAir(prev, hWant, goalAt) {
+    const top = skateRide(prev.vOut, SK_EMAX);
+    if (!top) return null;
+    const hTop = top.v * top.v / (2 * GRAV) * 0.98;
+    const fit = (h) => {
+      const a = skateArrive(prev.vOut, Math.sqrt(2 * GRAV * h));
+      if (!a) return null;
+      const hh = a.v * a.v / (2 * GRAV), half = Math.sqrt(2 * hh / GRAV);
+      return { ride: a, h: hh, half, at: prev.t + prev.air + a.t + half };
+    };
+    const low = Math.min(0.7, hTop), want = Math.max(low, Math.min(hTop, hWant));
+    const mid = fit(want);
+    if (!mid) return null;
+    const near = (g) => Math.round(mid.at / g) * g;
     const e = this.grid.spb / 2;
-    const half = Math.max(e, Math.round(Math.sqrt(2 * h / GRAV) / e) * e);
-    return { half, h: 0.5 * GRAV * half * half };
+    const A = fit(low) || mid, B = fit(hTop) || mid;
+    for (const goal of goalAt !== undefined ? [goalAt] : [near(e), near(e / 2)]) {
+      if (goal < A.at - SK_TUNE || goal > B.at + SK_TUNE) continue;
+      let best = goal < A.at ? A : goal > B.at ? B : mid;
+      // (the peak's time is close to a straight line in the height)
+      if (goal >= A.at && goal <= B.at && Math.abs(mid.at - goal) > 0.01) {
+        const [P, Q] = goal < mid.at ? [A, mid] : [mid, B];
+        const f = fit(P.h + (Q.h - P.h) * (goal - P.at) / Math.max(Q.at - P.at, 1e-3));
+        if (f) best = f;
+      }
+      return best;
+    }
+    return mid;
   }
 
   plan() {
-    const spb = this.grid.spb;
     if (!this.bars.length) {
-      // (the run starts on the far wall, coming down)
-      const t0 = -this.nextHit(0);
-      this.bars.push({ t: t0, side: 1, kind: 'air', trick: AIRS[0], z: 0, z1: 0, combo: 0, score: 0, air: this.airOf(1).half, h: this.airOf(1).h });
-      this.next = this.nextHit(0) > this.grid.barSec ? this.grid.barSec * Math.ceil(this.nextHit(0) / this.grid.barSec / 2) : this.nextHit(0);
+      // (the run starts on the far wall, already moving)
+      const h = 1.1, half = Math.sqrt(2 * h / GRAV);
+      this.bars.push({ t: -2 * this.grid.spb - 1.5, side: 1, kind: 'air', trick: AIRS[0], z: 0, z1: 0, vzIn: 0, vzOut: 0, combo: 0, score: 0, air: half, h, vOut: Math.sqrt(2 * GRAV * h), al0: [0, 1, 0], spin: -Math.PI });
     }
-    const t = this.next;
-    const nx = this.nextHit(t);
-    const kind = this.grid.isAccent(t) ? 'big' : this.grid.isAccent(nx) ? 'grind' : 'air';
-    const trick = kind === 'big' ? AIR_540 : kind === 'grind' ? GRIND : this.rng.pick(AIRS);
+    const prev = this.bars[this.bars.length - 1];
+    let hit = null;
+    if (this.climb > 0) {
+      // pumping back up off the coping, each crossing as hard as it can, as worked out when it went up there
+      const C = skateClimb()[this.climbFrom - this.climb];
+      this.climb--;
+      hit = { kind: this.climb === 0 ? 'big' : 'air', trick: this.climb === 0 ? AIR_540 : this.rng.pick(AIRS), f: { ride: C.ride, h: C.h, half: C.half, at: prev.t + prev.air + C.ride.t + C.half } };
+    } else {
+      const accent = this.nextAccent(prev.t + prev.air + 1);
+      const R = accent === null ? 1e9 : accent - prev.t;
+      // straight into the accent, if a crossing comes out there
+      if (accent !== null && R < 3.6) {
+        const f = this.planAir(prev, 2.4, accent);
+        if (f && Math.abs(f.at - accent) < SK_TUNE) hit = { kind: 'big', trick: AIR_540, f };
+      }
+      if (!hit) {
+        const a = skateArrive(prev.vOut, SK_VLIP);
+        if (a) {
+          const reach = prev.t + prev.air + a.t;
+          const C = skateClimb();
+          let hold = 0;
+          // up on the coping, for what time leaves so the crossings back up come out on the accent: as many as fit
+          if (accent !== null) {
+            for (let m = C.length; m >= 1 && !hold; m--) {
+              const w = accent - reach - 2 * SK_POP - C[m - 1].sum;
+              if (w >= SK_HOLD && w <= SK_HOLD_MAX) { hold = w; this.climb = m; this.climbFrom = m; }
+            }
+            // (the time left over is any fraction of a crossing: too long for one wait, it is spent in two if there is room)
+            for (let m = C.length; m >= 1 && !hold; m--) {
+              const w = accent - reach - 2 * SK_POP - C[m - 1].sum;
+              if (w > SK_HOLD_MAX && w < SK_HOLD + SK_LAP) {
+                if (R > 14) hold = w / 2;
+                else { hold = w; this.climb = m; this.climbFrom = m; }
+              }
+            }
+          }
+          // and now and then on a long run with no accent near, for the variety of it
+          if (!hold && this.sinceGrind >= 6 && (accent === null || R > 22)) hold = SK_HOLD;
+          if (hold) hit = { kind: 'grind', trick: GRIND, f: { ride: a, h: 0, half: SK_POP + hold / 2, at: reach + SK_POP + hold / 2 } };
+        }
+      }
+      if (!hit) {
+        // a crossing or three from an accent with no time to wait: each air higher than the last, in step with it
+        const k = accent === null ? 0 : Math.round(R / SK_LAP);
+        const inStep = k >= 2 && k <= 3 && Math.abs(R - k * SK_LAP) < k * SK_TUNE;
+        const want = inStep ? (k === 2 ? 1.9 : 1.4) : this.rng.float(0.9, 1.5);
+        const f = this.planAir(prev, want, inStep ? prev.t + R / k : undefined) || this.planAir(prev, 0.7);
+        hit = { kind: 'air', trick: this.rng.pick(AIRS), f };
+      }
+    }
+    const { kind, trick, f } = hit;
+    this.sinceGrind = kind === 'grind' ? 0 : this.sinceGrind + 1;
     this.combo++;
     if (kind === 'big') this.score += Math.round(this.combo * 250 + trick.pts);
     else this.score += trick.pts;
-    const prev = this.bars[this.bars.length - 1];
-    const z = Math.max(-3.6, Math.min(3.6, prev.z1 + this.rng.float(-0.8, 0.8)));
-    // an air comes down a little along the ramp from where it went up; a grind slides a couple of metres
-    const drift = kind === 'grind' ? (z > 0 ? -2.2 : 2.2) : (this.rng.bool() ? 1 : -1) * this.rng.float(0.7, 1.3);
-    const z1 = Math.max(-3.8, Math.min(3.8, z + drift));
-    const air = kind === 'grind' ? { half: Math.max(spb, 0.35), h: 0 } : this.airOf(kind === 'big' ? 2.4 : this.rng.float(0.9, 1.4));
-    this.bars.push({ t, side: -prev.side, kind, trick, z, z1, combo: this.combo, score: this.score, air: air.half, h: air.h });
+    const next = { t: f.at, side: -prev.side, kind, trick, combo: this.combo, score: this.score, air: f.half, h: f.h, vOut: kind === 'grind' ? SK_VLIP : Math.sqrt(2 * GRAV * f.h) };
+    this.placeLip(next);
+    const path = skateRide(prev.vOut, f.ride.e, true);
+    prev.ride = { data: path.data, n: path.data.length / 4, dur: f.at - f.half - (prev.t + prev.air) };
+    this.bars.push(next);
     if (kind === 'big') this.combo = 0;
-    this.next = nx;
-    this.clock = t;
+    this.clock = f.at;
   }
 
   advanceTo(t) {
     if (t < this.kept) this.reset();
-    while (!this.bars.length || this.clock <= t + 4 * this.grid.barSec) this.plan();
+    while (!this.bars.length || this.clock <= t + 4) this.plan();
     while (this.bars.length > 3 && this.bars[2].t < t - this.grid.barSec) this.bars.shift();
     this.kept = this.bars.length ? Math.max(0, this.bars[0].t) : 0;
   }
 
   /**
    * The skater at t: where its feet are, the board's direction (al) and the up of its body (up), the trick and how
-   * far through it (u), how high above the coping, how deep it crouches.
+   * far through it (u), how high above the coping, how deep it crouches, how far it has gone into the trick's own
+   * pose (w), and what the ride is doing: the speed of its centre of mass and the load on its legs.
    */
   pose(t) {
     this.advanceTo(t);
     let i = 0;
-    while (i + 1 < this.bars.length && this.bars[i + 1].t <= t + this.bars[i + 1].air) i++;
+    while (i + 1 < this.bars.length && this.bars[i + 1].t - this.bars[i + 1].air <= t) i++;
     const A = this.bars[i], B = this.bars[i + 1] || A;
     const dt = t - A.t;
-    if (dt <= A.air && dt >= -A.air) {
-      const u = (dt + A.air) / (2 * A.air);
+    if (dt <= A.air) {
+      const u = Math.max(0, (dt + A.air) / (2 * A.air));
       if (A.kind === 'grind') {
-        // a 50-50 on the coping: both trucks on the pipe, the board along it, the body upright and leaning a little in
-        const dir = Math.sign(A.z1 - A.z) || 1;
-        const lean = 0.25;
-        return { x: A.side * RAMP_LIP, y: RAMP_TOP + 0.06, z: A.z + (A.z1 - A.z) * u, al: [0, 0, dir], up: norm3([-A.side * Math.sin(lean), Math.cos(lean), 0]), h: 0, u, A, crouch: 0.22, mode: 'grind' };
+        // a 50-50 on the coping: the board stops against the pipe and the body swings up over it, slowing as it rises, an
+        // inverted pendulum; both trucks on the pipe, the board along it, the steel's friction slowing it until it goes
+        // back in or, stopped, stalls there; and it topples back in, speeding up as it falls
+        const g = u * 2 * A.air, T = A.slide, lean = 0.25;
+        const up0 = [-A.side, 0, 0], up1 = norm3([-A.side * Math.sin(lean), Math.cos(lean), 0]);
+        const w = g < SK_POP ? 1 - (1 - g / SK_POP) ** 2 : g > SK_POP + T ? 1 - ((g - SK_POP - T) / SK_POP) ** 2 : 1;
+        const vIn = Math.abs(A.vzIn), stop = Math.min(T, vIn / SK_GRIND), m = Math.min(Math.max(0, g - SK_POP), stop);
+        const z = A.z + A.dirZ * (vIn * Math.min(g, SK_POP) + vIn * m - SK_GRIND * m * m / 2 + Math.abs(A.vzOut) * Math.max(0, g - SK_POP - T));
+        const speed = g < SK_POP ? SK_VLIP * (1 - g / SK_POP) : g > SK_POP + T ? SK_VLIP * (g - SK_POP - T) / SK_POP : 0;
+        const al0 = norm3([0, g < SK_POP ? speed : -speed, g < SK_POP ? A.vzIn : A.vzOut]);
+        return { x: A.side * (RAMP_LIP - 0.05 + 0.05 * w), y: RAMP_TOP + 0.06 * w, z, al: norm3(add3(scale3(al0, 1 - w), scale3([0, 0, A.dirZ], w))), up: norm3(add3(scale3(up0, 1 - w), scale3(up1, w))), h: 0, u, A, crouch: 0.18 + 0.04 * w, mode: 'grind', w, lean: 0, com: 0.9 - 0.022 * w, sliding: g >= SK_POP && g < SK_POP + stop };
       }
-      // an air: straight up off the vert and down again, a little along the ramp; square to the wall it left, the
-      // turn taken about the body's own length (feet to head), so the board comes round to point down the wall
-      const hgt = A.h * 4 * u * (1 - u);                                          // (a parabola: gravity's)
-      const tuck = 0.18 + 0.32 * Math.sin(Math.PI * Math.min(1, u * 1.25));       // knees pulled up to the grab
-      return { x: A.side * (RAMP_LIP - 0.2), y: RAMP_TOP + hgt, z: A.z + (A.z1 - A.z) * u, al: [0, 1, 0], up: [-A.side, 0, 0], h: hgt, u, A, crouch: tuck, mode: 'air' };
+      // an air: from here on nothing acts on it but gravity, so its centre of mass goes straight up and comes back down
+      // the line it left on, on a parabola, at the speed it left at. Folding up pulls the board in toward the centre of
+      // mass, which is what takes it clear of the coping, and the legs reach out for the wall again to land.
+      const hgt = A.h * 4 * u * (1 - u);
+      const tuck = 0.18 + 0.32 * Math.sin(Math.PI * Math.min(1, u * 1.25));
+      const reach = 1 - 0.55 * tuck;
+      const x = A.side * (RAMP_LIP - SK_HLIP + reach - 0.05);
+      return { x, y: RAMP_TOP + hgt, z: A.z + (A.z1 - A.z) * u, al: A.al0, up: [-A.side, 0, 0], h: hgt, u, A, crouch: tuck, mode: 'air', w: smooth01(Math.min(u, 1 - u) / 0.15), lean: 0, com: reach, spin: A.spin };
     }
-    // riding from A's lip to B's: down the wall, across the flat and up, fastest at the bottom; square to the surface
-    const t0 = A.t + A.air, t1 = B.t - B.air;
-    const u = Math.max(0, Math.min(1, (t - t0) / Math.max(0.05, t1 - t0)));
-    const e = 0.5 - 0.5 * Math.cos(Math.PI * u);
-    const s = A.side * RAMP_S + (B.side * RAMP_S - A.side * RAMP_S) * e;
-    const p = rampPoint(s), q = rampPoint(s + Math.sign(B.side - A.side) * 0.01);
-    const tx = q.x - p.x, ty = q.y - p.y, tl = Math.hypot(tx, ty) || 1;
-    let al = [tx / tl, ty / tl, 0];
-    let up = [p.nx, p.ny, 0];
-    // up onto the coping before a grind, and back in off it after one: the board swings between the wall and the
-    // pipe, and the body between square to the wall and upright over the lip
-    const onto = (q, w) => {
-      const gUp = norm3([-q.side * Math.sin(0.25), Math.cos(0.25), 0]);
-      al = norm3(add3(scale3(al, 1 - w), scale3([0, 0, Math.sign(q.z1 - q.z) || 1], w)));
-      up = norm3(add3(scale3(up, 1 - w), scale3(gUp, w)));
-    };
-    if (A.kind === 'grind' && u < 0.2) onto(A, 1 - smooth01(u / 0.2));
-    if (B.kind === 'grind' && u > 0.8) onto(B, smooth01((u - 0.8) / 0.2));
-    // the crouch: pumping as a variable-length pendulum (Kogelbauer et al., "Mechanical optimization of skateboard
-    // pumping", Phys. Rev. Research 2024, from motion capture): standing tall coming down the wall, crouching
-    // steadily across the flat, then pushing up early in the curve going up - standing tall into the vert
-    const dir = Math.sign(B.side - A.side) || 1;
-    const sAlong = s * dir;
-    const arc = RAMP_R * Math.PI / 2;
-    let crouch;
-    if (sAlong < -RAMP_F) {
-      const k = Math.max(0, Math.min(1, (-sAlong - RAMP_F) / arc));        // 1 at the top of the curve coming down, 0 at the flat
-      crouch = 0.08 + 0.12 * (1 - k) * (1 - k);
-    } else if (sAlong <= RAMP_F) {
-      crouch = 0.2 + 0.22 * (sAlong + RAMP_F) / (2 * RAMP_F);
-    } else {
-      const k = Math.min(1, (sAlong - RAMP_F) / arc);
-      crouch = 0.42 - 0.36 / (1 + Math.exp(-(k - 0.22) * 14));
-    }
-    crouch += 0.3 * Math.max(0, 1 - u / 0.15);                              // (and deep just after a landing, to take it)
-    // the board speeding up down the wall and slowing up the next: the body leans with it to keep its weight over it
-    const accel = Math.cos(Math.PI * u);
-    return { x: p.x + p.nx * 0.05, y: p.y + p.ny * 0.05, z: A.z1 + (B.z - A.z1) * e, al, up, h: 0, u, A, crouch, mode: 'ride', accel, rise: Math.max(0, 1 - crouch / 0.42) };
+    // riding from A's lip to B's, along the path the forces gave it
+    const t0 = A.t + A.air, t1 = B.t - B.air, R = A.ride;
+    const dur = R.dur, since = Math.max(0, t - t0);
+    const k = Math.min(R.n - 2, Math.floor(since / SK_DT)), span = k === R.n - 2 ? Math.max(dur - k * SK_DT, 1e-4) : SK_DT;
+    const g = Math.min(1, (since - k * SK_DT) / span), D = R.data, at = (c) => D[k * 4 + c] + (D[(k + 1) * 4 + c] - D[k * 4 + c]) * g;
+    const s = B.side * at(0), hc = at(1), speed = at(2), load = at(3);
+    const p = rampPoint(s);
+    const ds = (D[(k + 1) * 4] - D[k * 4]) / span;              // the board's own speed: faster than its centre of mass round a curve
+    const tang = rampPoint(s + B.side * 0.01);
+    const tx = tang.x - p.x, ty = tang.y - p.y, tl = Math.hypot(tx, ty) || 1;
+    // the wheels roll where they point, so the board points along its velocity: up the wall and along it, carving
+    const u = (t - t0) / dur;
+    const h00 = 2 * u * u * u - 3 * u * u + 1, h10 = u * u * u - 2 * u * u + u, h01 = -2 * u * u * u + 3 * u * u, h11 = u * u * u - u * u;
+    const z = h00 * A.z1 + h10 * dur * A.vzOut + h01 * B.z + h11 * dur * B.vzIn;
+    const vz = (6 * u * u - 6 * u) * A.z1 / dur + (3 * u * u - 4 * u + 1) * A.vzOut + (-6 * u * u + 6 * u) * B.z / dur + (3 * u * u - 2 * u) * B.vzIn;
+    const al = norm3([tx / tl * Math.max(ds, 0.3), ty / tl * Math.max(ds, 0.3), vz]);
+    const crouch = Math.max(0, (1 - hc) / 0.55);
+    // on the wheels the skater feels gravity and the curve together, square to the surface: the board's slowing and
+    // speeding up is gravity's own and cancels, so only friction and drag lean it into the ride, a very little
+    const lean = (SK_MU * Math.max(load, 0) + SK_DRAG * speed * speed) / Math.max(load, 3);
+    return { x: p.x + p.nx * 0.05, y: p.y + p.ny * 0.05, z, al, up: [p.nx, p.ny, 0], h: 0, u, A, crouch, mode: 'ride', w: 0, lean, com: hc, speed, load, s, dir: B.side };
   }
 
+  /**
+   * Where the chase wants the camera for the skater as it is at one moment: behind it along the ramp the way it is going
+   * and off the surface, so it looks down the wall from above as the skater falls away, along the flat, and up the far
+   * wall from below, always looking a little ahead, so the skater rides the lower half of the frame and the upper shows
+   * where it is going; in an air the way it is going turns over at the top, so the camera passes under it, close, and
+   * looks at it alone. On the coping, behind it along the pipe.
+   */
+  chase(Q, t) {
+    const zOff = 1.6 * Math.sin(t * 0.21 + this.camPhase);
+    const aim = [Q.x + Q.up[0] * 0.85, Q.y + Q.up[1] * 0.85, Q.z];
+    const lean = [0, 1, SK_CAM_LEAN * Q.up[0]];
+    if (Q.mode === 'grind') {
+      // (swinging round behind it as it comes up onto the pipe, back again as it drops in)
+      const A = Q.A, sense = 1 - 2 * Q.u, ride = this.behind(A.side * RAMP_S, A.side * sense);
+      const g = [A.side * (RAMP_LIP - 1.9), RAMP_TOP + 1.2, Q.z - A.dirZ * 4.2];
+      const w = Q.w;
+      return { eye: [ride[0] + (g[0] - ride[0]) * w, ride[1] + (g[1] - ride[1]) * w, Q.z + zOff * (1 - w) + (g[2] - Q.z) * w], aim: add3(aim, [0, 0.2 * w + SK_CAM_AHEAD * sense * (1 - w), A.dirZ * 2.5 * w]), lean: [0, 1, 0.12 * A.side * w] };
+    }
+    if (Q.mode === 'air') {
+      const sense = 1 - 2 * smooth01((Q.u - 0.3) / 0.4);
+      const e = this.behind(Q.A.side * RAMP_S, Q.A.side * sense);
+      // (standing off a little further as it passes under, or the skater would overflow the frame)
+      return { eye: [e[0] - Q.A.side * 0.9 * Q.w, e[1] + Q.h * 0.55, Q.z + zOff], aim: add3(aim, [0, SK_CAM_AHEAD * sense * (1 - Q.w), 0]), lean };
+    }
+    const e = this.behind(Q.s, Q.dir);
+    return { eye: [e[0], e[1], Q.z + zOff], aim: add3(aim, scale3(Q.al, SK_CAM_AHEAD)), lean };
+  }
+
+  /** The point behind a place along the ramp, going that way, off the surface; past the lip, straight on up. */
+  behind(s, dir) {
+    const es = s - dir * SK_CAM_BACK, a = Math.abs(es);
+    if (a > RAMP_S) {
+      const side = Math.sign(es);
+      return [side * (RAMP_LIP - SK_CAM_OFF), RAMP_TOP + (a - RAMP_S)];
+    }
+    const p = rampPoint(es);
+    return [p.x + p.nx * SK_CAM_OFF, p.y + p.ny * SK_CAM_OFF];
+  }
+
+  /**
+   * The camera, chasing as the skateboarding games of the late 90s chased (seen in their footage): always behind the
+   * skater, no cuts while it rides, leaning with the wall, the skater kept near the middle of the frame. It has weight:
+   * it follows a critically damped spring, so it falls behind when the skater speeds up, and the skater flying up off
+   * the wall comes right at it. That spring is worked out from the skater's recent past, a weighted sum, not stepped
+   * from frame to frame, so scrubbing gives the same picture. One cut, for the music: from the beat before the air on
+   * the drop to the beat after its landing, a long lens low on the flat looks up at it.
+   */
   camera(t) {
-    const a = 0.14 * Math.sin(t * 0.09 + 1.3);   // (from the front of the ramp, swinging a little to each side: further round, a wall hid its own curve)
-    // it follows the skater, as television does, smoothed over half a second so the frame does not jerk
-    let px = 0, py = 0, pz = 0;
-    for (let k = 0; k < 5; k++) { const Q = this.pose(Math.max(0, t - k * 0.12)); px += Q.x / 5; py += Q.y / 5; pz += Q.z / 5; }
-    const target = [px * 0.6, 1.6 + py * 0.45, pz * 0.6];
-    const eye = [target[0] * 0.6 + Math.sin(a) * 11, 5.2 + 0.5 * Math.sin(t * 0.13), target[2] + Math.cos(a) * 11];
-    const f = norm3(sub3(target, eye));
-    const r = norm3(cross3(f, [0, 1, 0]));
-    const u = cross3(r, f);
-    return { eye, f, r, u };
+    const eye = [0, 0, 0], aim = [0, 0, 0], lean = [0, 0, 0];
+    let we = 0, wa = 0;
+    for (let k = 0; k < SK_CAM_N; k++) {
+      const tau = (k + 0.5) * SK_CAM_STEP, at = Math.max(0, t - tau);
+      const c = this.chase(this.pose(at), at);
+      const ke = tau * Math.exp(-SK_CAM_RATE * tau), ka = tau * Math.exp(-SK_CAM_AIM * tau);
+      for (let j = 0; j < 3; j++) { eye[j] += c.eye[j] * ke; lean[j] += c.lean[j] * ke; aim[j] += c.aim[j] * ka; }
+      we += ke; wa += ka;
+    }
+    for (let j = 0; j < 3; j++) { eye[j] /= we; lean[j] /= we; aim[j] /= wa; }
+    eye[2] = Math.max(-4.5, Math.min(4.5, eye[2]));
+    let focal = SKATE_FOCAL;
+    const now = this.pose(t), spb = this.grid.spb;
+    for (const b of this.bars) {
+      if (b.kind !== 'big') continue;
+      const from = Math.floor((b.t - b.air - 0.15) / spb) * spb, to = Math.ceil((b.t + b.air + 0.05) / spb) * spb;
+      if (t < from || t >= to) continue;
+      const dz = b.z1 >= b.z ? -1 : 1;
+      // (it follows the skater as a camera operator would, with no lag to speak of: on a long lens any would lose it)
+      eye[0] = b.side * (RAMP_LIP - 4.6) + b.side * 0.2 * (t - from);
+      eye[1] = 0.9;
+      eye[2] = Math.max(-4.5, Math.min(4.5, b.z + dz * 2.2));
+      aim[0] = now.x + now.up[0] * 0.5; aim[1] = now.y + now.up[1] * 0.5; aim[2] = now.z;
+      lean[0] = 0; lean[1] = 1; lean[2] = 0;
+      focal = SKATE_DROP_FOCAL;
+    }
+    const f = norm3(sub3(aim, eye));
+    let r = cross3(f, lean);
+    if (Math.hypot(r[0], r[1], r[2]) < 0.15) r = cross3(f, [0.5, 0.5, 0.7]);
+    r = norm3(r);
+    return { eye, f, r, u: cross3(r, f), focal };
   }
 
   /**
@@ -4076,7 +4781,9 @@ export class SkateSim extends PlannedSim {
     const tr = P.A.trick;
     let al = P.al, up = P.up;
     // the air's turn, about the body's own length; half a turn brings the board round to point down the wall
-    if (P.mode === 'air') al = rotateAxis(al, up, tr.dir * tr.turn * Math.PI * 2 * smooth01(P.u));
+    if (P.mode === 'air') al = rotateAxis(al, up, P.spin * smooth01(P.u));
+    const trickPose = P.mode === 'ride' ? null : P.mode;
+    const w = trickPose ? P.w : 0;                 // how far it has gone from its riding pose into the trick's, so no limb jumps
     const toe = norm3(cross3(up, al));              // the toe edge's side: where the chest faces
     const base = [P.x, P.y, P.z];
     const L = (a, h, c) => [base[0] + (al[0] * a + up[0] * h + toe[0] * c) * K, base[1] + (al[1] * a + up[1] * h + toe[1] * c) * K, base[2] + (al[2] * a + up[2] * h + toe[2] * c) * K];
@@ -4084,7 +4791,7 @@ export class SkateSim extends PlannedSim {
     const grab = P.mode === 'air' && tr.hand ? Math.sin(Math.PI * Math.min(1, Math.max(0, (P.u - 0.12) / 0.76))) : 0;
     // the board: in a method pulled up behind the back, in a melon pushed out in front
     let dh = 0, dc = 0;
-    if (P.mode === 'air') { dh = cr * 0.9; if (tr.method) { dh += 0.25 * grab; dc -= 0.3 * grab; } if (tr.tweak) dc += tr.tweak * 0.3 * grab; }
+    if (P.mode === 'air') { dh = cr * 0.9 * w; if (tr.method) { dh += 0.25 * grab; dc -= 0.3 * grab; } if (tr.tweak) dc += tr.tweak * 0.3 * grab; }
     const B = (a, h, c) => L(a, h + dh, c + dc);
     const seg = [];
     const put = (A3, B3, w, kind) => seg.push([A3, B3, w, kind]);
@@ -4112,12 +4819,13 @@ export class SkateSim extends PlannedSim {
     const kneePole = norm3(add3(toe, scale3(up, 0.2)));
     const kF = ik(hjF, aF, THIGH * K, SHIN * K, kneePole), kB = ik(hjB, aB, THIGH * K, SHIN * K, kneePole);
     put(aF, kF, 0.075, 1); put(kF, hjF, 0.085, 1); put(aB, kB, 0.075, 1); put(kB, hjB, 0.085, 1);
-    // the trunk: bent over the toes as the skater crouches, and leaning with the board's speeding up and slowing down
-    // so the weight stays over it; the shoulders turned toward the way it rides (the hips stay square to the board,
-    // so the trunk twists between them), as skaters ride a ramp in the motion-capture study's photographs
-    const lean = 0.08 + cr * 0.35, fore = 0.12 * (P.accel || 0);
+    // the trunk: bent over the toes as the skater crouches, and into the ride only as far as friction and drag push
+    // it (gravity along the ramp speeds the board and the body alike, so it does not lean them); the shoulders turned
+    // toward the way it rides (the hips stay square to the board, so the trunk twists between them), as skaters ride a
+    // ramp in the motion-capture study's photographs
+    const lean = 0.08 + cr * 0.35, fore = P.lean;
     const tUp = norm3(add3(add3(scale3(up, Math.cos(lean)), scale3(toe, Math.sin(lean))), scale3(al, fore)));
-    const twist = P.mode === 'grind' ? 0.3 : P.mode === 'air' ? 0.15 : 0.42;
+    const twist = 0.42 + ((trickPose === 'grind' ? 0.3 : trickPose === 'air' ? 0.15 : 0.42) - 0.42) * w;
     const sa = rotateAxis(al, tUp, -twist), chest = norm3(cross3(tUp, sa));
     const shC = add3(pelvis, scale3(tUp, 0.56 * K));
     const shF = add3(shC, scale3(sa, 0.19 * K)), shB = add3(shC, scale3(sa, -0.19 * K));
@@ -4126,12 +4834,13 @@ export class SkateSim extends PlannedSim {
     put(pelvis, neck, 0.13, 2);
     // the arms as counterweights, not alike: the leading one reaching forward and up the way it rides, the trailing
     // one back and down; both rising as the skater stands and dropping as it crouches; out wide in the air
-    const rise = P.mode === 'ride' ? P.rise : P.mode === 'grind' ? 0.6 : 0.8;
+    const rideRise = Math.min(1, Math.max(0, 1 - cr / 0.7));
+    const rise = rideRise + ((trickPose === 'grind' ? 0.6 : trickPose === 'air' ? 0.8 : rideRise) - rideRise) * w;
     const sway = 0.05 * Math.sin(t * 2.1);
     let hF = add3(shF, add3(scale3(sa, 0.34 * K), add3(scale3(tUp, (-0.3 + 0.32 * rise + sway) * K), scale3(chest, 0.16 * K))));
     let hB = add3(shB, add3(scale3(sa, -0.26 * K), add3(scale3(tUp, (-0.42 + 0.12 * rise - sway) * K), scale3(chest, -0.06 * K))));
-    if (P.mode === 'air') { hF = add3(shF, add3(scale3(sa, 0.38 * K), scale3(tUp, 0.05 * K))); hB = add3(shB, add3(scale3(sa, -0.36 * K), scale3(tUp, -0.1 * K))); }
-    if (P.mode === 'grind') { hF = add3(shF, add3(scale3(sa, 0.42 * K), scale3(tUp, -0.12 * K))); hB = add3(shB, add3(scale3(sa, -0.4 * K), scale3(tUp, -0.22 * K))); }
+    if (trickPose === 'air') { hF = lerp3(hF, add3(shF, add3(scale3(sa, 0.38 * K), scale3(tUp, 0.05 * K))), w); hB = lerp3(hB, add3(shB, add3(scale3(sa, -0.36 * K), scale3(tUp, -0.1 * K))), w); }
+    if (trickPose === 'grind') { hF = lerp3(hF, add3(shF, add3(scale3(sa, 0.42 * K), scale3(tUp, -0.12 * K))), w); hB = lerp3(hB, add3(shB, add3(scale3(sa, -0.4 * K), scale3(tUp, -0.22 * K))), w); }
     if (grab > 0.05) {
       const edge = B(tr.hand === 'front' ? 0.08 : -0.02, 0.06, tr.edge === 'toe' ? 0.12 : -0.12);
       if (tr.hand === 'front') hF = lerp3(hF, edge, Math.min(1, grab * 1.6));
@@ -4162,12 +4871,22 @@ export class SkateSim extends PlannedSim {
     const last = shown[shown.length - 1] || A;
     const since = t - (last.t + last.air);
     const hp = joints[4];
+    // what the shader would otherwise work out over and over for each pixel: the body's frames, and a sphere about all of it
+    const tu = norm3(sub3(joints[5], hp)), sa = norm3(sub3(joints[6], joints[7])), hu = norm3(sub3(joints[12], joints[5]));
+    const face = norm3(add3(scale3(board.al, 0.75), scale3(board.toe, 0.65)));
+    const V = [tu, norm3(cross3(board.al, tu)), sa, norm3(cross3(sa, tu)), hu, face, norm3(cross3(hu, face))];
+    const pts = [...joints, add3(board.c, scale3(board.al, 0.45)), add3(board.c, scale3(board.al, -0.45))];
+    const lo = [0, 1, 2].map((a) => Math.min(...pts.map((q) => q[a]))), hi = [0, 1, 2].map((a) => Math.max(...pts.map((q) => q[a])));
+    const mid = lerp3(lo, hi, 0.5);
+    const radius = Math.sqrt(Math.max(...pts.map((q) => dot3(sub3(q, mid), sub3(q, mid))))) + 0.3;
     return {
+      uSkV: { v: Float32Array.from(V.flatMap((q) => [...q, 0])), kind: '4fv' },
+      uSkBound: { v: [...mid, radius], kind: '4f' },
       uSkJ: { v: J, kind: '4fv' },
       uSkB: { v: Float32Array.from([...board.c, 0, ...board.al, 0, ...board.up, 0, ...board.toe, 0]), kind: '4fv' },
       uSkHip: { v: [hp[0], hp[1], hp[2], P.h], kind: '4f' },
-      uSkShadow: { v: [P.x, P.y - P.h, P.z, P.mode === 'grind' ? 1 : 0], kind: '4f' },
-      uCamE: { v: [...C.eye, SKATE_FOCAL], kind: '4f' },
+      uSkShadow: { v: [P.x, P.y - P.h, P.z, P.sliding ? 1 : 0], kind: '4f' },
+      uCamE: { v: [...C.eye, C.focal], kind: '4f' },
       uCamF: { v: [...C.f, 0], kind: '4f' },
       uCamR: { v: [...C.r, 0], kind: '4f' },
       uCamU: { v: [...C.u, 0], kind: '4f' },
@@ -4178,10 +4897,7 @@ export class SkateSim extends PlannedSim {
 const lerp3 = (a, b, u) => [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, a[2] + (b[2] - a[2]) * u];
 const smooth01 = (x) => { const u = Math.max(0, Math.min(1, x)); return u * u * (3 - 2 * u); };
 const add3 = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
-const sub3 = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const scale3 = (a, k) => [a[0] * k, a[1] * k, a[2] * k];
-const dot3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-const cross3 = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 const norm3 = (a) => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
 function rotateAxis(v, k, ang) {
   // Rodrigues: v turned by ang about the unit axis k
@@ -5119,154 +5835,821 @@ export class ArtillerySim extends PlannedSim {
 }
 
 // ---------------------------------------------------------------------------
-// The behind-view shooter: a flyer over a checkered plain, waves on the bar
+// The behind-view shooter: a flyer free over the whole screen, the plain and
+// the horizon answering him, waves on the bar, a serpent closing each stage
 // ---------------------------------------------------------------------------
 
-export const SKY_FOES = 8;
-export const SKY_SHOTS = 6;
-const SKY_F = 0.9, SKY_EYE = 1.0, SKY_HOR = 0.06, SKY_Z = 3.0;   // focal, eye height, horizon, the flyer's depth
+export const SKY_SPRITES = 48;
+export const SKY_LIMBS = 27;
+const SKY_F = 0.9, SKY_ZH = 4.4;            // the focal length; how far ahead of the eye the flyer flies
+const SKY_GY = -0.45;                       // on the screen, the ground under the flyer: it stays there, whatever the camera does
+const SKY_DT = 1 / 120;                     // the game's fixed step
+const SKY_YMAX = 0.64 * SKY_ZH / SKY_F;     // how high he can go, in world units (near the top of the screen)
+const SKY_XMAX = 0.72 * SKY_ZH / SKY_F;     // how far to the side
+const SKY_VX = 1.37 * SKY_ZH / SKY_F;       // his speed across: the width of the screen in 1.3 seconds, as the genre flew
+const SKY_VY = 0.77 * SKY_ZH / SKY_F;       // and up: the height of the screen in 1.3 seconds
+const SKY_ACC = 34;                         // how quickly he gets to that speed
+const SKY_CAM = 3.2;                        // how fast the plain slides under him at the edge of the screen
+const SKY_FIG = 0.8;                        // the figure's scale, world units for one of its own
+const SKY_FAR = 38;                         // how far ahead scenery appears
+const SKY_HOR0 = -0.38, SKY_HOR1 = -0.03;     // the horizon on the screen, with him on the ground and at his highest
+
+const skyMix = (a, b, u) => a + (b - a) * u;
+
+// The figure: a skeleton in three dimensions, posed by joint angles, turned to
+// the angle the camera sees it from, and handed to the shader as tapered limbs
+// sorted far to near. So its view changes with where it is on the screen, as
+// the genre's sprites changed by column, but continuously: at the left of the
+// screen its right side shows and its blaster points in toward the middle.
+const SKP = { lean: 0, roll: 1, twist: 2, headP: 3, headY: 4, hipFL: 5, hipAL: 6, kneeL: 7, ankL: 8, hipFR: 9, hipAR: 10, kneeR: 11, ankR: 12, shFL: 13, shAL: 14, elL: 15, shFR: 16, shAR: 17, elR: 18, pitch: 19, gun: 20 };
+const SKY_POSE_N = 21;
+function skyPose(o) {
+  const p = new Array(SKY_POSE_N).fill(0);
+  p[SKP.shFR] = 0.95; p[SKP.shAR] = 0.18; p[SKP.elR] = 0.75; p[SKP.gun] = 1;
+  for (const k in o) p[SKP[k]] = o[k];
+  return p;
+}
+const skyBlend = (a, b, u) => a.map((v, i) => v + (b[i] - v) * u);
+
+// Falling: thrown back, arms up; toppling; flat out; a knee under him; up. (The times in parts of the whole fall.)
+const SKY_FALL = [
+  [0.0, skyPose({ lean: -0.1, hipFL: 0.1, kneeL: 0.3, hipFR: -0.1, kneeR: 0.4 })],
+  [0.1, skyPose({ lean: -0.55, pitch: -0.25, roll: 0.25, headP: -0.5, hipFL: 0.5, hipAL: 0.35, kneeL: 0.5, hipFR: -0.4, hipAR: 0.3, kneeR: 0.7, shFL: 0.4, shAL: 2.5, elL: 0.3, shFR: 0.5, shAR: 2.3, elR: 0.3, gun: 0.3 })],
+  [0.22, skyPose({ lean: 0.2, pitch: 0.75, roll: -0.2, headP: 0.3, hipFL: 0.1, hipAL: 0.3, kneeL: 0.9, hipFR: -0.3, hipAR: 0.25, kneeR: 0.3, shFL: 1.2, shAL: 1.8, elL: 0.2, shFR: 1.2, shAR: 1.8, elR: 0.2, gun: 0.1 })],
+  [0.34, skyPose({ lean: 0.05, pitch: 1.5, roll: 0.05, headP: -0.5, hipFL: -0.05, hipAL: 0.5, kneeL: 0.25, ankL: 0.8, hipFR: -0.05, hipAR: 0.4, kneeR: 0.5, ankR: 0.8, shFL: 0.5, shAL: 1.5, elL: 0.4, shFR: 0.5, shAR: 1.5, elR: 0.4, gun: 0 })],
+  [0.62, skyPose({ lean: 0.05, pitch: 1.5, headP: -0.5, hipFL: -0.05, hipAL: 0.5, kneeL: 0.25, ankL: 0.8, hipFR: -0.05, hipAR: 0.4, kneeR: 0.5, ankR: 0.8, shFL: 0.5, shAL: 1.5, elL: 0.4, shFR: 0.5, shAR: 1.5, elR: 0.4, gun: 0 })],
+  [0.76, skyPose({ lean: 0.5, pitch: 0.75, headP: -0.45, hipFL: 1.3, hipAL: 0.25, kneeL: 1.9, hipFR: 0.2, hipAR: 0.2, kneeR: 1.3, shFL: 1.0, shAL: 0.7, elL: 0.2, shFR: 1.0, shAR: 0.6, elR: 0.3, gun: 0.2 })],
+  [0.9, skyPose({ lean: 0.3, pitch: 0.12, headP: -0.2, hipFL: 0.7, hipAL: 0.15, kneeL: 1.0, hipFR: -0.1, hipAR: 0.15, kneeR: 0.3, shFL: 0.4, shAL: 0.5, elL: 0.4, gun: 0.7 })],
+  [1.0, skyPose({ lean: 0.12, hipFL: 0.1, kneeL: 0.3, hipFR: -0.1, kneeR: 0.4, shFL: 0.2, shAL: 0.3, elL: 0.8 })],
+];
+// Stumbling over something low: head down, arms out, a leg kicked up behind; caught.
+const SKY_TRIP = [
+  [0.0, skyPose({ lean: 0.15, hipFL: 0.1, kneeL: 0.3, hipFR: -0.1, kneeR: 0.4 })],
+  [0.28, skyPose({ lean: 0.85, pitch: 0.35, roll: 0.15, headP: 0.2, hipFL: 0.75, hipAL: 0.2, kneeL: 0.5, hipFR: -0.75, hipAR: 0.3, kneeR: 1.5, shFL: 0.5, shAL: 1.5, elL: 0.3, shFR: 0.4, shAR: 1.3, elR: 0.3, gun: 0.7 })],
+  [0.55, skyPose({ lean: 0.95, pitch: 0.5, roll: -0.15, headP: 0.1, hipFL: 1.05, hipAL: 0.2, kneeL: 1.2, hipFR: -0.45, hipAR: 0.2, kneeR: 1.1, shFL: 0.9, shAL: 1.3, elL: 0.3, shFR: 0.7, shAR: 1.2, elR: 0.3, gun: 0.7 })],
+  [1.0, skyPose({ lean: 0.15, hipFL: -0.1, kneeL: 0.4, hipFR: 0.1, kneeR: 0.3, shFL: 0.2, shAL: 0.3, elL: 0.8 })],
+];
+function skyKeys(keys, u) {
+  let i = 0;
+  while (i + 2 < keys.length && keys[i + 1][0] <= u) i++;
+  const A = keys[i], B = keys[i + 1];
+  return skyBlend(A[1], B[1], smooth01((u - A[0]) / (B[0] - A[0])));
+}
+
+// The three turns, each in place: pitch tips the top toward +z (away from the eye), yaw turns the front toward +x, roll tips the top toward +x.
+const rX = (v, a) => { const c = Math.cos(a), s = Math.sin(a); return [v[0], v[1] * c - v[2] * s, v[1] * s + v[2] * c]; };
+const rY = (v, a) => { const c = Math.cos(a), s = Math.sin(a); return [v[0] * c + v[2] * s, v[1], -v[0] * s + v[2] * c]; };
+const rZ = (v, a) => { const c = Math.cos(a), s = Math.sin(a); return [v[0] * c + v[1] * s, -v[0] * s + v[1] * c, v[2]]; };
+
+const SKY_ID = { jacket: 0, trousers: 1, boots: 2, skin: 3, head: 4, pack: 5, gun: 6, flame: 7, scarf: 8, flash: 9 };
 
 /**
- * The behind-view shooter: a flyer with a jetpack seen from behind over a
- * checkered plain rushing toward the screen, columns and bushes going by. On
- * each bar a wave of saucers comes in from the horizon; the flyer slides in
- * front of the nearest and fires on the beat, each shot reaching its saucer on
- * the next beat. Two bars before an accented bar a serpent of glowing orbs
- * weaves in; on the drop it is hit and bursts orb by orb.
+ * Stand the figure up from a pose. `view` is what the camera's angle does to it;
+ * `ground` is how far it stands on the ground (0 in the air; at 1 its lowest point
+ * rests on the ground). Returns its limbs, far to near, in world units about the
+ * point under its feet, and where its muzzle is.
+ */
+function skyFigure(P, view, ground, flame, scarf, flash) {
+  const bodyTurn = (v) => rY(rZ(rX(v, P[SKP.pitch]), view.roll), view.turn);
+  const spine = (v) => rX(rZ(rY(v, P[SKP.twist]), P[SKP.roll]), P[SKP.lean]);
+  const pelvis = [0, 0, 0];
+  const chest = spine([0, 0.52, 0]);
+  const inChest = (v) => add3(chest, spine(v));
+  const neck = inChest([0, 0.13, 0.01]);
+  const inHead = (v) => spine(rX(rY(v, P[SKP.headY]), P[SKP.headP]));
+  const head = add3(neck, inHead([0, 0.13, 0.015]));
+  const leg = (side, F, A, K, An) => {
+    const turn = (v) => rZ(rX(v, -F), side * -A);
+    const hip = [side * 0.115, -0.02, 0];
+    const knee = add3(hip, turn([0, -0.38, 0]));
+    const ankle = add3(knee, turn(rX([0, -0.36, 0], K)));
+    const toe = add3(ankle, turn(rX(rX([0, -0.03, 0.19], K), An)));
+    return [hip, knee, ankle, toe];
+  };
+  const arm = (side, F, A, E) => {
+    const shoulder = inChest([side * 0.275, -0.02, 0]);
+    const turn = (v) => spine(rZ(rX(v, -F), side * -A));
+    const elbow = add3(shoulder, turn([0, -0.27, 0]));
+    const hand = add3(elbow, turn(rX([0, -0.25, 0], -E)));
+    return [shoulder, elbow, hand];
+  };
+  const LL = leg(-1, P[SKP.hipFL], P[SKP.hipAL], P[SKP.kneeL], P[SKP.ankL]);
+  const LR = leg(1, P[SKP.hipFR], P[SKP.hipAR], P[SKP.kneeR], P[SKP.ankR]);
+  const AL = arm(-1, P[SKP.shFL], P[SKP.shAL], P[SKP.elL]);
+  const AR = arm(1, P[SKP.shFR], P[SKP.shAR], P[SKP.elR]);
+  // on his back the jetpack and its nozzles, pushing down and behind him
+  const tankL = [inChest([-0.09, -0.1, -0.2]), inChest([-0.09, -0.36, -0.2])], tankR = [inChest([0.09, -0.1, -0.2]), inChest([0.09, -0.36, -0.2])];
+  const nzL = inChest([-0.09, -0.42, -0.2]), nzR = inChest([0.09, -0.42, -0.2]);
+  const flameDir = spine([0, -0.9, -0.42]);
+  // the blaster, under the arm that holds it: along the way he flies while he holds it up, dropped when he cannot
+  const hold = P[SKP.gun];
+  const down = spine([0.9, -0.15, 0.1]);
+  const gd = [down[0] * (1 - hold), down[1] + (0.03 - down[1]) * hold, down[2] + (1 - down[2]) * hold];
+  const gn = Math.hypot(gd[0], gd[1], gd[2]);
+  const gunDir = [gd[0] / gn, gd[1] / gn, gd[2] / gn];
+  const gunA = add3(AR[2], [gunDir[0] * -0.12, gunDir[1] * -0.12, gunDir[2] * -0.12]);
+  const gunB = add3(AR[2], [gunDir[0] * 0.44, gunDir[1] * 0.44, gunDir[2] * 0.44]);
+
+  // where the ground is, to rest on it; in the air he carries his pelvis at a height of his own
+  let low = 1e9;
+  for (const q of [LL[1], LL[2], LL[3], LR[1], LR[2], LR[3], AL[2], AR[2], head, chest]) {
+    const w = bodyTurn(q);
+    if (w[1] < low) low = w[1];
+  }
+  const rootY = skyMix(0.84, -low + 0.03, ground);
+  // from the figure's space to the camera's: turned about its middle by the angle it is seen from, near parts larger
+  const pivot = 0.66, near = SKY_ZH / SKY_FIG, size = SKY_FIG * (1 + 0.12 * (1 - ground));     // (flight foreshortens him: the sprites kept their size)
+  const see = (q) => {
+    const w = bodyTurn(q);
+    const v = rX(rY([w[0], w[1] + rootY - pivot, w[2]], -view.yaw), view.pitch);
+    const pf = 1 / Math.max(0.45, 1 + v[2] / near);
+    return [v[0] * pf * size, (v[1] * pf + pivot) * size, v[2], pf];
+  };
+  const out = [];
+  const limb = (a, b, ra, rb, id, bias = 0, aux = null) => {
+    const A = see(a), B = see(b);
+    out.push({ ax: A[0], ay: A[1], bx: B[0], by: B[1], ra: ra * A[3] * size, rb: rb * B[3] * size, id, z: (A[2] + B[2]) * 0.5 + bias, aux });
+  };
+  limb(LL[0], LL[1], 0.14, 0.105, SKY_ID.trousers);
+  limb(LL[1], LL[2], 0.1, 0.075, SKY_ID.trousers);
+  limb(LL[2], LL[3], 0.08, 0.07, SKY_ID.boots);
+  limb(LR[0], LR[1], 0.14, 0.105, SKY_ID.trousers);
+  limb(LR[1], LR[2], 0.1, 0.075, SKY_ID.trousers);
+  limb(LR[2], LR[3], 0.08, 0.07, SKY_ID.boots);
+  limb(pelvis, chest, 0.17, 0.215, SKY_ID.jacket);
+  limb(AL[0], AR[0], 0.115, 0.115, SKY_ID.jacket, 0.02);
+  limb(AL[0], AL[1], 0.105, 0.085, SKY_ID.jacket);
+  limb(AL[1], AL[2], 0.08, 0.062, SKY_ID.jacket);
+  limb(AL[2], AL[2], 0.066, 0.066, SKY_ID.skin);
+  limb(AR[0], AR[1], 0.105, 0.085, SKY_ID.jacket);
+  limb(AR[1], AR[2], 0.08, 0.062, SKY_ID.jacket);
+  limb(AR[2], AR[2], 0.066, 0.066, SKY_ID.skin);
+  limb(chest, neck, 0.06, 0.056, SKY_ID.skin, -0.45);
+  // the head, and with it which way it looks on the screen, to know how much of the face shows
+  const fA = see(head), fB = see(add3(head, inHead([0, 0, 0.3])));
+  limb(head, head, 0.14, 0.14, SKY_ID.head, -0.5, [(fB[0] - fA[0]) / (0.3 * size), (fB[1] - fA[1]) / (0.3 * size)]);
+  limb(tankL[0], tankL[1], 0.075, 0.075, SKY_ID.pack);
+  limb(tankR[0], tankR[1], 0.075, 0.075, SKY_ID.pack);
+  limb(nzL, add3(nzL, spine([0, -0.05, 0])), 0.042, 0.05, SKY_ID.gun, -0.01);
+  limb(nzR, add3(nzR, spine([0, -0.05, 0])), 0.042, 0.05, SKY_ID.gun, -0.01);
+  const fl = (n, k) => add3(n, [flameDir[0] * k, flameDir[1] * k, flameDir[2] * k]);
+  limb(fl(nzL, 0.06), fl(nzL, 0.06 + flame[0]), 0.05, 0.012, SKY_ID.flame);
+  limb(fl(nzR, 0.06), fl(nzR, 0.06 + flame[1]), 0.05, 0.012, SKY_ID.flame);
+  limb(gunA, gunB, 0.085, 0.06, SKY_ID.gun);
+  // the scarf, streaming behind his neck: the one part that shows how fast he goes, whatever the pose
+  let s0 = inChest([0, 0.09, -0.08]);
+  for (const d of scarf) { const s1 = add3(s0, d); limb(s0, s1, 0.05, 0.034, SKY_ID.scarf, -0.05); s0 = s1; }
+  const fr = flash > 0 ? 0.2 * flash + 0.03 : 0;
+  limb(gunB, gunB, fr, fr, SKY_ID.flash, -0.3);
+  out.sort((a, b) => b.z - a.z);
+  return { limbs: out, muzzle: see(gunB) };
+}
+
+// A foe's way, in beats since it set out, through keys of beat, across, up, ahead.
+function skyWay(k, b) {
+  let i = 0;
+  while (i + 2 < k.length && k[i + 1][0] <= b) i++;
+  const P1 = k[i], P2 = k[i + 1], P0 = k[Math.max(0, i - 1)], P3 = k[Math.min(k.length - 1, i + 2)];
+  const u = Math.max(0, Math.min(1, (b - P1[0]) / (P2[0] - P1[0])));
+  const cr = (a, c, d, e) => 0.5 * (2 * c + (d - a) * u + (2 * a - 5 * c + 4 * d - e) * u * u + (3 * c - a - 3 * d + e) * u * u * u);
+  return [cr(P0[1], P1[1], P2[1], P3[1]), cr(P0[2], P1[2], P2[2], P3[2]), Math.max(0.1, cr(P0[3], P1[3], P2[3], P3[3]))];
+}
+
+/**
+ * The behind-view shooter, its rules read from two open-source tributes to the
+ * genre and its sprite sheets: the flyer goes where he likes on the screen at a
+ * fixed speed and runs when he is on the ground; the horizon rises with him and
+ * the plain slides under him as he nears an edge of the screen; his shadow stays
+ * on the ground at the foot of the screen. Foes fly set ways, in trains and lanes,
+ * and fire where he was; low things trip him and tall ones throw him down, and the
+ * plain stops while he gets up. A shot's hit is settled as it is fired.
+ *
+ * Its own, and on the music: he runs a stride on each beat, the rows of scenery
+ * pass him on the beat, shots land on the eighths, what bounces lands on the beat,
+ * what is fired at him arrives on the beat, a fall lasts a bar; a serpent of orbs
+ * closes each stage and bursts on the drop, and the next stage starts there.
  */
 export class SkyrushSim extends PlannedSim {
   reset() {
     this.rng = new Rng(this.seed, 'skyrush-sim');
-    this.clock = 0;
-    this.kept = 0;
+    const spb = this.grid.spb;
+    this.U = spb > 0.62 ? 8 : 4;          // the ground covered in a beat
+    this.step = 0;
+    this.t = 0;
+    this.travel = SKY_ZH % this.U;        // so a row of scenery passes him exactly on each beat
+    this.camX = 0;
+    this.hor = SKY_HOR0;
+    this.X = 0; this.Y = 0; this.vx = 0; this.vy = 0;
+    this.lagX = 0; this.lagY = 0;         // his speed as his limbs feel it, late
+    this.tx = 0; this.ty = 0;
+    this.wRun = 1;                        // how far he is running rather than flying
+    this.land = 0;                        // the knock of touching down
+    this.lastFire = -9;
+    this.fall = null; this.trip = null;
+    this.safeUntil = -1;
+    this.lives = 3;
     this.score = 0;
-    this.foes = [];               // {t0, x, y, z0, wx, wy, ph, dead}
-    this.shots = [];              // {t0, t1, foe}
-    this.booms = [];              // {t, x, y, z}
-    this.serpents = [];           // {t0, t1 (the drop), ph}
-    this.aims = [{ t: -1e9, x: 0, y: 0.6 }];
+    this.stage = 0;
+    this.flash = -9;
+    this.foes = [];
+    this.props = [];
+    this.nextRow = 0;
+    while (this.nextRow < this.travel) this.nextRow += this.U;
+    this.shots = [];
+    this.bolts = [];
+    this.booms = [];
+    this.sparks = [];
+    this.boss = null;
+    this.bar = -1;
+    this.nextThink = 0;
+    this.nextFire = 0;
+    this.podsUntil = -1;
+    this.lastPhrase = -1;
+    this.prefY = 0;
+    this.prefPh = this.rng.float(0, 6.28);
   }
 
-  /** A saucer's place at t (world units: x across, y up, z ahead). */
+  barT(b) { return b * this.grid.barSec; }
+
+  /** How many stages are behind us at a time: one for each accented bar. */
+  stageAt(t) {
+    const bars = Math.floor(t / this.grid.barSec + 1e-6);
+    let n = 0;
+    for (let b = 1; b <= bars; b++) if (this.grid.isAccent(this.barT(b))) n++;
+    return n;
+  }
+
+  /** The look of a stage, from the seed and its number, the same however it was reached. */
+  stageTheme(n) {
+    let h = 2166136261;
+    const s = `${this.seed}:${n}`;
+    for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return (h >>> 0) % 3;
+  }
+
   foeAt(f, t) {
-    const u = t - f.t0;
-    return [f.x + f.wx * Math.sin(u * 1.7 + f.ph), f.y + f.wy * Math.sin(u * 2.3 + f.ph * 1.3), f.z0 - u * f.vz];
+    const b = (t - f.t0) / this.grid.spb;
+    if (f.kind === 6) {                   // a hopper: straight in, landing on every beat
+      const u = b - Math.floor(b);
+      return [f.x, 0.5 + 2.4 * 4 * u * (1 - u), Math.max(0.1, skyMix(f.z0, f.z1, b / f.end)), 1 - Math.min(1, Math.min(u, 1 - u) * 7)];
+    }
+    return skyWay(f.keys, b);
   }
 
-  plan() {
-    const bar = this.grid.barSec, spb = this.grid.spb;
-    const t = this.clock;
-    const accentSoon = this.grid.isAccent(t + 2 * bar);
-    if (accentSoon) this.serpents.push({ t0: t, t1: t + 2 * bar, ph: this.rng.float(0, 6) });
-    // a wave: four saucers in a line or a V, coming in from the horizon
-    const v = this.rng.bool();
-    const cx = this.rng.float(-1.2, 1.2), cy = this.rng.float(0.4, 1.4);
-    const wave = [];
-    for (let k = 0; k < 4; k++) {
-      const off = k - 1.5;
-      const f = { t0: t, x: cx + off * 0.9, y: cy + (v ? Math.abs(off) * 0.25 : 0), z0: 26 + Math.abs(off) * (v ? 1.5 : 0), wx: 0.3, wy: 0.15, ph: this.rng.float(0, 6), vz: 26 / (2 * bar) };
-      wave.push(f);
-      this.foes.push(f);
+  addRow() {
+    const r = this.rng, wz = this.nextRow;
+    this.nextRow += this.U;
+    const pass = (wz - SKY_ZH) / this.U * this.grid.spb;      // when it will pass him, had nothing stopped him
+    const beat = Math.round(pass / this.grid.spb);
+    const theme = this.stageTheme(this.stageAt(pass));
+    const put = (rel, kind, h) => this.props.push({ wz, rel, kind, h, lock: false, x: 0, dead: 0, gone: false, ph: r.float(0, 1), blind: r.bool(kind === 1 ? 0.3 : 0.1) });
+    if (beat % 8 === 3) this.props.push({ wz, rel: r.float(-3, 3), kind: 1, h: r.float(0.6, 0.85), lock: false, x: 0, dead: 0, gone: false, ph: r.float(0, 1), blind: r.bool(0.7) });
+    if (theme === 0) {
+      // a colonnade, a pair on every other beat, something low on the way now and then
+      if (beat % 2 === 0) { put(-5.0, 0, 3.6); put(5.0, 0, 3.6); }
+      if (beat % 8 === 6) put(r.float(-3, 3), 1, 0.7);
+      if (beat % 16 === 12) put(r.float(-1.5, 1.5), 2, 1.0);
+    } else if (theme === 1) {
+      // a wood: trees to the sides, thickets on the way
+      if (beat % 3 === 0) put((r.bool() ? -1 : 1) * r.float(3.4, 8), 3, r.float(3.0, 4.4));
+      if (r.bool(0.5)) put(r.float(-5, 5), 1, r.float(0.6, 0.9));
+    } else {
+      // pillars left and right in turn, stones between
+      if (beat % 2 === 0) put((beat % 4 === 0 ? -1 : 1) * r.float(2.0, 4.5), 0, r.float(2.2, 3.6));
+      if (r.bool(0.4)) put(r.float(-5, 5), 2, r.float(0.8, 1.3));
     }
-    // the flyer fires on the beats of the bar, each shot reaching a saucer of the wave on the next beat
-    let b = t;
-    for (let k = 0; k < 4; k++) {
-      const fire = this.grid.next(b + 1e-6, 4);
-      const hit = this.grid.next(fire + 1e-6, 4);
-      b = fire;
-      const f = wave.filter((q) => !q.dead).sort((p, q) => this.foeAt(p, hit)[2] - this.foeAt(q, hit)[2])[0];
-      if (!f || this.rng.bool(0.15)) continue;
-      const at = this.foeAt(f, hit);
-      if (at[2] < SKY_Z + 1) continue;
-      f.dead = hit;
-      this.shots.push({ t0: fire, t1: hit, foe: f });
-      this.booms.push({ t: hit, x: at[0], y: at[1], z: at[2] });
-      this.aims.push({ t: fire - spb * 0.5, x: Math.max(-1.3, Math.min(1.3, at[0] * 0.6)), y: Math.max(0.3, Math.min(1.5, at[1] * 0.8)) });
-      this.score += 100;
+  }
+
+  // ---- what comes in on a bar ----
+  wave(t) {
+    if (t < this.podsUntil) return;
+    const r = this.rng, s = r.bool() ? 1 : -1, spb = this.grid.spb;
+    const add = (o) => this.foes.push(Object.assign({ t0: t, dead: 0, crossed: false, fires: [], fired: 0 }, o));
+    const roll = r.float(0, 1);
+    if (roll < 0.34) {
+      // a train: one after another along the same way, from the middle of the horizon, past the eye
+      const y = r.float(1.6, 2.6);
+      const keys = [[0, s * 0.4, y, 40], [2, s * 3.2, y + 0.6, 24], [4, -s * 2.8, y - 0.5, 13], [6, s * 2.2, y + 0.3, 7], [7.5, s * 5.5, y + 1.3, 2.5], [8.5, s * 9, y + 2, 0.2]];
+      for (let k = 0; k < 5; k++) add({ kind: 4, keys, t0: t + k * 0.5 * spb, fires: k === 2 ? [3] : [], end: 8.5 });
+    } else if (roll < 0.62) {
+      // three lanes: out to their places, a pause, a lift, and down past him
+      const y = r.float(1.2, 3.0);
+      for (let k = -1; k <= 1; k++) {
+        const X = k * 3.0;
+        const keys = [[0, X * 0.1, 2.2, 40], [2, X, y, 14], [4, X, y, 12.5], [5, X, y + 1.2, 10], [6.5, X * 1.5, y - 0.6, 3], [7.5, X * 3, y - 0.8, 0.2]];
+        add({ kind: 4, keys, t0: t + (k + 1) * 0.25 * spb, fires: k === 0 ? [4] : [], end: 7.5 });
+      }
+    } else if (roll < 0.8) {
+      // across, from one side to the other, in front of him
+      const y = r.float(1.6, 3.2);
+      for (let k = 0; k < 3; k++) {
+        const keys = [[0, s * 10, y, 17], [2, s * 2.6, y - 0.3, 12], [4, -s * 3, y + 0.2, 9], [6, -s * 11, y + 0.8, 7]];
+        add({ kind: 4, keys, t0: t + k * spb, fires: k === 1 ? [3] : [], end: 6 });
+      }
+    } else if (roll < 0.92) {
+      // hoppers, straight in at him along the ground, each landing on a beat
+      const X0 = this.X;
+      for (let k = 0; k < 3; k++) add({ kind: 6, t0: t + k * spb, x: Math.max(-4, Math.min(4, X0 + (k - 1) * 2.1)), z0: 36, z1: 0.2, end: 8 });
+    } else {
+      // pods holding their places, opening on the back half of each bar: a shot on a closed shell only glances off
+      const keys = (X, Y) => [[0, 0, 2.2, 40], [2.5, X, Y, 12], [6, X, Y, 11.5], [10, X, Y, 11], [12, X * 1.6, Y + 2.2, 36], [13, X * 1.8, Y + 2.5, 60]];
+      add({ kind: 5, keys: keys(-3.2, 2.2), fires: [6], end: 13 });
+      add({ kind: 5, keys: keys(3.2, 2.2), fires: [10], end: 13 });
+      add({ kind: 5, keys: keys(0, 3.8), end: 13 });
+      this.podsUntil = t + 3 * this.grid.barSec;
     }
-    if (this.grid.isAccent(t)) this.score += 5000;
-    this.clock = t + bar;
+  }
+
+  podOpen(f, t) {
+    const b = (t - f.t0) / this.grid.spb;
+    const c = b - 4 * Math.floor(b / 4);
+    return b > 2 ? smooth01((c - 2) * 5) * smooth01((4 - c) * 5) : 0;
+  }
+
+  // ---- the serpent: its head sets the way and each link follows a moment later ----
+  bossAt(B, tau) {
+    const cycle = Math.max(this.grid.barSec * 2, 2.5);
+    const u = (tau - B.t0) / cycle;
+    const entry = smooth01((tau - B.t0) / this.grid.barSec);
+    const swing = u * 5.5 * Math.PI + B.ph;
+    const near = skyMix(21, 8.5, 0.5 - 0.5 * Math.cos(u * 2 * Math.PI));
+    const end = smooth01((tau - (B.t1 - this.grid.barSec)) / this.grid.barSec);
+    return [3.3 * Math.sin(swing) * entry, 2.6 + 1.5 * Math.sin(swing * 0.73 + 1.0), skyMix(46, skyMix(near, 11, end), entry)];
+  }
+
+  bossLink(k) { return k * this.grid.spb * 0.2; }
+
+  // ---- him ----
+  hit(t, kind) {
+    if (t < this.safeUntil || this.fall || this.trip) return;
+    // nothing throws him in the bars before a drop: he has the serpent to finish
+    const bar = this.grid.barSec, next = Math.ceil(t / bar + 1e-6) * bar;
+    if (this.grid.isAccent(next) || this.grid.isAccent(next + bar)) return;
+    if (kind === 'trip') {
+      this.trip = { t0: t, dur: 2 * this.grid.spb };
+    } else {
+      // the plain slows, stops and picks up over the fall's bar, losing a whole number of beats, so the rows stay on them
+      this.fall = { t0: t, dur: 4 * this.grid.spb };
+      this.lives = Math.max(0, this.lives - 1);
+      this.vy = 2.6;
+    }
+  }
+
+  think(t) {
+    const spb = this.grid.spb, r = this.rng;
+    // where he would like to be: running on some phrases, high on others, wandering from side to side so all his sides are seen
+    const phrase = Math.floor(t / (2 * this.grid.barSec));
+    if (phrase !== this.lastPhrase) {
+      this.lastPhrase = phrase;
+      const seq = [0, 0.3, 0.75, 0, 0.45, 1, 0, 0.55];
+      this.prefY = phrase === 0 ? 0 : seq[(phrase + Math.floor(this.prefPh * 3)) % seq.length] * SKY_YMAX;
+    }
+    const prefX = this.wander(t);
+        // the foe to line up with: the nearest still coming
+    let aim = null, az = 1e9;
+    for (const f of this.foes) {
+      if (f.dead || t < f.t0) continue;
+      const P = this.foeAt(f, t + spb * 0.5);
+      if (P[2] < SKY_ZH + 2 || P[2] > 30) continue;
+      if (P[2] < az) { az = P[2]; aim = P; }
+    }
+    if (this.boss && !this.boss.done && t > this.boss.t0 + this.grid.barSec && t < this.boss.t1) aim = this.bossAt(this.boss, t + spb * 0.5);
+    // what is coming through the plane he flies in, in the next moment
+    const haz = [];
+    const v = this.U / spb;
+    for (const p of this.props) {
+      if (p.dead || p.gone || p.blind) continue;
+      const tau = (p.wz - this.travel - SKY_ZH) / v;
+      if (tau < -0.05 || tau > 1.5) continue;
+      const hw = p.kind === 0 ? 0.42 : p.kind === 3 ? 0.9 : 0.85;
+      haz.push({ x: this.propRel(p), hw: hw + 0.3, y0: 0, y1: p.h * (p.kind === 3 ? 0.88 : 1), tau, prop: true });
+    }
+    for (const q of this.bolts) {
+      const tau = q.t1 - t;
+      if (q.blind || tau < -0.02 || tau > 2.2) continue;
+      haz.push({ x: q.to[0], hw: 0.6, y0: q.to[1] - 0.55, y1: q.to[1] + 0.4, tau });
+    }
+    for (const f of this.foes) {
+      if (f.dead || t < f.t0 || f.crossed) continue;
+      for (const dt of [0.3, 0.6, 0.9, 1.2]) {
+        const P = this.foeAt(f, t + dt);
+        if (Math.abs(P[2] - SKY_ZH) < 1.2) { haz.push({ x: P[0], hw: 1.0, y0: P[1] - 0.8, y1: P[1] + 0.8, tau: dt }); break; }
+      }
+    }
+    let best = -1e9, bx = this.tx, by = this.ty;
+    for (let iy = 0; iy < 6; iy++) {
+      const cy = iy * SKY_YMAX / 5;
+      for (let ix = -4; ix <= 4; ix++) {
+        const cx = ix * SKY_XMAX / 4;
+        let s = -0.12 * Math.abs(cx - this.X) - 0.12 * Math.abs(cy - this.Y);
+        s -= 0.3 * Math.abs(cx - prefX) + 0.55 * Math.abs(cy - this.prefY);
+        if (aim) s -= (this.prefY === 0 ? 0.08 : 0.3) * Math.abs(cx - aim[0]) + (this.prefY === 0 ? 0 : 0.2) * Math.abs(cy - (aim[1] - 0.6));
+        s -= 0.1 * (Math.abs(cx - this.tx) + Math.abs(cy - this.ty));
+        for (const h of haz) {
+          // where he could be by then, on his way there
+          const hx = this.X + Math.max(-SKY_VX * h.tau, Math.min(SKY_VX * h.tau, cx - this.X));
+          const hy = this.Y + Math.max(-SKY_VY * h.tau, Math.min(SKY_VY * h.tau, cy - this.Y));
+          const slide = h.prop ? SKY_CAM * (hx / SKY_XMAX) * h.tau : 0;
+          if (Math.abs(hx - (h.x - slide)) < h.hw + 0.25 && hy + 0.05 < h.y1 && hy + 1.25 > h.y0) s -= 12;
+        }
+        s += r.float(0, 0.03);
+        if (s > best) { best = s; bx = cx; by = cy; }
+      }
+    }
+    this.tx = bx; this.ty = by;
+  }
+
+  propRel(p) { return p.lock ? p.x - this.camX : p.rel; }
+
+  /** Where he drifts when nothing calls him: side to side over seven beats, so all his sides are seen. */
+  wander(t) { return 3.1 * Math.sin(t / this.grid.spb * Math.PI / 7 + this.prefPh); }
+
+  fire(t) {
+    const grid = this.grid, spb = grid.spb;
+    if (this.fall || this.trip || t < 2 * spb) return;
+    const X = this.X, Yc = this.Y + 0.62;
+    // what lies along his line, settled now: near it is hard to miss, far it takes a good line
+    const tol = (z) => Math.max(0.7, 1.7 - z * 0.035);
+    let found = null, fz = 1e9;
+    const landAt = (z) => grid.next(z > 17 ? grid.next(t + 1e-6, 2) : t + 1e-6, 2);
+    const consider = (P, what) => {
+      const z = P[2];
+      if (z < SKY_ZH + 1.2 || z > 34) return;
+      if (Math.abs(P[0] - X) > tol(z) || Math.abs(P[1] - Yc) > tol(z) + 0.3) return;
+      if (z < fz) { fz = z; found = what; }
+    };
+    for (const f of this.foes) {
+      if (f.dead || t < f.t0) continue;
+      const l = landAt(this.foeAt(f, t)[2]);
+      const P = this.foeAt(f, l);
+      consider(P, { foe: f, l, P });
+    }
+    if (this.boss && !this.boss.done && t > this.boss.t0 && t < this.boss.t1) {
+      // the serpent's head can be hurt; a shot on its body glances off
+      const B = this.boss;
+      const l = landAt(this.bossAt(B, t)[2]);
+      for (let k = 0; k < B.n; k++) {
+        const P = this.bossAt(B, l - this.bossLink(k));
+        consider(P, { link: k, l, P });
+      }
+    }
+    for (const p of this.props) {
+      if (p.dead || p.gone || p.blind) continue;     // (what he has not seen he does not shoot at)
+      const l = landAt(p.wz - this.travel);
+      const z = p.wz - this.travel - (l - t) * this.U / spb;
+      const rx = this.propRel(p);
+      if (Math.abs(rx - X) > 0.8 || Yc > p.h + 0.3) continue;
+      const P = [rx, Math.min(Yc, p.h * 0.6), z];
+      consider(P, { prop: p, l, P });
+    }
+    // with nothing on his line he still fires on the beat
+    const onBeat = Math.abs(t / spb - Math.round(t / spb)) < 1e-3;
+    if (!found && !onBeat) return;
+    this.lastFire = t;
+    const m = this.figure(t).muzzle;
+    const from = [X + m[0], this.Y + m[1], SKY_ZH];
+    if (found) {
+      const q = { t0: t, t1: found.l, from, to: found.P, kind: 'hit' };
+      if (found.foe) {
+        const f = found.foe;
+        if (f.kind === 5 && this.podOpen(f, found.l) < 0.5) q.kind = 'glance';
+        else { f.dead = found.l; q.foe = f; }
+      } else if (found.prop) {
+        if (found.prop.kind === 0) q.kind = 'glance';
+        else { found.prop.dead = found.l; q.prop = found.prop; }
+      } else if (found.link > 0) q.kind = 'glance';
+      else q.head = true;
+      this.shots.push(q);
+    } else {
+      this.shots.push({ t0: t, t1: t + 0.42, from, to: [X * 0.5, Yc * 0.6, SKY_ZH + 30], kind: 'miss' });
+    }
+  }
+
+  tick() {
+    const t = this.t, dt = SKY_DT, grid = this.grid, spb = grid.spb;
+    // the bar: a stage ends, a serpent comes, a wave sets out
+    const bar = Math.floor(t / grid.barSec + 1e-6);
+    if (bar !== this.bar) {
+      this.bar = bar;
+      const bt = this.barT(bar);
+      if (grid.isAccent(bt)) {
+        this.stage++;
+        this.lives = 3;
+        this.flash = bt;
+        this.score += 5000;
+      }
+      if (!this.boss || this.boss.done) {
+        for (let k = 3; k >= 2; k--) {
+          if (!grid.isAccent(this.barT(bar + k))) continue;
+          let clear = true;
+          for (let j = 1; j < k; j++) if (grid.isAccent(this.barT(bar + j))) clear = false;
+          if (!clear) continue;
+          this.boss = { t0: bt, t1: this.barT(bar + k), ph: this.rng.float(0, 6.28), n: 9, done: false, fired: -1, bursting: false };
+          break;
+        }
+      }
+      const fighting = this.boss && !this.boss.done && bt < this.boss.t1;
+      if (bar >= 1 && !fighting) this.wave(bt);
+    }
+    // the serpent's rounds: three quick shots on the back half of its bars
+    if (this.boss && !this.boss.done) {
+      const B = this.boss;
+      if (t < B.t1 && t > B.t0 + grid.barSec) {
+        const six = Math.floor(t / grid.six + 1e-6);
+        if (six !== B.fired) {
+          B.fired = six;
+          const inBar = six - Math.round(bar * grid.steps);
+          if (inBar >= 8 && inBar < 14 && inBar % 2 === 0) {
+            const from = this.bossAt(B, t);
+            if (from[2] > SKY_ZH + 2) this.bolts.push({ t0: t, t1: t + 2 * spb, from, to: [this.X + (inBar - 10) * 0.28, this.Y + 0.62] });
+          }
+        }
+      }
+      if (t >= B.t1 && !B.bursting) {
+        B.bursting = true;
+        for (let k = 0; k < B.n; k++) {
+          const P = this.bossAt(B, B.t1 - this.bossLink(k));
+          this.booms.push({ t: B.t1 + k * grid.six * 0.5, x: P[0], y: P[1], z: P[2], size: k === 0 ? 2.8 : 2.0 });
+        }
+        this.score += 1000;
+      }
+      if (t > B.t1 + 2) B.done = true;
+    }
+    // foes firing where he is now, the shot arriving on a beat
+    for (const f of this.foes) {
+      if (f.dead || f.fired >= f.fires.length || t < f.t0) continue;
+      if ((t - f.t0) / spb >= f.fires[f.fired]) {
+        f.fired++;
+        const from = this.foeAt(f, t);
+        if (from[2] > SKY_ZH + 2) this.bolts.push({ t0: t, t1: grid.next(t + 1.5 * spb, 4), from, to: [this.X, this.Y + 0.62], blind: this.rng.bool(0.35) });
+      }
+    }
+    // the plain goes on, stopping for a fall
+    let speed = 1;
+    if (this.fall) speed = 0.5 + 0.5 * Math.cos(Math.PI * 2 * Math.min(1, (t - this.fall.t0) / this.fall.dur));
+    this.travel += this.U / spb * speed * dt;
+    this.camX += SKY_CAM * (this.X / SKY_XMAX) * speed * (this.fall || this.trip ? 0.2 : 1) * dt;
+    while (this.nextRow < this.travel + SKY_FAR) this.addRow();
+    for (const p of this.props) {
+      const z = p.wz - this.travel;
+      // far away it keeps its place on the screen, where nobody could see it slide; near, it is on the ground for good
+      // (and what he will not see, while he is on foot, drifts onto his way while it is too far to tell: so he does stumble)
+      const stray = p.blind && p.kind === 1 && this.prefY === 0 && this.Y < 0.3;
+      if (!p.lock && stray) p.rel += (this.X + SKY_CAM * (this.X / SKY_XMAX) * (z - SKY_ZH) * spb / this.U - p.rel) * (1 - Math.exp(-dt * 1.6));
+      if (!p.lock && z < (stray ? 9 : 18)) { p.lock = true; p.x = this.camX + p.rel; }
+      if (!p.gone && !p.dead && z <= SKY_ZH) {
+        p.gone = true;     // through his plane: he clears it or he does not
+        const hw = p.kind === 0 ? 0.36 : p.kind === 3 ? 0.55 : 0.6;
+        if (Math.abs(this.propRel(p) - this.X) < hw + 0.16 && this.Y < p.h * (p.kind === 3 ? 0.88 : 1) - 0.1) this.hit(t, p.kind === 1 ? 'trip' : 'fall');
+      }
+    }
+    // shots land when they said they would
+    for (const q of this.shots) {
+      if (q.done || t < q.t1) continue;
+      q.done = true;
+      if (q.foe) { this.booms.push({ t: q.t1, x: q.to[0], y: q.to[1], z: q.to[2], size: 1.15 }); this.score += 100; }
+      if (q.prop) { this.booms.push({ t: q.t1, x: q.to[0], y: q.to[1], z: q.to[2], size: 1.1 }); this.score += 50; }
+      if (q.head) { this.score += 200; this.sparks.push({ t: q.t1, x: q.to[0], y: q.to[1], z: q.to[2], dx: 0, dy: 0 }); }
+      if (q.kind === 'glance') {
+        const a = (q.t1 * 91.7) % 6.28;
+        this.sparks.push({ t: q.t1, x: q.to[0], y: q.to[1], z: q.to[2], dx: Math.cos(a) * 6, dy: Math.sin(a) * 6 });
+      }
+    }
+    // what crosses his plane
+    for (const q of this.bolts) {
+      if (q.hit || t < q.t1) continue;
+      q.hit = true;
+      if (Math.abs(q.to[0] - this.X) < 0.42 && Math.abs(q.to[1] - (this.Y + 0.62)) < 0.62) this.hit(t, 'fall');
+    }
+    for (const f of this.foes) {
+      if (f.dead || t < f.t0 || f.crossed) continue;
+      const P = this.foeAt(f, t);
+      if (P[2] <= SKY_ZH) {
+        f.crossed = true;
+        if (Math.abs(P[0] - this.X) < 0.75 && Math.abs(P[1] - (this.Y + 0.62)) < 0.8 && t > this.safeUntil && !this.fall && !this.trip) {
+          f.dead = t;
+          this.booms.push({ t, x: P[0], y: P[1], z: P[2], size: 1.5 });
+          this.hit(t, 'fall');
+        }
+      }
+    }
+    // the eighth, and he fires; the sixteenth, and he thinks again
+    if (t >= this.nextFire) { this.fire(this.nextFire); this.nextFire = grid.next(this.nextFire + 1e-6, 2); }
+    if (t >= this.nextThink) { this.think(t); this.nextThink = grid.next(this.nextThink + 1e-6, 1); }
+    // him
+    if (this.fall) {
+      this.vx *= Math.exp(-dt * 7);
+      this.X += this.vx * dt;
+      this.vy -= 13 * dt;
+      this.Y = Math.max(0, this.Y + this.vy * dt);
+      if (this.Y <= 0) this.vy = 0;
+      if (t >= this.fall.t0 + this.fall.dur) {
+        this.fall = null;
+        this.safeUntil = t + 4 * spb;
+        this.tx = this.X; this.ty = 0;
+      }
+    } else if (this.trip) {
+      this.vx *= Math.exp(-dt * 8);
+      this.X += this.vx * dt;
+      this.vy = 0;
+      this.Y = Math.max(0, this.Y - 8 * dt);
+      if (t >= this.trip.t0 + this.trip.dur) { this.trip = null; this.safeUntil = t + 2 * spb; }
+    } else {
+      const wantX = Math.max(-SKY_VX, Math.min(SKY_VX, (this.tx - this.X) * 7));
+      const wantY = Math.max(-SKY_VY, Math.min(SKY_VY, (this.ty - this.Y) * 7));
+      this.vx += Math.max(-SKY_ACC * dt, Math.min(SKY_ACC * dt, wantX - this.vx));
+      this.vy += Math.max(-SKY_ACC * dt, Math.min(SKY_ACC * dt, wantY - this.vy));
+      this.X = Math.max(-SKY_XMAX, Math.min(SKY_XMAX, this.X + this.vx * dt));
+      const wasUp = this.Y > 0;
+      this.Y = Math.max(0, Math.min(SKY_YMAX, this.Y + this.vy * dt));
+      if (wasUp && this.Y <= 0) { this.land = Math.min(1, Math.max(0.3, -this.vy / SKY_VY)); this.vy = 0; }
+    }
+    const lk = 1 - Math.exp(-dt / 0.17);
+    this.lagX += (this.vx - this.lagX) * lk;
+    this.lagY += (this.vy - this.lagY) * lk;
+    this.land *= Math.exp(-dt * 7);
+    this.wRun += ((this.Y < 0.02 && !this.fall ? 1 : 0) - this.wRun) * (1 - Math.exp(-dt / 0.07));
+    // the horizon, late, rising with him
+    this.hor += (skyMix(SKY_HOR0, SKY_HOR1, Math.pow(this.Y / SKY_YMAX, 1.2)) - this.hor) * (1 - Math.exp(-dt / 0.3));
+    // let go of what has gone by
+    if (this.step % 240 === 0) {
+      const old = t - 3;
+      this.foes = this.foes.filter((f) => !(f.dead && f.dead < old) && (t - f.t0) / spb < f.end + 1);
+      this.props = this.props.filter((p) => p.wz - this.travel > 0.3 && !(p.dead && p.dead < old));
+      this.shots = this.shots.filter((q) => q.t1 > old);
+      this.bolts = this.bolts.filter((q) => q.t1 > old);
+      this.booms = this.booms.filter((q) => q.t > old);
+      this.sparks = this.sparks.filter((q) => q.t > old);
+    }
+    this.step++;
+    this.t = this.step * SKY_DT;
   }
 
   advanceTo(t) {
-    if (t < this.kept) this.reset();
-    while (this.clock <= t + 3 * this.grid.barSec) this.plan();
-    const keep = t - 3;
-    this.foes = this.foes.filter((f) => f.t0 > keep - 4 * this.grid.barSec);
-    this.shots = this.shots.filter((q) => q.t1 > keep);
-    this.booms = this.booms.filter((q) => q.t > keep);
-    this.serpents = this.serpents.filter((q) => q.t1 > keep);
-    while (this.aims.length > 2 && this.aims[1].t < keep) this.aims.shift();
-    this.kept = Math.max(0, this.aims[0].t > -1e8 ? this.aims[0].t : 0);
+    const want = Math.floor(Math.max(0, t) / SKY_DT);
+    if (want < this.step) this.reset();
+    while (this.step < want) this.tick();
   }
 
-  /** Where the flyer is: easing from aim to aim, bobbing as it flies. */
-  heroAt(t) {
-    let i = 0;
-    while (i + 1 < this.aims.length && this.aims[i + 1].t <= t) i++;
-    const a = this.aims[i], b = this.aims[Math.min(i + 1, this.aims.length - 1)];
-    const u = b.t > a.t ? Math.min(1, Math.max(0, (t - a.t) / Math.max(0.05, b.t - a.t))) : 1;
-    const e = u * u * (3 - 2 * u);
-    return [a.x + (b.x - a.x) * e + 0.05 * Math.sin(t * 1.9), a.y + (b.y - a.y) * e + 0.06 * Math.sin(t * 2.7)];
+  /** His pose now: which of his actions, blended with the next. */
+  pose(t) {
+    const spb = this.grid.spb, beat = t / spb;
+    if (this.fall) return skyKeys(SKY_FALL, Math.min(1, (t - this.fall.t0) / this.fall.dur));
+    if (this.trip) return skyKeys(SKY_TRIP, Math.min(1, (t - this.trip.t0) / this.trip.dur));
+    // running: a stride to the beat, as near half a second as the tempo lets; the knees high and the heels kicked up behind
+    const strides = spb < 0.4 ? 0.5 : spb > 0.72 ? 2 : 1;
+    const ph = beat * strides * Math.PI * 2;
+    const legRun = (a) => {
+      const c = Math.cos(a - 0.2);
+      const swing = Math.pow(Math.max(0, c), 1.5);
+      return [0.22 + 0.95 * Math.sin(a), 0.07 + 0.2 * swing, 0.25 + 1.75 * swing, 0.15 + 0.6 * Math.max(0, c)];
+    };
+    const L = legRun(ph), R = legRun(ph + Math.PI);
+    const run = skyPose({
+      lean: 0.2 + 0.05 * Math.cos(2 * ph), roll: 0.09 * Math.cos(ph), twist: 0.32 * Math.sin(ph), headY: -0.2 * Math.sin(ph), pitch: 0.1,
+      hipFL: L[0], hipAL: L[1], kneeL: L[2], ankL: L[3], hipFR: R[0], hipAR: R[1], kneeR: R[2], ankR: R[3],
+      shFL: 0.2 - 0.95 * Math.sin(ph), shAL: 0.3, elL: 1.4, shFR: 1.0 + 0.16 * Math.sin(ph), shAR: 0.22, elR: 0.75,
+    });
+    if (this.wRun > 0.995 && this.land < 0.01) return run;
+    // flying: his legs apart and trailing, swaying, and thrown by what he has just done
+    const lx = this.lagX / SKY_VX, ly = this.lagY / SKY_VY;
+    const sway = Math.sin(beat * Math.PI) * 0.11, sw2 = Math.sin(beat * Math.PI + 1.1) * 0.09;
+    const fly = skyPose({
+      pitch: 0.2 - 0.2 * ly, lean: 0.12 - 0.08 * ly, twist: 0.1 * lx, headP: -0.14 + 0.18 * ly, headY: 0.18 * lx,
+      hipFL: -0.08 + sway - 0.1 * ly, hipAL: 0.44 + 0.14 * Math.max(0, -lx) + sw2 * 0.4,
+      kneeL: 0.5 + 0.4 * Math.max(0, -ly) + sw2, ankL: 0.9,
+      hipFR: -0.16 - sway + 0.05 * ly, hipAR: 0.44 + 0.14 * Math.max(0, lx) - sw2 * 0.4,
+      kneeR: 0.34 + 0.5 * Math.max(0, -ly) - sw2, ankR: 0.9,
+      shFL: 0.35 + 0.25 * ly, shAL: 0.85 + 0.55 * lx + 0.45 * Math.max(0, ly) + 0.08 * Math.sin(beat * Math.PI + 0.5), elL: 0.55,
+      shFR: 0.98, shAR: 0.2, elR: 0.72,
+    });
+    const P = skyBlend(fly, run, this.wRun);
+    if (this.land > 0.01) {
+      // touching down, the knees take it
+      const k = this.land;
+      P[SKP.kneeL] += 0.9 * k; P[SKP.kneeR] += 0.9 * k;
+      P[SKP.hipFL] += 0.5 * k; P[SKP.hipFR] += 0.5 * k;
+      P[SKP.lean] += 0.35 * k;
+    }
+    return P;
+  }
+
+  /** The figure now, seen from where the eye is: at the side of the screen, from the side; high up, from below. */
+  figure(t) {
+    const F = SKY_F, H = this.hor;
+    const hx = this.X * F / SKY_ZH, feet = SKY_GY + this.Y * F / SKY_ZH;
+    const lx = this.lagX / SKY_VX, ly = this.lagY / SKY_VY;
+    const view = { yaw: Math.atan2(hx, F) * 0.88, pitch: Math.atan2(feet + 0.14 - H, F) + (feet + 0.14) * 0.25, roll: 0.28 * lx, turn: 0.26 * lx };
+    let ground = this.wRun;
+    if (this.fall) ground = skyMix(1, 0.35, Math.min(1, this.Y / 0.3));
+    if (this.trip) ground = 1;
+    const air = 1 - this.wRun;
+    const fl = (k) => (0.1 + air * (0.32 + 0.22 * Math.max(0, ly))) * (0.85 + 0.25 * Math.sin(t * 70 + k * 2.1));
+    const scarf = [];
+    for (let k = 0; k < 3; k++) {
+      const w = Math.sin(t * 11 - k * 1.5) * (0.03 + 0.022 * k);
+      scarf.push([-0.1 - lx * 0.1 + w * 0.5, -ly * 0.05 - 0.03 - 0.018 * k + w, -0.1]);
+    }
+    const age = t - this.lastFire;
+    return skyFigure(this.pose(t), view, ground, [fl(0), fl(1)], scarf, age >= 0 && age < 0.07 ? 1 - age / 0.07 : 0);
   }
 
   uniforms(t) {
     this.advanceTo(t);
-    const proj = (P) => [P[0] / P[2] * SKY_F, SKY_HOR + (P[1] - SKY_EYE) / P[2] * SKY_F, P[2]];
-    const hero = this.heroAt(t);
-    const foes = new Float32Array(SKY_FOES * 4).fill(0);
-    let n = 0;
+    const spb = this.grid.spb, F = SKY_F;
+    const H = this.hor;
+    const E = (H - SKY_GY) * SKY_ZH / F;      // the eye's height: what keeps the ground under him at the foot of the screen
+    const proj = (P) => [P[0] * F / P[2], H + (P[1] - E) * F / P[2]];
+    const list = [];
+    const put = (x, y, z, kind, a, b, c, R) => list.push({ x, y, z, kind, a, b, c, R });
+    for (const p of this.props) {
+      const z = p.wz - this.travel;
+      // (what has passed him goes soon after, as the genre's scenery did: nothing grows across the screen in front of him)
+      if ((p.dead && p.dead <= t) || z < (p.kind === 0 || p.kind === 3 ? 2.2 : 3.4)) continue;
+      const rx = this.propRel(p);
+      if (Math.abs(rx) * F / z > 1.3) continue;
+      put(rx * F / z, H - E * F / z, z, p.kind, p.h, p.ph, 0, p.kind === 0 ? 0.55 : p.kind === 3 ? 1.15 + p.h * 0.1 : 0.95);
+    }
     for (const f of this.foes) {
-      if (t < f.t0 || (f.dead && f.dead <= t) || n >= SKY_FOES) continue;
+      if ((f.dead && f.dead <= t) || t < f.t0) continue;
       const P = this.foeAt(f, t);
-      if (P[2] < 0.6) continue;
+      if (P[2] < 0.4) continue;
       const s = proj(P);
-      foes.set([s[0], s[1], P[2], 1], 4 * n++);
+      if (Math.abs(s[0]) > 1.4) continue;
+      const u = (t - f.t0) / spb;
+      if (f.kind === 5) put(s[0], s[1], P[2], 5, this.podOpen(f, t), u, 0, 1.0);
+      else if (f.kind === 6) put(s[0], s[1], P[2], 6, P[3], u, 0, 0.75);
+      else put(s[0], s[1], P[2], 4, Math.max(-1, Math.min(1, (this.foeAt(f, t + 0.05)[0] - P[0]) * 2)), u, 0, 0.75);
     }
-    const shots = new Float32Array(SKY_SHOTS * 4).fill(0);
-    let m = 0;
+    // the serpent; its head nearest in its own line, so it is in front of its body
+    const B = this.boss;
+    if (B && t >= B.t0 && t < B.t1) {
+      const hurt = Math.min(6, Math.round((t - B.t0) / (B.t1 - B.t0) * 6));
+      for (let k = B.n - 1; k >= 0; k--) {
+        const tau = t - this.bossLink(k);
+        if (tau < B.t0) continue;
+        const P = this.bossAt(B, tau);
+        const s = proj(P);
+        const r = k === 0 ? 1.1 : 0.95 - k * 0.045;
+        put(s[0], s[1], P[2], 7, r, hurt, k === 0 ? 1 : 0, r * 1.3);
+      }
+    }
     for (const q of this.shots) {
-      if (t < q.t0 || t >= q.t1 || m >= SKY_SHOTS) continue;
+      if (t < q.t0 || t >= q.t1) continue;
       const u = (t - q.t0) / (q.t1 - q.t0);
-      const to = this.foeAt(q.foe, q.t1);
-      const P = [hero[0] + (to[0] - hero[0]) * u, hero[1] + (to[1] - hero[1]) * u, SKY_Z + (to[2] - SKY_Z) * u];
+      const P = [skyMix(q.from[0], q.to[0], u), skyMix(q.from[1], q.to[1], u), skyMix(q.from[2], q.to[2], u)];
       const s = proj(P);
-      shots.set([s[0], s[1], P[2], 1], 4 * m++);
+      put(s[0], s[1], P[2], 8, u, Math.floor(t * 30) % 4, 0, 0.7);
     }
-    const booms = new Float32Array(24);
-    const bl = recent(this.booms, t, 6);
-    for (let i = 0; i < 6; i++) {
-      const b = bl[i];
-      if (!b) { booms.set([0, 0, 1, 99], i * 4); continue; }
+    for (const q of this.bolts) {
+      if (t < q.t0) continue;
+      const u = (t - q.t0) / (q.t1 - q.t0);
+      if (u > 1.25) continue;
+      const P = [skyMix(q.from[0], q.to[0], u), skyMix(q.from[1], q.to[1], u), Math.max(0.5, skyMix(q.from[2], SKY_ZH, u))];
+      const s = proj(P);
+      put(s[0], s[1], P[2], 9, t, 0, 0, 0.5);
+    }
+    for (const b of this.booms) {
+      const since = t - b.t;
+      if (since < 0 || since > 0.6) continue;
       const s = proj([b.x, b.y, b.z]);
-      booms.set([s[0], s[1], b.z, t - b.t], i * 4);
+      put(s[0], s[1], b.z, 10, since, b.size, 0, b.size * 1.5);
     }
-    // the serpent: eight orbs following its head along a weaving path, nearer as the drop comes, bursting on it
-    const serp = new Float32Array(32);
-    const S = this.serpents.find((q) => t >= q.t0 && t < q.t1 + 1.2);
-    for (let k = 0; k < 8; k++) {
-      if (!S) { serp.set([0, 0, 1, -1], 4 * k); continue; }
-      const u = Math.min(1, (t - S.t0) / (S.t1 - S.t0));
-      const lag = k * 0.18;
-      const tt = t - lag;
-      const z = 30 - 24 * Math.min(1, Math.max(0, (tt - S.t0) / (S.t1 - S.t0)));
-      const P = [2.2 * Math.sin(tt * 1.3 + S.ph), 1.8 + 0.8 * Math.sin(tt * 2.1 + S.ph), z];
+    for (const q of this.sparks) {
+      const since = t - q.t;
+      if (since < 0 || since > 0.25) continue;
+      const P = [q.x + q.dx * since, q.y + q.dy * since, q.z];
       const s = proj(P);
-      const burst = t - (S.t1 + k * this.grid.spb * 0.12);
-      serp.set([s[0], s[1], z, burst > 0 ? burst : (u > 0 ? -0.5 : -1)], 4 * k);
+      put(s[0], s[1], P[2], 11, since, 0, 0, 0.7);
     }
-    const hp = proj([hero[0], hero[1], SKY_Z]), hs = proj([hero[0], 0, SKY_Z]);
+    list.sort((a, b) => b.z - a.z);
+    while (list.length > SKY_SPRITES - 1) list.shift();    // (the farthest go first)
+    let split = list.length;
+    for (let i = 0; i < list.length; i++) if (list[i].z < SKY_ZH) { split = i; break; }
+    const spr = new Float32Array(SKY_SPRITES * 4), sprB = new Float32Array(SKY_SPRITES * 4);
+    list.forEach((s, i) => { spr.set([s.x, s.y, s.z, s.kind], i * 4); sprB.set([s.a, s.b, s.c, s.R], i * 4); });
+
+    const limbA = new Float32Array(SKY_LIMBS * 4), limbB = new Float32Array(SKY_LIMBS * 4);
+    this.figure(t).limbs.slice(0, SKY_LIMBS).forEach((l, i) => {
+      if (l.aux) limbA.set([l.ax, l.ay, l.aux[0], l.aux[1]], i * 4);
+      else limbA.set([l.ax, l.ay, l.bx, l.by], i * 4);
+      limbB.set([l.ra, l.rb, l.id, 0], i * 4);
+    });
+    // while he gets over a fall he blinks, nothing touches him
+    const shown = t < this.safeUntil && !this.fall && !this.trip ? Math.floor(t / this.grid.six * 2) % 2 : 1;
+    const hx = this.X * F / SKY_ZH, air = this.Y * F / SKY_ZH;
     return {
-      uSkyHero: { v: [hp[0], hp[1], hs[1], SKY_Z], kind: '4f' },
-      uSkyFoes: { v: foes, kind: '4fv' },
-      uSkyShots: { v: shots, kind: '4fv' },
-      uSkyBooms: { v: booms, kind: '4fv' },
-      uSerp: { v: serp, kind: '4fv' },
-      uSkyFx: { v: [this.scoreAt(t) % 1000000, t / this.grid.spb, hero[0], 0], kind: '4f' },
+      uSkyCam: { v: [H, E, this.lives, t - this.flash], kind: '4f' },
+      uSkyFx: { v: [this.score % 1000000, this.travel, this.camX, this.stage], kind: '4f' },
+      uSkyHero: { v: [hx, SKY_GY + air, F / SKY_ZH, shown], kind: '4f' },
+      uSkyShade: { v: [hx, SKY_GY, 1, 0], kind: '4f' },
+      uSkyCount: { v: [list.length, split, spb, 0], kind: '4f' },
+      uSkySpr: { v: spr, kind: '4fv' },
+      uSkySprB: { v: sprB, kind: '4fv' },
+      uSkyLimbA: { v: limbA, kind: '4fv' },
+      uSkyLimbB: { v: limbB, kind: '4fv' },
     };
   }
-
-  scoreAt(t) { return this.score - 100 * this.shots.filter((q) => q.t1 > t).length - 5000 * this.serpents.filter((q) => q.t1 > t).length; }
 }
 
 export const SIMS = { skyrush: SkyrushSim, artillery: ArtillerySim, skatepark: SkateSim, football: FootballSim, tanks: TankSim, tube: TubeSim, crossing: CrossingSim, coderain: CoderainSim, animeop: AnimeopSim, timecar: TimecarSim, moonbike: MoonbikeSim, maze3d: Maze3dSim, echolines: EcholinesSim, ansi: AnsiSim, cascade: CascadeSim, cracktro: CracktroSim, rubber: RubberSim, chessfloor: ChessfloorSim, bobs: BobsSim, pyramid: PyramidSim, pipes: PipesSim, maze: MazeSim, snake: SnakeSim, rocks: RocksSim, starfighter: StarSim, paddles: PaddlesSim, invaders: InvadersSim, bricks: BricksSim, lightcycles: LightcyclesSim };
