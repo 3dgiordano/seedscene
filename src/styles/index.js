@@ -7068,112 +7068,396 @@ vec3 render(vec2 p, vec2 uv) {
 `;
 
 const artillery = `
-// The artillery: two teams of little soldiers on a hill of earth, seen from
-// the side, as the turn-based artillery games of the PC showed it - mountains
-// behind, the ground blown into craters. The game runs as a simulation
-// (src/core/sims.js): a shot on each bar line, one side and then the other,
-// arcing through the wind to land where the snare is; on the drop the shell
-// splits in five.
-uniform vec4 uArtK;          // the hill's waves, the seed's
-uniform vec4 uCraters[32];   // x, y, radius, since
-uniform vec4 uSoldiers[10];  // x, the ground under him, team (+2 firing), since he fell (-1 standing)
-uniform vec4 uShells[6];     // x, y, flying, split
-uniform vec4 uABooms[6];     // x, y, since, size
-uniform vec4 uArtFx;         // wind, soldiers left on each side, since the round began
-float artBase(float x) {
-  return -0.18 + 0.16 * cos(x * 2.6 + uArtK.x) * 0.6 + 0.09 * sin(x * 5.3 + uArtK.y) + 0.045 * sin(x * 11.0 + uArtK.z) + 0.12 * exp(-x * x * 6.0) * uArtK.w;
+// The artillery: two teams of little beetles on an island in the sea, seen from
+// the side, as the turn-based artillery games of the PC played it. The game runs
+// as a simulation at a fixed step (src/core/sims.js): every flight, bounce and
+// blast is physics, solved so the blast lands on the music. That side also
+// moves the camera, so all this is drawn through it, in world units.
+uniform vec4 uArtK;          // the island's waves, the round's
+uniform vec4 uCam;           // what the camera looks at; world units a board unit shows (the zoom); the sea's level
+uniform vec4 uCraters[64];   // x, y, radius, since (-1: a cave, no burn; radius 0 ends the list)
+uniform vec4 uBeetles[10];   // x, y, roll, health left
+uniform vec4 uBeetleB[10];   // team, state (0 standing, 1 aiming, 2 thrown, 3 a stone, 4 sinking, 5 gone), aim, facing
+uniform vec4 uShells[8];     // x, y, kind + 10 * the fuse's seconds left, heading
+uniform vec4 uPuffs[24];     // x, y, age
+uniform vec4 uABooms[8];     // x, y, since, blast (negative: a splash)
+uniform vec4 uPops[4];       // x, y, damage, since
+uniform vec2 uDots[32];      // the trial arc
+uniform vec4 uAim;           // who aims: x, y, angle, power (power < 0: nobody)
+uniform vec4 uMark;          // the mark: x, y, on; how old the trial arc is (< 0: none)
+uniform vec4 uFlyer;         // the great dragonfly: x, y, heading, on
+uniform vec4 uArtFx;         // wind (-1 to 1), health left on each side, how far the wind has blown
+uniform vec4 uMuzzle;        // where the shot left: x, y, flash; the seconds left to fire
+float artGround(float x) {
+  float e = clamp((820.0 - abs(x)) / 260.0, 0.0, 1.0);
+  e = e * e * (3.0 - 2.0 * e);
+  return -90.0 + e * (230.0 + 70.0 * cos(x * 0.0061 + uArtK.x) + 46.0 * sin(x * 0.0137 + uArtK.y) + 20.0 * sin(x * 0.031 + uArtK.z)
+    + 8.0 * sin(x * 0.083 + uArtK.x) + 80.0 * uArtK.w * exp(-x * x / 90000.0));
 }
 vec3 teamCol(float team) {
   vec3 c = unblack(pal(team < 0.5 ? 0.05 + uSeed.x * 0.3 : 0.55 + uSeed.x * 0.3));
   return c / max(max(c.r, c.g), max(c.b, 0.3));
 }
+// a shape's edge, one screen pixel soft
+float artFill(float d, float aa) { return 1.0 - smoothstep(0.0, aa, d); }
+float artBox(vec2 q, vec2 b) { vec2 e = abs(q) - b; return length(max(e, vec2(0.0))) + min(max(e.x, e.y), 0.0); }
+// a number over the world, drawn at a fixed size on the screen
+float artNumber(vec2 q, float n) {
+  float d = mod(floor(n / 10.0), 10.0), u = mod(floor(n), 10.0);
+  float v = 0.0;
+  if (q.x >= 0.0 && q.x < 1.0 && q.y >= 0.0 && q.y < 2.0) v = digit7(q, int(u));
+  if (d > 0.0 && q.x >= -1.25 && q.x < -0.25 && q.y >= 0.0 && q.y < 2.0) v = digit7(q + vec2(1.25, 0.0), int(d));
+  return v;
+}
 vec3 render(vec2 p, vec2 uv) {
-  // the night sky, and two ranges of mountains behind
-  vec3 col = mix(vec3(0.03, 0.02, 0.1), vec3(0.12, 0.05, 0.25), smoothstep(-0.2, 0.5, p.y));
-  col += vec3(0.8, 0.85, 1.0) * step(0.997, hash12(floor(p * 220.0))) * 0.6;
-  float far = 0.08 + 0.08 * sin(p.x * 3.1 + uArtK.y) + 0.05 * sin(p.x * 7.7 + uArtK.x) + 0.02 * vnoise(vec2(p.x * 20.0, 0.0));
-  if (p.y < far) col = mix(vec3(0.1, 0.12, 0.35), vec3(0.18, 0.22, 0.55), smoothstep(far - 0.25, far, p.y)) * (0.8 + 0.2 * vnoise(p * 30.0));
-  float near = -0.02 + 0.07 * sin(p.x * 4.4 + uArtK.z) + 0.03 * sin(p.x * 13.0);
-  if (p.y < near) col = vec3(0.06, 0.07, 0.2) * (0.8 + 0.2 * vnoise(p * 40.0));
-  // the hill: earth under a grass edge, the craters dug out of it, burnt round their rims
-  float g = artBase(p.x);
-  bool ground = p.y < g;
-  float rim = 1e9;
-  for (int i = 0; i < 32; i++) {
-    vec4 c = uCraters[i];
-    if (c.w > 90.0) continue;
-    float d = length(p - c.xy) - c.z;
-    if (d < 0.0) ground = false;
-    rim = min(rim, abs(d));
+  float zoom = uCam.z * (1.0 - 0.02 * uKick);
+  vec2 w = uCam.xy + p * zoom;                 // the world under this pixel
+  float aa = zoom / 620.0;                     // a pixel, in world units
+  float sea = uCam.w + 2.5 * sin(w.x * 0.03 + uTime * 1.7) + 1.5 * sin(w.x * 0.071 - uTime * 2.3) + 3.0 * uBass;
+
+  // the sky, seed-tinted, and two ranges far behind that scarcely move with the camera
+  vec3 tint = unblack(pal(0.62 + uSeed.y * 0.2));
+  tint /= max(max(tint.r, tint.g), max(tint.b, 0.3));
+  vec3 hush = mix(tint, vec3(dot(tint, vec3(0.3, 0.5, 0.2))), 0.6);
+  vec3 col = mix(hush * 0.2 + vec3(0.02, 0.02, 0.06), vec3(0.01, 0.01, 0.04), smoothstep(-0.3, 0.45, p.y));
+  vec2 st = p * 1.0 + uCam.xy * 0.00025;
+  col += vec3(0.8, 0.85, 1.0) * step(0.9965, hash12(floor(st * 240.0))) * 0.55 * smoothstep(-0.05, 0.3, p.y);
+  float fx = uCam.x * 0.18 + p.x * zoom * 0.55, fy = uCam.y * 0.18 + p.y * zoom * 0.55;
+  float far = 120.0 + 70.0 * sin(fx * 0.0034 + uArtK.y) + 40.0 * sin(fx * 0.0087 + uArtK.x) + 7.0 * sin(fx * 0.031 + uArtK.z);
+  if (fy < far) col = hush * 0.13 + vec3(0.02, 0.025, 0.04);
+  float nx = uCam.x * 0.4 + p.x * zoom * 0.75, ny = uCam.y * 0.4 + p.y * zoom * 0.75;
+  float near = 60.0 + 44.0 * sin(nx * 0.0052 + uArtK.z) + 22.0 * sin(nx * 0.0141 + uArtK.x);
+  if (ny < near) col = hush * 0.07 + vec3(0.012, 0.015, 0.025);
+  // motes on the wind, so it can be seen
+  vec2 mq = (w - vec2(uArtFx.w, -uTime * 14.0)) / 46.0;
+  vec2 mi = floor(mq);
+  float mh = hash12(mi + 3.7);
+  if (mh > 0.86) {
+    vec2 mf = fract(mq) - 0.5 - (vec2(hash12(mi + 1.3), hash12(mi + 2.9)) - 0.5) * 0.6;
+    float stretch = 1.0 + abs(uArtFx.x) * 3.0;
+    mf = rot(mh * 40.0 + uTime * (1.0 + mh)) * mf;
+    col = mix(col, hush * 0.7 + vec3(0.12), artFill(length(mf * vec2(1.0 / stretch, 2.2)) - 0.075, 0.02 + aa / 46.0) * 0.8);
   }
-  if (ground) {
-    float soil = vnoise(p * vec2(60.0, 80.0)) * 0.6 + vnoise(p * 180.0) * 0.4;
-    col = mix(vec3(0.32, 0.2, 0.1), vec3(0.45, 0.3, 0.16), soil);
-    col *= 0.75 + 0.25 * step(0.75, hash12(floor(p * vec2(90.0, 120.0))));          // stones
-    col = mix(col, vec3(0.2, 0.55, 0.15), (1.0 - smoothstep(0.0, 0.014, g - p.y)) * step(0.0, g - p.y));   // the grass
-    col *= 1.0 - 0.55 * (1.0 - smoothstep(0.0, 0.018, rim));                              // scorched round a crater
+
+  // the island: earth under a grass edge, the craters and caves dug out of it
+  float g = artGround(w.x);
+  if (w.y < g) {
+    bool ground = true;
+    float rim = 1e9, burn = 1e9;
+    for (int i = 0; i < 64; i++) {
+      vec4 c = uCraters[i];
+      if (c.z <= 0.0) break;
+      float d = length(w - c.xy) - c.z;
+      if (d < 0.0) { ground = false; break; }
+      rim = min(rim, d);
+      if (c.w >= 0.0) burn = min(burn, d);
+    }
+    if (ground) {
+      vec3 dark = mix(vec3(0.2, 0.12, 0.07), unblack(pal(0.1 + uSeed.z * 0.2)) * 0.28, 0.25);
+      vec3 lit = mix(vec3(0.5, 0.33, 0.18), unblack(pal(0.1 + uSeed.z * 0.2)) * 0.55, 0.25);
+      float wy = w.y + 26.0 * vnoise(w * vec2(0.011, 0.02));
+      float layer = 0.5 + 0.5 * sin(wy * 0.075) * sin(wy * 0.031 + 1.3);
+      float soil = layer * 0.66 + vnoise(w * vec2(0.09, 0.2)) * 0.34;
+      col = mix(dark, lit, soil);
+      vec2 cell = floor(w / 21.0), fc = fract(w / 21.0) - 0.5;
+      float stoneH = hash12(cell + 11.0);
+      if (stoneH > 0.74) {
+        vec2 at = fc - (vec2(hash12(cell + 2.0), hash12(cell + 5.0)) - 0.5) * 0.4;
+        float pebble = length(at * vec2(1.0, 1.35)) - 0.1 - 0.2 * (stoneH - 0.74) / 0.26;
+        vec3 rock = mix(vec3(0.5, 0.46, 0.4), vec3(0.72, 0.68, 0.6), smoothstep(-0.2, 0.2, at.y));
+        col = mix(col, col * 0.62, artFill(pebble - 0.035, 0.02 + aa / 21.0));
+        col = mix(col, rock, artFill(pebble, 0.02 + aa / 21.0));
+      }
+      col *= 1.0 - 0.28 * smoothstep(0.0, 240.0, g - w.y);                       // darker the deeper
+      float top = g - w.y;
+      vec3 grass = mix(vec3(0.2, 0.6, 0.16), vec3(0.42, 0.8, 0.22), vnoise(vec2(w.x * 0.25, 0.0)));
+      float blade = 4.0 + 2.5 * vnoise(vec2(w.x * 0.5, 3.0));
+      col = mix(col, grass, artFill(top - blade, aa));
+      col = mix(col, vec3(0.8, 0.98, 0.45), artFill(top - 1.3, aa) * 0.8);
+      col *= 1.0 - 0.72 * artFill(burn - 9.0, 7.0);
+      vec3 edge = mix(vec3(0.95, 0.78, 0.32), unblack(pal(0.14 + uSeed.z * 0.2)), 0.25);
+      col *= 1.0 - 0.5 * artFill(rim - 7.0, 3.0);
+      col = mix(col, edge, artFill(rim - 2.6, aa));
+    }
   }
-  // the soldiers: a helmet in the side's colour, a body, two legs; the one firing with his bazooka up; the fallen
-  // flung away and gone
+
+  // the beetles: a domed shell in the side's colour, a head with antennae, six legs; one that aims holds up its
+  // launcher, one thrown tumbles with its legs out, and a fallen one leaves a stone
   for (int i = 0; i < 10; i++) {
-    vec4 s = uSoldiers[i];
-    if (s.w > 0.8) continue;
-    float team = mod(s.z, 2.0), facing = team < 0.5 ? 1.0 : -1.0;
-    vec2 base = vec2(s.x, s.y);
-    if (s.w >= 0.0) base += vec2(-facing * s.w * 0.25, s.w * 0.6 - s.w * s.w * 0.9);
-    vec2 q = (p - base) * vec2(facing, 1.0) / 1.5;          // (drawn half as big again, as the games drew theirs)
-    if (s.w >= 0.0) q = rot(s.w * 9.0) * q;
-    if (length(q - vec2(0.0, 0.025)) > 0.05) continue;
-    float fade = s.w >= 0.0 ? 1.0 - s.w / 0.8 : 1.0;
-    float legs = min(sdSeg(q, vec2(-0.004, 0.01), vec2(-0.007, 0.0)), sdSeg(q, vec2(0.004, 0.01), vec2(0.007, 0.0)));
-    float body = sdSeg(q, vec2(0.0, 0.012), vec2(0.0, 0.024)) - 0.006;
-    float head = length(q - vec2(0.001, 0.031)) - 0.0055;
-    float helmet = max(length(q - vec2(0.0, 0.033)) - 0.0075, -(q.y - 0.032));
-    float tube = sdSeg(q, vec2(-0.006, 0.024), s.z > 1.5 ? vec2(0.02, 0.04) : vec2(0.016, 0.022)) - 0.0025;
-    vec3 tc = teamCol(team);
-    col = mix(col, vec3(0.15, 0.17, 0.1), (1.0 - smoothstep(0.0, 0.0015, legs - 0.002)) * fade);
-    col = mix(col, tc * 0.7, (1.0 - smoothstep(0.0, 0.0015, body)) * fade);
-    col = mix(col, vec3(0.3, 0.32, 0.25), (1.0 - smoothstep(0.0, 0.0015, tube)) * fade);
-    col = mix(col, vec3(0.9, 0.7, 0.55), (1.0 - smoothstep(0.0, 0.0015, head)) * fade);
-    col = mix(col, tc, (1.0 - smoothstep(0.0, 0.0015, helmet)) * fade);
-    if (s.z > 1.5) col += vec3(1.0, 0.8, 0.4) * exp(-length(q - vec2(0.024, 0.042)) * 260.0) * 2.0;
+    vec4 s = uBeetles[i], m = uBeetleB[i];
+    if (m.y > 4.5) continue;
+    vec2 d = w - s.xy;
+    if (dot(d, d) > 1100.0) continue;
+    float face = m.w;
+    vec2 q = d;
+    if (m.y > 1.5 && m.y < 2.5) q = rot(s.z) * q;
+    q.x *= face;
+    float qa = aa;
+    if (m.y > 2.5 && m.y < 3.5) {
+      float stone = artBox(q - vec2(0.0, -2.0), vec2(4.2, 5.0));
+      stone = min(stone, length(q - vec2(0.0, 3.0)) - 4.2);
+      col = mix(col, vec3(0.5, 0.5, 0.54) * (0.8 + 0.2 * step(0.0, q.x)), artFill(stone, qa));
+      col = mix(col, vec3(0.28), artFill(sdSeg(q, vec2(-1.8, 1.5), vec2(1.8, 1.5)) - 0.35, qa));
+      continue;
+    }
+    vec3 tc = teamCol(m.x);
+    bool thrown = m.y > 1.5 && m.y < 2.5;
+    float wig = thrown ? sin(uTime * 34.0 + float(i)) * 1.2 : sin(uBeat * 6.28318 + float(i) * 1.3) * 0.25;
+    // the legs, three to a side, seen as three
+    float legs = 1e9;
+    for (int k = 0; k < 3; k++) {
+      float fk = float(k) - 1.0;
+      vec2 hip = vec2(fk * 3.6, -3.5);
+      vec2 knee = hip + vec2(fk * 1.6 + 0.4, -2.0 + (mod(float(k), 2.0) - 0.5) * wig);
+      vec2 foot = knee + vec2(fk * 1.2 - 0.3, -3.0 + (0.5 - mod(float(k), 2.0)) * wig);
+      if (thrown) foot = knee + vec2(fk * 2.2, 2.4 * wig - 1.0);
+      legs = min(legs, min(sdSeg(q, hip, knee), sdSeg(q, knee, foot)));
+    }
+    col = mix(col, vec3(0.06, 0.05, 0.05), artFill(legs - 0.5, qa));
+    // the launcher, held out along the aim
+    float ang = m.z;
+    vec2 dirA = vec2(cos(ang) * face, sin(ang));
+    bool aiming = m.y > 0.5 && m.y < 1.5;
+    // the head and antennae, ahead of the shell
+    vec2 hc = vec2(7.2, 0.8);
+    float head = length(q - hc) - 3.3;
+    float ant = min(sdSeg(q, hc + vec2(1.0, 2.6), hc + vec2(4.2, 7.0 + wig)), sdSeg(q, hc + vec2(-0.4, 2.8), hc + vec2(1.4, 7.8 - wig))) - 0.32;
+    col = mix(col, vec3(0.07, 0.06, 0.06), artFill(ant, qa));
+    col = mix(col, vec3(0.1, 0.08, 0.08), artFill(head, qa));
+    col = mix(col, vec3(0.95), artFill(length(q - hc - vec2(1.2, 0.7)) - 1.25, qa));
+    col = mix(col, vec3(0.03), artFill(length(q - hc - vec2(1.6, 0.6)) - 0.6, qa));
+    // the shell: a dome with a seam, spots, and a shine
+    float shell = max(length((q - vec2(-1.0, -0.5)) * vec2(1.0, 1.15)) - 7.8, -(q.y + 4.2));
+    col = mix(col, tc * (0.55 + 0.5 * smoothstep(-5.0, 6.0, q.y)), artFill(shell, qa));
+    if (shell < 0.0) {
+      col = mix(col, tc * 0.28, artFill(abs(q.y + 1.0 + q.x * q.x * 0.018) - 0.35, qa));
+      vec2 sp = q - vec2(-2.5, 2.2);
+      col = mix(col, tc * 0.3, artFill(length(sp) - 1.2, qa));
+      col = mix(col, tc * 0.3, artFill(length(q - vec2(2.2, 2.6)) - 0.9, qa));
+      col += vec3(0.5) * artFill(length((q - vec2(-1.0, 4.4)) * vec2(0.5, 1.6)) - 1.2, 1.2);
+    }
+    if (aiming) {
+      vec2 hold = vec2(0.5, 3.0);
+      col = mix(col, vec3(0.16, 0.16, 0.2), artFill(sdSeg(q, hold - dirA * 7.0, hold + dirA * 13.0) - 2.2, qa));
+      col = mix(col, vec3(0.55, 0.55, 0.62), artFill(sdSeg(q, hold + dirA * 12.0, hold + dirA * 13.0) - 2.7, qa));
+      col = mix(col, vec3(0.08, 0.07, 0.08), artFill(sdSeg(q, hold + dirA * 2.0, hold + dirA * 2.0 + vec2(0.0, -3.0)) - 0.8, qa));
+    }
+    // health over its head, the same size on the screen at any zoom
+    if (m.y < 2.5) {
+      vec2 bq = (w - s.xy - vec2(0.0, 16.0 + 0.026 * zoom)) / zoom;
+      if (abs(bq.x) < 0.03 && abs(bq.y) < 0.0165) {
+        col = vec3(0.02);
+        col = mix(col, tc, artNumber(bq / 0.0115 + vec2(0.5, 1.0), floor(s.w * 60.0 + 0.5)));
+      }
+    }
   }
-  // the shells, a dark round with a tracer behind it
-  for (int i = 0; i < 6; i++) {
+
+  // the trail of smoke behind what flies
+  for (int i = 0; i < 24; i++) {
+    vec4 q = uPuffs[i];
+    if (q.z > 0.9) continue;
+    vec2 d = w - q.xy;
+    float r = 2.5 + 11.0 * q.z;
+    if (dot(d, d) > r * r * 3.0) continue;
+    float e = artFill(length(d) - r, r * 0.55) * (1.0 - q.z / 0.9);
+    col = mix(col, mix(vec3(0.95, 0.72, 0.4), vec3(0.62), smoothstep(0.0, 0.14, q.z)), e * 0.65);
+  }
+
+  // what flies, never smaller than a few pixels however far the camera is
+  for (int i = 0; i < 8; i++) {
     vec4 s = uShells[i];
     if (s.z < 0.5) continue;
-    col = mix(col, vec3(0.05), 1.0 - smoothstep(0.004, 0.006, length(p - s.xy)));
-    col += vec3(1.0, 0.85, 0.5) * exp(-length(p - s.xy) * 200.0) * 0.8;
-  }
-  // the bursts: a flash, a fireball swelling and going to smoke, earth thrown up
-  for (int i = 0; i < 6; i++) {
-    vec4 b = uABooms[i];
-    if (b.z > 1.5) continue;
-    vec2 d = p - b.xy;
-    float r = length(d);
-    float fire = (0.03 + 0.05 * sqrt(b.z)) * b.w;
-    col = mix(col, mix(vec3(1.0, 0.9, 0.5), vec3(0.9, 0.3, 0.05), smoothstep(0.0, fire, r)), (1.0 - smoothstep(fire * 0.8, fire, r)) * max(0.0, 1.0 - b.z * 2.5));
-    col = mix(col, vec3(0.25, 0.23, 0.22), (1.0 - smoothstep(fire, fire * 1.6, r + 0.02 * vnoise(d * 40.0 + b.z))) * smoothstep(0.2, 0.5, b.z) * max(0.0, 1.0 - b.z / 1.5) * 0.8);
-    for (int k = 0; k < 8; k++) {
-      float fk = float(k), a = fk * 0.6 + 0.3 + hash11(fk + b.x * 13.0) * 0.4;
-      vec2 v = vec2(cos(a) * 0.5, abs(sin(a)) + 0.3) * (0.25 + 0.2 * hash11(fk * 3.0 + b.y));
-      vec2 pk = b.xy + v * b.z - vec2(0.0, 0.9 * b.z * b.z);
-      col = mix(col, vec3(0.35, 0.22, 0.1), (1.0 - smoothstep(0.003, 0.005, length(p - pk))) * step(b.z, 1.0));
+    float id = mod(s.z, 10.0), left = floor(s.z / 10.0);
+    float grow = max(1.3, zoom / 230.0);
+    vec2 d = (w - s.xy) / grow;
+    if (dot(d, d) > 500.0) continue;
+    vec2 q = rot(-s.w) * d;
+    if (id < 3.5) {
+      // a shell, nose first, finned, its flame behind it
+      float size = id < 2.5 ? 1.0 : 0.8;
+      vec2 r = q / size;
+      float body = sdSeg(r, vec2(-6.0, 0.0), vec2(4.0, 0.0)) - 2.4;
+      float fin = sdSeg(r, vec2(-6.0, 0.0), vec2(-8.0, 3.4)) - 0.8;
+      fin = min(fin, sdSeg(r, vec2(-6.0, 0.0), vec2(-8.0, -3.4)) - 0.8);
+      col = mix(col, vec3(0.32, 0.34, 0.38), artFill(min(fin, body), aa / grow));
+      vec3 nose = id < 1.5 ? vec3(0.9, 0.2, 0.15) : vec3(0.95, 0.75, 0.2);
+      if (id > 2.5) nose = vec3(0.55, 0.75, 0.3);
+      col = mix(col, nose, artFill(sdSeg(r, vec2(3.5, 0.0), vec2(5.0, 0.0)) - 2.0, aa / grow));
+      if (id < 2.5) col += vec3(1.0, 0.6, 0.2) * exp(-length(r - vec2(-11.0, 0.0)) * 0.3) * (0.9 + 0.4 * sin(uTime * 60.0));
+    } else if (id < 5.5) {
+      // what goes on a fuse: round, a band and a pin, and the seconds left over it
+      vec3 body = id < 4.5 ? vec3(0.2, 0.42, 0.22) : vec3(0.72, 0.28, 0.22);
+      float e = length(q) - 5.0;
+      col = mix(col, body * (0.75 + 0.5 * smoothstep(-5.0, 5.0, d.y)), artFill(e, aa / grow));
+      col = mix(col, body * 0.35, artFill(abs(q.y) - 0.7, aa / grow) * artFill(e, aa / grow));
+      col = mix(col, vec3(0.6), artFill(sdSeg(q, vec2(0.0, 4.5), vec2(0.0, 7.0)) - 0.9, aa / grow));
+      vec2 nq = (w - s.xy - vec2(0.0, 0.05 * zoom)) / (zoom * 0.021);
+      col = mix(col, vec3(1.0, 0.95, 0.5), artNumber(nq + vec2(0.5, 1.0), left));
+    } else if (id < 6.5) {
+      float e = length(q) - 2.8;
+      col = mix(col, vec3(0.85, 0.42, 0.18), artFill(e, aa / grow));
+    } else {
+      // a pod the dragonfly lets go: long and seed-shaped
+      float e = length(q * vec2(0.6, 1.0)) - 3.6;
+      col = mix(col, vec3(0.38, 0.5, 0.2) * (0.7 + 0.5 * smoothstep(-3.0, 3.0, q.y)), artFill(e, aa / grow));
     }
-    col += vec3(1.0, 0.8, 0.5) * exp(-b.z * 12.0) * 0.25 * b.w;
   }
-  // the bars of each side's strength at the top, the wind below
+  if (uMuzzle.z > 0.0) col += vec3(1.0, 0.8, 0.4) * exp(-length(w - uMuzzle.xy) / (5.0 + 0.012 * zoom)) * uMuzzle.z * 1.6;
+
+  // the blasts: a flash, a fireball swelling and going to smoke, earth thrown out and falling by the same gravity as all else
+  for (int i = 0; i < 8; i++) {
+    vec4 b = uABooms[i];
+    if (b.z > 1.6) continue;
+    vec2 d = w - b.xy;
+    float r = length(d);
+    if (b.w < 0.0) {
+      // a splash: drops thrown up that fall back to the sea
+      float size = -b.w;
+      for (int k = 0; k < 9; k++) {
+        float fk = float(k), a = 0.9 + fk * 0.17 + 0.1 * hash11(fk + b.x);
+        vec2 v = vec2(cos(a), sin(a)) * (190.0 + 110.0 * hash11(fk * 3.1 + b.x)) * size;
+        vec2 pk = b.xy + v * b.z - vec2(0.0, 250.0 * b.z * b.z);
+        col = mix(col, vec3(0.8, 0.92, 1.0), artFill(length(w - pk) - 2.4, aa) * step(uCam.w, pk.y));
+      }
+      continue;
+    }
+    if (r > b.w * 7.0 + 200.0) continue;
+    float grow = sqrt(b.z);
+    float fire = b.w * (0.45 + 0.95 * grow);
+    float bump = 7.0 * vnoise(d * 0.09 + b.z * 2.0) - 3.5;
+    if (b.z < 0.42) {
+      float t01 = b.z / 0.42;
+      vec3 hot = mix(vec3(1.0, 0.97, 0.75), vec3(1.0, 0.45, 0.08), smoothstep(0.0, fire, r + bump));
+      col = mix(col, hot, artFill(r + bump - fire, b.w * 0.12) * (1.0 - t01 * t01));
+    }
+    if (b.z > 0.1) {
+      for (int k = 0; k < 10; k++) {
+        float fk = float(k), a = fk * 0.628 + hash11(fk + b.x * 0.3);
+        float life = 0.6 + 0.7 * hash11(fk * 5.0 + b.y);
+        float age = b.z / life;
+        if (age > 1.0) continue;
+        vec2 c = b.xy + vec2(cos(a), sin(a) * 0.85) * b.w * (0.5 + 0.55 * sqrt(age)) + vec2(0.0, 30.0 * b.z);
+        float rr = b.w * (0.15 + 0.17 * hash11(fk * 9.0)) * (1.0 - age * age * 0.6);
+        if (dot(w - c, w - c) > rr * rr * 1.7) continue;
+        float e = artFill(length(w - c) - rr + 0.18 * rr * vnoise((w - c) * 0.3 + fk), aa + rr * 0.1);
+        vec3 tone = mix(vec3(0.62), vec3(0.26), age);
+        tone *= 0.84 + 0.2 * clamp((w.y - c.y) / rr, -1.0, 1.0);
+        if (b.z < 0.34) tone = mix(vec3(1.0, 0.5, 0.12), tone, smoothstep(0.1, 0.34, b.z));
+        col = mix(col, tone, e * (1.0 - age * age));
+      }
+    }
+    for (int k = 0; k < 11; k++) {
+      float fk = float(k), a = fk * 0.57 + 0.3 + hash11(fk + b.x * 0.13) * 0.4;
+      vec2 v = vec2(cos(a), 0.35 + abs(sin(a))) * (130.0 + 240.0 * hash11(fk * 3.0 + b.y * 0.17)) * sqrt(b.w / 50.0);
+      vec2 pk = b.xy + v * b.z - vec2(0.0, 250.0 * b.z * b.z);
+      col = mix(col, vec3(0.34, 0.21, 0.1), artFill(length(w - pk) - 1.1 - 1.8 * hash11(fk * 7.0), aa) * step(b.z, 1.4));
+    }
+    col += vec3(1.0, 0.8, 0.5) * exp(-b.z * 13.0) * 0.32 * min(1.0, b.w / 50.0);
+  }
+
+  // the great dragonfly, crossing high up with its pods: a long body and two pairs of beating wings
+  if (uFlyer.w > 0.5) {
+    vec2 d = (w - uFlyer.xy) * vec2(uFlyer.z, 1.0);
+    if (dot(d, d) < 6400.0) {
+      float beat = sin(uTime * 52.0);
+      float body = sdSeg(d, vec2(-46.0, 1.0 + 2.0 * sin(uTime * 7.0)), vec2(16.0, 0.0)) - 2.6;
+      body = min(body, sdSeg(d, vec2(10.0, 0.0), vec2(20.0, 0.0)) - 4.6);
+      vec3 tone = unblack(pal(0.3 + uSeed.w * 0.3));
+      tone /= max(max(tone.r, tone.g), max(tone.b, 0.3));
+      for (int k = 0; k < 2; k++) {
+        float at = k == 0 ? 8.0 : -6.0, lean = k == 0 ? 0.25 : -0.2;
+        vec2 tip = vec2(at + lean * 44.0, 44.0 * (0.25 + 0.75 * beat));
+        float wing = sdSeg(d, vec2(at, 2.0), tip) - 5.0 * smoothstep(0.0, 1.0, clamp(length(d - vec2(at, 2.0)) / 40.0, 0.0, 1.0)) - 0.8;
+        col = mix(col, mix(col, vec3(0.85, 0.95, 1.0), 0.45), artFill(wing, aa));
+      }
+      col = mix(col, tone * 0.7, artFill(body, aa));
+      col = mix(col, vec3(0.95), artFill(length(d - vec2(21.0, 2.0)) - 2.3, aa));
+      col = mix(col, vec3(0.03), artFill(length(d - vec2(22.0, 2.0)) - 1.1, aa));
+    }
+  }
+
+  // the sea over it all, deepening
+  if (w.y < sea) {
+    float depth = sea - w.y;
+    vec3 deep = mix(vec3(0.03, 0.1, 0.28), tint * 0.25, 0.25);
+    vec3 shallow = mix(vec3(0.1, 0.4, 0.6), tint * 0.5, 0.25);
+    vec3 water = mix(shallow, deep, smoothstep(0.0, 60.0, depth));
+    water += vec3(0.25, 0.35, 0.4) * step(0.72, vnoise(vec2(w.x * 0.05 + uTime * 0.6, w.y * 0.22))) * (1.0 - smoothstep(0.0, 40.0, depth)) * 0.45;
+    col = mix(col, water, 0.86);
+    col = mix(col, vec3(0.86, 0.96, 1.0), artFill(depth - 2.0, aa) * 0.8);
+    for (int k = 1; k < 4; k++) {
+      float fk = float(k), level = uCam.w - fk * 15.0 - 3.0;
+      float crest = level + (3.0 + fk) * sin(w.x * (0.022 + fk * 0.006) + uTime * (1.3 - 0.8 * mod(fk, 2.0)) + fk * 2.1);
+      col = mix(col, mix(shallow, deep, fk / 4.0) * (1.25 - 0.1 * fk), artFill(w.y - crest, aa));
+      col = mix(col, shallow * 1.8, artFill(abs(w.y - crest) - 0.9, aa) * 0.55);
+    }
+  }
+
+  // the sum being done: the trial arc in dots, the mark, the aim and how hard
+  if (uMark.w >= 0.0) {
+    float fade = smoothstep(0.0, 0.08, uMark.w);
+    float bestDot = 1e9, lastI = -1.0;
+    for (int i = 0; i < 32; i++) {
+      vec2 q = uDots[i];
+      float e = length(w - q);
+      if (e < bestDot) { bestDot = e; lastI = float(i); }
+    }
+    float rad = 1.6 + 0.0045 * zoom;
+    float reach = clamp(uMark.w / 0.22, 0.0, 1.0) * 31.0;
+    if (lastI <= reach) col = mix(col, vec3(1.0, 0.98, 0.72), artFill(bestDot - rad, aa) * 0.9 * fade);
+  }
+  if (uMark.z > 0.5) {
+    vec2 d = w - uMark.xy;
+    float r = 0.03 * zoom;
+    float ring = abs(length(d) - r * (1.0 + 0.2 * uKick)) - 0.0028 * zoom;
+    float cross2 = min(max(abs(d.x) - r * 1.5, abs(d.y) - 0.0024 * zoom), max(abs(d.y) - r * 1.5, abs(d.x) - 0.0024 * zoom));
+    cross2 = max(cross2, r * 0.55 - length(d));
+    col = mix(col, vec3(1.0, 0.28, 0.2), artFill(min(ring, cross2), aa) * 0.95);
+  }
+  if (uAim.w >= 0.0) {
+    vec2 dir = vec2(cos(uAim.z), sin(uAim.z));
+    vec2 d = w - uAim.xy;
+    float along = dot(d, dir), off = abs(dot(d, vec2(-dir.y, dir.x)));
+    float len = 26.0 + 60.0 * uAim.w;
+    if (uAim.w > 0.001 && along > 8.0 && along < len && off < (along / len) * 6.5) {
+      col = mix(col, mix(vec3(1.0, 0.85, 0.15), vec3(1.0, 0.15, 0.08), along / len), 0.92);
+    }
+    float cr = length(d - dir * 34.0);
+    col = mix(col, vec3(1.0), artFill(abs(cr - 3.0) - 0.7, aa));
+  }
+
+  // the numbers that rise off what was hit
+  for (int i = 0; i < 4; i++) {
+    vec4 q = uPops[i];
+    if (q.w > 1.3) continue;
+    vec2 nq = (w - q.xy - vec2(0.0, 0.05 * zoom + 0.05 * zoom * q.w)) / (zoom * 0.021);
+    float v = artNumber(nq + vec2(0.5, 1.0), q.z);
+    if (v > 0.0) col = mix(col, vec3(1.0, 0.92, 0.35), v * (1.0 - smoothstep(0.9, 1.3, q.w)));
+  }
+
+  // each side's strength above, the wind below
   for (int t = 0; t < 2; t++) {
     float left = t == 0 ? uArtFx.y : uArtFx.z;
-    float x0 = t == 0 ? -0.8 : 0.08;
-    vec2 bq = p - vec2(x0, 0.43);
-    if (bq.x > 0.0 && bq.x < 0.72 && abs(bq.y) < 0.018) col = mix(vec3(0.05), teamCol(float(t)), step(bq.x, 0.72 * left / 5.0)) * (abs(bq.y) < 0.012 ? 1.0 : 0.6);
+    vec2 bq = p - vec2(-0.2, t == 0 ? -0.425 : -0.463);
+    if (bq.x > -0.004 && bq.x < 0.404 && abs(bq.y) < 0.017) {
+      col = vec3(0.03);
+      if (bq.x > 0.0 && bq.x < 0.4 * left && abs(bq.y) < 0.012) col = teamCol(float(t));
+    }
   }
-  vec2 wq = p - vec2(0.0, -0.45);
-  if (abs(wq.y) < 0.012 && abs(wq.x) < 0.3) {
-    col = vec3(0.08);
-    float w = uArtFx.x / 0.4 * 0.28;
-    if ((wq.x - 0.0) * sign(w) > 0.0 && abs(wq.x) < abs(w)) col = vec3(0.3, 0.55, 1.0);
+  vec2 cq = p - vec2(-0.82, -0.445);
+  if (abs(cq.x) < 0.052 && abs(cq.y) < 0.036) {
+    col = vec3(0.03);
+    if (uMuzzle.w >= 0.0) col = mix(col, vec3(1.0, 0.85, 0.3), artNumber(cq / 0.021 + vec2(0.5, 1.0), ceil(uMuzzle.w)));
+  }
+  vec2 wq = p - vec2(0.6, -0.445);
+  if (abs(wq.y) < 0.017 && abs(wq.x) < 0.24) {
+    col = vec3(0.03);
+    float wv = uArtFx.x * 0.23;
+    if (abs(wq.y) < 0.011 && wq.x * sign(wv) > 0.0 && abs(wq.x) < abs(wv)) {
+      float chev = fract((wq.x * sign(wv) - abs(wq.y)) * 40.0 - uTime * 3.0);
+      col = mix(vec3(0.75, 0.15, 0.1), vec3(1.0, 0.65, 0.2), step(0.5, chev));
+    }
+    if (abs(wq.x) < 0.0025) col = vec3(0.7);
   }
   return col;
 }
@@ -8068,7 +8352,7 @@ const SOURCES = {
   tube: staged(tube, 0.4, 0.45),
   tanks: staged(tanks, 0.35, 0.45),
   football: staged(football, 0.6, 0.4),
-  artillery: staged(artillery, 0.45, 0.4),
+  artillery: staged(artillery, 0.2, 0.2),
   skyrush: staged(skyrush, 0.4, 0.4),
   skatepark: staged(skatepark, 0.35, 0.45),
   maze: staged(maze, 0.7, 0.4),
@@ -8142,7 +8426,7 @@ export const STYLE_INFO = {
   rocks:       'A vector ship that flies, dodges and splits the rocks it hits',
   skatepark:   'A skater on a half-pipe in a warehouse: a trick at every bar line, a grind along the coping through the build, a huge air on the drop, the combo counter',
   skyrush:     'A jetpack flyer seen from behind over a checkered plain: saucers in waves on the bar, a shot on every beat, a serpent of orbs bursting on the drop',
-  artillery:   'Two teams of little soldiers on a hill: a shot each bar line, arcing through the wind to land on the snare, craters in the earth, a shell that splits in five on the drop',
+  artillery:   'Two teams of beetles on an island: missiles, grenades and bounces in real physics, each blast solved to land on the snare, the camera zooming and following every shot',
   football:    'Football seen from above, the camera on the ball: a pass on every beat, a run down the wing through the build, the header in on the drop, the crowd going up',
   tanks:       'A battlefield of green lines through a tank\'s sight: the tank comes round after the enemy on the beat, fires on the backbeat, the radar sweeping once a bar',
   tube:        'A claw on the rim of a glowing tube, things climbing its lanes on the beat, the shots on the backbeat, a dive down the tube on the drop',

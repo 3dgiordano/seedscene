@@ -4190,169 +4190,930 @@ function rotateAxis(v, k, ang) {
 }
 
 // ---------------------------------------------------------------------------
-// The artillery: two teams of little soldiers on a hill, shots on the bar
+// The artillery: two teams on an island, every shot a real flight
 // ---------------------------------------------------------------------------
 
-export const ART_CRATERS = 32;
-export const ART_SOLDIERS = 10;
-const ART_GRAV = 0.9;                       // board units a second squared
+export const ART_CRATERS = 64;
+export const ART_BEETLES = 10;
+const ART_DT = 1 / 240;                     // the physics' fixed step, a second
+const ART_FRAME = 4;                        // a frame kept for the screen every so many steps
+const ART_G = 500;                          // gravity, world units a second squared (a beetle's radius is 9 units)
+const ART_WIND = 250;                       // the strongest wind: half of gravity, on what feels it
+const ART_VMAX = 1000;                      // the hardest launch
+const ART_HP = 60;
+const ART_HALF = 820;                       // the island reaches this far each way
+const ART_R = 9;                            // a beetle's radius
+const ART_APART = 130;                      // each side keeps this far from the island's middle
+// How far from its own side a shot may be meant to go off: past a blast's reach, or a scatter's
+const ART_KEEP = { missile: 104, homing: 104, grenade: 104, mortar: 70, cluster: 170, air: 170 };
 
-/** The hill before any crater: a few slow waves, the seed's; the same sum the shader draws. */
-function artBase(x, k) {
-  return -0.18 + 0.16 * Math.cos(x * 2.6 + k[0]) * 0.6 + 0.09 * Math.sin(x * 5.3 + k[1]) + 0.045 * Math.sin(x * 11.0 + k[2]) + 0.12 * Math.exp(-x * x * 6.0) * k[3];
+// What flies, and the beetles. r: its radius; e, f: what a bounce keeps of the speed along the surface's normal and along the
+// surface; wind: whether the wind pushes it; blast: the crater's radius; bias: how far under it the blast's push
+// comes from, a share of the blast, so what it hits is thrown upward; contact: it goes off on touching the
+// ground (or else on its fuse, bouncing until then).
+const ART_ARMS = {
+  missile: { id: 1, r: 4, e: 0.8, f: 0.8, wind: true, blast: 50, bias: 0, contact: true, trail: 0.035 },
+  homing: { id: 2, r: 4, e: 0.8, f: 0.8, wind: true, blast: 50, bias: 0, contact: true, trail: 0.03 },
+  mortar: { id: 3, r: 4, e: 0.2, f: 0.08, wind: false, blast: 20, bias: 0, contact: true, trail: 0.09 },
+  grenade: { id: 4, r: 5, e: 0.8, f: 0.8, wind: false, blast: 50, bias: 0, contact: false },
+  cluster: { id: 5, r: 5, e: 0.8, f: 0.8, wind: false, blast: 20, bias: 0, contact: false },
+  piece: { id: 6, r: 2, e: 0.8, f: 0.8, wind: false, blast: 25, bias: 0, contact: true },
+  pod: { id: 7, r: 5, e: 0.55, f: 0.995, wind: false, blast: 30, bias: 0.5, contact: true, trail: 0.08 },
+  beetle: { id: 0, r: ART_R, e: 0.35, f: 0.85, wind: false, blast: 30, bias: 0, contact: false, grip: 70 },
+  tomb: { id: 0, r: 5, e: 0.2, f: 0.5, wind: false, blast: 0, bias: 0, contact: false },
+};
+
+/** The ground before any crater: an island of slow waves, the round's; the same sum the shader draws. */
+function artGround(x, k) {
+  let e = Math.min(1, Math.max(0, (ART_HALF - Math.abs(x)) / 260));
+  e = e * e * (3 - 2 * e);
+  return -90 + e * (230 + 70 * Math.cos(x * 0.0061 + k[0]) + 46 * Math.sin(x * 0.0137 + k[1]) + 20 * Math.sin(x * 0.031 + k[2])
+    + 8 * Math.sin(x * 0.083 + k[0]) + 80 * k[3] * Math.exp(-x * x / 90000));
 }
 
+const ART_RING = [...Array(8)].map((_, i) => [Math.cos(i * Math.PI / 4), Math.sin(i * Math.PI / 4)]);
+const ART_FAN = [...Array(16)].map((_, i) => [Math.cos(i * Math.PI / 8), Math.sin(i * Math.PI / 8)]);
+const artEase = (u) => { const v = Math.min(1, Math.max(0, u)); return v * v * (3 - 2 * v); };
+
 /**
- * The artillery: two teams of five little soldiers on a hill of earth, seen
- * from the side, as the turn-based artillery games of the PC showed it. On
- * each bar line a soldier of one side and then the other fires; the shell
- * arcs through the wind and lands on the beat where the snare is, blowing a
- * crater in the hill and anyone near it. On the accented bar - the drop - the
- * shell splits in five at the top of its arc. A side wiped out, the other
- * cheers, and two bars later a new round starts on a whole hill.
+ * The artillery: two teams of five little beetles on an island, seen from the
+ * side, as the turn-based artillery games of the PC played it. Everything is
+ * simulated at a fixed step: gravity on all that flies, the wind on shells,
+ * bounces off the ground's real slope, fuses, blasts that dig the ground and
+ * throw beetles, who fly, bounce, are hurt by a long fall and drown in the sea.
+ * One side holds each end of the island, with open ground between, and every
+ * shot is meant for the other side: it goes astray only as a real one would,
+ * the wind misjudged or a throw slipping, its bounces going where they go.
+ *
+ * The music holds because the shooter solves the shot with the same physics:
+ * it runs the flight ahead, and what it can choose - the launch, the fuse, the
+ * moment of firing - it chooses so that the blast lands on the snare, or on the
+ * drop's downbeat for the big ones. Nothing is moved in flight to make it fit.
+ *
+ * A turn: the camera closes in on the shooter, pulls back to frame the whole
+ * shot while trial arcs show the sum being done (the first ignoring the wind,
+ * the last allowing for it), follows the shell, closes in for the blast, follows
+ * whoever is thrown, and pulls back to the whole island.
  */
 export class ArtillerySim extends PlannedSim {
   reset() {
     this.rng = new Rng(this.seed, 'artillery-sim');
-    const r = new Rng(this.seed, 'artillery-hill');
-    this.k = [r.float(0, 6.28), r.float(0, 6.28), r.float(0, 6.28), r.float(0.3, 1)];
-    this.clock = 0;
-    this.kept = 0;
-    this.round = 0;
-    this.craters = [];            // {t, x, y, r}
-    this.shells = [];             // {t0, t1, x0, y0, vx, vy, split, kids}
-    this.booms = [];              // {t, x, y, size}
-    this.deaths = [];             // {t, i}
-    this.rounds = [{ t: -1e9 }];
-    this.turn = this.rng.int(0, 1);
-    this.next = 0;
-    this.deploy(0);
+    this.step = 0;
+    this.simT = 0;
+    this.frames = [];
+    this.events = [];
+    this.shells = [];
+    this.puffs = [];
+    this.booms = [];
+    this.pops = [];
+    this.rounds = [];
+    this.turnSide = this.rng.int(0, 1);
+    this.lastArm = '';
+    this.windScroll = 0;
+    this.pendingDeath = false;
+    this.nextRoundAt = undefined;
+    this.cam = { x: 0, y: 260, z: 960 };
+    this.follow = null;
+    this.focus = null;
+    this.newRound(0);
+    this.keepFrame();
   }
 
-  /** The ground's height at x, the craters dug out of it so far. */
-  surface(x, t = Infinity) {
-    let y = artBase(x, this.k);
-    let from = -1e9;
-    for (const r of this.rounds) if (r.t <= t) from = r.t;
-    for (const c of this.craters) {
-      if (c.t > t || c.t < from) continue;
-      const dx = Math.abs(x - c.x);
-      if (dx >= c.r) continue;
-      const h = Math.sqrt(c.r * c.r - dx * dx);
-      if (c.y + h > y) y = Math.min(y, c.y - h);
+  // ---- the ground -----------------------------------------------------------
+
+  solid(x, y) {
+    if (y >= artGround(x, this.k)) return false;
+    for (const c of this.holes) {
+      const dx = x - c.x, dy = y - c.y;
+      if (dx * dx + dy * dy < c.r * c.r) return false;
     }
-    return y;
+    return true;
   }
 
-  deploy(t) {
-    this.soldiers = [];
-    this.rounds.push({ t, soldiers: this.soldiers });
-    for (let team = 0; team < 2; team++) {
-      for (let i = 0; i < 5; i++) {
-        const x = (team ? 1 : -1) * (0.18 + i * 0.13 + this.rng.float(-0.03, 0.03));
-        this.soldiers.push({ x, team, alive: true, died: null });
+  touching(x, y, r) {
+    if (y - 2.5 * r > artGround(x, this.k)) return false;
+    if (this.solid(x, y)) return true;
+    for (const d of ART_RING) if (this.solid(x + d[0] * r, y + d[1] * r)) return true;
+    return false;
+  }
+
+  /** Which way the ground faces at a point touching it: away from what is solid round it. */
+  normalAt(x, y, r) {
+    let nx = 0, ny = 0;
+    for (const d of ART_FAN) if (this.solid(x + d[0] * (r + 2), y + d[1] * (r + 2))) { nx -= d[0]; ny -= d[1]; }
+    const l = Math.hypot(nx, ny);
+    return l > 1e-6 ? [nx / l, ny / l] : [0, 1];
+  }
+
+  // ---- one step of anything that flies --------------------------------------
+
+  body(kind, x, y, vx, vy, extra = {}) {
+    return { kind, arm: ART_ARMS[kind], x, y, vx, vy, age: 0, rest: false, ...extra };
+  }
+
+  /** One step of a body under gravity and the wind, bounced off the ground. Says what ended it, if anything did. */
+  stepBody(b) {
+    const a = b.arm, dt = ART_DT;
+    let ax = a.wind ? (b.windAs !== undefined ? b.windAs : this.wind) : 0, ay = -ART_G;
+    // a homing shell flies as any other for its first second, then drives straight at its mark
+    if (b.kind === 'homing' && b.age >= 1) {
+      const dx = b.tx - b.x, dy = b.ty - b.y, l = Math.hypot(dx, dy) || 1, k = Math.min(1, 9 * dt);
+      b.vx += (dx / l * b.speed - b.vx) * k;
+      b.vy += (dy / l * b.speed - b.vy) * k;
+      ax = 0; ay = 0;
+    }
+    const nx = b.x + b.vx * dt + 0.5 * ax * dt * dt, ny = b.y + b.vy * dt + 0.5 * ay * dt * dt;
+    const vx = b.vx + ax * dt, vy = b.vy + ay * dt;
+    b.age += dt;
+    if (Math.abs(nx) > 1700 || ny > 2600) return 'out';
+    if (ny - a.r < this.water) {
+      // fast and flat enough, it skips off the sea; otherwise the sea has it
+      const sp = Math.hypot(vx, vy);
+      if (vy < 0 && sp > 500 && Math.abs(vx) > 1.9 * Math.abs(vy)) {
+        b.x = nx; b.y = this.water + a.r; b.vx = vx * 0.87; b.vy = -vy * 0.87;
+        return 'skip';
+      }
+      b.x = nx; b.y = ny; b.vx = vx; b.vy = vy;
+      return 'water';
+    }
+    if (!this.touching(nx, ny, a.r)) { b.x = nx; b.y = ny; b.vx = vx; b.vy = vy; return null; }
+    if (a.contact) { b.x = nx; b.y = ny; b.vx = vx; b.vy = vy; return 'hit'; }
+    // the bounce: the speed into the ground turned back and cut, the speed along it dragged
+    const [gx, gy] = this.normalAt(nx, ny, a.r);
+    const vn = vx * gx + vy * gy;
+    // already leaving this surface (out from under a roof, off a wall): it goes on and only feels it again if it comes back
+    if (vn >= 0) { b.x = nx; b.y = ny; b.vx = vx; b.vy = vy; return null; }
+    const drag = vn < -30 ? a.f : Math.pow(a.f, 4);     // once for a bounce, every step while it rolls
+    const tx = (vx - vn * gx) * drag, ty = (vy - vn * gy) * drag;
+    b.vx = tx - vn * a.e * gx; b.vy = ty - vn * a.e * gy;
+    // it slides on along the surface if there is room; wedged with no way on, it has stopped
+    const sx = b.x + b.vx * dt, sy = b.y + b.vy * dt;
+    if (!this.touching(sx, sy, a.r)) { b.x = sx; b.y = sy; b.stuck = 0; } else {
+      if (this.touching(b.x, b.y, a.r)) { b.x += gx * 0.6; b.y += gy * 0.6; }
+      b.stuck = (b.stuck || 0) + 1;
+    }
+    // what comes slowly to a slope it can hold stays there; a beetle holds on harder than a rolling grenade
+    if ((Math.hypot(b.vx, b.vy) < (a.grip && gy > 0.55 ? a.grip : 20) && gy > 0.2) || b.stuck > 24) { b.vx = 0; b.vy = 0; b.rest = true; }
+    return 'bounce';
+  }
+
+  /** The flight ahead, by the same steps the real one will take: where it ends, when, and its path. */
+  fly(kind, x, y, vx, vy, limit, extra = {}) {
+    const b = this.body(kind, x, y, vx, vy, extra);
+    const path = [[x, y]];
+    let end = 'time', n = 0;
+    while (b.age < limit) {
+      const r = this.stepBody(b);
+      if (++n % 4 === 0) path.push([b.x, b.y]);
+      if (r === 'hit' || r === 'water' || r === 'out') { end = r; break; }
+      if (b.rest) { end = 'rest'; break; }
+    }
+    path.push([b.x, b.y]);
+    return { t: b.age, x: b.x, y: b.y, end, path, vx: b.vx, vy: b.vy };
+  }
+
+  // ---- the blast ------------------------------------------------------------
+
+  /** A blast: it digs the ground and hurts and throws what is near it, harder the nearer. */
+  explode(x, y, R, biasShare, t) {
+    if (R <= 0) return;
+    let near = false;
+    for (const d of ART_FAN) if (this.solid(x + d[0] * R, y + d[1] * R)) { near = true; break; }
+    if (near || this.solid(x, y)) this.holes.push({ t, x, y, r: R, cave: false });
+    this.booms.push({ t, x, y, blast: R });
+    const cy = y - biasShare * R, base = 2 * R + 4;
+    let thrown = null, most = 0;
+    for (const s of this.beetles) {
+      if (s.state === 'gone') continue;
+      s.rest = false;     // what stood on this ground may have nothing under it now
+      if (s.state === 'drown' || s.state === 'tomb') continue;
+      const d = Math.hypot(s.x - x, s.y - y);
+      if (d >= base) continue;
+      const dmg = Math.min(Math.floor((base - d) / 2), R);
+      if (dmg <= 1) continue;
+      s.hp -= dmg;
+      this.pops.push({ t, x: s.x, y: s.y + 22, v: dmg });
+      // thrown from a point a little under the blast when the weapon says so; the push grows with the harm
+      const dx = s.x - x, dy = s.y - cy, l = Math.hypot(dx, dy);
+      const ux = l > 1e-3 ? dx / l : 0, uy = l > 1e-3 ? dy / l : 1;
+      const push = (5 * dmg + 10) * 1.41;
+      s.vx += ux * push;
+      s.vy += uy * push;
+      s.flung = true;
+      s.spin = (ux >= 0 ? -1 : 1) * push * 0.05;
+      if (push > most) { most = push; thrown = s; }
+    }
+    if (thrown) this.follow = thrown;
+    this.focus = { t, x, y };
+  }
+
+  /** The stream of pieces a cluster throws up, each landing on its own eighth note of the music. */
+  throwPieces(b, t) {
+    const first = this.grid.next(t + 0.32, 2);
+    for (let i = 0; i < 5; i++) {
+      const land = first + i * 2 * this.grid.six;
+      const vx = this.rng.float(-100, 100) + b.vx / 5;
+      // the throw is found by running it: the ground under it is uneven, so a few tries, keeping the closest
+      let vy = ART_G * (land - t) / 2, best = vy, gap = Infinity;
+      for (let k = 0; k < 7 && gap > 0.006; k++) {
+        const run = this.fly('piece', b.x, b.y + 6, vx, vy, 4);
+        if (run.end !== 'hit') { vy *= 0.8; continue; }
+        const miss = (land - t) - run.t;
+        if (Math.abs(miss) < gap) { gap = Math.abs(miss); best = vy; }
+        vy += ART_G * miss / 2;
+      }
+      this.shells.push(this.body('piece', b.x, b.y + 6, vx, best));
+    }
+  }
+
+  burst(b, t) {
+    this.explode(b.x, b.y, b.arm.blast, b.arm.bias, t);
+    if (b.kind === 'cluster') this.throwPieces(b, t);
+    if (b.kind === 'mortar') {
+      // bomblets thrown back the way it came
+      const gx = -b.vx * 0.2, gy = -b.vy * 0.2;
+      for (let i = 0; i < 5; i++) this.shells.push(this.body('piece', b.x - b.vx * 0.012, b.y - b.vy * 0.012 + 3, gx + this.rng.float(-30, 30), gy + this.rng.float(-30, 30) + 90));
+    }
+  }
+
+  // ---- a round --------------------------------------------------------------
+
+  newRound(t) {
+    const r = this.rng;
+    this.water = 0;
+    this.waterGoal = 0;
+    this.turns = 0;
+    this.lastFlyer = -9;
+    this.turn = null;
+    this.over = false;
+    this.follow = null;
+    this.focus = null;
+    this.wind = r.float(-0.7, 0.7) * ART_WIND;
+    this.shells = [];
+    // an island with room for both sides: one to each end of it, a stretch of open ground between them, so that every
+    // shot has a distance to cross
+    let sides;
+    for (let tries = 0; tries < 30; tries++) {
+      this.k = [r.float(0, 6.28), r.float(0, 6.28), r.float(0, 6.28), r.float(0.3, 1)];
+      this.holes = [];
+      // caves the sea and the years cut, so the land is all arches, tunnels and overhangs before anyone fires
+      for (let i = r.int(5, 8); i > 0; i--) {
+        const x = r.float(-640, 640), g = artGround(x, this.k);
+        this.holes.push({ t: -1e9, x, y: g - r.float(18, 105), r: r.float(26, 78), cave: true });
+      }
+      sides = [-1, 1].map((sign) => {
+        const spots = [];
+        for (let gap = 75; gap >= 30 && spots.length < 5; gap -= 15) {
+          for (let n = 0; n < 60 && spots.length < 5; n++) {
+            const x = sign * r.float(ART_APART, ART_HALF - 235);
+            if (this.surfaceY(x, -1e9) < this.water + 45 || spots.some((q) => Math.abs(q - x) < gap)) continue;
+            spots.push(x);
+          }
+        }
+        return spots;
+      });
+      if (sides[0].length === 5 && sides[1].length === 5) break;
+    }
+    this.round = { t, k: this.k, holes: this.holes };
+    this.rounds.push(this.round);
+    while (this.rounds.length > 2) this.rounds.shift();
+    // they drop in, each facing the other side
+    this.beetles = [];
+    sides.forEach((spots, team) => {
+      for (const x of spots) {
+        const s = this.body('beetle', x, artGround(x, this.k) + 120 + r.float(0, 60), 0, 0);
+        this.beetles.push(Object.assign(s, { team, hp: ART_HP, state: 'live', face: team ? -1 : 1, rot: 0, spin: 0, aim: 0.5, flung: false, dropping: true }));
+      }
+    });
+    this.nextTurn = (Math.floor((t + 1.6) / this.grid.barSec) + 1) * this.grid.barSec;
+  }
+
+  aliveOf(team) { return this.beetles.filter((s) => s.team === team && s.state === 'live' && s.hp > 0); }
+
+  /** The snare's beats between two times: the even beats of the bar, counting from one. */
+  snares(a, b) {
+    const beats = Math.max(1, Math.round(this.grid.steps / 4)), out = [];
+    for (let bar = Math.floor(a / this.grid.barSec); bar * this.grid.barSec <= b; bar++) {
+      for (let i = 1; i < beats; i += 2) {
+        const t = bar * this.grid.barSec + i * this.grid.spb;
+        if (t >= a && t <= b) out.push(t);
       }
     }
-    this.wind = this.rng.float(-0.35, 0.35);
+    return out;
   }
 
-  plan() {
-    const bar = this.grid.barSec, spb = this.grid.spb;
-    const t = this.next;
-    this.clock = t;
-    this.next = t + bar;
-    const alive = (team) => this.soldiers.filter((q) => q.alive && q.team === team);
-    if (!alive(0).length || !alive(1).length) {
-      // a side wiped out: two bars of cheering, then a whole hill and both sides again
-      this.deploy(t + bar);
-      this.next = t + 2 * bar;
+  accentIn(a, b) {
+    const bar = this.grid.barSec;
+    for (let n = Math.ceil(a / bar); n * bar <= b; n++) if (this.grid.isAccent(n * bar)) return n * bar;
+    return null;
+  }
+
+  pickArm(big) {
+    const r = this.rng;
+    if (big) {
+      // a big moment gets a big arm, the dragonfly no more than one turn in three
+      const pool = ['cluster', 'cluster', 'grenade', 'missile'].filter((q) => q !== this.lastArm);
+      if (this.turns - this.lastFlyer >= 3) pool.push('air', 'air');
+      return r.pick(pool);
+    }
+    const pool = ['missile', 'missile', 'grenade', 'grenade', 'homing', 'mortar', 'cluster'].filter((q) => q !== this.lastArm);
+    return r.pick(pool);
+  }
+
+  // ---- solving a shot -------------------------------------------------------
+
+  /** A launch from a point that reaches another in T seconds under gravity and the wind it allows for. */
+  launch(x0, y0, x1, y1, T, wind) {
+    return [(x1 - x0 - 0.5 * wind * T * T) / T, (y1 - y0 + 0.5 * ART_G * T * T) / T];
+  }
+
+  /** Whether a blast there leaves the shooter's whole side out of its reach; how far is the arm's to say. */
+  clearOfOwn(team, x, y, kind) {
+    const keep = ART_KEEP[kind];
+    for (const q of this.beetles) if (q.team === team && q.state === 'live' && Math.hypot(q.x - x, q.y - y) < keep) return false;
+    return true;
+  }
+
+  /** The launch that really leaves: what was aimed, and how it slipped from the hand. */
+  released(best, kind, limit, err) {
+    best.avx = best.vx; best.avy = best.vy;
+    best.vx *= 1 + err.slip; best.vy *= 1 + err.slip;
+    best.run = this.fly(kind, best.x, best.y, best.vx, best.vy, limit);
+    return best;
+  }
+
+  /**
+   * Aim a shell that goes off on touching, at a mark on the other side and never back over the shoulder: the landing
+   * beat, the launch, and the moment of firing so that they meet. The aim allows for the wind as the shooter judges it,
+   * which may be wrong; the moment of firing comes from the flight as it will really be, so the blast still keeps time.
+   */
+  solveDirect(kind, s, tx, ty, earliest, lands, err) {
+    const arm = ART_ARMS[kind], est = arm.wind ? this.wind * (1 + err.wind) : 0, dir = Math.sign(tx - s.x) || 1;
+    let best = null;
+    for (const land of lands) {
+      const T = land - earliest;
+      const raw = this.launch(s.x, s.y + 4, tx, ty, T, est);
+      const sp = Math.hypot(raw[0], raw[1]);
+      if (sp > ART_VMAX || sp < 60 || raw[0] * dir <= 0) continue;
+      const mx = s.x + raw[0] / sp * 16, my = s.y + 4 + raw[1] / sp * 16;
+      const [vx, vy] = this.launch(mx, my, tx, ty, T, est);
+      const seen = this.fly(kind, mx, my, vx, vy, T + 2, { windAs: est });
+      const miss = Math.abs(seen.x - tx) + 0.5 * Math.abs(seen.y - ty) + (seen.end === 'hit' && seen.t > T * 0.6 ? 0 : 400);
+      if (!this.clearOfOwn(s.team, seen.x, seen.y, kind) || (seen.x - s.x) * dir < 40) continue;
+      if (!best || miss < best.miss) best = { miss, land, x: mx, y: my, vx, vy, seen, est, T };
+      if (miss < 24) break;
+    }
+    if (!best || best.miss >= 160) return null;
+    return this.released(best, kind, best.T + 4, err);
+  }
+
+  /** Aim what goes off on a fuse: try throws, and pick the one whose bounces leave it nearest its mark when the fuse ends. */
+  solveFused(kind, s, tx, ty, earliest, lands, err) {
+    const dir = Math.sign(tx - s.x) || 1;
+    let best = null;
+    search: for (const land of lands) {
+      const fuse = land - earliest;
+      for (const T of [0.5, 0.75, 1.0, 1.3, 1.7]) {
+        if (T > fuse) continue;
+        for (const back of [0, 50, 100, 170]) {
+          const lx = tx - dir * back, ly = artGround(lx, this.k);
+          const raw = this.launch(s.x, s.y + 4, lx, ly, T, 0);
+          const sp = Math.hypot(raw[0], raw[1]);
+          if (sp > ART_VMAX || sp < 60 || raw[0] * dir <= 0) continue;
+          const mx = s.x + raw[0] / sp * 16, my = s.y + 4 + raw[1] / sp * 16;
+          const [vx, vy] = this.launch(mx, my, lx, ly, T, 0);
+          const seen = this.fly(kind, mx, my, vx, vy, fuse);
+          if (!this.clearOfOwn(s.team, seen.x, seen.y, kind) || (seen.x - s.x) * dir < 40) continue;
+          const miss = Math.abs(seen.x - tx) + 0.5 * Math.abs(seen.y - ty) + (seen.end === 'water' || seen.end === 'out' ? 400 : 0);
+          if (!best || miss < best.miss) best = { miss, land, x: mx, y: my, vx, vy, seen, fuse };
+          if (miss < 18) break search;       // near enough: the rest of the tries would only cost a frame
+        }
+      }
+    }
+    if (!best || best.miss >= 260) return null;
+    return this.released(best, kind, best.fuse, err);
+  }
+
+  /** The shell that goes up and then turns on its mark: its speed sets how long it takes, the moment of firing does the rest. */
+  solveHoming(s, tx, ty, earliest, big) {
+    const dir = Math.sign(tx - s.x) || 1;
+    const vx = dir * 170, vy = 300, l = Math.hypot(vx, vy);
+    const mx = s.x + vx / l * 16, my = s.y + 4 + vy / l * 16;
+    let best = null;
+    for (const speed of [320, 420, 540, 680]) {
+      const run = this.fly('homing', mx, my, vx, vy, 6, { tx, ty, speed });
+      const miss = Math.hypot(run.x - tx, run.y - ty) + (run.end === 'hit' && run.t > 1 ? 0 : 400);
+      if (!this.clearOfOwn(s.team, run.x, run.y, 'homing')) continue;
+      if (!best || miss < best.miss) best = { miss, x: mx, y: my, vx, vy, avx: vx, avy: vy, run, seen: run, speed, tx, ty, est: this.wind };
+    }
+    if (!best || best.miss > 160) return null;
+    const land = this.snares(earliest + best.run.t - 0.05, earliest + best.run.t + 4)[0];
+    best.land = big !== null && big >= earliest + best.run.t - 0.05 ? big : land;
+    return best;
+  }
+
+  /** No clear shot at anyone from down here: any way out toward the other side that keeps the blast off its own. */
+  wayForward(s, tx, ty, earliest) {
+    const dir = Math.sign(tx - s.x) || 1;
+    let best = null, score = Infinity;
+    for (let a = 0.3; a < 1.45; a += 0.2) {
+      for (const sp of [380, 680]) {
+        const ux = Math.cos(a) * dir, uy = Math.sin(a), x = s.x + ux * 16, y = s.y + 4 + uy * 16;
+        const run = this.fly('missile', x, y, ux * sp, uy * sp, 5);
+        if (run.end !== 'hit' || run.t < 0.7 || (run.x - s.x) * dir < 60 || !this.clearOfOwn(s.team, run.x, run.y, 'missile')) continue;
+        const v = Math.hypot(run.x - tx, run.y - ty);
+        if (v < score) { score = v; best = { x, y, vx: ux * sp, vy: uy * sp, avx: ux * sp, avy: uy * sp, run, seen: run, est: this.wind }; }
+      }
+    }
+    if (best) best.land = this.snares(earliest + best.run.t, earliest + best.run.t + 4)[0];
+    return best;
+  }
+
+  // ---- a turn ---------------------------------------------------------------
+
+  beginTurn(t) {
+    const r = this.rng;
+    const side = this.turnSide;
+    this.turnSide = 1 - side;
+    this.turns++;
+    if (this.turns > 16) this.waterGoal += 26;     // the fight has gone on: the sea rises
+    if (r.bool(0.75)) this.wind = r.float(-1, 1) * ART_WIND;
+
+    const bar = this.grid.barSec;
+    // the sum takes a little over two seconds, or a little under if that lands a big one on the drop
+    const unhurried = Math.ceil((t + 2.2) / bar - 1e-9) * bar, hurried = Math.ceil((t + 1.5) / bar - 1e-9) * bar;
+    const big = this.accentIn(hurried + 0.7, unhurried + 3.6);
+    const earliest = big !== null && big < unhurried + 0.7 ? hurried : unhurried;
+    const beats = (a, b) => r.shuffle(this.snares(earliest + a, earliest + b));
+
+    // the shot is always meant for the other side; what goes wrong goes wrong in the air: nearly half the time the wind
+    // is misjudged, or a throw slips from the hand and its bounces go elsewhere
+    const off = r.bool(0.45), wrong = r.float(0.15, 0.4) * (r.bool() ? 1 : -1), slip = r.float(0.015, 0.05) * (r.bool() ? 1 : -1);
+    const err = (kind) => (off ? { wind: ART_ARMS[kind]?.wind ? wrong : 0, slip: ART_ARMS[kind]?.wind ? 0 : slip } : { wind: 0, slip: 0 });
+    const shooters = r.shuffle(this.aliveOf(side)).slice(0, 2), marks = r.shuffle(this.aliveOf(1 - side)).slice(0, 3);
+
+    const aim = (kind, s, m) => {
+      const tx = m.x, ty = this.surfaceY(tx, m.y);
+      let sol = null;
+      if (kind === 'air') sol = this.clearOfOwn(s.team, tx, ty, 'air') ? {} : null;
+      else if (kind === 'homing') sol = this.solveHoming(s, tx, ty, earliest, big);
+      else {
+        const fused = kind === 'grenade' || kind === 'cluster';
+        const solve = (lands) => (fused ? this.solveFused(kind, s, tx, ty, earliest, lands, err(kind)) : this.solveDirect(kind, s, tx, ty, earliest, lands, err(kind)));
+        if (big !== null) sol = solve([big]);       // the drop first, if it can be done
+        if (!sol) sol = solve(fused ? beats(1.5, 4.5).slice(0, 1) : beats(0.7, 3.6));
+      }
+      return sol ? { kind, s, m, tx, ty, sol } : null;
+    };
+    const search = (kind) => {
+      for (const s of shooters) for (const m of marks) { const got = aim(kind, s, m); if (got) return got; }
+      return null;
+    };
+    const wanted = this.pickArm(big !== null);
+    let shot = search(wanted) || (wanted !== 'missile' ? search('missile') : null);
+    if (!shot) {
+      outer: for (const s of shooters) {
+        for (const m of marks) {
+          const way = this.wayForward(s, m.x, this.surfaceY(m.x, m.y), earliest);
+          if (way) { shot = { kind: 'missile', s, m, tx: m.x, ty: this.surfaceY(m.x, m.y), sol: way }; break outer; }
+        }
+      }
+    }
+    if (!shot) {
+      // nobody on this side can fire without hitting its own: the turn passes
+      this.nextTurn = (Math.floor(t / bar) + 2) * bar;
       return;
     }
-    const shooter = this.rng.pick(alive(this.turn));
-    const targets = alive(1 - this.turn);
-    const target = this.rng.pick(targets);
-    this.turn = 1 - this.turn;
-    if (this.rng.bool(0.3)) this.wind = Math.max(-0.4, Math.min(0.4, this.wind + this.rng.float(-0.15, 0.15)));
-    const big = this.grid.isAccent(t);
-    // it lands on the snare: the fourth beat (the second, when the tempo is slow)
-    const land = t + (spb < 0.45 ? 3 : 1) * spb;
-    const x0 = shooter.x, y0 = this.surface(x0, t) + 0.035;
-    const miss = this.rng.bool(0.55) ? this.rng.float(0.07, 0.16) * (this.rng.bool() ? 1 : -1) : 0;
-    const tx = target.x + miss, ty = this.surface(tx, land);
-    const T = land - t;
-    const vx = (tx - x0 - 0.5 * this.wind * T * T) / T, vy = (ty - y0 + 0.5 * ART_GRAV * T * T) / T;
-    const shell = { t0: t, t1: land, x0, y0, vx, vy, from: this.soldiers.indexOf(shooter), split: big, round: this.rounds[this.rounds.length - 1] };
-    this.shells.push(shell);
-    // where it lands: one crater, or five from the split
-    const hits = big ? [-0.16, -0.08, 0, 0.08, 0.16].map((d) => tx + d) : [tx];
-    for (const hx of hits) {
-      const hy = this.surface(hx, land);
-      const rr = big ? 0.075 : 0.06;
-      this.craters.push({ t: land, x: hx, y: hy, r: rr });
-      this.booms.push({ t: land, x: hx, y: hy, size: big ? 1.4 : 1 });
-      for (const q of this.soldiers) {
-        if (q.alive && Math.abs(q.x - hx) < rr + 0.02) { q.alive = false; q.died = land; this.deaths.push({ t: land, i: this.soldiers.indexOf(q), from: hx }); }
+    this.lastArm = shot.kind;
+    if (shot.kind === 'air') this.lastFlyer = this.turns;
+    const { s, tx, ty, sol, kind } = shot;
+    s.face = tx >= s.x ? 1 : -1;
+    const T = { kind, s, t0: t, tx, ty, fired: false, trials: [], settled: null };
+    if (kind === 'air') this.planAir(T, earliest, big);
+    else {
+      if (kind === 'grenade' || kind === 'cluster') T.fuseEnd = sol.land;
+      T.sol = sol;
+      T.land = sol.land;
+      // a fused throw leaves on the bar and its fuse counts to the beat; a shell that goes off on touching leaves
+      // when its flight will end on the beat
+      T.fire = T.fuseEnd !== undefined ? earliest : Math.max(t + 1.2, sol.land - sol.run.t);
+      this.planTrials(T, tx, ty);
+    }
+    T.box = this.boxOf(T);
+    this.turn = T;
+  }
+
+  /** The ground's top near a mark, so a shot is aimed at where the beetle stands. */
+  surfaceY(x, near) {
+    let y = artGround(x, this.k);
+    while (y > -100 && !this.solid(x, y - 1)) y -= 3;
+    return Math.max(y, near - 60);
+  }
+
+  /** The sum done in front of us, in the wind as the shooter judges it: the trial arcs, the last the shot it means to make. */
+  planTrials(T, tx, ty) {
+    const sol = T.sol, kind = T.kind;
+    const arm = ART_ARMS[kind];
+    const flight = T.fire - T.t0;
+    const spots = [0.42, 0.6, 0.78];
+    const add = (u, vx, vy) => {
+      const run = kind === 'homing'
+        ? this.fly('homing', sol.x, sol.y, vx, vy, 6, { tx: sol.tx, ty: sol.ty, speed: sol.speed })
+        : this.fly(kind, sol.x, sol.y, vx, vy, T.fuseEnd !== undefined ? T.fuseEnd - T.fire : 5, arm.wind ? { windAs: sol.est } : {});
+      T.trials.push({ t: T.t0 + flight * u, path: run.path, angle: Math.atan2(vy, vx), power: Math.hypot(vx, vy) / ART_VMAX, ex: run.x, ey: run.y });
+    };
+    if (arm.wind && kind !== 'homing' && Math.abs(sol.est) > 15) {
+      // first with no wind in the sum, then half of it: the arcs drift off, and come back
+      const flightT = sol.seen.t;
+      const v0 = this.launch(sol.x, sol.y, tx, ty, flightT, 0);
+      const v1 = this.launch(sol.x, sol.y, tx, ty, flightT, sol.est * 0.5);
+      add(spots[0], v0[0], v0[1]);
+      add(spots[1], v1[0], v1[1]);
+    } else {
+      // no wind to allow for: too short, then too long
+      add(spots[0], sol.avx * 0.82, sol.avy * 0.86);
+      add(spots[1], sol.avx * 1.14, sol.avy * 1.08);
+    }
+    add(spots[2], sol.avx, sol.avy);
+  }
+
+  /** A great dragonfly called in: it crosses at a height, its pods leaving so each lands on a sixteenth, the first on the beat. */
+  planAir(T, earliest, big) {
+    const { tx, ty } = T, r = this.rng;
+    const dir = r.bool() ? 1 : -1;
+    const six = this.grid.six, height = Math.max(ty, artGround(tx, this.k)) + 330;
+    const vp = Math.max(240, Math.min(700, 50 / six));
+    const fall = Math.sqrt(2 * (height - ty) / ART_G);
+    const land = big !== null && big - fall > earliest ? big : this.snares(earliest + fall + 0.5, earliest + fall + 4)[0];
+    T.land = land;
+    T.fire = earliest;
+    // over the mark when the third pod leaves
+    const t2 = land + 2 * six - fall;
+    const px = (u) => tx - dir * 100 * fall + dir * vp * (u - t2);
+    T.flyer = { dir, height, vp, x: px, t0: t2 - 1500 / vp, t1: t2 + 1500 / vp, drops: [] };
+    for (let i = 0; i < 5; i++) {
+      const hit = land + i * six;
+      let at = hit - fall;
+      for (let k = 0; k < 6; k++) at = hit - this.fly('pod', px(at), height, dir * 100, 0, 5).t;
+      T.flyer.drops.push({ t: at, done: false });
+    }
+    // no arcs: the mark is what is framed
+    T.trials.push({ t: T.t0 + (T.fire - T.t0) * 0.5, path: [], angle: 1.1, power: 0.25, ex: tx, ey: ty });
+    T.sol = { run: { path: [[tx - 130, ty], [tx + 130, ty], [tx, height]] }, x: T.s.x, y: T.s.y };
+  }
+
+  boxOf(T) {
+    let a = T.s.x, b = T.s.x, c = T.s.y, d = T.s.y;
+    const eat = (q) => { a = Math.min(a, q[0]); b = Math.max(b, q[0]); c = Math.min(c, q[1]); d = Math.max(d, q[1]); };
+    eat([T.tx, T.ty]);
+    for (const q of T.sol.run.path) eat(q);
+    if (T.sol.seen) for (const q of T.sol.seen.path) eat(q);
+    return [a, b, c, d];
+  }
+
+  fireShot(T) {
+    T.fired = true;
+    if (T.kind === 'air') return;
+    const sol = T.sol;
+    const b = this.body(T.kind, sol.x, sol.y, sol.vx, sol.vy, T.kind === 'homing' ? { tx: sol.tx, ty: sol.ty, speed: sol.speed } : {});
+    if (T.fuseEnd !== undefined) b.fuseEnd = T.fuseEnd;
+    this.shells.push(b);
+    this.follow = null;
+    this.focus = null;
+  }
+
+  // ---- the world's step -----------------------------------------------------
+
+  /** One beetle into the sea: gone under, and off the camera. */
+  drown(s, t) {
+    s.state = s.state === 'tomb' ? 'gone' : 'drown';
+    s.hp = 0; s.vx = 0; s.vy = 0; s.rest = true;
+    this.splash(s.x, t, 1);
+    if (this.follow === s) this.follow = null;
+  }
+
+  tick() {
+    this.step++;
+    const t = this.simT = this.step * ART_DT;
+    while (this.events.length && this.events[0].t <= t) this.events.shift().fn(t);
+    if (this.nextRoundAt !== undefined && t >= this.nextRoundAt) { this.nextRoundAt = undefined; this.newRound(t); }
+    if (!this.turn && !this.over && t >= this.nextTurn) {
+      if (this.beetles.some((s) => !s.rest && (s.state === 'live' || s.state === 'tomb'))) this.nextTurn += this.grid.barSec;
+      else if (!this.aliveOf(0).length || !this.aliveOf(1).length) this.endRound(t);   // the sea can finish a side between turns
+      else this.beginTurn(t);
+    }
+    const T = this.turn;
+
+    // the shooter's shot
+    if (T) {
+      if (!T.fired && t >= T.fire) this.fireShot(T);
+      if (T.flyer) {
+        for (const d of T.flyer.drops) {
+          if (!d.done && t >= d.t) { d.done = true; this.shells.push(this.body('pod', T.flyer.x(d.t), T.flyer.height, T.flyer.dir * 100, 0)); }
+        }
       }
     }
-    // the next one fires on the next bar line
+
+    // what flies
+    let leader = null;
+    for (const b of this.shells) {
+      const res = this.stepBody(b);
+      const a = b.arm;
+      if (a.trail && (!b.lastPuff || t - b.lastPuff >= a.trail)) { this.puffs.push({ t, x: b.x, y: b.y }); b.lastPuff = t; }
+      if ((b.fuseEnd !== undefined && t >= b.fuseEnd) || res === 'hit') { this.burst(b, t); b.dead = true; continue; }
+      if (res === 'water') { this.splash(b.x, t, 0.5); b.dead = true; continue; }
+      if (res === 'skip') this.splash(b.x, t, 0.25);
+      if (res === 'out') { b.dead = true; continue; }
+      leader = b;
+    }
+    this.shells = this.shells.filter((b) => !b.dead);
+
+    // who was thrown or dropped
+    for (const s of this.beetles) {
+      if (s.state === 'gone') continue;
+      if (s.state === 'drown') {
+        s.y -= 60 * ART_DT;
+        if (s.y < this.water - 70) s.state = 'gone';
+        continue;
+      }
+      if (s.y - ART_R < this.water) { this.drown(s, t); continue; }
+      if (s.rest) continue;
+      const fell = s.vy;
+      const res = this.stepBody(s);
+      s.rot += s.spin * ART_DT;
+      if (res === 'water') { this.drown(s, t); continue; }
+      // dropped in at the start of a round, it digs its feet in where it lands
+      if (s.dropping && res === 'bounce') { s.dropping = false; s.vx = 0; s.vy = 0; s.rest = true; continue; }
+      if (res === 'bounce') {
+        s.spin *= 0.7;
+        if (fell < -400 && s.state === 'live') {
+          // a long fall hurts
+          const dmg = 1 + Math.round((-fell - 400) * 0.07);
+          s.hp -= dmg;
+          this.pops.push({ t, x: s.x, y: s.y + 22, v: dmg });
+        }
+      }
+      if (s.rest) { s.flung = false; s.rot = 0; s.spin = 0; if (this.follow === s) this.follow = null; }
+    }
+
+    // the sea, rising when the fight has gone on
+    if (this.water < this.waterGoal) this.water = Math.min(this.waterGoal, this.water + 14 * ART_DT);
+    this.windScroll += this.wind * ART_DT * 0.5;
+
+    // when all is still: the fallen go up one by one on the eighths, and the turn is over
+    if (T && T.fired) {
+      const flying = this.shells.length > 0 || (T.flyer && T.flyer.drops.some((d) => !d.done));
+      const moving = this.beetles.some((s) => !s.rest && (s.state === 'live' || s.state === 'tomb'));
+      if (!flying && !moving && t > T.land) {
+        if (!this.pendingDeath) {
+          const fallen = this.beetles.find((s) => s.state === 'live' && s.hp <= 0);
+          if (fallen) {
+            this.pendingDeath = true;
+            this.schedule(this.grid.next(t, 2), (u) => {
+              this.pendingDeath = false;
+              fallen.state = 'tomb';
+              fallen.arm = ART_ARMS.tomb;
+              fallen.rot = 0; fallen.spin = 0; fallen.flung = false;
+              this.explode(fallen.x, fallen.y, ART_ARMS.beetle.blast, 0, u);
+              fallen.rest = false;
+            });
+          } else if (T.settled === null) T.settled = t;
+        }
+      } else T.settled = null;
+      const late = t > T.land + 4 * this.grid.barSec;   // nothing waits for ever
+      if ((T.settled !== null && t - T.settled > 0.5) || late) {
+        this.turn = null;
+        const ended = !this.aliveOf(0).length || !this.aliveOf(1).length || this.holes.length > ART_CRATERS - 8;
+        if (ended) this.endRound(t);
+        else this.nextTurn = this.nextTurnAfter(t);
+      }
+    }
+
+    this.aimCamera(t, leader);
+    if (this.step % ART_FRAME === 0) this.keepFrame();
+  }
+
+  /** The next bar line a turn can start on, held back up to a few seconds if that lands its shot on the drop. */
+  nextTurnAfter(t) {
+    const bar = this.grid.barSec;
+    const soon = (Math.floor((t + 0.8) / bar) + 1) * bar;
+    const drop = this.accentIn(soon + 2.9, soon + 11);
+    if (drop === null || drop - soon <= 7.5) return soon;
+    return Math.max(soon, drop - Math.ceil(5.2 / bar) * bar);
+  }
+
+  schedule(t, fn) {
+    this.events.push({ t, fn });
+    this.events.sort((a, b) => a.t - b.t);
+  }
+
+  endRound(t) {
+    this.over = true;
+    const bar = this.grid.barSec, spb = this.grid.spb;
+    const end = (Math.floor(t / bar) + 3) * bar;
+    // the side still standing hops for joy on each beat
+    const winners = this.aliveOf(0).length ? 0 : 1;
+    for (let u = this.grid.next(t, 4); u < end - 0.1; u += spb) {
+      this.schedule(u, () => {
+        for (const s of this.beetles) if (s.team === winners && s.state === 'live' && s.hp > 0 && s.rest) { s.vy = 150; s.rest = false; }
+      });
+    }
+    this.nextRoundAt = end;
+  }
+
+  splash(x, t, size) { this.booms.push({ t, x, y: this.water, blast: -size }); }
+
+  // ---- the camera -----------------------------------------------------------
+
+  /**
+   * Where the camera wants to be. It closes in on the shooter, pulls back to
+   * frame the whole shot, follows the shell ahead of its flight, closes in as
+   * it comes down, stays on the blast, follows whoever it threw, and pulls back
+   * to the whole island. Position and zoom ease toward what is wanted every step.
+   */
+  aimCamera(t, leader) {
+    const T = this.turn, spb = this.grid.spb, c = this.cam;
+    let x, y, z, rate = 3.5, zoomRate = 2.6;
+    const sinceBlast = this.focus ? t - this.focus.t : 99;
+    const live = this.beetles.filter((s) => s.state === 'live');
+    if (T && !T.fired) {
+      const u = (t - T.t0) / Math.max(T.fire - T.t0, 0.01);
+      if (u < 0.33) { x = T.s.x + T.s.face * 18; y = T.s.y + 12; z = 112; zoomRate = 3.2; }
+      else {
+        const [a, b, l, h] = T.box;
+        x = (a + b) / 2; y = (l + h) / 2 + 12;
+        z = Math.max(250, Math.min(960, Math.max((b - a + 130) / 1.6, (h - l + 110) / 0.84)));
+        rate = 2.8; zoomRate = 2.2;
+      }
+    } else if (T && leader && (sinceBlast > 0.5 || leader.kind !== 'piece')) {
+      const tau = T.land - t, pull = artEase(tau / (1.6 * spb));
+      const reach = Math.max((T.box[1] - T.box[0]) / 2.6, (T.box[3] - T.box[2]) / 1.1);
+      const far = Math.max(280, Math.min(760, reach));
+      x = leader.x + leader.vx * 0.22; y = leader.y + leader.vy * 0.22;
+      z = tau > 0 ? 210 + (far - 210) * pull : 300;
+      rate = 8; zoomRate = 3.4;
+    } else if (T && T.flyer && t < T.land) {
+      x = T.tx; y = (T.flyer.height + T.ty) / 2; z = Math.max(320, (T.flyer.height - T.ty + 90) / 0.86);
+      rate = 3; zoomRate = 2.2;
+    } else if (this.follow && sinceBlast > 0.18 && !this.follow.rest) {
+      const f = this.follow;
+      x = f.x + f.vx * 0.2; y = f.y + f.vy * 0.2; z = 250;
+      rate = 6; zoomRate = 2.6;
+    } else if (this.focus && sinceBlast < 0.9) {
+      x = this.focus.x; y = this.focus.y + 16; z = 215 + 90 * artEase((sinceBlast - 0.1) / 0.8);
+      rate = 7; zoomRate = 5;
+    } else if (this.focus && T) {
+      x = this.focus.x; y = this.focus.y + 20; z = 330;
+      rate = 2.5; zoomRate = 2;
+    } else {
+      // the whole fight
+      let a = -300, b = 300;
+      for (const s of live) { a = Math.min(a, s.x); b = Math.max(b, s.x); }
+      x = (a + b) / 2; y = 240; z = Math.max(560, Math.min(960, (b - a + 240) / 1.6));
+      rate = 2.2; zoomRate = 1.8;
+    }
+    const kp = 1 - Math.exp(-rate * ART_DT), kz = 1 - Math.exp(-zoomRate * ART_DT);
+    c.x += (x - c.x) * kp;
+    c.y += (y - c.y) * kp;
+    c.z = Math.exp(Math.log(c.z) + (Math.log(z) - Math.log(c.z)) * kz);
+    // never much of the sea's floor or past the ends of the world
+    c.y = Math.max(c.y, this.water + c.z * 0.5 - Math.max(46, c.z * 0.17));
+    const edge = Math.max(0, ART_HALF + 260 - c.z * 0.89);
+    c.x = Math.max(-edge, Math.min(edge, c.x));
+  }
+
+  // ---- what the screen is told ----------------------------------------------
+
+  keepFrame() {
+    const T = this.turn, n = ART_BEETLES;
+    const so = new Float32Array(n * 8);
+    let h0 = 0, h1 = 0;
+    this.beetles.forEach((s, i) => {
+      const code = { live: s.flung ? 2 : 0, tomb: 3, drown: 4, gone: 5 }[s.state];
+      so.set([s.x, s.y, s.rot, Math.max(0, s.hp) / ART_HP, s.team, code, s.aim, s.face], i * 8);
+      if (s.team === 0) h0 += Math.max(0, s.hp); else h1 += Math.max(0, s.hp);
+    });
+    for (let i = this.beetles.length; i < n; i++) so[i * 8 + 5] = 5;
+    let aim = null, arc = null, arcAge = 0;
+    if (T && !T.fired) {
+      const u = (this.simT - T.t0) / Math.max(T.fire - T.t0, 0.01);
+      const seen = T.trials.filter((q) => q.t <= this.simT);
+      const last = seen[seen.length - 1];
+      const rest = T.s.face > 0 ? 0.5 : Math.PI - 0.5;
+      const before = seen.length > 1 ? seen[seen.length - 2].angle : rest;
+      const angle = last ? before + (last.angle - before) * artEase((this.simT - last.t) / 0.35) : rest;
+      const final = T.trials[T.trials.length - 1];
+      const charge = artEase((u - 0.8) / 0.2) * Math.max(0.15, final ? final.power : 0.3);
+      const i = this.beetles.indexOf(T.s);
+      T.s.aim = angle;
+      if (so[i * 8 + 5] === 0) so[i * 8 + 5] = 1;
+      so[i * 8 + 6] = angle;
+      aim = [T.s.x, T.s.y + 4, angle, charge];
+      if (last && last.path.length) { arc = last.path; arcAge = this.simT - last.t; }
+    }
+    const fired = T && T.fired && this.simT - T.fire < 0.25 ? 1 - (this.simT - T.fire) / 0.25 : 0;
+    const shells = this.shells.slice(0, 8).map((b) => [b.x, b.y, b.arm.id, Math.atan2(b.vy, b.vx), b.fuseEnd !== undefined ? b.fuseEnd : -1]);
+    const flyer = T && T.flyer && this.simT > T.flyer.t0 && this.simT < T.flyer.t1 ? [T.flyer.x(this.simT), T.flyer.height, T.flyer.dir, 1] : null;
+    const mark = T && !T.fired && T.trials.length && this.simT >= T.trials[0].t ? [T.tx, T.ty] : null;
+    this.frames.push({
+      t: this.simT, cam: [this.cam.x, this.cam.y, this.cam.z], water: this.water, so, h0, h1, aim, arc, arcAge, fired,
+      shells, flyer, mark, wind: this.wind, scroll: this.windScroll, round: this.round,
+      fx: T && T.fired ? T.sol.x : 0, fy: T && T.fired ? T.sol.y : 0, left: T && !T.fired ? T.fire - this.simT : -1,
+    });
+    if (this.frames.length > 1000) {
+      const from = this.simT - 3;
+      let cut = 0;
+      while (cut < this.frames.length - 2 && this.frames[cut].t < from) cut++;
+      if (cut > 300) this.frames.splice(0, cut);
+    }
+    const keep = this.simT - 6;
+    if (this.puffs.length > 200) this.puffs = this.puffs.filter((q) => q.t > keep);
+    if (this.booms.length > 40) this.booms = this.booms.filter((q) => q.t > keep);
+    if (this.pops.length > 30) this.pops = this.pops.filter((q) => q.t > keep);
   }
 
   advanceTo(t) {
-    if (t < this.kept) this.reset();
-    while (this.clock <= t + 2 * this.grid.barSec) this.plan();
-    const keep = t - 4;
-    this.shells = this.shells.filter((q) => q.t1 > keep);
-    this.booms = this.booms.filter((q) => q.t > keep);
-    this.deaths = this.deaths.filter((q) => q.t > keep);
-    const from = this.rounds.filter((r) => r.t <= t).pop();
-    this.craters = this.craters.filter((c) => c.t >= (from ? from.t : -1e9) - 1e-6 || c.t > t);
-    while (this.rounds.length > 2 && this.rounds[2].t <= t) this.rounds.shift();
-    this.kept = Math.max(0, this.rounds[1] ? this.rounds[1].t : 0);
+    if (t < this.frames[0].t) this.reset();
+    while (this.simT < t + 0.05) this.tick();
   }
 
   uniforms(t) {
     this.advanceTo(t);
-    // the round in play at t, and its soldiers as they stood then
-    const round = this.rounds.filter((r) => r.t <= t).pop() || this.rounds[0];
+    const fs = this.frames, span = ART_FRAME * ART_DT;
+    const i = Math.max(0, Math.min(fs.length - 2, Math.floor((t - fs[0].t) / span)));
+    const A = fs[i], B = fs[i + 1] || A;
+    const u = Math.max(0, Math.min(1, (t - A.t) / Math.max(B.t - A.t, 1e-6)));
+    const same = A.round === B.round;
+    const lerp = (a, b) => (same ? a + (b - a) * u : a);
+    const round = A.round;
+
+    // the shake of what has just gone off
+    let shake = 0;
+    const bl = recent(this.booms, t, 8);
+    for (const b of bl) if (b.blast > 0) shake = Math.max(shake, Math.exp(-(t - b.t) * 9) * b.blast / 50);
+    const zoom = lerp(A.cam[2], B.cam[2]);
+    const sx = shake * zoom * 0.018 * Math.sin(t * 71.0), sy = shake * zoom * 0.018 * Math.sin(t * 93.0 + 1.0);
+
     const cr = new Float32Array(ART_CRATERS * 4);
     let n = 0;
-    for (const c of this.craters) {
-      if (c.t > t || c.t < round.t || n >= ART_CRATERS) continue;
-      cr.set([c.x, c.y, c.r, t - c.t], 4 * n++);
+    for (const c of round.holes) {
+      if (c.t > t || n >= ART_CRATERS) continue;
+      cr.set([c.x, c.y, c.r, c.cave ? -1 : t - c.t], 4 * n++);
     }
-    for (let i = n; i < ART_CRATERS; i++) cr.set([0, 0, 0, 99], 4 * i);
-    const so = new Float32Array(ART_SOLDIERS * 4);
-    // (the soldiers of the round shown: the plan may already have dealt the next one)
-    const live = round.soldiers || this.soldiers;
-    live.forEach((q, i) => {
-      const dead = q.died !== null && q.died <= t;
-      const since = dead ? t - q.died : -1;
-      const shooting = this.shells.find((s) => s.round === round && s.from === i && t >= s.t0 - this.grid.spb && t < s.t0 + 0.2);
-      so.set([q.x, this.surface(q.x, t), q.team + (shooting ? 2 : 0), dead ? since : -1], i * 4);
+
+    const so = new Float32Array(ART_BEETLES * 4), sb = new Float32Array(ART_BEETLES * 4);
+    for (let k = 0; k < ART_BEETLES; k++) {
+      const a = k * 8;
+      so.set([lerp(A.so[a], B.so[a]), lerp(A.so[a + 1], B.so[a + 1]), lerp(A.so[a + 2], B.so[a + 2]), A.so[a + 3]], k * 4);
+      sb.set([A.so[a + 4], A.so[a + 5], A.so[a + 6], A.so[a + 7]], k * 4);
+    }
+
+    const sh = new Float32Array(32);
+    A.shells.forEach((s, k) => {
+      const m = B.shells[k];
+      const ok = m && m[2] === s[2] && same;
+      const left = s[4] > 0 ? Math.max(1, Math.ceil(s[4] - t)) : 0;
+      sh.set([ok ? s[0] + (m[0] - s[0]) * u : s[0], ok ? s[1] + (m[1] - s[1]) * u : s[1], s[2] + left * 10, s[3]], 4 * k);
     });
-    const sh = new Float32Array(24);
-    let m = 0;
-    for (const s of this.shells) {
-      if (t < s.t0 || t >= s.t1 || m >= 6) continue;
-      const u = t - s.t0;
-      const x = s.x0 + s.vx * u + 0.5 * this.wind * u * u, y = s.y0 + s.vy * u - 0.5 * ART_GRAV * u * u;
-      const apex = s.vy / ART_GRAV;
-      if (s.split && u > apex) {
-        for (const d of [-0.16, -0.08, 0, 0.08, 0.16]) if (m < 6) sh.set([x + d * (u - apex) / (s.t1 - s.t0 - apex), y, 1, 1], 4 * m++);
-      } else sh.set([x, y, 1, 0], 4 * m++);
+
+    const pu = new Float32Array(24 * 4);
+    const pl0 = recent(this.puffs, t, 24);
+    for (let k = 0; k < 24; k++) {
+      const q = pl0[k];
+      if (!q) { pu[4 * k + 2] = 99; continue; }
+      const age = t - q.t;
+      pu.set([q.x + A.wind * 0.1 * age, q.y + 22 * age, age, 0], 4 * k);
     }
-    const bo = new Float32Array(24);
-    const bl = recent(this.booms, t, 6);
-    for (let i = 0; i < 6; i++) { const b = bl[i]; bo.set(b ? [b.x, b.y, t - b.t, b.size] : [0, 0, 99, 0], i * 4); }
-    const a0 = live.filter((q) => q.team === 0 && !(q.died !== null && q.died <= t)).length;
-    const a1 = live.filter((q) => q.team === 1 && !(q.died !== null && q.died <= t)).length;
+
+    const bo = new Float32Array(32);
+    for (let k = 0; k < 8; k++) { const b = bl[k]; bo.set(b ? [b.x, b.y, t - b.t, b.blast] : [0, 0, 99, 0], k * 4); }
+
+    const po = new Float32Array(16);
+    const pl = recent(this.pops, t, 4);
+    for (let k = 0; k < 4; k++) { const p = pl[k]; po.set(p ? [p.x, p.y, p.v, t - p.t] : [0, 0, 0, 99], k * 4); }
+
+    const dots = new Float32Array(32 * 2);
+    if (A.arc) {
+      const m = A.arc.length;
+      for (let k = 0; k < 32; k++) dots.set(A.arc[Math.min(m - 1, Math.floor(k * (m - 1) / 31))], k * 2);
+    }
+    const ar = A.aim || [0, 0, 0, -1];
     return {
-      uArtK: { v: this.k, kind: '4f' },
+      uArtK: { v: round.k, kind: '4f' },
+      uCam: { v: [lerp(A.cam[0], B.cam[0]) + sx, lerp(A.cam[1], B.cam[1]) + sy, zoom, lerp(A.water, B.water)], kind: '4f' },
       uCraters: { v: cr, kind: '4fv' },
-      uSoldiers: { v: so, kind: '4fv' },
+      uBeetles: { v: so, kind: '4fv' },
+      uBeetleB: { v: sb, kind: '4fv' },
       uShells: { v: sh, kind: '4fv' },
+      uPuffs: { v: pu, kind: '4fv' },
       uABooms: { v: bo, kind: '4fv' },
-      uArtFx: { v: [this.wind, a0, a1, t - round.t], kind: '4f' },
+      uPops: { v: po, kind: '4fv' },
+      uDots: { v: dots, kind: '2fv' },
+      uAim: { v: ar, kind: '4f' },
+      uMark: { v: [A.mark ? A.mark[0] : 0, A.mark ? A.mark[1] : 0, A.mark ? 1 : 0, A.arc ? A.arcAge : -1], kind: '4f' },
+      uFlyer: { v: A.flyer || [0, 0, 0, 0], kind: '4f' },
+      uArtFx: { v: [A.wind / ART_WIND, A.h0 / (5 * ART_HP), A.h1 / (5 * ART_HP), A.scroll], kind: '4f' },
+      uMuzzle: { v: [A.fx, A.fy, A.fired, A.left], kind: '4f' },
     };
   }
 }

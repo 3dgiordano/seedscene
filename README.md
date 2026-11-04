@@ -361,9 +361,10 @@ winger goes down the line through the build, and the header goes in on the
 drop. In **skatepark** the skater reaches a lip on a bar line as often as a
 real crossing allows and does an air there, its time aloft set by gravity,
 grinds along the coping before the drop, and goes twice as high on it, the
-combo banked. In **artillery** a soldier of one side and then the other fires
-on each bar line, the shell arcing through the wind to land on the snare and
-blow a crater in the hill; on the drop it splits in five. In **skyrush** a
+combo banked. In **artillery** two sides of beetles fight from the ends of an island in real
+physics: wind, bounces, fuses, blasts that throw them into the sea. Each shot is
+solved to land on the snare, the big ones on the drop, and the camera zooms and
+follows it. In **skyrush** a
 wave of saucers comes in on each bar and the flyer fires on every beat, each
 shot reaching its saucer on the next; a serpent of orbs weaves in through the
 build and bursts on the drop. Same seed, same game, move for move.
@@ -372,7 +373,7 @@ They are homages, drawn from nothing but maths — no sprite, no maze, no
 character and no tune is copied from any game. The creatures in the
 formation, the mazes, the rocks and the challenger robot are all made up by
 the seed; the hopper, the tube's climbers and its claw, the tanks, the skater, the
-little soldiers, the flyer and his serpent, and the footballers' kits are
+beetles and their dragonfly, the flyer and his serpent, and the footballers' kits are
 drawn here or chosen by it.
 
 ## Scenes, straight out of the scene
@@ -435,7 +436,7 @@ Era by era, oldest first. Each one is a memory of its time, made from scratch.
 | ![fire](docs/gallery/fire.png) | ![pipes](docs/gallery/pipes.png) | ![ansi](docs/gallery/ansi.png) |
 | **fire** — the 256-colour fire of the DOS demos: flames leaping on the kick, sparks on the snare, and at the peak an emblem of the seed's catching fire. `--scene fire --era 1994 --seed inferno` | **pipes** — the 3D pipes screensaver of the mid-90s office PC: shiny pipes growing cell by cell through a deep grid, turning on the eighths, until the screen is full and dissolves. `--scene pipes --era 1994 --seed screensaver` | **ansi** — the ANSI art of the bulletin boards, arriving over the modem: shaded pictures and block-letter logos in sixteen colours, a line a beat, the logo landing on the drop. `--scene ansi --era 1994 --seed colorbars` |
 | ![maze3d](docs/gallery/maze3d.png) | ![artillery](docs/gallery/artillery.png) |   |
-| **maze3d** — the 3D maze screensaver of the mid-90s, walked in first person: brick corridors, a step every two beats, and on the drop a spinning stone that turns the world upside down. `--scene maze3d --era 1994 --seed corridors` | **artillery** — the turn-based artillery games of the 90s PC: two teams of little soldiers on a hill of earth, a shot each bar arcing through the wind, craters blown in the hill; a shell splitting in five on the drop. `--scene artillery --era 1994 --seed incoming` |   |
+| **maze3d** — the 3D maze screensaver of the mid-90s, walked in first person: brick corridors, a step every two beats, and on the drop a spinning stone that turns the world upside down. `--scene maze3d --era 1994 --seed corridors` | **artillery** — the turn-based artillery games of the 90s PC: two sides of beetles at the ends of an island, every missile, grenade and bounce real physics, landing on the snare; the camera zooms and follows each shot. `--scene artillery --era 1994 --seed incoming` |   |
 
 *Also in this era: fractal, tunnel, metaballs, plasma, bumplogo.*
 
@@ -506,7 +507,7 @@ plays, or in the menu:
 | `beast` | **beast lands**: the long walk under a purple sky — tribal toms in a slow 6/8, a pan flute, a bowed drone on the tonic, a mysterious minor | 96–114 |
 | `agony` | **lament**: the quiet part of the demo — a slow piano broken in eighths over strings, a lonely lead, the rain on the window, a slow pulse | 66–80 |
 | `ballad` | **musicdisk ballad**: the tune you play twice — a slow four-channel ballad, a lead singing with vibrato under A5 as a tracker's did, an arpeggio, a soft beat | 80–96 |
-| `march` | **jolly march**: a column of little soldiers — a march at 120, rudimental snare drags and rolls, an oom-pah tuba, a whistled tune, and a dance beat under it when it gets going | 112–124 |
+| `march` | **jolly march**: a column of little walkers — a march at 120, rudimental snare drags and rolls, an oom-pah tuba, a whistled tune, and a dance beat under it when it gets going | 112–124 |
 | `terrace` | **terrace drums**: the football terraces, the stands where the crowd sings — big bass drums and snares in a march, a cymbal struck with the drum, trumpet calls between the lines, the stand's chant on a synth lead | 120–134 |
 | `bomb` | **hip-hop blaster**: the shooter with a beat — a slow boom-bap break, scratches, orchestra stabs, a lead chopped like a rap (no voice) | 88–100 |
 | `italo` | **italo disco**: the 80s Italian dance floor — an octave bass in sixteenths, an arpeggiator, a drum machine with hand claps and an open hat on the off-beat, a vocoder singing the tune, a minor key | 115–125 |

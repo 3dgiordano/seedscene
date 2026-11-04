@@ -419,16 +419,22 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   behind-view shooter of 1985; the flyer, the saucers and the serpent are
   drawn here, no hero, enemy or name of any game.
 - **The artillery** (`artillery`, 1994–1996), the turn-based artillery
-  games of the 90s PC: two teams of five little soldiers in the seed's
-  colours on a hill of earth the seed shapes, seen from the side, mountains
-  and a night sky behind. On each bar line a soldier of one side and then
-  the other fires; the shell arcs through the wind - its strength on a bar
-  at the bottom - to land on the beat where the snare is, blowing a crater
-  in the hill and anyone near it; on the drop it splits in five at the top
-  of its arc. A side wiped out, the other's bar full, a new round starts on
-  a whole hill. Drawn from Wikipedia's screenshots of the PC artillery games
-  of 1991 and 1995; the soldiers, the hill and the split shell are drawn
-  here, no worm, weapon or name of any game.
+  games of the 90s PC: two sides of five little beetles in the seed's colours,
+  one at each end of an island of earth, arches and caves, open ground between
+  them and the sea below. Every flight is a
+  real one, stepped 240 times a second: gravity, wind on what feels it,
+  bounces off the ground's slope, fuses, blasts that dig the ground and throw
+  whoever is near, who fly, bounce, are hurt by long falls and drown. Missiles,
+  grenades, cluster bombs that throw five pieces, mortars, homing shells and a
+  great dragonfly dropping pods. Every shot is meant for the other side, and goes
+  astray only as a real one would, the wind misjudged or a throw slipping. The
+  shooter solves it with that same physics so the blast lands on the snare, or
+  on the drop for the big ones; the
+  camera closes in on the shooter, pulls back while trial arcs show the sum
+  being done, follows the shell, closes in for the blast and follows whoever is
+  thrown. The beetles, the island and the dragonfly are drawn here, no worm,
+  weapon or name of any game.
+
 - **The skate park** (`skatepark`, 1997–1999), the skateboarding games of
   the late 90s: a wooden vert ramp in a warehouse, built to a real one's
   measures (3.66 m tall, 3.2 m transitions, 0.46 m of vert, 9.75 m wide),

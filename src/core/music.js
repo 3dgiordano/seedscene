@@ -330,7 +330,7 @@ export const MUSIC_PRESETS = {
     arpTop: 72, arpVel: 2, noDrop: true,   // (the arpeggio under C5, under the tune)
     swing: 0, intro: 0.08, fx: { reverb: 1.2, delay: 0.7, delayBeats: 1 },
   },
-  // a column of little soldiers on the hill: a march at 120, rudimental snare rolls, an oom-pah tuba, a whistled
+  // a column of little walkers on the hill: a march at 120, rudimental snare rolls, an oom-pah tuba, a whistled
   // tune, and when it gets going, a dance beat under it
   march: {
     label: 'Jolly March', blurb: 'a march: snare rolls, an oom-pah tuba, a whistled tune, then a dance beat under it',

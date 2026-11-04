@@ -18,6 +18,7 @@ import { sceneTour } from '../src/core/catalogue.js';
 import { DISPLAYS, DISPLAY_NAMES, SCENE_DISPLAY, displayFor, displayUniforms, displayResolution } from '../src/core/displays.js';
 import { BOARDS, BOARD_NAMES, boardFor } from '../src/core/boards.js';
 import { STYLE_NAMES } from '../src/styles/index.js';
+import { SIMS } from '../src/core/sims.js';
 import { renderVideo } from '../tools/render.js';
 
 const sha = (b) => createHash('sha256').update(b).digest('hex').slice(0, 16);
@@ -343,6 +344,49 @@ check('AUTOPLAY sounds the same every time, whatever the block size', ah === pro
   }
   check('AUTOPLAY mixes each track into the next beat on beat', matched > 100 && worst <= 2,
     `${matched} shared beats in 30 overlaps, at most ${worst} samples apart`);
+}
+
+{
+  // the artillery is real physics that still lands on the music: what goes off on touching or on a fuse goes off on
+  // the grid (within a physics step), the game keeps going, and coming back reaches the same state as a fresh run.
+  // One side holds each end of the island with open ground between, and no shot is ever meant for the shooter's own
+  let worst = 0, shots = 0, turns = 0, same = true, parted = true, meant = 0;
+  for (const [seed, spb] of [['incoming', 0.5], ['aurora', 0.36], ['hikari', 0.75]]) {
+    const sim = new SIMS.artillery(seed, spb, null);
+    const burst = sim.burst.bind(sim), begin = sim.beginTurn.bind(sim), round = sim.newRound.bind(sim);
+    const look = () => {
+      const left = sim.beetles.filter((q) => q.team === 0).map((q) => q.x), right = sim.beetles.filter((q) => q.team === 1).map((q) => q.x);
+      if (left.length !== 5 || right.length !== 5 || Math.max(...left) > -100 || Math.min(...right) < 100) parted = false;
+    };
+    look();
+    sim.newRound = (t) => { round(t); look(); };
+    sim.burst = (b, t) => {
+      if (b.kind !== 'piece' && b.kind !== 'pod') {
+        const q = t / (spb / 2);
+        worst = Math.max(worst, Math.abs(q - Math.round(q)) * (spb / 2));
+        shots++;
+      }
+      burst(b, t);
+    };
+    sim.beginTurn = (t) => {
+      turns++;
+      begin(t);
+      const T = sim.turn;
+      if (!T || T.kind === 'air') return;
+      const dir = Math.sign(T.tx - T.s.x), seen = T.sol.seen;
+      if (T.sol.avx * dir <= 0 || (seen.x - T.s.x) * dir <= 0) meant++;
+      if (sim.beetles.some((q) => q.team === T.s.team && q.state === 'live' && Math.hypot(q.x - seen.x, q.y - seen.y) < 50)) meant++;
+    };
+    sim.advanceTo(240);
+    const a = new SIMS.artillery(seed, spb, null).uniforms(100), b = new SIMS.artillery(seed, spb, null);
+    b.uniforms(160);
+    const c = b.uniforms(100);
+    for (const k of ['uCam', 'uBeetles', 'uCraters']) if (String(a[k].v) !== String(c[k].v)) same = false;
+  }
+  check('The artillery\'s shots go off on the music\'s grid, the game goes on, and going back replays it the same',
+    worst < 0.0045 && turns > 30 && shots > 15 && same, `${shots} shots in ${turns} turns, at worst ${(worst * 1000).toFixed(1)} ms off`);
+  check('The artillery\'s two sides start apart, one to each end of the island, and no shot is meant for the shooter\'s own',
+    parted && meant === 0, `${meant} shots meant for its own side or thrown back`);
 }
 
 // 3 --------------------------------------------------------------------

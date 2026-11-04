@@ -21,7 +21,7 @@ Two rules hold for all of it:
 - **Homages, never copies.** A sound, a look and a feeling, never a tune:
   every melody is written by the seed.
 - **The kind of game, never its characters.** A blue blur racing down ramps
-  without the hedgehog, a jumper on platforms without the plumber, a soldier
+  without the hedgehog, a jumper on platforms without the plumber, a run-and-gun hero
   without the franchise. Names, characters, levels and logos stay out.
 
 - [1. The sources](#1-the-sources)
@@ -54,7 +54,7 @@ three, **L** a new system the rest stands on.
 | 2026-10-28 | Realistic game simulations: the loser of a point explodes on a key note; invaders and bricks die on the rhythm; the console boxer's dodges and showing off, a see-through player; the light-cycle film's light walls and their speed. |
 | 2026-10-28 | Music that sounds like the Amiga, DOS and the better sound cards — Sound Blaster 16, Sound Blaster 32, AWE — not like a C64. |
 | 2026-10-28 | For later: racing games (the arcade road racers of the 80s, the police-chase racers of the 90s and others of the kind) and the music of the cyberpunk film of 1999. |
-| 2026-10-28 | **This plan, approved.** Fill the gap in the periods, build the styles, the sound chips of the new periods and the tracks of each period. More games, as concepts: platformers (a run-and-gun soldier of the 90s arcades, a runner at full speed down ramps of the 16-bit consoles, a jumper on platforms), the vertical plane shooters of the arcades, a city builder of the early 90s with a monster destroying it, hurricanes and earthquakes, helicopters; a first-person rollercoaster, in lines or in 3D, whichever hits harder. "Be creative." |
+| 2026-10-28 | **This plan, approved.** Fill the gap in the periods, build the styles, the sound chips of the new periods and the tracks of each period. More games, as concepts: platformers (a run-and-gun hero of the 90s arcades, a runner at full speed down ramps of the 16-bit consoles, a jumper on platforms), the vertical plane shooters of the arcades, a city builder of the early 90s with a monster destroying it, hurricanes and earthquakes, helicopters; a first-person rollercoaster, in lines or in 3D, whichever hits harder. "Be creative." |
 | 2026-10-28 | All of it goes into **v0.2**, which has to be masterful. Fill 2010 to 2024 and keep adding. More, as concepts: martial arts — the kung-fu corridor that marked an era, the arrival of the versus fighters of the early 90s, and the techno theme of the mid-90s fighting film, a rhythm that brings it back; sports — the athletics games where you hammer the buttons to run and jump, motocross, basketball (shooting hoops, the two-on-two arcade game); the dance-pad games, with feet hitting the arrows and a simulator that hits or misses the timing; the plastic-guitar games; pinball, its hits and launches on the music, effects on every bounce. |
 | 2026-10-28 | Pirates: the island adventure games of the early 90s and the pirate films of the 2000s. The adventure games: the goblin puzzles, the time-travel cartoon adventure and the other icons. The sword duel of the palace-and-dungeon games; the jungle runner of the woodgrain console; the ball-splitting arcade shooter, with balls bouncing all over the screen. "The list is long": scenes and visualizers that each bring back an era. "I keep giving ideas — take note." |
 | 2026-10-28 | Asked for more ideas, then approved all of Claude's: two more periods (the 8-bit micros, the first phones), more games that marked an era, the home computer's screens, films and TV as concepts, the classic demo effects the pack did not name, seven styles, three ways to watch and the sounds between the tracks. |
@@ -139,7 +139,7 @@ whole idea. **Not yet** — nothing covers it.
 | the Amiga's pinball games | bouncy, bright, catchy | Not yet |
 | the late-Amiga space shooters | orchestral techno in space | Partly — `starpilot` |
 | the Amiga's dark sci-fi action games | dark, industrial | Partly — `derelict`, `cyborg` |
-| the little-soldier and little-walker games | jolly, a march, a tune you whistle | Done — `march` |
+| the little-walker games | jolly, a march, a tune you whistle | Done — `march` |
 | the Amiga shooters with a hip-hop beat | hip-hop breakbeat in a shooter | Done — `bomb` |
 
 ### Modern visualizers
@@ -177,7 +177,7 @@ whole idea. **Not yet** — nothing covers it.
 
 | Idea | Where it stands |
 |---|---|
-| Run-and-gun soldier (the 90s arcades) | Not yet |
+| Run-and-gun hero (the 90s arcades) | Not yet |
 | A runner at full speed, down ramps and round loops (the 16-bit consoles) | Not yet |
 | A jumper on platforms (the 8- and 16-bit consoles) | Not yet |
 | Plane shooters (the vertical shooters of the arcades) | Partly — `starfighter` flies on rails in 3D; nothing vertical, nothing over the sea |
@@ -339,7 +339,7 @@ recognizable, and the era and sound chip it would play on.
 | `beast` **Beast Lands** | the atmospheric Amiga side-scrollers | tribal toms in a slow 6/8, a pan flute, a bowed drone, a mysterious minor | Amiga · Paula | S |
 | `agony` **Lament** | the melancholy late-Amiga shooters | a slow piano over strings, a lonely lead, rain-like noise | Amiga · Paula; DOS · GUS | S |
 | `pinball` **Pinball Fever** | the Amiga's pinball games | bouncy techno-pop at 130, a clavinet riff, bells, a chorus that hits | Amiga; 16-bit console | S |
-| `march` **Jolly March** | the little-soldier and little-walker games | a march: snare rolls, a tuba bass, a whistled lead, then a dance beat under it | Amiga; handheld | S |
+| `march` **Jolly March** | the little-walker games | a march: snare rolls, a tuba bass, a whistled lead, then a dance beat under it | Amiga; handheld | S |
 | `bomb` **Hip-Hop Blaster** | the Amiga shooters with a hip-hop beat | a slow hip-hop break, scratches, a stab, a rap-like chopped lead (no voice) | Amiga · Paula | S |
 | `industrial` **Steel Works** | the Amiga's dark sci-fi action games | a metallic loop in 4/4, a grinding bass, hammer hits, sirens | DOS; 32-bit console | S |
 
@@ -361,7 +361,7 @@ recognizable, and the era and sound chip it would play on.
 |---|---|---|---|---|
 | `speedzone` **Speed Zone** | the 16-bit runner at full speed | a bright FM lead over a funky slap bass, brass stabs, a sampled snare, 150–170 bpm, a key change when the phrase loops | 16-bit · YM2612 | S |
 | `jumpworld` **Jump World** | the platform jumper's overworld | a bouncy major tune, a calypso-like bass, steel-drum and whistle leads, a light swing; a minor variant for the underground levels | 16-bit · SPC700; arcade 1979 · 2A03 | S |
-| `brigade` **Bullet Brigade** | the run-and-gun soldier games | a military snare and brass over a funky bass, a big-band hit on every explosion, 140 bpm | arcade 1995 · YM2610 | S |
+| `brigade` **Bullet Brigade** | the run-and-gun games | a military snare and brass over a funky bass, a big-band hit on every explosion, 140 bpm | arcade 1995 · YM2610 | S |
 | `squadron` **Squadron** | the vertical plane shooters of the 40s | a brass march played as rock, a fast snare, a heroic lead, an air-raid siren before the boss | arcade 1995 · YM2610; arcade 1979 · 2A03 | S |
 | `chopper` **Rotor** | the helicopter missions | a rotor-like sixteenth pulse, a tense synth bass, war drums, a rock guitar when the attack starts | 16-bit · YM2612; DOS | S |
 | `zoning` **Zoning Jazz** | the calm of the city builders | smooth jazz: a brushed beat, a walking bass, an electric piano, a soft sax-like lead | DOS party · GUS; DOS · AWE32 | S (built on `modjazz`) |
@@ -499,7 +499,7 @@ playing" card. 136 tracks across the twenty-two periods.
 | Amiga 1990 | *Turbo* | `turbo` | top speed, split screen | racer |
 | Amiga 1990 | *Second Disk* | `ballad` | the musicdisk you kept | musicdisk player |
 | Amiga 1990 | *Blaster* | `bomb` | the shooter with a beat | starfield |
-| Amiga 1990 | *Little Army* | `march` | a column of tiny soldiers on the hill | run-and-gun |
+| Amiga 1990 | *Little Army* | `march` | a column of tiny walkers on the hill | run-and-gun |
 | Amiga 1990 | *Save Them All* | `march` | a hundred little walkers and one exit | walkers |
 | Amiga 1990 | *Escape* | `derelict` | a stranger world, the beast behind you | cinematic chase |
 | Amiga 1990 | *Moiré* | `newbeat` | two rings passing through each other | interference rings |
@@ -621,7 +621,7 @@ the effect driven by the beat, on the 3D stage with its blur where it fits.
 |---|---|---|---|
 | **runner** | the 16-bit speed runner | a seed-made hero racing down ramps, through loops and over springs; the speed builds with the build, a loop on the drop, rings scattering on the crash; the camera pulled back as the speed rises | M |
 | **jumper** | the platform jumper | a small hero jumping on the beat: platforms, blocks bumped on the snare, coins on the hats, a warp at the end of the phrase, a flag on the last bar | M |
-| **run-and-gun** | the soldier games of the 90s arcades | a side-scrolling soldier, enemies and tanks, explosions on the kick, a big boss on the drop, prisoners freed on the crash | M |
+| **run-and-gun** | the run-and-gun games of the 90s arcades | a side-scrolling hero, enemies and tanks, explosions on the kick, a big boss on the drop, prisoners freed on the crash | M |
 | **plane shooter** | the vertical plane shooters | a twin-engine plane over a scrolling sea and islands, formations entering on the bar, a loop to dodge on the break, the big bomber on the drop | M |
 | **helicopter** | the helicopter missions | a gunship seen from above over desert and bases, the rotor's blur, rockets on the snare, a rescue on the break | M |
 | **city builder** | the city builders | a city growing from empty land on the beat: roads, zones, towers, traffic, a news helicopter overhead; on the drop a disaster — a monster wading in, a hurricane spinning across, an earthquake shaking the grid — rescue helicopters, then the city rebuilding. Its camera also flies the avenues at night, the 64k-intro flyover | L |
@@ -705,7 +705,7 @@ Games that marked an era:
 | **pyramid hopper** | the cube-pyramid hopper | a hopper bouncing down a pyramid, each cube changing colour on the beat, the pyramid finished on the drop | S |
 | **behind-view shooter** | the 3D runner over a checkerboard | a flying hero over a checkered plain, pillars rushing past, enemies in waves on the bar, a dragon-like boss on the drop | M |
 | **cartoon castle** | the laserdisc cartoon adventure | a knight in a hand-drawn castle; the right move appears on the beat and the knight makes it, or falls through a trapdoor | M |
-| **artillery** | the artillery games with little soldiers | two teams on a hill of earth, shots arcing on the bar, craters on the snare, a sheep-shaped surprise on the drop | M |
+| **artillery** | the artillery games, with beetles | two sides at the ends of an island, real physics solved to land on the snare, the big arms on the drop, a camera that zooms and follows | M |
 | **skate park** | the skateboarding games of the late 90s | a skater on a half-pipe, a trick on every bar, a grind through the build, a huge air on the drop, the combo counter | M |
 | **football match** | the top-down football games | a pitch seen from above, passes on the beat, a run down the wing through the build, the goal on the drop, the crowd going up | M |
 | **kart race** | the kart racers | karts in a pack, items thrown on the snare, a boost on the build, the photo finish on the drop | M |

@@ -4412,39 +4412,93 @@ small and too far to be seen; it was made bigger and brought nearer.
 
 ## The artillery
 
-Piece C's next scene (2026-11-04), chosen as the least complex of the four
-left: a side-on 2D game with small figures, no character to animate in the
-round. `artillery` (1994–1996). Against Wikipedia's screenshots of the PC
-artillery games of 1991 and 1995 and their gameplay sections: a side view;
-ground that is blown away in round craters; hills against a dark sky with
-mountains; small figures spread over the ground; arcing shots with tracers;
-a wind gauge and each side's strength. Its own: two teams of five little
-soldiers - a helmet in the side's colour, a bazooka raised to fire - the
-hill and the mountains shaped by the seed, a shell that splits in five on
-the drop (the cluster shells of the genre), no worm, sheep or weapon of any
-game.
+Piece C's scene of the side-on 2D game with small figures, `artillery`
+(1994–1996). The first version solved each shell as a formula and drew it along
+the curve. The owner asked (2026-11-04) for physics that really runs, as the
+games of this genre play, and for the camera that follows and zooms; and then
+for insects as its figures, so nothing reads as military. It was rebuilt.
 
-The game (`ArtillerySim`): on each bar line a living soldier of one side and
-then the other fires at the other side; the shell's velocity is solved so it
-lands on the beat where the snare is (the fourth beat; the second at a slow
-tempo) under gravity and the wind, at a soldier, or just wide of one a little
-over half the time; it blows a crater in the hill and anyone standing in it
-is flung away and gone. The hill is the seed's waves with the round's craters
-cut from it, worked out the same way in the simulation (where the soldiers
-stand) and the shader (what is drawn). On the accented bar - the drop - the
-shell splits in five at the top of its arc. When a side is wiped out the
-other cheers for a bar and a new round starts on a whole hill. The first
-version fired the opening shot again and again at the start - the next bar
-line worked out from a clock that had not moved - and drew the next round's
-soldiers while the last was still being played; each round now keeps its own.
+What was read first. The numbers come from the published source of an
+open-source game of the genre, read for its mechanics: the step, gravity and
+wind, bounce and friction per object, fuses, fragments, blast damage and push,
+fall damage, water, and the camera's follow and zoom. No code was taken. The
+technical wiki of the series that made the genre famous refuses automated
+readers, and its pages were not read; what is used from it came from search
+excerpts only (a homing shell flies freely for a second before it turns; a
+blast's centre is lowered for some weapons, so what it hits flies up). The
+frames were held against screenshots of the genre, one from 2001 and one
+open-source: a broken land of tunnels and overhangs, a bright edge on every
+cut, a sea of bands in front, round puffs of smoke, health over each head, the
+wind at the bottom right.
+
+The game (`ArtillerySim`). Everything is stepped at 240 Hz:
+
+| | |
+|---|---|
+| Gravity | 500 units/s², where a beetle's radius is 9 |
+| Wind | up to half of gravity; on missiles only (homing ones until they turn) |
+| Bounce | off the normal of the real ground; grenades keep 0.8 of it, beetles 0.35 |
+| Blast | crater 20–50 units; harm falls with distance; the push grows with the harm |
+| Thrown | beetles fly, tumble, bounce, grip what they can hold, slide off what they cannot |
+| Falls | past 400 units/s they hurt |
+| Sea | a fast flat shell skips off it; anything else sinks; after 16 turns it rises |
+
+The arms: missile; grenade, bouncing on its fuse; cluster, whose five pieces
+each land on their own eighth note; mortar, throwing bomblets back; homing shell;
+a great dragonfly crossing with five pods, one a sixteenth. Land is the round's
+waves less circles (caves, then craters), the same test in the simulation and
+the shader, so a shell can pass under an arch and a beetle can fall through a
+tunnel.
+
+The sides (the owner, 2026-11-04): one holds each end of the island, at least
+130 units from its middle, so every shot has a distance to cross, and each faces
+the other. No shot is meant for its own: it is never launched back over the
+shoulder, and a shot whose planned blast would reach the shooter's side (past the
+arm's reach, or a cluster's scatter) is refused, and another shooter or mark is
+tried; a side with no such shot passes its turn. It goes astray only as a real one
+would: nearly half the time the shooter misjudges the wind by 15-40%, or a throw or
+mortar shot slips from the hand by 1.5-5%, and its bounces go where they go. The
+trial arcs show what the shooter believes, so the real flight can drift off them.
+
+Why it still lands on the music, with nothing moved in flight: the shooter runs
+the flight ahead with the same step as the real one, and chooses what a player
+could choose (launch, fuse, the moment of firing) so the blast falls on the
+snare, or on the drop's downbeat for the big arms. A turn may wait a few seconds,
+or do its sum faster, to land on the drop. When nothing reaches a mark it tries
+another; with no clear shot at anyone it fires by the way out toward the other side
+nearest the mark.
+
+The camera, stepped with the game: closes in on the shooter; pulls back to frame
+the whole shot while three trial arcs show the sum (the first with no wind in it,
+which drifts off; the last the real shot); follows the shell ahead of its flight;
+closes in as it comes down; holds on the blast with a shake; follows whoever was
+thrown hardest; pulls back to the whole island. Position eases at about 8/s when
+following, zoom separately; the far ranges move at a fraction of it. The board
+tilts less than other scenes' (0.2 and 0.2), since the game now moves its own camera.
+
+Faults found by looking and fixed: a side could drown whole in the first seconds of a round, the beetles sliding down from where they dropped, and nothing ended the round when it did, so the other side passed its turns for ever; a drop now settles where it lands, a bounce grips harder, and an empty side ends the round whenever it empties. One seed's big moments were nearly all the dragonfly; it now comes no more than one turn in three. a body against a slope kept its speed and
+never moved, so turns ran to their limit (24 s) and a wedged beetle reached a
+health of -247729; it now slides on, or stops. A turn could begin with a beetle
+still falling, which drowned while aiming. Beetles slid down every slope into the
+sea. The earth's two-tone lobes read as camouflage, which is the thing the owner
+asked to avoid; it is now layers with stones in. The first smoke was one flat disc.
 
 | Check | Result |
 |---|---|
-| Frames against the screenshots, at a shot, a burst and the drop | the hill and its craters showing the sky through them, the soldiers of both sides, the bars of their strength and the wind, a fireball and its smoke, the shell splitting in five and its five bursts landing together |
-| The game over two minutes, three seeds | a shot every bar, rounds of about ten shots, the split on each accented bar |
-| Scrubbing back against fresh runs | the same state |
-| Cost a frame at 854×480, SwiftShader | artillery 213 ms, rocks 197 - the live check on a real GPU is still to do |
-| `npm run test:quick` | passes, the README's entry included |
+| Missiles, grenades and homing shells against the music's grid, four tempos, five minutes each | at most 4.2 ms off (one physics step is 4.2 ms) |
+| Pods and pieces | aimed at their sixteenths and eighths by running them; up to about 80 ms off over uneven ground, and silent, so seen and not heard |
+| Rounds, five seeds, ten minutes each | about 150 s; 286 turns, 1 passed |
+| The two sides, every round of those | five on each, none on the wrong half, the narrowest gap between them 281 units |
+| Who the shots are meant for | 0 launched backward, 0 meant for the shooter's own side |
+| Who they really hurt | 9365 health from the other side, 146 from the shooter's own, 97 from the shooter, by misjudged wind, slips, bounces and a fallen one's last blast |
+| Going on and coming back against fresh runs | the same state |
+| Compiled and drawn on the real GPU (Intel UHD 630, Direct3D 11), muted, 40 moments | no error; 37 ms a frame at 1280×720 with the pane hidden, against 64 for `pipes` in the same era and 23 for `skatepark` in another |
+| The simulation's heaviest frame, live | at worst 49 ms in ten minutes, when a shot is solved at the start of a turn; about 0.05 ms otherwise |
+| Frames against the screenshots | see above; its own: beetles, the seed's palette, trial arcs, the dragonfly, no worm, sheep or weapon of any game |
+| `npm test` | passes, with a new check of the shots on the grid |
+
+Not checked: how the camera's motion feels at full speed, which only stills and
+strips were used to judge; that is the owner's look.
 
 ## The skate park
 
