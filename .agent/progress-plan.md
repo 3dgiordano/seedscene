@@ -72,3 +72,5 @@ Built on 2026-11-02 (branch thin-eras, waiting for the owner's look): piece E - 
 The next piece is the owner's pick, or Claude's if they leave it open.
 
 Owner, 2026-11-03: references for a game come first from https://www.arcade-museum.com/ (its game pages, how it plays, its resources), then the videos the owner names; the environment's network is on full access.
+
+Owner, 2026-11-03: the music a scene plays with must belong, as far as possible, to the scene's own time - never a modern scene under a style of another age, or the other way round. terrace, a homage to the football stands Claude proposed (no Amiga origin; it sits in 1990-1993 to play with the football match), stays in 1990-1993 and 2010-now as it is, at the owner's word (2026-11-03).

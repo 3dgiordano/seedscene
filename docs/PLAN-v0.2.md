@@ -262,7 +262,7 @@ before the arcades.
 | P9 | **Festival and mobile, 2014** — the main stages and the games you tapped | the synthesizer's own voices, with the side-chained pump of the festival sound | festival stage, tap flyer (new); rhythm runner | `bigroom` (new); `wobble`, `trance` | M |
 | P10 | **Adventure games, 1990** — point and click: pirates, mansions, goblins, the desert palace | by the seed: **Roland MT-32** (LA synthesis: a sampled attack on a synthesized body, its own reverb — the card the adventures were scored for), **AdLib** (the OPL3's older sister) or, rarely, the **PC speaker** | pirate duel, treasure island, time-split mansion, three helpers, sword duel, cinematic chase (new) | `calypso`, `toon`, `whimsy`, `persia` (new); `midiquest` | L |
 | P11 | **Woodgrain console, 1981** — the Atari 2600 | **TIA**: two voices whose pitches come out famously out of tune, and buzzy noise | jungle runner, gallery shooter (new); `paddles`, `invaders`, `rocks` | `vcs` (new); `arcade` | S |
-| P12 | **8-bit micros, 1985** — the MSX and the ZX Spectrum, many people's first computer in Spain and Latin America | by the seed: **AY-3-8910** (three squares and noise) or the Spectrum's one-bit **beeper** | loading screen (new); bomber grid, jungle runner | `micro` (new); `chiptune` | S |
+| P12 | **8-bit micros, 1985** — the MSX and the ZX Spectrum, many people's first computer | by the seed: **AY-3-8910** (three squares and noise) or the Spectrum's one-bit **beeper** | loading screen (new); bomber grid, jungle runner | `micro` (new); `chiptune` | S |
 | P13 | **Phones, 2003** — the first mobile games, before the smartphone | a **monophonic ringtone** buzzer, then the **polyphonic ringtone** synth | phone screen, LCD handheld, virtual pet (new); `snake` | `ringtone` (new); `gameboy` | S |
 | P14 | **The first screens, 1958** — a tennis game on a laboratory oscilloscope, the first space duel on a vector scope, the gothic family on a black-and-white television | **Lab oscillators**: pure sine and square test tones, a tape echo, a theremin-like glide, a ring modulator | oscilloscope tennis, XY scope, space duel, haunted mansion (new) | `labtones`, `scope`, `gothic` (new) | M |
 
@@ -414,7 +414,7 @@ seed's.
 |---|---|---|---|---|
 | `keygen` **Keygen** | the chiptunes of the crack intros | XM-tracker chip music: fast arpeggios, a squelchy lead, a bouncing bass | media player; DOS party · GUS | S |
 | `skatepunk` **Skate Punk** | the skateboarding games | fast punk at 190, ska upstrokes, a synth lead like a shouted chorus | 32-bit console | S |
-| `terrace` **Terrace Drums** | the football crowds of Latin America and Europe | big bass drums and snares in a march, trumpets, the crowd's chant turned into a synth lead | Amiga; 16-bit console; modern | S |
+| `terrace` **Terrace Drums** | the football terraces, the stands where the crowd sings | big bass drums and snares in a march, trumpets, the crowd's chant turned into a synth lead | Amiga; 16-bit console; modern | S |
 | `animeop` **Anime Opening** | the 90s anime openings | fast J-rock with brass, a key change before the last chorus, a big sing-along lead | 32-bit console | S |
 | `triphop` **Trip-Hop** | the 90s Bristol sound | a slow, heavy break, a deep bass, a dark string, scratches | DOS 1994; media player | S |
 | `micro` **Micro** | the MSX and Spectrum music | three AY squares, fast arpeggios, a beeper drum | 8-bit micros · AY / beeper | S |
@@ -732,7 +732,7 @@ Films and TV of the 80s and 90s, as concepts:
 | **scanner car** | the talking car of 80s TV | a black car with a red light sweeping left and right in time, the road rushing past | S |
 | **footsteps** | the dinosaur films | a glass of water rippling with every giant footstep on the kick, the shadow passing on the drop | S |
 | **moon bike** | the boy and his friend from the stars | a bicycle crossing a huge moon in silhouette on the drop | S |
-| **anime opening** | the anime openings the 90s brought to Latin America | speed lines, silhouettes striking a pose on the bar, the title card on the drop | M |
+| **anime opening** | the anime openings of the 90s | speed lines, silhouettes striking a pose on the bar, the title card on the drop | M |
 
 Classic demo effects the pack did not name:
 

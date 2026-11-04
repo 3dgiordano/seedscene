@@ -340,7 +340,7 @@ export const MUSIC_PRESETS = {
     melody: { free: [0, 7], dense: [0.6, 0.6, 0.6], close: true, moving: true },
     swing: 0, intro: 0.05, fx: { reverb: 0.6, delay: 0.4, delayBeats: 1 },
   },
-  // the football crowds of Latin America and Europe: big bass drums and snares in a march, a cymbal struck with
+  // the football terraces, the stands where the crowd sings: big bass drums and snares in a march, a cymbal struck with
   // the drum, the trumpets' calls between the lines, and the crowd's chant turned into a synth lead - short
   // phrases, a call and its answer, in a major key the whole stand can sing
   terrace: {
