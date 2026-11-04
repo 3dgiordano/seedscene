@@ -18,7 +18,7 @@ import { sceneTour } from '../src/core/catalogue.js';
 import { DISPLAYS, DISPLAY_NAMES, SCENE_DISPLAY, displayFor, displayUniforms, displayResolution } from '../src/core/displays.js';
 import { BOARDS, BOARD_NAMES, boardFor } from '../src/core/boards.js';
 import { STYLE_NAMES } from '../src/styles/index.js';
-import { SIMS } from '../src/core/sims.js';
+import { SIMS, TANK_REACH, TANK_RANGE } from '../src/core/sims.js';
 import { renderVideo } from '../tools/render.js';
 
 const sha = (b) => createHash('sha256').update(b).digest('hex').slice(0, 16);
@@ -387,6 +387,67 @@ check('AUTOPLAY sounds the same every time, whatever the block size', ah === pro
     worst < 0.0045 && turns > 30 && shots > 15 && same, `${shots} shots in ${turns} turns, at worst ${(worst * 1000).toFixed(1)} ms off`);
   check('The artillery\'s two sides start apart, one to each end of the island, and no shot is meant for the shooter\'s own',
     parted && meant === 0, `${meant} shots meant for its own side or thrown back`);
+}
+
+{
+  // the tanks are things in their world: neither ever gets into a block or a pyramid, nor into the other, and the
+  // tank fires only with the enemy near, large in the sight, and nothing between them. Going back replays the same.
+  let lowest = Infinity, apart = Infinity, farthest = 0, kills = 0, blocked = 0, longest = 0, same = true;
+  let offMuzzle = 0, offTip = 0, shortest = Infinity, unfalling = 0;
+  for (const [seed, spb] of [['radar', 0.5], ['aurora', 0.36], ['hikari', 0.75]]) {
+    const sim = new SIMS.tanks(seed, spb, null);
+    const shot = new Set(), flown = new Set();
+    let last = 0;
+    for (let t = 0; t < 120; t += 1 / 15) {
+      sim.uniforms(t);
+      const me = sim.placeAt(t);
+      const clearOf = (x, z) => Math.min(...sim.obstacles.map((o) => { const [cx, cz] = sim.nearCopy(o, x, z); return Math.hypot(x - cx, z - cz) - o.r; }));
+      lowest = Math.min(lowest, clearOf(me.x, me.z));
+      for (const f of sim.foes) {
+        const a = sim.foeAt(f, t);
+        if (!a) continue;
+        lowest = Math.min(lowest, clearOf(a.x, a.z));
+        apart = Math.min(apart, Math.hypot(a.x - me.x, a.z - me.z));
+      }
+      for (const s of sim.shots) {
+        if (shot.has(s.t)) continue;
+        shot.add(s.t);
+        kills++;
+        farthest = Math.max(farthest, s.range);
+        longest = Math.max(longest, s.t - last);
+        last = s.t;
+      }
+      for (const s of sim.shells) {
+        if (s.mine && t >= s.t0 && !sim.lineClear(s.x0, s.z0, s.x1, s.z1)) blocked++;
+        if (flown.has(s) || t < s.t0) continue;
+        flown.add(s);
+        // every shell leaves its gun's muzzle and falls under gravity: the middle of its flight is above the straight line
+        const mid = sim.shellAt(s, 0.5);
+        if (mid[1] <= (s.y0 + s.y1) / 2) unfalling++;
+        if (s.mine) {
+          // ours starts at the tip of the gun drawn on the glass, at (0, -0.3)
+          const at = sim.placeAt(s.t0), sn = Math.sin(at.h), cs = Math.cos(at.h), dx = s.x0 - at.x, dz = s.z0 - at.z;
+          const cx = dx * cs - dz * sn, cz = dx * sn + dz * cs;
+          offTip = Math.max(offTip, Math.hypot(cx / cz * 1.45, 0.1 + (s.y0 - 2.7) / cz * 1.45 + 0.3));
+        } else {
+          // theirs starts at the end of the enemy's gun, and flies well clear of it unless a block or a pyramid is in the way
+          const a = sim.foeAt(s.by, s.t0), px = a.x - Math.sin(a.h) * 0.45, pz = a.z - Math.cos(a.h) * 0.45;
+          offMuzzle = Math.max(offMuzzle, Math.hypot(px + Math.sin(a.g) * 4.65 - s.x0, pz + Math.cos(a.g) * 4.65 - s.z0));
+          if (s.t1 >= s.t0 + s.T - 1e-6) shortest = Math.min(shortest, Math.hypot(s.x1 - s.x0, s.z1 - s.z0));
+        }
+      }
+    }
+    const a = new SIMS.tanks(seed, spb, null).uniforms(100), b = new SIMS.tanks(seed, spb, null);
+    b.uniforms(110);
+    const c = b.uniforms(100);
+    for (const k of ['uSeg', 'uFace', 'uTank', 'uTBlasts']) if (String(a[k].v) !== String(c[k].v)) same = false;
+  }
+  check('The tanks steer round the blocks and pyramids and never enter them, and fire only near, with nothing between',
+    lowest >= TANK_REACH - 0.25 && apart >= 9.5 && farthest <= TANK_RANGE && blocked === 0 && kills > 40 && longest < 30 && same,
+    `${kills} shots, at most ${farthest.toFixed(0)} away; a tank's middle at least ${lowest.toFixed(1)} from anything, ${apart.toFixed(1)} from the other`);
+  check('Every shell leaves its gun\'s muzzle and falls under gravity, and the enemy\'s fly well clear of it',
+    offMuzzle < 0.001 && offTip < 0.01 && unfalling === 0 && shortest >= 9,
+    `theirs ${offMuzzle.toFixed(3)} from the muzzle, ours ${offTip.toFixed(3)} from the gun's tip on the screen; theirs fly at least ${shortest.toFixed(1)}`);
 }
 
 // 3 --------------------------------------------------------------------

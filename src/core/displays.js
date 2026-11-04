@@ -41,6 +41,13 @@ export const DISPLAYS = {
     palette: 'rgb3', levels: 0, dither: 0,
     tube: 'vector', bloom: 1, scan: 0, barrel: 0.06, aberr: 0, grain: 0, vignette: 0.35,
   },
+  neonvector: {
+    name: 'NEON VECTOR', label: 'Colour vector monitor, as memory has it', blurb: 'the colour vector tube as memory has it: lines of light in any colour, a wide glow round them, and fills and flashes the real beam could never draw',
+    screen: 'crt',
+    lines: 0, pixelAspect: 1,
+    palette: 'none', levels: 0, dither: 0,
+    tube: 'clean', bloom: 1.25, scan: 0, barrel: 0.06, aberr: 0.0011, grain: 0.012, vignette: 0.35,
+  },
   mono: {
     name: 'MONO', label: 'Monochrome monitor', blurb: 'green phosphor on black, the office PC before colour',
     screen: 'crt',
@@ -140,8 +147,7 @@ export const DISPLAY_NAMES = Object.keys(DISPLAYS);
 export const SCENE_DISPLAY = {
   paddles: 'bw',
   rocks: 'vector',                    // (the vector arcade games of 1979 were drawn by a beam)
-  tube: 'colorvector',                // (the tube shooter of 1981, on the colour vector tube)
-  tanks: 'colorvector',               // (a black-and-white beam behind a green overlay and a red strip: drawn as the colour tube's green and red)
+  tube: 'neonvector', tanks: 'neonvector',   // (the vector arcade games, with the punch of the other arcade scenes: colorvector is still there to force)
   invaders: 'arcade', maze: 'arcade', crossing: 'arcade', bricks: 'arcade', lightcycles: 'arcade',
   boxer: 'arcade', pyramid: 'arcade', outrun: 'arcade', skyrush: 'arcade',
   lcd: 'modern',

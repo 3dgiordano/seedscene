@@ -4374,6 +4374,78 @@ were raised into peaks and saddles in turn, higher where a range rises.
 | Cost a frame at 854×480, SwiftShader (no GPU here) | tube 291 ms (406 before the zoom was worked out once a frame and far bursts skipped), tanks 141, rocks 202 - the live check on a real GPU is still to do |
 | `npm test` | passes, the mp4 comparison included |
 
+## The tube and the tanks, with punch
+
+The owner, 2026-11-04, on the two vector scenes: they lacked the effects and the
+punch of the paddles, the rocks and the other arcade scenes, given a modern touch
+so they would not look so vintage. The tanks went through the triangles and
+perhaps the cubes, which are things in the scene; they needed a better 3D
+simulation, because the enemy stayed near the horizon, too far to read as a tank;
+and the tube could be larger, leaving no empty space on the screen.
+
+What was measured before touching anything: over three minutes and three seeds,
+a tank's middle was inside an obstacle's outline in up to 5.6% of the frames, and
+the tank fired from 49-73 units, median 61, where the enemy is 0.076 wide on a
+board 1.8 wide. Why they looked vintage: the colour vector display's filter keeps
+only outlines, so a flash, a fill or a soft glow does not reach the screen at all.
+
+- A new display, `neonvector`, is the tube as memory has it: no beam filter, any
+  colour, bloom. `colorvector` stays as it was, to force on anything.
+- `TankSim` now has solids: convex parts with faces. Each frame it culls back
+  faces, lights what is left from one side, paints far to near, and takes out of
+  every line whatever a part in front of it hides. The shader draws those faces
+  and lines over a ground grid worked out per pixel, each grid line one thin line
+  on the screen.
+- A tank steers for the tangent past whatever stands in its way, and after every
+  step is pushed out of anything it would enter: that second part is what makes it
+  a guarantee, and the obstacles are placed far enough apart for a tank to pass.
+- The tank fires only within 18 units and with a clear line; the enemy goes round
+  an obstacle when one blocks its view. Fired on the backbeat, the shell lands on
+  the next beat, on the kick.
+- The enemy's shape, read from photographs of the kind: long and low, about 2.7 to
+  1, tracks the whole length with road wheels, a sloped hull, a low turret set
+  back, a long gun well past the nose. It is drawn here, no one's tank.
+- The tube's rim is scaled 0.76 by 0.44 where it was 0.37 each way. Each pixel
+  finds its lane and depth on the wall, seen from the far point, and that gives the
+  lit walls, the rungs, the pulse, the lights of the claw, climbers and shots, and
+  outside the rim the ripples in the tube's own outline.
+
+| Check | Result |
+|---|---|
+| Six seeds, four minutes each | a tank's middle never nearer than 5.58 to an obstacle's outline (it keeps 5.6, its length with the gun swung round; the small shortfall is the straight line between two beats), the tanks never nearer than 10 |
+| Shots over those | range 13-18, median 15-16, against 49-73 and 61 before |
+| The enemy at the median range | 0.35 wide head-on and about 0.57 from the side, against 0.076 |
+| Lines and faces a frame | at most 180 of 180 and 36 of 36: the mountains go first, then the far end of the plain |
+| Going back to a moment against a fresh run | the same state |
+| Real GPU (Intel UHD 630, Direct3D 11), muted, 854×480 | both compile and draw, no console errors; a frame costs tanks 17-34 ms, tube about 30, rocks about 24 |
+| `npm test` | two new checks: the tanks never enter what stands on the field and fire only near with a clear line; every shell leaves its gun's muzzle, falls under gravity, and the enemy's fly well clear of it |
+
+The owner then looked at it and found three more faults: the sight did not come
+down onto the enemy, the shot did not leave the gun, and the enemy's shells burst
+close by, with no physics and not from its gun. What was behind each:
+
+- The sight sat level with the horizon, and the enemy stands below it. It now comes
+  down as the gun comes round and frames the enemy's outline, worked out from its
+  parts on the screen. A first version let go too early: the game is planned half a
+  second ahead of what is shown, so "the current enemy" was already gone before the
+  shot left. The sight now follows the enemy that is there at that moment, and the
+  score rises when the shell lands.
+- The tank's shell started at a point that projected off the bottom of the screen.
+  It now starts where the gun's tip is drawn: 4.2 ahead and 1.54 up projects to it
+  exactly, and the gun's run back matches the view's kick. It fires only once the
+  view is on the enemy, and holds still until the shell has landed.
+- The enemy's shell was aimed 9-15 units from the tank toward the enemy, which from
+  15-20 away is at the enemy's own feet. Its turret now comes round to a point beside
+  the tank, and it fires along the gun from the real muzzle, only from 22 units or
+  more and not with an obstacle right in front. Shells follow one ballistic path with
+  gravity, and burst on the ground or on a real face of a block or pyramid.
+
+| Check | Result |
+|---|---|
+| Four seeds, three minutes each | the enemy's shells start 0.000 from the muzzle and fly 10-45 units, median about 24; ours start 0.000 from the gun's tip on the screen |
+| The same burst with `colorvector` forced, against `neonvector` | on the old display the fireball's heart is a black hole, only its outlines drawn, and the ground stays dark: mean brightness 30.9 against 79.9 of 255, soft light on 18% of the picture against 59% (the tube's walls, 15% against 79%) |
+| Frame by frame through a kill and an enemy shot | the sight frames the enemy until it goes up, the flash and the shell leave the tip, the enemy's flash is at its gun and its shell comes on and lands beside the tank |
+
 ## The behind-view shooter
 
 Piece C's next scene (2026-11-04), the smallest of the three left: a
@@ -4409,6 +4481,52 @@ small and too far to be seen; it was made bigger and brought nearer.
 | Scrubbing back against fresh runs | the same state |
 | Cost a frame at 854×480, SwiftShader | skyrush 265 ms, rocks 193 - the live check on a real GPU is still to do |
 | `npm run test:quick` | passes, the README's entry included |
+
+### Rebuilt: the flyer and the game
+
+Approved by the owner on 2026-11-04, after watching it live.
+
+The owner, 2026-11-04: the simulation could be truer to the game, and the figure
+was stiff and static, without the sprites' change of view with the place on the
+screen; look for ports and games based on it, and for the sprites where they are kept.
+
+What was read. The source of two open-source tributes to the genre (MIT), for their
+rules; one of them took its horizon's heights from the arcade's own. No code was
+taken. Their sprite sheets, looked at and not used, with arcade screenshots of 1985.
+A sprite archive and a walkthrough wiki refused automated readers and were not
+read; another page returned no game information.
+
+What the sheets show: eight frames of a run; five columns of flight chosen by the
+place across the screen, the body turned so that the weapon points in toward the
+middle; a short and a long stumble; a fall of about seven frames with a long hold
+flat on the ground. What the source shows: a free flyer at a fixed speed, about a
+screen in 1.3 seconds; the plain sliding with his place; shots whose hit is settled
+as they are fired; foes on timed ways firing at where he is; things that trip and
+things that throw; a chain following its head, its colour turning as it is hurt.
+Where the sources disagreed the screenshots won: the tribute's horizon goes up to
+71% of the screen, the arcade's captures show about 47% with the hero at the top.
+
+What was built. The figure is a skeleton in three dimensions, posed by joint angles,
+turned to the angle the eye sees it from and sent to the shader as 27 limbs sorted
+far to near, so the columns of the sheet become one continuous turn (at 0.88 of the
+true angle, as the true one sprawled him). Its own against the original: a jetpack,
+a scarf that shows his speed, the seed's colours. The game was rewritten at a fixed
+step of 1/120 s: a pilot that scores nine by six places every sixteenth for lining up,
+for hazards, for where he would like to be; a camera that keeps the ground under him
+at the foot of the screen; rows of scenery; five kinds of foe's way; a serpent of
+nine orbs for the last three bars of a stage. All of it sits on the music: rows pass
+him on the beat, a stride takes a beat, shots land on eighths, shots at him arrive on
+a beat, hoppers land on the beat, a fall takes a bar and costs the plain a whole
+number of beats, so the rows stay on them afterwards.
+
+| Check | Result |
+|---|---|
+| A sheet of his poses, laid out as the reference sheet | run, flight across eight places, moving four ways, fall and stumble each read as their reference; first drawn he was a stick with long legs and a pack over his whole back, and flat on the ground a bundle; both were redrawn |
+| Measures against the arcade screenshots and sprite sheets | the figure running 27% of the screen's height against 28%, flying 23.3% against 22-26% (it was 20.8% before flight was scaled); the plain at his highest 47% of the screen against 47% (the tribute's 71% was dropped); a tile 13.8% of the width against 13%; his shadow 18% against 19%, at the same place |
+| Three minutes each on four seeds and tempos | 1-5 falls and 1-3 stumbles; on the ground 24-34% of the time; 25-33% at each side of the screen; at most 29 sprites of 48 |
+| Scrubbing back against a fresh run | the same state, on all four |
+| The real GPU (Intel UHD 630, Direct3D 11, the game alone at 854×480, other work running) | compiles and draws, no errors; 13.6-16.4 ms a frame against rocks 10.1-12.5 and artillery 13.9 (one run at 18.4 before the sprites were culled in the loop). Live, the console is clean; the frame rate could not be judged with the app's browser pane hidden (rocks and skyrush both 116 ms there) |
+| `npm run test:quick` | passes, the README's forty words included (the first new entry was too long) |
 
 ## The artillery
 
@@ -4665,6 +4783,116 @@ motion rather than from stills and a model of the centre of mass alone.
 | Cost a frame at 854×480, SwiftShader | skatepark 316 ms with the skater modelled in blended shapes (234 with flat sticks), rocks 191 - the live check on a real GPU is still to do |
 | `npm run test:quick` | passes, the README's entry included |
 
+**Gravity, and the cost.** The owner found that the skater was not moved by
+gravity: acceleration, slowing and falling were not simulated (2026-11-04), and
+asked for the scene to cost less. Measured on the old code, at 191 bpm: it
+followed a cosine from lip to lip, so it arrived at the coping at 0.02 m/s, left
+it at 4.6 m/s from one instant to the next and landed the same way, its feet
+reaching 36 m/s. Now forces move it, a fixed step of 1/120 s, from Kogelbauer et
+al.: on the curves the equation of a variable-length pendulum, (L-h)th'' -
+2h'th' + g sin th = 0, with h the centre of mass over the board; their rolling
+friction, mu = 0.02, on their load g cos th + (L-h)th'^2; drag on 0.5 m2 of a 75
+kg skater (an assumption, as is 0.25 for steel on steel on the coping). Pumping
+is the study's optimum: crouched from the landing, standing up after the lowest
+point; crouching under load up the far curve takes speed out instead.
+
+The numbers set the design, and one thing the plan asked for could not be kept.
+Peak to peak a lap takes 2.68 to 2.94 s whatever the heights: a pendulum keeps
+its time, and crouching to scrub speed moves it by 0.03 s. So the skater cannot
+reach a lip on each bar line at a tempo that does not suit it, and forcing it
+is what made the old motion wrong. The peak of each air now comes on the
+nearest eighth or sixteenth, within 0.08 s, by choosing its height. The time
+left over goes on the coping, the one place a skater can wait: coming up to it
+at 4.1 m/s, what it takes to raise the centre of mass 87 cm over the pipe, and
+falling back in at that speed, as a drop-in does. Friction and drag take about
+a metre of height from a crossing and pumping can gain some 60 cm over that, so
+a grind cannot go straight into a 540: it climbs over the crossings left, 1.4,
+1.9, 2.3 m. Those crossings come out the same every time, so the wait is worked
+out before it goes up, and the 540 lands on the accent. The grind is thus no
+longer always the last lip before the drop, but two or three before it. On the
+wheels gravity along the ramp speeds board and body alike and does not lean
+them, so the old lean with the board's speeding up, which was wrong, went; the
+limbs now ease into a trick's pose, where they jumped. The skater's technique, the
+trunk and arms, remains as the owner's finding above left it.
+
+The cost. Measured by switching parts off, on the real GPU: the figure 8 to 13
+ms of a frame, the score and combo 4 to 5, the sky behind the board 2, the ramp
+and hall the rest, and the figure nearly all of a 9 s compile, unmeasured till
+now. Now: the sphere about the figure is worked out for each frame, not a fixed
+1.6 m; a ray is stepped by a shell of capsules until it is close; the frames of
+the body come from the simulation instead of being normalised at every step;
+the march stops at 4 mm, not 1.5, a pixel being 2 cm at that distance; normals
+take four samples, not six; the hud is drawn only near it, the back wall only
+where the ramp leaves it showing, the sky only outside the board (a switch this
+scene sets; other scenes are as they were); the far panel and the backs of the
+decks, which the camera never sees, are not traced.
+
+| Check | Result |
+|---|---|
+| Frame, real GPU (Intel UHD 630, Direct3D 11), 1280×720, 40 moments, old and new in turn, four rounds, other work on the GPU | 26.6 ms to 10.6 (p95 28-35 to 13-16) |
+| Compiling the shader, the same GPU | 9.2 s to 3.0 |
+| Old shader against new, same simulation, 37 frames | at most 400 of 921,600 pixels differ by over 8 of 255, all on the figure's edge; the ramp and the hall the same |
+| Off the wheels | the centre of mass accelerates at 9.81 m/s² down to 0.000 of error |
+| Speed at takeoff and landing (feet, 191 bpm) | old: jumps of 4.8 m/s on average; new: 0.7 at takeoff, the board pulled in by the tuck, 0.15 at landing. The centre of mass on the integrator's path reaches 10 m/s; taken from the board and the body as drawn, 11.7 at most |
+| A crossing | 5.2 m/s at the lip, 8.5 on the flat, losing 0.2 across it, 5.0 at the far lip; load up to 4 g, 5.7 after the highest air |
+| Twenty runs, ten tempos from 60 to 200 bpm, two seeds, up to three minutes, set accents | the 540 on 88 of 88 accents, within 0.08 s, 1.87 to 2.43 m high; of 828 airs, 156 peak on a bar line, 215 on a beat, 250 on an eighth, 174 on a sixteenth (each within 0.06 s) and 33 off them: none at 120 bpm or more, 2 to 7 in some 50 below that; the board at most 3.7 m along a ramp of 4.88 |
+| Scrubbing back against fresh runs, three tempos, three seeds | the same state, to the digit |
+| The simulation, on the main thread, three minutes at 60 frames a second | 0.03 ms a frame on average, 0.3 at the 99th percentile; 3 to 4.5 ms in the frame that plans a crossing, about every 2.8 s; 11 to 24 once, on its first frame |
+| Close views at nine moments, on the real GPU | square to the surface on the wheels, upright on the coping, folded in the air, no limb broken |
+
+Not checked: the motion at full speed on a screen. In the agent's pane, hidden,
+the browser runs animation at about 2 Hz even on an empty page, so the live
+frame rate could not be read; the costs above are direct, and how it feels
+moving is the owner's look.
+
+**The camera, from footage.** The owner approved the physics and asked for the
+camera's movements and changes to be simulated too, from how the original games
+behaved (2026-11-04). The written sources say almost nothing: an encyclopedia's
+"third-person view with a fixed camera", and a review's complaint that it does
+not always show the best angle. So it was looked at in play, frame by frame, at
+steps down to 0.2 s, in footage of the arcade game of 1997 and of the console
+game of 1999, silent. What they show: in both, no cut while the skater rides, the
+camera always behind it, on a grind straight behind it along the rail, and in the
+console game the skater flying off a ramp comes at a camera that lags, growing to
+fill the frame, then shrinks again. In the arcade game's half-pipe the camera also
+leans with the wall, the horizon tilted by what looks like up to 60 degrees and
+swinging from side to side with the skater, and the skater stays about mid-frame
+(estimated by eye: not measured). Cuts came only after the run, to low shots
+looking up at the skater. Not established: whether either game replayed a run
+from other cameras, or how the console game's camera turns at a wall's top on a
+true vert ramp, where the footage looked at only shows it behind the skater on
+either side of the turn.
+
+Now: the old camera, across the front of the ramp at 11 m, goes. The new one
+aims to be 3.4 m behind the skater along the ramp, the way it is going, and 1.6 m
+off the surface, past the lip straight on up, so it looks down the wall from above
+as the skater falls away and up the far wall from below; at the top of an air the
+way it is going turns over, and the camera passes under the skater. It looks 3 m
+ahead, so the upper part of the frame shows where the skater is going. It leans
+with the wall, up to 27 degrees, less than the arcade game: a choice, for a screen
+someone watches rather than rides, and one constant to change. Its weight is a
+critically damped spring (6 a second, the aim 8): not stepped from frame to frame
+but worked out from the skater's last second as a weighted sum, so scrubbing gives
+the same picture. Musical direction of this project's, not from the games: one
+cut, from the beat before the air on the drop to the first beat after landing, to
+a long lens low on the flat looking up at the 540, in the spirit of those low
+shots. The camera now looks every way, so the hall was built round it: four walls
+in the seed's blocks, lamps, a roof of girders, both end panels of the ramp, and
+the coping a real pipe in depth, as it could no longer be drawn as a line on the
+screen with one end behind the camera.
+
+| Check | Result |
+|---|---|
+| The camera over 72 s, three tempos, two seeds, measured from the simulation | the eye at most 12.3 m/s, its aim turning at most 411 degrees a second, passing under an air; never nearer a surface than 0.9 m; the skater's hip in frame in every frame of the chase |
+| Cuts, taken as the eye moving over 40 m/s | only the two either side of each 540 (at 191 bpm 19.17 to 21.05, 46.82 to 48.70, 56.87 to 58.75) |
+| How far from the skater, chasing | 4.2 m at the median, 2.5 at the 5th percentile, under an air; 5.4 at the 95th |
+| Scrubbing back against fresh runs | the same camera, to the digit |
+| Frame, real GPU, 1280×720, 40 moments, other work on the GPU | 11 ms (p95 17-18), against 10.6 (p95 13-16) with the old camera, not run side by side: the mean about the same, the p95 up where the skater fills the frame. On its own 0.03 ms a frame on the main thread |
+| Frames at 0.25-0.28 s through a crossing, a grind and the drop, on the real GPU, against the footage | behind the skater; the far wall, the coping and the hall ahead; along the pipe on a grind; from below on the 540. Before the camera was lowered and looked ahead the frame was all wood, with no horizon |
+
+The gallery's image of the scene still shows the old camera: the tool renders every
+scene, which would also overwrite images other work has in progress.
+
 ## Terrace drums and the football match
 
 Piece C's style and the scene it was made for, at the owner's word
@@ -4780,7 +5008,7 @@ right is for a listener to judge; `npm run sampler` exists for that.
 - Live mode assumes a 44.1 kHz audio device.
 - v0.1's exact source was not preserved: the project went under git only
   during 0.2.
-- The skate park's skater does not yet move as a skater does: the trunk, the
+- The skate park's skater now moves under real forces, but its body does not yet move as a skater's does: the trunk, the
   arms and the body's balance over the board are to be reworked from real
   skaters in motion (the owner's finding, 2026-11-04).
 
