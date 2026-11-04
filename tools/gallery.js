@@ -34,6 +34,7 @@ export const GALLERY = [
   { style: 'fire',        era: '1994',        seed: 'inferno' },
   { style: 'kefrens',     era: '1990',      seed: 'copperwave' },
   { style: 'ball',        era: '1982',      seed: 'boing' },
+  { style: 'skyrush',     era: '1982',      seed: 'checker', at: 16.4 },
   { style: 'rings',       era: '1990',      seed: 'moire' },
   { style: 'lcd',         era: '1972',     seed: 'juggler' },
   { style: 'crossing',    era: '1972',     seed: 'frogs' },

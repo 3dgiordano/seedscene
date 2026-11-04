@@ -7,7 +7,7 @@
 v0.2 takes the v0.1 tool ([BUILD-REPORT-v0.1.md](BUILD-REPORT-v0.1.md)) and
 turns it into **SEEDSCENE**: a name, a nostalgic front door, a live mode you
 drive from the keyboard, an About part, seven eras of computing from 1972 to
-now with a journey through them, an endless AUTOPLAY channel, fifty-seven
+now with a journey through them, an endless AUTOPLAY channel, fifty-eight
 scenes and thirty-six styles of music, each scene on its own display and
 sound board.
 
@@ -28,7 +28,7 @@ sound board.
 
 ## Where it stands, 2026-11-03
 
-- **Built:** fifty-seven scenes in seven eras (spans of years, 1972 to now), thirty-six music styles, sixteen
+- **Built:** fifty-eight scenes in seven eras (spans of years, 1972 to now), thirty-six music styles, sixteen
   displays and six sound boards, each scene with its own or its era's; THE
   JOURNEY (three scenes an era, going on through the lists over replays),
   AUTOPLAY, born in, greetings, the screensaver, the sounds between the tracks,
@@ -4373,6 +4373,42 @@ were raised into peaks and saddles in turn, higher where a range rises.
 | Scrubbing back to three moments against fresh runs, each | the same state |
 | Cost a frame at 854×480, SwiftShader (no GPU here) | tube 291 ms (406 before the zoom was worked out once a frame and far bursts skipped), tanks 141, rocks 202 - the live check on a real GPU is still to do |
 | `npm test` | passes, the mp4 comparison included |
+
+## The behind-view shooter
+
+Piece C's next scene (2026-11-04), the smallest of the three left: a
+flat-drawn pseudo-3D plain and sprites scaled with distance, no figure to
+model in the round. `skyrush`. The plan put it in "the arcade of 1995"; the
+game it remembers came out in 1985, and a scene goes to the year its game
+came out, so it is in 1982–1989, on the arcade monitor. Against the arcade
+museum's screenshots of the behind-view shooter of 1985: a checkered plain
+in two colours rushing toward the screen, a pastel sky with a thin skyline
+at the horizon, columns and bushes and boulders going by with their shadows,
+a hero flying low seen from behind with his shadow under him, enemies in
+formations and a huge serpent of a boss, the score at the top. Its own: a
+flyer with a jetpack and a blaster under his arm, drawn in melted shapes;
+saucers for the enemies; a serpent of glowing orbs with two eyes for the
+boss; the colours the seed's.
+
+The game (`SkyrushSim`): a wave of four saucers comes in from the horizon on
+each bar, in a line or a V, weaving; the flyer eases in front of the nearest
+and fires on each beat, the shot reaching its saucer on the next beat (one in
+seven missed); the plain rolls three metres every two beats. Two bars before
+an accented bar a serpent of eight orbs weaves in from the distance; on the
+drop it is hit and bursts orb by orb. The first flyer was a round head on a
+block, too big and too near; he was pushed back and redrawn as one
+silhouette of melted shapes - shoulders and a jacket, hair seen from behind,
+an arm free and one holding the blaster, a leg bent back as he flies, boots,
+the jetpack's two nozzles and their flames. The first serpent came in too
+small and too far to be seen; it was made bigger and brought nearer.
+
+| Check | Result |
+|---|---|
+| Frames against the screenshots, at a wave, the serpent coming and the drop | the checkered plain, the columns and bushes and their shadows, the flyer from behind and his shadow, saucers and shots, the serpent weaving in and bursting in a white flash on the accented bar |
+| The game on the real score (`checker`, italo disco, accents on bars 8, 13, 16) | a wave every bar, shots on the beats, the serpent from 12.5 s and its burst on bar 8 (16.7 s) |
+| Scrubbing back against fresh runs | the same state |
+| Cost a frame at 854×480, SwiftShader | skyrush 265 ms, rocks 193 - the live check on a real GPU is still to do |
+| `npm run test:quick` | passes, the README's entry included |
 
 ## The artillery
 

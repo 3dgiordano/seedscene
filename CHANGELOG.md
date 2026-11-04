@@ -4,7 +4,7 @@
 
 The release that turns the tool into **SEEDSCENE**: a name, a personality,
 a Commodore 64 front door, seven eras of computing from 1972 to now,
-fifty-seven scenes, thirty-six styles of music, sixteen displays and six
+fifty-eight scenes, thirty-six styles of music, sixteen displays and six
 sound boards, an endless AUTOPLAY channel, and a live mode you
 can drive entirely from the keyboard.
 
@@ -408,6 +408,16 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   a laser fan, the mirror ball's spots, a strobe at the end of each phrase, and
   the lights flaring in the lens as each phrase opens; the camera moves as
   before, a little farther back.
+- **The behind-view shooter** (`skyrush`, 1982–1989, on the arcade
+  monitor), the behind-view arcade shooters of the 80s: a flyer with a
+  jetpack seen from behind over a checkered plain rushing toward the screen,
+  columns and bushes going by, a pastel sky with a far skyline. On each bar a
+  wave of saucers comes in from the horizon; the flyer slides in front of the
+  nearest and fires on every beat, each shot reaching its saucer on the next.
+  Through the build a serpent of glowing orbs weaves in, and on the drop it
+  bursts orb by orb. Drawn from the arcade museum's screenshots of the
+  behind-view shooter of 1985; the flyer, the saucers and the serpent are
+  drawn here, no hero, enemy or name of any game.
 - **The artillery** (`artillery`, 1994–1996), the turn-based artillery
   games of the 90s PC: two teams of five little soldiers in the seed's
   colours on a hill of earth the seed shapes, seen from the side, mountains

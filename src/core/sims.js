@@ -4357,4 +4357,155 @@ export class ArtillerySim extends PlannedSim {
   }
 }
 
-export const SIMS = { artillery: ArtillerySim, skatepark: SkateSim, football: FootballSim, tanks: TankSim, tube: TubeSim, crossing: CrossingSim, coderain: CoderainSim, animeop: AnimeopSim, timecar: TimecarSim, moonbike: MoonbikeSim, maze3d: Maze3dSim, echolines: EcholinesSim, ansi: AnsiSim, cascade: CascadeSim, cracktro: CracktroSim, rubber: RubberSim, chessfloor: ChessfloorSim, bobs: BobsSim, pyramid: PyramidSim, pipes: PipesSim, maze: MazeSim, snake: SnakeSim, rocks: RocksSim, starfighter: StarSim, paddles: PaddlesSim, invaders: InvadersSim, bricks: BricksSim, lightcycles: LightcyclesSim };
+// ---------------------------------------------------------------------------
+// The behind-view shooter: a flyer over a checkered plain, waves on the bar
+// ---------------------------------------------------------------------------
+
+export const SKY_FOES = 8;
+export const SKY_SHOTS = 6;
+const SKY_F = 0.9, SKY_EYE = 1.0, SKY_HOR = 0.06, SKY_Z = 3.0;   // focal, eye height, horizon, the flyer's depth
+
+/**
+ * The behind-view shooter: a flyer with a jetpack seen from behind over a
+ * checkered plain rushing toward the screen, columns and bushes going by. On
+ * each bar a wave of saucers comes in from the horizon; the flyer slides in
+ * front of the nearest and fires on the beat, each shot reaching its saucer on
+ * the next beat. Two bars before an accented bar a serpent of glowing orbs
+ * weaves in; on the drop it is hit and bursts orb by orb.
+ */
+export class SkyrushSim extends PlannedSim {
+  reset() {
+    this.rng = new Rng(this.seed, 'skyrush-sim');
+    this.clock = 0;
+    this.kept = 0;
+    this.score = 0;
+    this.foes = [];               // {t0, x, y, z0, wx, wy, ph, dead}
+    this.shots = [];              // {t0, t1, foe}
+    this.booms = [];              // {t, x, y, z}
+    this.serpents = [];           // {t0, t1 (the drop), ph}
+    this.aims = [{ t: -1e9, x: 0, y: 0.6 }];
+  }
+
+  /** A saucer's place at t (world units: x across, y up, z ahead). */
+  foeAt(f, t) {
+    const u = t - f.t0;
+    return [f.x + f.wx * Math.sin(u * 1.7 + f.ph), f.y + f.wy * Math.sin(u * 2.3 + f.ph * 1.3), f.z0 - u * f.vz];
+  }
+
+  plan() {
+    const bar = this.grid.barSec, spb = this.grid.spb;
+    const t = this.clock;
+    const accentSoon = this.grid.isAccent(t + 2 * bar);
+    if (accentSoon) this.serpents.push({ t0: t, t1: t + 2 * bar, ph: this.rng.float(0, 6) });
+    // a wave: four saucers in a line or a V, coming in from the horizon
+    const v = this.rng.bool();
+    const cx = this.rng.float(-1.2, 1.2), cy = this.rng.float(0.4, 1.4);
+    const wave = [];
+    for (let k = 0; k < 4; k++) {
+      const off = k - 1.5;
+      const f = { t0: t, x: cx + off * 0.9, y: cy + (v ? Math.abs(off) * 0.25 : 0), z0: 26 + Math.abs(off) * (v ? 1.5 : 0), wx: 0.3, wy: 0.15, ph: this.rng.float(0, 6), vz: 26 / (2 * bar) };
+      wave.push(f);
+      this.foes.push(f);
+    }
+    // the flyer fires on the beats of the bar, each shot reaching a saucer of the wave on the next beat
+    let b = t;
+    for (let k = 0; k < 4; k++) {
+      const fire = this.grid.next(b + 1e-6, 4);
+      const hit = this.grid.next(fire + 1e-6, 4);
+      b = fire;
+      const f = wave.filter((q) => !q.dead).sort((p, q) => this.foeAt(p, hit)[2] - this.foeAt(q, hit)[2])[0];
+      if (!f || this.rng.bool(0.15)) continue;
+      const at = this.foeAt(f, hit);
+      if (at[2] < SKY_Z + 1) continue;
+      f.dead = hit;
+      this.shots.push({ t0: fire, t1: hit, foe: f });
+      this.booms.push({ t: hit, x: at[0], y: at[1], z: at[2] });
+      this.aims.push({ t: fire - spb * 0.5, x: Math.max(-1.3, Math.min(1.3, at[0] * 0.6)), y: Math.max(0.3, Math.min(1.5, at[1] * 0.8)) });
+      this.score += 100;
+    }
+    if (this.grid.isAccent(t)) this.score += 5000;
+    this.clock = t + bar;
+  }
+
+  advanceTo(t) {
+    if (t < this.kept) this.reset();
+    while (this.clock <= t + 3 * this.grid.barSec) this.plan();
+    const keep = t - 3;
+    this.foes = this.foes.filter((f) => f.t0 > keep - 4 * this.grid.barSec);
+    this.shots = this.shots.filter((q) => q.t1 > keep);
+    this.booms = this.booms.filter((q) => q.t > keep);
+    this.serpents = this.serpents.filter((q) => q.t1 > keep);
+    while (this.aims.length > 2 && this.aims[1].t < keep) this.aims.shift();
+    this.kept = Math.max(0, this.aims[0].t > -1e8 ? this.aims[0].t : 0);
+  }
+
+  /** Where the flyer is: easing from aim to aim, bobbing as it flies. */
+  heroAt(t) {
+    let i = 0;
+    while (i + 1 < this.aims.length && this.aims[i + 1].t <= t) i++;
+    const a = this.aims[i], b = this.aims[Math.min(i + 1, this.aims.length - 1)];
+    const u = b.t > a.t ? Math.min(1, Math.max(0, (t - a.t) / Math.max(0.05, b.t - a.t))) : 1;
+    const e = u * u * (3 - 2 * u);
+    return [a.x + (b.x - a.x) * e + 0.05 * Math.sin(t * 1.9), a.y + (b.y - a.y) * e + 0.06 * Math.sin(t * 2.7)];
+  }
+
+  uniforms(t) {
+    this.advanceTo(t);
+    const proj = (P) => [P[0] / P[2] * SKY_F, SKY_HOR + (P[1] - SKY_EYE) / P[2] * SKY_F, P[2]];
+    const hero = this.heroAt(t);
+    const foes = new Float32Array(SKY_FOES * 4).fill(0);
+    let n = 0;
+    for (const f of this.foes) {
+      if (t < f.t0 || (f.dead && f.dead <= t) || n >= SKY_FOES) continue;
+      const P = this.foeAt(f, t);
+      if (P[2] < 0.6) continue;
+      const s = proj(P);
+      foes.set([s[0], s[1], P[2], 1], 4 * n++);
+    }
+    const shots = new Float32Array(SKY_SHOTS * 4).fill(0);
+    let m = 0;
+    for (const q of this.shots) {
+      if (t < q.t0 || t >= q.t1 || m >= SKY_SHOTS) continue;
+      const u = (t - q.t0) / (q.t1 - q.t0);
+      const to = this.foeAt(q.foe, q.t1);
+      const P = [hero[0] + (to[0] - hero[0]) * u, hero[1] + (to[1] - hero[1]) * u, SKY_Z + (to[2] - SKY_Z) * u];
+      const s = proj(P);
+      shots.set([s[0], s[1], P[2], 1], 4 * m++);
+    }
+    const booms = new Float32Array(24);
+    const bl = recent(this.booms, t, 6);
+    for (let i = 0; i < 6; i++) {
+      const b = bl[i];
+      if (!b) { booms.set([0, 0, 1, 99], i * 4); continue; }
+      const s = proj([b.x, b.y, b.z]);
+      booms.set([s[0], s[1], b.z, t - b.t], i * 4);
+    }
+    // the serpent: eight orbs following its head along a weaving path, nearer as the drop comes, bursting on it
+    const serp = new Float32Array(32);
+    const S = this.serpents.find((q) => t >= q.t0 && t < q.t1 + 1.2);
+    for (let k = 0; k < 8; k++) {
+      if (!S) { serp.set([0, 0, 1, -1], 4 * k); continue; }
+      const u = Math.min(1, (t - S.t0) / (S.t1 - S.t0));
+      const lag = k * 0.18;
+      const tt = t - lag;
+      const z = 30 - 24 * Math.min(1, Math.max(0, (tt - S.t0) / (S.t1 - S.t0)));
+      const P = [2.2 * Math.sin(tt * 1.3 + S.ph), 1.8 + 0.8 * Math.sin(tt * 2.1 + S.ph), z];
+      const s = proj(P);
+      const burst = t - (S.t1 + k * this.grid.spb * 0.12);
+      serp.set([s[0], s[1], z, burst > 0 ? burst : (u > 0 ? -0.5 : -1)], 4 * k);
+    }
+    const hp = proj([hero[0], hero[1], SKY_Z]), hs = proj([hero[0], 0, SKY_Z]);
+    return {
+      uSkyHero: { v: [hp[0], hp[1], hs[1], SKY_Z], kind: '4f' },
+      uSkyFoes: { v: foes, kind: '4fv' },
+      uSkyShots: { v: shots, kind: '4fv' },
+      uSkyBooms: { v: booms, kind: '4fv' },
+      uSerp: { v: serp, kind: '4fv' },
+      uSkyFx: { v: [this.scoreAt(t) % 1000000, t / this.grid.spb, hero[0], 0], kind: '4f' },
+    };
+  }
+
+  scoreAt(t) { return this.score - 100 * this.shots.filter((q) => q.t1 > t).length - 5000 * this.serpents.filter((q) => q.t1 > t).length; }
+}
+
+export const SIMS = { skyrush: SkyrushSim, artillery: ArtillerySim, skatepark: SkateSim, football: FootballSim, tanks: TankSim, tube: TubeSim, crossing: CrossingSim, coderain: CoderainSim, animeop: AnimeopSim, timecar: TimecarSim, moonbike: MoonbikeSim, maze3d: Maze3dSim, echolines: EcholinesSim, ansi: AnsiSim, cascade: CascadeSim, cracktro: CracktroSim, rubber: RubberSim, chessfloor: ChessfloorSim, bobs: BobsSim, pyramid: PyramidSim, pipes: PipesSim, maze: MazeSim, snake: SnakeSim, rocks: RocksSim, starfighter: StarSim, paddles: PaddlesSim, invaders: InvadersSim, bricks: BricksSim, lightcycles: LightcyclesSim };
