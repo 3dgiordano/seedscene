@@ -21,6 +21,8 @@ const cfg = {
   greets: cleanGreets(p.get('greets')),
   display: p.get('display') || 'auto',
   board: p.get('board') || 'auto',
+  trackSeconds: p.get('tracksec'),   // THE PACE: a programme's seconds a track and a scene
+  sceneSeconds: p.get('scenesec'),
 };
 const fps = parseFloat(p.get('fps') || '30');
 const mime = p.get('format') === 'jpeg' ? 'image/jpeg' : 'image/png';
@@ -33,7 +35,9 @@ try {
   window.SEEDSCENE = {
     meta: demo.meta,
     fps,
-    totalFrames: Math.max(1, Math.round((demo.inJourney ? demo.journey.meta.duration : cfg.duration) * fps)),
+    totalFrames: Math.max(1, Math.round(cfg.duration * fps)),
+    /** Where a programme's track comes on screen, in seconds (the gallery takes its moments from there). */
+    viewStart(i) { return demo.programme.viewStart(i); },
     /** Draw frame i and hand back the encoded image. */
     grab(i) {
       demo.drawAt(i / fps);

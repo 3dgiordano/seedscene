@@ -4893,6 +4893,53 @@ screen with one end behind the camera.
 The gallery's image of the scene still shows the old camera: the tool renders every
 scene, which would also overwrite images other work has in progress.
 
+## The scanner car, rebuilt as a simulation
+
+The owner asked for a better simulation of the scene (2026-11-04). What was there
+was a flat drawing: one still silhouette on a straight road, only the dashes moving.
+It was rebuilt the way the artillery and the shooter were, from photographs of cars
+of the kind and from a simulation.
+
+**The car drives.** A driver looks ahead down the lane and steers; each axle's tyres
+grip in proportion to what its springs press on them, until they slide; the throttle
+is held to what the rear tyres can give and still hold a line; four springs and
+dampers carry a body that squats, dives and leans, and leaves the ground when it is
+thrown off it. The road is laid out ahead of the car in samples every 30 m -
+straights, sweepers and rises - and a bend sets how fast the driver dares to take it.
+
+**The music directs it.** The pace follows how hard the music is going. The car lands
+on the music's big moments: a flight's time before one, the boost fires, over a barrier
+standing on a stretch of road kept straight and level for it, and the driver has spent
+the last seconds arriving on time. The red light passes on every beat, twice as fast as
+the stunt nears, four times in the air. A director cuts on the bars between its cameras:
+head on, three-quarters, alongside, behind, a long lens from behind, the nose close up,
+from the roadside as it goes by, from above, and from the driver's seat, where three
+columns of red bars - the car's voice - talk with the melody over a digital speedometer.
+
+**The look.** One height field gives the car its wedge, the raised middle of the bonnet,
+the bulges over the wheels, the raked screen bowed in plan and the long bubble of glass
+behind; the paint is nearly all reflection, of the dusk, the mesas and the poles going
+by, and the wheels sit on their own springs. The seed picks the dusk.
+
+**What went wrong.** The car spun out within a minute: the speed asked for changed at a
+stroke twelve seconds before a stunt, so it braked hard in a bend, and full throttle
+left the rear tyres no grip to hold a line. Two stunts close together left a wall in
+the road, one's level stretch meeting the next's; each now eases into the next. The
+eye, smoothed in the world's coordinates, fell ten metres behind a car at 33 m/s and
+ended inside it, so it is now smoothed relative to the car. A ray skimming the bonnet
+ran out of steps and passed through the windscreen, which looked like a hole under a
+floating roof. The first version cost three times what it does now.
+
+| Check | Result |
+|---|---|
+| Against photographs of cars of the kind, three-quarters and head on | the wedge, the bonnet's middle, the slot a third of the car's width, three lamps a side in the dark band, the amber lamp ahead of the wheel, the ringed wheels, the raked screen; the tail's black panel and red line |
+| `npm test`, a new check over four tempos | 22 of 22 landings at most 23 ms from the big moment; at most 4.0 m from the road's middle (its edge is at 4.1 m); 0.06 m over the barrier's lamps at least; going back replays the same drive |
+| On the real GPU (Intel UHD 630, Direct3D 11) | compiles and draws, no errors |
+| Cost on the real GPU, whole frame, by camera | 854×480, the live page's size: 10 to 22 ms. 1920×1080: 34 to 64 ms, against 36 to 61 for the time car in the same run. Measured with the pane hidden, so these compare scenes rather than promise a frame rate |
+
+The gallery's still was redrawn alone, in the way the tool draws it. The owner accepted
+it the same day.
+
 ## Terrace drums and the football match
 
 Piece C's style and the scene it was made for, at the owner's word
@@ -4961,6 +5008,55 @@ the games drew them.
 | Frames at the build-up, the run down the line, the goal and after | the stripes, the circle, the boxes and the net; the winger at the corner flag with the boards and the crowd beyond; GOAL! over the box, the ball in the net, the crowd lit |
 | Cost a frame at 854×480, SwiftShader | football 240 ms, rocks 198 - the live check on a real GPU is still to do |
 | `npm run test:quick` | passes |
+
+## The pace of the programmes: forty seconds a track, twenty a scene
+
+The owner found AUTOPLAY's and THE JOURNEY's scenes too short to enjoy, and the
+music out of step with them. Measured on the engine, three seeds:
+
+| | AUTOPLAY before | THE JOURNEY before | Both now |
+|---|---|---|---|
+| Track | 40 s | 25.7 s (the page's length over the eras) | 40 s |
+| Scene, median (range) | 17 s (9-30) | 8.5 s (7-11) | 20 s (16-24) |
+| New track audible before the picture changes, median | 8 s | 7 s | 4.5 s, the picture on the swap |
+| Last scene with the next track already in, median | about 52% | 77-86% | about 23% |
+
+At the owner's word every programme, the screensaver and the mp4s now play 40 s
+a track and 20 s a scene, both settable: `--track-seconds`, `--scene-seconds`,
+`K` and `L` live, the menu, `?tracksec=` and `?scenesec=`. The picture changes
+track on the new track's bar line nearest the middle of the overlap, where the
+basslines swap, rather than at the overlap's end. The render page now builds the
+same finite programme as the soundtrack, so the last track has no next track to
+cut to. A rendered journey is one pass (280 s at this pace) unless `--duration`
+says otherwise; before, `--duration` set the length of each era's part.
+
+### What went wrong in this round
+
+1. **Fewer scenes a track repeated eras with few of them**: two scenes a track
+   deal six a visit, so an era of three came back in the same order in 22 visits
+   of 900 and in 18 journey passes of 273. The tests caught it; a visit or pass
+   that would repeat the last one now starts one further on, or swaps its two.
+2. **A test band too narrow for a slow track**: scenes of 15 s run 12.7 to 22.1 s,
+   a slow track's bars being long; the band is half a scene either side.
+3. **A rendered AUTOPLAY showed one programme and played another**: found by
+   holding the mp4's frames against the plan it prints. The render page was given
+   the seed's own era and held the picture there, while the soundtrack travelled
+   the eras. A programme's picture is no longer given an era.
+
+### A whole track on HI-FI
+
+A track played on its first scene's board, so a film's scene that came second
+played on a chip: 25 of 79 appearances of the scenes that ask for HI-FI. At the
+owner's word a track with such a scene now plays all on HI-FI, the first scene
+too, unless a board is forced. Over 240 AUTOPLAY tracks each of two seeds and 70
+of THE JOURNEY, none of them is on a chip now, while 174 other tracks still are.
+Eight tracks whose second scene asks for it render sample for sample as with
+HI-FI forced; four chip tracks do not.
+
+### Known limit
+
+`--format jpeg` fails on a programme, on the code before this round too: ffmpeg
+cannot identify the first frame, which is black. The default, png, works.
 
 ## What went wrong in the first round
 

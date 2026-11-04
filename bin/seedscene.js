@@ -16,7 +16,7 @@ import { DISPLAYS, DISPLAY_NAMES } from '../src/core/displays.js';
 import { BOARDS, BOARD_NAMES } from '../src/core/boards.js';
 import { ERAS, ERA_NAMES, SCENE_ERAS, erasForScene } from '../src/core/eras.js';
 import { resolveChoices, checkChoice } from '../src/core/choose.js';
-import { composeJourney, composeAutoplay, AUTOPLAY_PART } from '../src/core/journey.js';
+import { composeJourney, composeAutoplay, TRACK_SECONDS, SCENE_SECONDS, PACE_LIMITS } from '../src/core/journey.js';
 import { startServer } from '../tools/server.js';
 import { cleanGreets, banner, TAGLINE, VERSION } from '../src/brand.js';
 
@@ -86,6 +86,16 @@ function num(v, dflt, name, min, max) {
   return n;
 }
 
+/** THE PACE: the seconds of a programme's tracks and scenes, as asked for. */
+function parsePace(args) {
+  const track = num(args['track-seconds'], TRACK_SECONDS, 'track-seconds', ...PACE_LIMITS.track);
+  const scene = num(args['scene-seconds'], SCENE_SECONDS, 'scene-seconds', ...PACE_LIMITS.scene);
+  if (scene >= track && (args['track-seconds'] !== undefined || args['scene-seconds'] !== undefined)) {
+    console.warn(`${C.ye}note${C.r}  a scene lasts a track at most: one scene a track, ${track}s each`);
+  }
+  return { track, scene };
+}
+
 function showScenes() {
   console.log(`\n${C.b}eras${C.r}  ${C.dim}(--era, keys 1-${ERA_NAMES.length} or E live; each era suggests its scenes and music)${C.r}\n`);
   for (const [i, name] of ERA_NAMES.entries()) {
@@ -115,7 +125,7 @@ ${C.b}usage${C.r}
   seedscene live    [options]     run it live in a browser, in real time
   seedscene render  [options]     render a demo to an mp4 file
   seedscene journey [options]     render THE JOURNEY - every era with scenes, ${ERAS[SCENE_ERAS[0]].year} on - to mp4
-  seedscene autoplay [options]    render AUTOPLAY - era after era, ${AUTOPLAY_PART}s a track - to mp4
+  seedscene autoplay [options]    render AUTOPLAY - era after era, without end - to mp4
   seedscene scenes                list the eras, scenes and music styles
   seedscene info    [options]     print what a seed composes, without rendering
 
@@ -125,8 +135,10 @@ ${C.b}options${C.r}
   --era <name>             auto | ${ERA_NAMES.join(' | ')}   ${C.dim}(default: an era the scene belongs to)${C.r}
   --music <name>           auto | a music style                                 ${C.dim}(default: music of the era)${C.r}
   --res <WxH|preset>       854x480, or 240p 360p 480p 576p 720p 1080p           ${C.dim}(default: 480p)${C.r}
-  --duration <seconds>     length                                ${C.dim}(default: 30 render, 180 live, ${21 * SCENE_ERAS.length} journey, 600 autoplay)${C.r}
-  --born <year>            autoplay: open in the era you were twelve in, and stay near it
+  --duration <seconds>     length                                ${C.dim}(default: 30 render, 180 live, one pass journey, 600 autoplay)${C.r}
+  --track-seconds <n>      autoplay, journey, live: seconds a music track lasts ${C.dim}(default: ${TRACK_SECONDS})${C.r}
+  --scene-seconds <n>      autoplay, journey, live: seconds a scene lasts       ${C.dim}(default: ${SCENE_SECONDS})${C.r}
+  --born <year>           autoplay: open in the era you were twelve in, and stay near it
   --display <name>         auto | ${DISPLAY_NAMES.join(' | ')}   ${C.dim}(default: each scene its own screen, or its era's)${C.r}
   --board <name>           auto | ${BOARD_NAMES.join(' | ')}   ${C.dim}(default: each scene its own sound board, or its era's)${C.r}
   --greets "A, B, C"       names to greet in the scroller (and the cracktro): up to eight
@@ -146,6 +158,7 @@ ${C.b}examples${C.r}
   seedscene render --seed aurora --scene vectorballs --era dos --music gabber
   seedscene journey --seed yourname --res 720p
   seedscene autoplay --seed yourname --duration 3600
+  seedscene autoplay --seed yourname --track-seconds 60 --scene-seconds 30
   seedscene autoplay --seed yourname --born 1985
 `;
 
@@ -197,9 +210,9 @@ async function main() {
   if (cmd === 'render' || cmd === 'journey' || cmd === 'autoplay') {
     const programme = cmd === 'render' ? null : cmd;
     const journey = programme === 'journey';
-    const minDur = journey ? 12 * SCENE_ERAS.length : 0.5;
-    const dflt = journey ? 21 * SCENE_ERAS.length : programme ? 600 : 30;   // 21 s a part: three scenes of seven
-    const duration = num(args.duration, dflt, 'duration', minDur, programme ? 36000 : 3600);
+    const pace = programme ? parsePace(args) : {};
+    const dflt = journey ? pace.track * SCENE_ERAS.length : programme ? 600 : 30;   // a journey: one pass, a track an era
+    const duration = num(args.duration, dflt, 'duration', 0.5, programme ? 36000 : 3600);
     const fps = num(args.fps, 30, 'fps', 1, 120);
     const crf = num(args.crf, 18, 'crf', 0, 51);
     const format = args.format === 'jpeg' ? 'jpeg' : 'png';
@@ -213,9 +226,8 @@ async function main() {
       : path.join('out', programme ? `${safe}-${bornIn !== null ? `born${bornIn}` : programme}.mp4` : `${safe}-${choice.style}.mp4`);
 
     if (programme) {
-      const j = journey ? composeJourney(seed, duration) : composeAutoplay(seed, duration, bornIn);
-      const total = journey ? j.meta.duration : duration;
-      console.log(`\n  ${C.b}${j.meta.title}${C.r}  ${C.cy}${seed}${C.r} / ${width}x${height} / ${total}s @ ${fps}fps`);
+      const j = journey ? composeJourney(seed, duration, 1, board, pace) : composeAutoplay(seed, duration, bornIn, board, null, pace);
+      console.log(`\n  ${C.b}${j.meta.title}${C.r}  ${C.cy}${seed}${C.r} / ${width}x${height} / ${duration}s @ ${fps}fps / ${pace.track}s a track, ${pace.scene}s a scene`);
       // the plan only: listing a programme should not compose it
       const shown = Math.min(j.count, 24);
       for (let i = 0; i < shown; i++) {
@@ -228,7 +240,7 @@ async function main() {
     }
     const { renderVideo } = await import('../tools/render.js');
     const r = await renderVideo({
-      seed, style: choice.style, era: choice.era, music: choice.music, programme, bornIn, display, board,
+      seed, style: choice.style, era: choice.era, music: choice.music, programme, bornIn, display, board, pace,
       greets: cleanGreets(args.greets === true ? '' : args.greets),
       width, height, duration, fps, out, crf, format, overlay,
       gpu: args.gpu === true || args.gpu === 'true',
@@ -243,11 +255,13 @@ async function main() {
     const duration = num(args.duration, 180, 'duration', 4, 3600);
     const port = num(args.port, 8787, 'port', 1, 65535);
     const overlay = args.overlay !== false;
+    const pace = parsePace(args);
     const { origin } = await startServer(port);
     const q = new URLSearchParams({
       seed: String(seed), scene: choice.style, era: req.era, music: req.music, display, board,
       width: String(width), height: String(height),
       duration: String(duration), overlay: overlay ? '1' : '0',
+      tracksec: String(pace.track), scenesec: String(pace.scene),
       intro: args.intro === false ? '0' : '1',
       sound: args.mute === true || args.sound === false ? '0' : '1',
     });

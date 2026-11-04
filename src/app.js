@@ -13,7 +13,7 @@ import { createContext } from './core/gl.js';
 import { Renderer } from './core/visual.js';
 import { STYLE_NAMES } from './styles/index.js';
 import { resolveChoices } from './core/choose.js';
-import { composeJourney, composeAutoplay, partAt, JOURNEY_PASSES } from './core/journey.js';
+import { composeJourney, composeAutoplay, partAt, cleanPace, JOURNEY_PASSES } from './core/journey.js';
 import { boardFor, chipOfBoard } from './core/boards.js';
 import { ERAS } from './core/eras.js';
 
@@ -30,6 +30,7 @@ export class Demo {
     this.seed = opts.seed;
     this.duration = opts.duration;
     this.req = { style: opts.style || 'auto', era: opts.era || 'auto', music: opts.music || 'auto', board: opts.board || 'auto' };
+    this.pace = cleanPace({ track: opts.trackSeconds, scene: opts.sceneSeconds });
     this.resolve();
     this.compose();
 
@@ -104,6 +105,15 @@ export class Demo {
   }
   /** DISPLAY: 'auto' (each scene its own look, or its era's) or a display forced on everything. */
   setDisplay(name) { this.renderer.setDisplay(name); return { musicChanged: false }; }
+  /** THE PACE: the seconds of a track and of a scene. A programme playing is made again at it, as for a board. */
+  setPace(pace) {
+    this.pace = cleanPace(pace);
+    if (!this.programme) return;
+    const { kind, bornIn, era, opening } = this.programme;
+    this.programme = null;
+    this.setProgramme(kind, { bornIn, era });
+    this.programme.opening = opening;
+  }
   setSeed(seed) { return this.update({ seed }); }
   setDuration(seconds) { return this.update({ duration: seconds }); }
 
@@ -154,9 +164,11 @@ export class Demo {
     const held = kind === 'autoplay' && born === null && ERAS[era] ? era : null;
     if ((this.programme && this.programme.kind) === kind && (!kind || (this.programme.bornIn === born && this.programme.era === held))) return;
     if (kind) {
+      // live, it goes on for as long as it is left; in a render, it is the length the soundtrack was made to
+      const length = this.opts.live ? null : this.duration;
       this.programme = kind === 'journey'
-        ? composeJourney(this.seed, Math.max(this.duration, 96), JOURNEY_PASSES, this.req.board)
-        : composeAutoplay(this.seed, undefined, born, this.req.board, held);
+        ? composeJourney(this.seed, length, JOURNEY_PASSES, this.req.board, this.pace)
+        : composeAutoplay(this.seed, length, born, this.req.board, held, this.pace);
       this.partIndex = -1;
     } else {
       this.programme = null;
@@ -202,10 +214,11 @@ export class Demo {
       this.renderer.sceneStart = part.scoreTimeAt(scene.from);
     }
     // in from black, out to black: each era its own reel
-    const fadeIn = Math.max(0, 1 - local / 0.7);
-    const fadeOut = Math.max(0, 1 - (part.duration - local) / 0.5);
+    const onScreen = local - part.view.from;
+    const fadeIn = Math.max(0, 1 - onScreen / 0.7);
+    const fadeOut = Math.max(0, 1 - (part.view.to - local) / 0.5);
     this.renderer.fade = Math.min(1, Math.max(fadeIn, fadeOut));
-    this.renderer.card = { ...part.card, era: part.era, t: local, index: part.index, title: part.meta.title,
+    this.renderer.card = { ...part.card, era: part.era, t: onScreen, index: part.index, title: part.meta.title,
       music: part.meta.musicLabel, style: scene.style };
     // the picture runs on the score's clock, so its beat stays on the music's through the mix
     this.renderer.draw(time, part.features.at(time));

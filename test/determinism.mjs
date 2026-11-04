@@ -11,12 +11,12 @@ import { readFile, rm, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { composeScore, Synth, Features, SAMPLE_RATE, MUSIC_NAMES } from '../src/core/music.js';
-import { composeJourney, composeAutoplay, ProgrammeSynth } from '../src/core/journey.js';
+import { composeJourney, composeAutoplay, ProgrammeSynth, cleanPace } from '../src/core/journey.js';
 import { resolveChoices } from '../src/core/choose.js';
 import { ERAS, ERA_NAMES, SCENE_ERAS } from '../src/core/eras.js';
 import { sceneTour } from '../src/core/catalogue.js';
 import { DISPLAYS, DISPLAY_NAMES, SCENE_DISPLAY, displayFor, displayUniforms, displayResolution } from '../src/core/displays.js';
-import { BOARDS, BOARD_NAMES, boardFor } from '../src/core/boards.js';
+import { BOARDS, BOARD_NAMES, SCENE_BOARD, boardFor, trackBoardFor, chipOfBoard } from '../src/core/boards.js';
 import { STYLE_NAMES } from '../src/styles/index.js';
 import { SIMS, TANK_REACH, TANK_RANGE } from '../src/core/sims.js';
 import { renderVideo } from '../tools/render.js';
@@ -102,22 +102,22 @@ const journey = () => composeJourney('aurora', 84);
 const jh = programmeHash(journey, 4096);
 check('THE JOURNEY sounds the same every time, whatever the block size', jh === programmeHash(journey, 128), jh);
 {
-  // played on, THE JOURNEY shows three of an era's scenes a pass (fewer where it has fewer), all of them its own,
+  // played on, THE JOURNEY shows two of an era's scenes a pass at the usual pace, all of them its own,
   // and goes on through each era's scenes and music until every one has come round; an era with none is passed by
-  const j = composeJourney('aurora', 180, 20);
-  let three = true, belongs = true, all = true;
+  const j = composeJourney('aurora', null, 20);
+  let two = true, belongs = true, all = true;
   for (const [k, era] of SCENE_ERAS.entries()) {
     const scenes = new Set(), tunes = new Set();
     for (let pass = 0; pass < 20; pass++) {
       const p = j.plan(pass * SCENE_ERAS.length + k);
-      const n = Math.min(3, ERAS[era].scenes.length);
-      if (p.era !== era || p.scenes.length !== n || new Set(p.scenes).size !== n) three = false;
+      const n = Math.min(2, ERAS[era].scenes.length);
+      if (p.era !== era || p.scenes.length !== n || new Set(p.scenes).size !== n) two = false;
       if (!p.scenes.every((s) => ERAS[era].scenes.includes(s)) || !ERAS[era].music.includes(p.music)) belongs = false;
       p.scenes.forEach((s) => scenes.add(s)); tunes.add(p.music);
     }
     if (scenes.size !== ERAS[era].scenes.length || tunes.size !== ERAS[era].music.length) all = false;
   }
-  check('THE JOURNEY plays three scenes an era (fewer where it has fewer), and pass after pass shows every scene and style of each', three && belongs && all, '20 passes');
+  check('THE JOURNEY plays two scenes an era at the usual pace, and pass after pass shows every scene and style of each', two && belongs && all, '20 passes');
 }
 {
   // pass after pass an era's part is not the last pass's again (an era of three scenes deals them in a new
@@ -125,7 +125,7 @@ check('THE JOURNEY sounds the same every time, whatever the block size', jh === 
   // nor plays the style it played
   let again = 0, joins = 0;
   for (const seed of ['aurora', 'seedscene', 'insertcoin']) {
-    const j = composeJourney(seed, 180, 40);
+    const j = composeJourney(seed, null, 40);
     const n = SCENE_ERAS.length * 40;
     for (let i = 1; i < n; i++) {
       const p = j.plan(i), q = j.plan(i - 1);
@@ -134,7 +134,7 @@ check('THE JOURNEY sounds the same every time, whatever the block size', jh === 
     }
   }
   check('THE JOURNEY plays an era differently each pass, and never joins two parts on one scene or one style', joins === 0 && again <= 6,
-    `${again} passes like the last of ${3 * SCENE_ERAS.length * 39}`);
+    `${again} passes like the last of ${SCENE_ERAS.length * 39}`);
 }
 
 // DISPLAYS -----------------------------------------------------------------
@@ -182,14 +182,14 @@ check('AUTOPLAY sounds the same every time, whatever the block size', ah === pro
 }
 {
   // each era deals its scenes and music once and every visit goes on from the last: within a few visits an era
-  // has shown all it has (a block's three tracks reach nine of its scenes and three of its styles)
+  // has shown all it has (a block's three tracks reach six of its scenes and three of its styles)
   const a = composeAutoplay('aurora');
   const scenes = {}, tunes = {}, visits = {};
   for (const e of SCENE_ERAS) { scenes[e] = new Set(); tunes[e] = new Set(); visits[e] = 0; }
   for (let block = 0; block < 8 * 9; block++) {
     const e = a.plan(block * 3).era;
     visits[e]++;
-    a.blockScenes(block).slice(0, 9).forEach((s) => scenes[e].add(s));
+    a.blockScenes(block).slice(0, 6).forEach((s) => scenes[e].add(s));
     for (let k = 0; k < 3; k++) tunes[e].add(a.plan(block * 3 + k).music);
   }
   const short = SCENE_ERAS.filter((e) => scenes[e].size !== ERAS[e].scenes.length || tunes[e].size !== ERAS[e].music.length);
@@ -208,15 +208,15 @@ check('AUTOPLAY sounds the same every time, whatever the block size', ah === pro
     for (let block = 0; block < 300; block++) {
       const e = a.blockEra(block), order = a.blockScenes(block);
       if (block > 0 && e === a.blockEra(block - 1)) sameEra++;
-      const shown = order.slice(0, 9);
+      const shown = order.slice(0, 6);
       if (last[e] === shown.join()) again++;
       last[e] = shown.join(); visits++;
       for (let k = 0; k < 3; k++) {
         const m = a.plan(block * 3 + k).music;
         if (m === prevMusic) twice++;
         prevMusic = m;
-        for (let s = 0; s < Math.min(3, ERAS[e].scenes.length); s++) {
-          const sc = order[k * 3 + s];
+        for (let s = 0; s < Math.min(2, ERAS[e].scenes.length); s++) {
+          const sc = order[k * 2 + s];
           if (sc === prevScene) twice++;
           prevScene = sc;
         }
@@ -288,8 +288,8 @@ check('AUTOPLAY sounds the same every time, whatever the block size', ah === pro
       if (p.music === prevMusic) twice++;
       prevMusic = p.music;
       const order = a.blockScenes(Math.floor(i / 3));
-      for (let s = 0; s < Math.min(3, ERAS[era].scenes.length); s++) {
-        const sc = order[(i % 3) * 3 + s];
+      for (let s = 0; s < Math.min(2, ERAS[era].scenes.length); s++) {
+        const sc = order[(i % 3) * 2 + s];
         if (sc === prevScene) twice++;
         prevScene = sc;
       }
@@ -299,27 +299,71 @@ check('AUTOPLAY sounds the same every time, whatever the block size', ah === pro
     inEra && cards === SCENE_ERAS.length && twice === 0 && hh === programmeHash(held, 128), hh);
 }
 {
-  // inside a track the scene changes with the music: on a bar line, each scene
-  // of the track's era, none shown twice in a row, none for less than 9 seconds
-  const a = composeAutoplay('aurora');
-  let ok = true, changes = 0;
-  for (let i = 0; i < 120; i++) {
-    const p = a.part(i);
-    const bar = p.meta.barSec;
-    p.scenes.forEach((s, j) => {
-      const end = j + 1 < p.scenes.length ? p.scenes[j + 1].from : p.duration;
-      const at = (s.from + p.inOffset) / bar;
-      const onBar = Math.abs(at - Math.round(at)) < 1e-6;
-      if (!ERAS[p.era].scenes.includes(s.style) || end - s.from < 9 || !onBar) ok = false;
-      if (j > 0 && s.style === p.scenes[j - 1].style) ok = false;
-    });
-    changes += p.scenes.length - 1;
-    // (a track of an era with more than one scene changes at least once; one with a single scene cannot)
-    if (ERAS[p.era].scenes.length > 1 && p.scenes.length < 2) ok = false;
-    if (ERAS[p.era].scenes.length === 1 && p.scenes.length !== 1) ok = false;
+  // THE PACE: 40 s a track, 20 s a scene unless asked otherwise. In both programmes a track's scenes are of its
+  // era, none twice in a row, each cut on a bar line, and each scene within a few seconds of what was asked
+  const scenesOf = (p) => p.scenes.map((s, j) => (j + 1 < p.scenes.length ? p.scenes[j + 1].from : p.view.to) - s.from);
+  const survey = (pr, n, want) => {
+    let ok = true, shortest = Infinity, longest = 0, count = 0;
+    for (let i = 0; i < n; i++) {
+      const p = pr.part(i), bar = p.meta.barSec, lens = scenesOf(p);
+      if (p.scenes.length !== Math.min(want, ERAS[p.era].scenes.length)) ok = false;
+      p.scenes.forEach((s, j) => {
+        const at = (s.from + p.inOffset) / bar;
+        if (!ERAS[p.era].scenes.includes(s.style)) ok = false;
+        if (j > 0 && (s.style === p.scenes[j - 1].style || Math.abs(at - Math.round(at)) > 1e-6)) ok = false;
+        shortest = Math.min(shortest, lens[j]); longest = Math.max(longest, lens[j]); count++;
+      });
+    }
+    return { ok, shortest, longest, count };
+  };
+  const a = survey(composeAutoplay('aurora'), 120, 2), j = survey(composeJourney('aurora', null, 3), 21, 2);
+  const inBand = (r) => r.shortest >= 15 && r.longest <= 25;
+  check('AUTOPLAY and THE JOURNEY play 40 s tracks of 20 s scenes, each cut on a bar line', a.ok && j.ok && inBand(a) && inBand(j)
+    && composeAutoplay('aurora').partSec === 40 && composeJourney('aurora').partSec === 40,
+    `AUTOPLAY ${a.shortest.toFixed(1)}-${a.longest.toFixed(1)} s, THE JOURNEY ${j.shortest.toFixed(1)}-${j.longest.toFixed(1)} s`);
+  // and any other pace: a scene as long as the track or longer plays alone; the same pace sounds the same whatever the block size
+  const paced = { track: 60, scene: 15 };
+  const p = survey(composeAutoplay('aurora', undefined, null, 'auto', null, paced), 30, 4);
+  const one = survey(composeJourney('aurora', null, 2, 'auto', { track: 30, scene: 90 }), 14, 1);
+  const make = () => composeAutoplay('aurora', 60, null, 'auto', null, paced);
+  const ph = programmeHash(make, 4096);
+  check('THE PACE can be changed, and a programme at any pace sounds the same whatever the block size',
+    // (a slow track's bars are long: a scene this short is within half its length of what was asked)
+    p.ok && p.shortest >= 7.5 && p.longest <= 22.5 && one.ok && ph === programmeHash(make, 128) && ph !== ah, `60/15: ${p.shortest.toFixed(1)}-${p.longest.toFixed(1)} s; ${ph}`);
+  // a track with a scene that asks for the studio plays on it whole, in both programmes; a forced board still wins
+  let studio = 0, off = 0, chipTracks = 0;
+  for (const pr of [composeAutoplay('aurora'), composeAutoplay('seedscene'), composeJourney('aurora', null, 6), composeJourney('seedscene', null, 6)]) {
+    for (let i = 0; i < 42; i++) {
+      const part = pr.part(i), asks = part.scenes.some((s) => SCENE_BOARD[s.style] === 'hifi');
+      if (asks) { studio++; if (part.meta.chip) off++; } else if (part.meta.chip) chipTracks++;
+    }
   }
-  check('AUTOPLAY changes scene with the music, on the bar, in every track whose era has more than one scene', ok && changes >= 80,
-    `${changes} cuts in 120 tracks`);
+  const forcedWins = trackBoardFor(['plasma', 'moonbike'], '1982', 'aurora', 'opl3') === 'opl3' && chipOfBoard(trackBoardFor(['plasma', 'moonbike'], '1982', 'aurora')) === null
+    && trackBoardFor(['kefrens', 'tunnel'], '1990', 'aurora') === boardFor('kefrens', '1990', 'aurora');
+  check('A track with a scene that asks for HI-FI plays all on HI-FI, unless a board is forced', studio > 20 && off === 0 && chipTracks > 20 && forcedWins,
+    `${studio} such tracks, ${off} on a chip; ${chipTracks} other tracks still on their era's chips`);
+  const c = cleanPace({ track: '3', scene: 'x' }), d = cleanPace({ track: 90, scene: '1000' });
+  check('A pace asked for out of range comes back in range', c.track === 12 && c.scene === 20 && d.track === 90 && d.scene === 600, JSON.stringify([c, d]));
+}
+{
+  // the picture changes track with the music: on the new track's bar line, in the overlap, within a bar of the
+  // middle where the basslines swap, and the picture's clock runs on without a jump through the cut
+  const pr = composeAutoplay('aurora');
+  let ok = true, worst = 0, seam = 0;
+  for (let i = 1; i < 60; i++) {
+    const p = pr.part(i), tr = pr.transition(i - 1), lead = -p.view.from;
+    const inSec = (p.start - p.audioStart) / SAMPLE_RATE;
+    if (lead <= 0 || lead >= inSec) ok = false;
+    worst = Math.max(worst, Math.abs(inSec - lead - inSec / 2));
+    const bars = p.scoreTimeAt(p.view.from) / p.meta.barSec;
+    if (Math.abs(bars - Math.round(bars)) > 1e-3) ok = false;
+    if (Math.abs(pr.viewStart(i) - (i * pr.partSec - lead)) > 1e-9 || pr.viewIndexAt(pr.viewStart(i) - 0.01) !== i - 1 || pr.viewIndexAt(pr.viewStart(i)) !== i) ok = false;
+    // just after the slot opens and just before: the new track's clock is continuous at its slot's start
+    seam = Math.max(seam, Math.abs(p.scoreTimeAt(-1e-3) - p.scoreTimeAt(0)));
+    if (tr.beats <= 0) ok = false;
+  }
+  check('The picture changes track where the basslines swap, on the new track\'s bar line', ok && worst < 2.5 && seam < 0.01,
+    `at most ${worst.toFixed(2)} s from the middle of an overlap`);
 }
 {
   // each track mixes into the next beat on beat: in every overlap, a note the
@@ -387,6 +431,38 @@ check('AUTOPLAY sounds the same every time, whatever the block size', ah === pro
     worst < 0.0045 && turns > 30 && shots > 15 && same, `${shots} shots in ${turns} turns, at worst ${(worst * 1000).toFixed(1)} ms off`);
   check('The artillery\'s two sides start apart, one to each end of the island, and no shot is meant for the shooter\'s own',
     parted && meant === 0, `${meant} shots meant for its own side or thrown back`);
+}
+
+{
+  // the scanner car is driven, not drawn on a path: it stays on the road it is given, whatever the tempo; each flight
+  // clears its barrier and ends on the music's big moment; and going back replays the same drive.
+  let off = 0, late = 0, landed = 0, flights = 0, low = Infinity, same = true;
+  for (const [seed, spb, accents] of [['redsweep', 0.4348, null], ['nightdrive', 0.5, [8, 16, 32, 40]], ['hikari', 0.75, null], ['aurora', 0.33, null]]) {
+    const meta = { spb, steps: 16, barSec: spb * 4, accents };
+    const sim = new SIMS.scanner(seed, spb, meta);
+    const crossed = new Set();
+    for (let t = 0; t < 150; t += 1 / 60) {
+      sim.advanceTo(t);
+      for (const s of sim.stunts) {
+        if (crossed.has(s) || sim.Z < s.zBar) continue;
+        crossed.add(s);
+        low = Math.min(low, sim.Y - sim.roadY(sim.Z));       // the body's floor is 0.17 above this; the board and its lamps stand 1.3 high
+      }
+    }
+    off = Math.max(off, sim.maxOff);
+    for (const s of sim.stunts.filter((q) => q.T < 148)) {
+      flights++;
+      const near = sim.landings.reduce((m, v) => Math.min(m, Math.abs(v - s.T)), Infinity);
+      if (near < 0.5) { landed++; late = Math.max(late, near); }
+    }
+    const a = new SIMS.scanner(seed, spb, meta).uniforms(40), b = new SIMS.scanner(seed, spb, meta);
+    b.uniforms(70);
+    const c = b.uniforms(40);
+    for (const k of ['uScCam', 'uScCar', 'uScWheel', 'uScRoad', 'uScProp']) if (String(a[k].v) !== String(c[k].v)) same = false;
+  }
+  check('The scanner car stays on its road, clears each barrier, lands on the music\'s big moments, and going back replays the same drive',
+    off < 4.8 && flights >= 8 && landed === flights && late < 0.04 && low + 0.17 > 1.3 && same,
+    `${landed} of ${flights} landings, at worst ${(late * 1000).toFixed(0)} ms off; ${off.toFixed(1)} m from the middle of the road at most; ${(low + 0.17 - 1.3).toFixed(2)} m over the barrier at least`);
 }
 
 {

@@ -801,88 +801,757 @@ vec3 render(vec2 p, vec2 uv) {
 `;
 
 const scanner = `
-// The talking car of 80s television, as an idea: a black car coming down a
-// night road straight at us, the red light in its nose sweeping left and right
-// - one pass on every beat, a trail fading behind it. The road rushes faster
-// as the music builds; the headlights glow brighter on the kick.
+// The talking car of 80s television, as an idea: a low black wedge on a desert
+// highway at dusk, a red light sweeping in its nose. Nothing here is drawn on a
+// path: the car is a simulation (src/core/sims.js) - a driver, tyres, four springs
+// - on a road laid out ahead of it, and this draws what its cameras see, from the
+// numbers it hands over, everything relative to the eye. The car is ray-marched
+// from one height field and its paint is nearly all reflection: the dusk, the
+// mesas, the poles going by. The music directs it: the red light passes on every
+// beat and quickens toward a stunt; the boost fires a flight's time before a big
+// moment, so the car lands on it, over the barrier; and from the driver's seat the
+// bars of the car's voice talk with the melody.
 
-// the scanner: eight red lights, lit where the sweep is, fading where it has been
-float scanAt(float x, float beats) {
+uniform vec4 uScCam[4];   // the eye: [0].w its lens; [1] right, w how fast it moves; [2] up, w 1 in the driver's seat; [3] forward
+uniform vec4 uScCar[4];   // the car: [0] where, w speed; [1] right, w steering; [2] up, w the wheels' turn; [3] nose, w the brake
+uniform vec4 uScWheel;    // how high each wheel sits in the body: front left, front right, rear left, rear right
+uniform vec4 uScZ;        // the eye past its road sample; the sweep, 0 to 2; passes a beat; the eye along a repeating stretch
+uniform vec4 uScFx;       // a landing's flash, the boost, in the air, speed
+uniform vec4 uScBar;      // the barrier: where, and which way the road runs there
+uniform vec2 uScRoad[64]; // the road's centre: across and height, every 30 m round the eye
+uniform vec4 uScProp[22]; // what stands by the road: across, along, height, kind.variation
+uniform vec4 uScPart[24]; // sparks (w > 0) and dust (w < 0)
+
+vec3 SC_H, SC_M, SC_T;    // the sky: horizon, middle, top
+vec3 scC, scR, scU, scF;  // the car
+vec2 scSun;
+float scPix;              // how large a pixel is at a metre
+
+// ---- the road ----
+vec2 scRoad(float z) {
+  float u = clamp((z + uScZ.x) / 30.0 + 31.0, 1.0, 60.99);
+  int i = int(u);
+  float f = u - float(i);
+  vec2 a = uScRoad[i - 1], b = uScRoad[i], c = uScRoad[i + 1], d = uScRoad[i + 2];
+  return b + 0.5 * f * (c - a + f * (2.0 * a - 5.0 * b + 4.0 * c - d + f * (3.0 * (b - c) + d - a)));
+}
+
+float scRoadY(float z) {
+  float u = clamp((z + uScZ.x) / 30.0 + 31.0, 1.0, 61.0);
+  int i = int(u);
+  return mix(uScRoad[i].y, uScRoad[i + 1].y, u - float(i));
+}
+
+float scGroundHit(vec3 rd) {
+  float s = -rd.y;
+  if (s < -0.045) return -1.0;
+  float t = 0.0;
+  for (int i = 0; i < 12; i++) {
+    vec3 q = rd * t;
+    float h = q.y - scRoadY(q.z);
+    if (h < 0.01 + t * 0.002) break;
+    t += h / max(s + 0.045, 0.012);
+    if (t > 1200.0) return -1.0;
+  }
+  if (s > 0.012) { vec3 q = rd * t; t += clamp((q.y - scRoad(q.z).y) / s, -2.0, 2.0); }
+  return t;
+}
+
+// ---- the dusk ----
+vec3 scSky(vec3 rd, float detail) {
+  float y = rd.y;
+  vec2 az = normalize(rd.xz + vec2(1e-4, 0.0));
+  float sun = max(dot(az, scSun), 0.0);
+  vec3 c = mix(SC_H, SC_M, smoothstep(0.0, 0.14 + 0.1 * sun, y));
+  c = mix(c, SC_T, smoothstep(0.07, 0.5, y));
+  c += SC_H * pow(sun, 6.0) * exp(-max(y, 0.0) * 11.0) * 0.6;
+  if (detail > 0.5 && y > 0.0) {
+    // thin bands of cloud, lit from under
+    vec2 s = rd.xz / (y + 0.16);
+    float n = vnoise(s * vec2(0.55, 1.6) + uSeed.xy * 9.0) * 0.6 + vnoise(s * vec2(1.3, 3.7) + 3.0) * 0.4;
+    float cl = smoothstep(0.52, 0.78, n) * smoothstep(0.015, 0.08, y) * smoothstep(0.6, 0.12, y);
+    c = mix(c, mix(SC_H * 1.1 + 0.04, SC_M * 0.55, smoothstep(0.03, 0.28, y)), cl * 0.75);
+    // the first stars
+    vec2 g = rd.xz / (y + 0.35) * 70.0;
+    if (hash12(floor(g)) > 0.986) c += vec3(0.8, 0.84, 1.0) * smoothstep(0.26, 0.03, length(fract(g) - 0.5)) * smoothstep(0.12, 0.42, y) * (0.7 + 0.5 * uHat);
+  }
+  // the mesas: far and pale, near and dark, flat on top
+  float w1 = sin(az.x * 3.1 + az.y * 1.3 + uSeed.y * 40.0) + 0.7 * sin(az.y * 7.3 - az.x * 2.1 + uSeed.z * 40.0) + 0.5 * sin(az.x * 13.0 + az.y * 5.0);
+  float w2 = sin(az.y * 5.3 + az.x * 2.7 + uSeed.z * 60.0) + 0.6 * sin(az.x * 11.0 - az.y * 4.0 + uSeed.w * 60.0);
+  float m1 = 0.012 + 0.058 * smoothstep(0.35, 0.75, w1) + 0.003 * sin(az.x * 37.0 + az.y * 23.0);
+  float m2 = 0.005 + 0.03 * smoothstep(0.45, 0.8, w2) + 0.002 * sin(az.y * 41.0 - az.x * 29.0);
+  float soft = detail > 0.5 ? 0.0015 : 0.012;
+  c = mix(c, mix(SC_M, SC_T, 0.45) * 0.8 + SC_H * 0.08, smoothstep(m1 + soft, m1 - soft, y));
+  c = mix(c, SC_T * 0.55 + SC_H * 0.03, smoothstep(m2 + soft, m2 - soft, y));
+  return c;
+}
+
+// what a polished surface sees: the sky above, the dark desert below, a horizon between
+vec3 scEnv(vec3 r) {
+  if (r.y < 0.0) return mix(vec3(0.016, 0.015, 0.02), SC_H * 0.42, exp(r.y * 9.0));
+  return scSky(r, 0.0);
+}
+
+// ---- the lights the car throws ----
+float scBeam(vec3 P) {
+  vec3 v = P - (scC + scF * 2.2 + scU * 0.32);
+  float f = dot(v, scF);
+  if (f < 0.0) return 0.0;
+  float l = dot(v, scR), u = dot(v, scU);
+  float w = 1.1 + 0.2 * f;
+  return exp(-l * l / (w * w)) * exp(-u * u / ((0.5 + 0.13 * f) * (0.5 + 0.13 * f))) / (1.0 + f * f / 1100.0) * smoothstep(1.0, 11.0, f);
+}
+
+// where along the slot the light is, -1 to 1
+float scSweep() { float ph = uScZ.y; return (ph < 1.0 ? ph : 2.0 - ph) * 2.0 - 1.0; }
+
+// the eight lamps: lit where the sweep is, fading where it has been
+float scLamp(float x) {
   float seg = (floor(clamp(x, 0.0, 0.9999) * 8.0) + 0.5) / 8.0;
-  float ph = mod(beats, 2.0);                    // 0..1 going right, 1..2 coming back
-  float a1 = mod(ph - seg, 2.0);                 // time since it passed going right
-  float a2 = mod(ph - (2.0 - seg), 2.0);         // ... and coming back
-  return exp(-min(a1, a2) * 7.0);
+  float ph = uScZ.y;
+  float a1 = mod(ph - seg, 2.0), a2 = mod(ph - (2.0 - seg), 2.0);
+  return exp(-min(a1, a2) * 5.5);
+}
+
+// ---- the ground ----
+vec3 scGround(vec3 P, vec3 rd, float t) {
+  vec2 rc = scRoad(P.z);
+  float d = P.x - rc.x, ad = abs(d);
+  float zw = P.z + uScZ.w;
+  float fw = t * scPix, fz = fw / max(-rd.y, 0.012) + uScCam[1].w * 0.006;
+  vec3 amb = mix(SC_H, SC_M, 0.45) * 0.72 + SC_T * 0.3;
+  float beam = scBeam(P);
+  // the desert: sand and scrub, its grain only where it can be seen
+  float grain = t < 90.0 ? vnoise(vec2(d, zw) * 2.3) * 0.5 + vnoise(vec2(d, zw) * 0.47) * 0.5 : 0.5;
+  vec3 sand = mix(vec3(0.3, 0.2, 0.13), vec3(0.46, 0.33, 0.21), grain);
+  vec3 alb = sand;
+  float lines = 0.0;
+  float isRoad = 1.0 - smoothstep(4.0, 4.3 + fw, ad);
+  if (isRoad > 0.0) {
+    float wear = t < 120.0 ? vnoise(vec2(d * 3.2, zw * 1.1)) * 0.5 + vnoise(vec2(d * 17.0, zw * 9.0)) * 0.5 : 0.5;
+    vec3 tar = vec3(0.1, 0.1, 0.112) * (1.0 + (wear - 0.5) * 0.34 / (1.0 + fz * 2.0));
+    // two darker tracks worn by the tyres
+    tar *= 1.0 - 0.14 * exp(-pow((ad - 1.85) * 0.8, 2.0));
+    alb = mix(alb, tar, isRoad);
+    // the edge lines, and the dashes down the middle, smearing as the eye goes by
+    float wl = max(0.07, fw * 1.2);
+    float edge = (1.0 - smoothstep(0.0, wl, abs(ad - 3.55) - 0.055)) * 0.075 / (0.075 + fw * 0.8 + 0.001);
+    alb = mix(alb, vec3(0.75, 0.74, 0.7), edge * isRoad);
+    float dw = fz / 10.0;
+    float f = fract(zw / 10.0);
+    float dash = dw > 0.6 ? 0.4 : clamp((0.2 - abs(f - 0.2) + dw * 0.5) / max(dw, 0.001), 0.0, 1.0);
+    float mid = (1.0 - smoothstep(0.0, wl, ad - 0.06)) * dash * 0.08 / (0.08 + fw * 0.8);
+    alb = mix(alb, vec3(0.86, 0.66, 0.2), mid);
+    lines = max(edge, mid);
+  }
+  vec3 col = alb * (amb * 1.05 + vec3(1.0, 0.95, 0.82) * beam * (2.4 + 1.5 * isRoad + 5.0 * lines));
+  // the red light lies on the road ahead, swinging with the sweep
+  vec3 pool = scC + scF * 5.5 + scR * scSweep() * 1.7;
+  vec3 pr = P - pool;
+  float near = exp(-dot(pr, pr) * 0.16);
+  col += vec3(1.0, 0.06, 0.03) * alb * near * (1.3 + 1.7 * uKick) * step(0.0, dot(P - scC, scF) - 1.0);
+  // brake and tail lamps warm the road behind
+  vec3 tl = P - (scC - scF * 3.5);
+  col += vec3(1.0, 0.05, 0.03) * alb * exp(-dot(tl, tl) * 0.14) * (0.6 + 2.6 * uScCar[3].w);
+  // the road holds the sky at a low angle, like the heat over it
+  if (isRoad > 0.0) {
+    float fr = pow(1.0 + rd.y, 22.0) * 0.62 * smoothstep(35.0, 130.0, t);
+    vec3 rr = vec3(rd.x, -rd.y, rd.z);
+    col = mix(col, scSky(rr, 0.0) * 0.8, fr * isRoad);
+  }
+  // the cat's eyes down the middle catch the headlamps
+  if (t < 180.0 && ad < 0.5) {
+    float ce = length(vec2(d / max(fw * 1.4, 0.05), (fract(zw / 10.0 + 0.5) - 0.5) * 10.0 / max(fz * 0.4, 0.08)));
+    col += vec3(1.0, 0.85, 0.5) * smoothstep(1.0, 0.2, ce) * beam * 3.0;
+  }
+  // the car's shadow: under it, and let go of it when it flies
+  vec3 v = P - scC;
+  vec2 hq = vec2(dot(v.xz, normalize(scR.xz)), dot(v.xz, normalize(scF.xz)));
+  float lift = max(scC.y - rc.y, 0.0);
+  vec2 bd = abs(hq) - vec2(0.88, 2.35);
+  float sd = length(max(bd, 0.0)) + min(max(bd.x, bd.y), 0.0);
+  float pen = 0.12 + lift * 0.42;
+  col *= 1.0 - smoothstep(pen, -pen, sd) * 0.9 / (1.0 + lift * 0.45);
+  // the boost's fire lights the ground under it
+  col += vec3(1.0, 0.42, 0.1) * alb * uScFx.y * 14.0 * exp(-dot(hq, hq) * 0.3) / (1.0 + lift * lift * 0.5);
+  // haze at distance
+  col = mix(col, SC_H * 0.62 + SC_M * 0.2, 1.0 - exp(-t * 0.0021));
+  return col;
+}
+
+// ---- what stands by the road: each a cut-out turned to face the eye ----
+float scPropD(float kind, float v, vec2 q, out vec3 alb) {
+  float d = 1e3;
+  if (kind < 1.0) {
+    // a telegraph pole and its crossarm
+    d = max(abs(q.x) - 0.11, q.y - 8.6);
+    d = min(d, length(max(abs(q - vec2(0.0, 8.0)) - vec2(1.15, 0.05), 0.0)));
+    d = min(d, length(max(abs(q - vec2(0.0, 7.3)) - vec2(0.85, 0.04), 0.0)));
+    alb = vec3(0.17, 0.12, 0.09);
+  } else if (kind < 2.0) {
+    // a tall cactus, its arms by the seed
+    float s = 0.75 + 0.75 * v;
+    vec2 u = q / s;
+    d = sdSeg(u, vec2(0.0, 0.0), vec2(0.0, 4.3)) - 0.26;
+    float side = v > 0.5 ? 1.0 : -1.0;
+    d = min(d, min(sdSeg(u, vec2(0.0, 1.9), vec2(side * 0.85, 1.9)), sdSeg(u, vec2(side * 0.85, 1.9), vec2(side * 0.85, 3.3))) - 0.17);
+    if (fract(v * 7.0) > 0.3) d = min(d, min(sdSeg(u, vec2(0.0, 2.5), vec2(-side * 0.7, 2.5)), sdSeg(u, vec2(-side * 0.7, 2.5), vec2(-side * 0.7, 3.6))) - 0.14);
+    d *= s;
+    alb = vec3(0.13, 0.22, 0.13);
+  } else if (kind < 3.0) {
+    // a rock, or a bush of dry scrub
+    float a = atan(q.y, q.x * 0.8);
+    float s = 0.6 + 1.6 * fract(v * 5.0);
+    if (fract(v * 3.0) < 0.45) {
+      d = length(q * vec2(0.62, 1.0)) - s * (0.82 + 0.16 * sin(a * 5.0 + v * 30.0) + 0.09 * sin(a * 11.0 + v * 9.0));
+      alb = vec3(0.3, 0.2, 0.15);
+    } else {
+      d = length(q * vec2(0.8, 1.15)) - s * 0.62 * (0.8 + 0.2 * sin(a * 19.0 + v * 40.0) + 0.14 * sin(a * 41.0));
+      alb = vec3(0.24, 0.23, 0.13);
+    }
+  } else {
+    // a road sign on its post, nothing written on it
+    d = max(abs(q.x) - 0.05, q.y - 2.4);
+    vec2 u = q - vec2(0.0, 2.45);
+    float plate = max(abs(u.x) + abs(u.y) - 0.62, -1.0);
+    alb = vec3(0.3);
+    if (plate < d) { d = plate; alb = vec3(0.85, 0.6, 0.12); }
+  }
+  return d;
+}
+
+vec4 scProps(vec3 rd, inout float tBest) {
+  vec3 col = vec3(0.0);
+  float hit = 0.0;
+  float rl = length(rd.xz);
+  if (rl < 0.02) return vec4(0.0);
+  vec2 a = rd.xz / rl;
+  vec3 amb = mix(SC_H, SC_M, 0.5) * 0.55 + SC_T * 0.2;
+  for (int i = 0; i < 22; i++) {
+    vec4 pr = uScProp[i];
+    if (pr.w < 0.0) break;
+    float u = a.x * pr.y - a.y * pr.x;
+    if (abs(u) > 3.0) continue;
+    float along = dot(pr.xy, a);
+    if (along < 0.3) continue;
+    float t = along / rl;
+    if (t > tBest) continue;
+    float h = rd.y * t - pr.z;
+    if (h < -0.5 || h > 10.0) continue;
+    float kind = floor(pr.w), v = pr.w - kind;
+    vec3 alb;
+    float d = scPropD(kind, v, vec2(u, h), alb);
+    float aa = t * scPix * 1.1;
+    if (d < aa && h > -0.02) {
+      float cov = smoothstep(aa, -aa, d);
+      vec3 P = rd * t;
+      // the dusk from one side, the headlamps where they reach, haze with distance
+      float rim = 0.75 + 0.5 * u / max(0.3 + abs(u), 0.5);
+      vec3 c = alb * (amb * rim + vec3(1.0, 0.95, 0.85) * scBeam(P) * (kind > 2.9 ? 9.0 : 2.5));
+      c = mix(c, SC_H * 0.62 + SC_M * 0.2, 1.0 - exp(-t * 0.0021));
+      col = c;
+      hit = cov;
+      tBest = t;
+    }
+  }
+  return vec4(col, hit);
+}
+
+// the wires between the poles: where the ray crosses their line
+vec4 scWires(vec3 rd, float tMax) {
+  if (abs(rd.x) < 0.015 || rd.y < 0.0) return vec4(0.0);
+  float t = (scRoad(0.0).x + 11.5) / rd.x;
+  if (t < 0.5 || t > 320.0) return vec4(0.0);
+  t = (scRoad(rd.z * t).x + 11.5) / rd.x;
+  if (t < 1.0 || t > min(tMax, 300.0)) return vec4(0.0);
+  vec3 P = rd * t;
+  float f = fract((P.z + uScZ.x) / 30.0);
+  float sag = (2.0 * f - 1.0);
+  float y = P.y - scRoad(P.z).y - (7.05 + 0.7 * sag * sag);
+  float w = max(t * scPix * 0.9, 0.012);
+  float m = 1.0 - smoothstep(0.0, w, min(abs(y), abs(y - 0.7)));
+  return vec4(SC_T * 0.4, m * min(1.0, 0.02 / w + 0.25));
+}
+
+// ---- the barrier: a board across the road, on legs, its lamps flashing ----
+vec4 scBarrier(vec3 rd, inout float tBest) {
+  if (abs(uScBar.z) > 700.0) return vec4(0.0);
+  float c = cos(uScBar.w), s = sin(uScBar.w);
+  vec3 o = -uScBar.xyz;
+  vec3 ro2 = vec3(c * o.x - s * o.z, o.y, s * o.x + c * o.z);
+  vec3 rd2 = vec3(c * rd.x - s * rd.z, rd.y, s * rd.x + c * rd.z);
+  vec3 inv = 1.0 / (rd2 + vec3(1e-5));
+  vec3 lo = vec3(-4.3, 0.0, -0.1), hi = vec3(4.3, 1.12, 0.1);
+  vec3 t0 = (lo - ro2) * inv, t1 = (hi - ro2) * inv;
+  vec3 tn = min(t0, t1), tf = max(t0, t1);
+  float ta = max(max(tn.x, tn.y), tn.z), tb = min(min(tf.x, tf.y), tf.z);
+  if (tb < ta || ta < 0.0 || ta > tBest) return vec4(0.0);
+  vec3 q = ro2 + rd2 * ta;
+  // the legs stand clear below the board
+  if (q.y < 0.6) {
+    float leg = abs(fract((q.x + 4.3) / 2.15 + 0.5) - 0.5) * 2.15;
+    if (leg > 0.08) return vec4(0.0);
+  }
+  float beam = scBeam(rd * ta);
+  vec3 alb = fract((q.x + q.y) * 0.8) < 0.5 ? vec3(0.9, 0.62, 0.08) : vec3(0.03);
+  if (q.y < 0.6) alb = vec3(0.1);
+  vec3 c2 = alb * (mix(SC_H, SC_M, 0.5) * 0.5 + vec3(1.0, 0.95, 0.85) * beam * 5.0);
+  tBest = ta;
+  return vec4(c2, 1.0);
+}
+
+// ---- the car, in its own frame: +z the nose, +y up, y = 0 the road at rest ----
+float scSmin(float a, float b, float k) { float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0); return mix(b, a, h) - k * h * (1.0 - h); }
+float scSmax(float a, float b, float k) { return -scSmin(-a, -b, k); }
+
+// the lower body's top: the wedge from nose to tail, with its bulges
+float scTopLow(float ax, float z) {
+  float t = 0.6 + 0.305 * clamp((2.45 - z) / 1.85, 0.0, 1.0) + 0.04 * smoothstep(0.6, -2.4, z);
+  t -= 0.085 * ax * ax;                                        // the crown across it
+  float bw = 0.34 + 0.13 * smoothstep(0.8, 2.2, z);            // the raised middle of the bonnet
+  t += 0.034 * smoothstep(bw + 0.035, bw - 0.035, ax) * smoothstep(2.32, 1.9, z) * smoothstep(0.55, 0.85, z);
+  float zf = clamp(1.0 - abs(z - 1.33) / 0.85, 0.0, 1.0), zr = clamp(1.0 - abs(z + 1.23) / 0.95, 0.0, 1.0);
+  t += 0.05 * zf * zf * (3.0 - 2.0 * zf) * smoothstep(0.5, 0.78, ax);    // over the front wheels
+  t += 0.048 * zr * zr * (3.0 - 2.0 * zr) * smoothstep(0.55, 0.82, ax);  // the hips over the rear ones
+  t += 0.028 * smoothstep(-2.2, -2.36, z);                     // the lip at the tail
+  return t;
+}
+
+// the glasshouse's top: a raked screen bowed in plan, a short roof, a long bubble of glass behind
+float scTopCab(float ax, float z) {
+  float zz = z + 0.4 * ax * ax;
+  float screen = 0.89 + (0.62 - zz) * 0.49;
+  float back = 0.975 + (zz + 2.08) * 0.2;
+  float t = scSmin(scSmin(screen, 1.252, 0.05), back, 0.07);
+  float wc = 0.77 - 0.1 * smoothstep(-1.0, -2.1, z);
+  return scSmin(t, 0.87 + (wc - ax) * 2.7, 0.05);
+}
+
+float scBody(vec3 q) {
+  float ax = abs(q.x), z = q.z, y = q.y;
+  float top = scSmax(scTopLow(ax, z), scTopCab(ax, z), 0.012);
+  // the plan: a shallow V at the nose; the upper face leaning back; a band set in for the lamps
+  float zf = 2.45 - 0.3 * ax * sqrt(ax);
+  zf -= 0.55 * max(y - 0.47, 0.0);
+  zf -= 0.055 * smoothstep(0.235, 0.25, y) * smoothstep(0.37, 0.355, y);
+  float zb = -2.42 + 0.08 * ax * ax;
+  float w = 0.925 - 0.03 * max(1.0 - z * z, 0.0) - 0.12 * smoothstep(1.9, 2.45, z) - 0.05 * smoothstep(0.42, 0.2, y) - 0.03 * smoothstep(-1.9, -2.42, z) - 0.035 * smoothstep(0.58, 0.86, y);
+  float d = scSmax(y - top, ax - w, 0.045);
+  d = max(d, z - zf);
+  d = max(d, zb - z);
+  d = max(d, (z > 1.9 ? 0.15 : 0.19) - y);
+  // the wheel arches
+  float wa = min(length(vec2(z - 1.33, y - 0.33)), length(vec2(z + 1.23, y - 0.33)));
+  d = max(d, min(0.395 - wa, ax - 0.56));
+  // the mirrors
+  vec3 m = vec3(ax - 0.885, y - 0.925, z - 0.5);
+  d = min(d, (length(m / vec3(0.07, 0.04, 0.038)) - 1.0) * 0.035);
+  return d;
+}
+
+float scWheel(vec3 q, out vec3 w) {
+  bool lf = q.x < 0.0, fr = q.z > 0.05;
+  float wy = fr ? (lf ? uScWheel.x : uScWheel.y) : (lf ? uScWheel.z : uScWheel.w);
+  w = q - vec3(lf ? -0.79 : 0.79, wy, fr ? 1.33 : -1.23);
+  if (fr) {
+    float c = cos(uScCar[1].w), s = sin(uScCar[1].w);
+    w = vec3(c * w.x - s * w.z, w.y, s * w.x + c * w.z);
+  }
+  vec2 e = vec2(length(w.yz) - 0.3, abs(w.x) - 0.1);
+  return min(max(e.x, e.y), 0.0) + length(max(e, 0.0)) - 0.028;
+}
+
+float scMap(vec3 q) {
+  vec3 w;
+  return min(scBody(q) * 0.62, scWheel(q, w));
+}
+
+// march the ray through the car's box; the distance along it, or -1
+float scCarHit(vec3 ro, vec3 rd) {
+  vec3 inv = 1.0 / (rd + vec3(1e-5));
+  vec3 lo = vec3(-1.08, 0.0, -2.52), hi = vec3(1.08, 1.32, 2.52);
+  vec3 t0 = (lo - ro) * inv, t1 = (hi - ro) * inv;
+  vec3 tn = min(t0, t1), tf = max(t0, t1);
+  float ta = max(max(max(tn.x, tn.y), tn.z), 0.0), tb = min(min(tf.x, tf.y), tf.z);
+  if (tb < ta) return -1.0;
+  float t = ta;
+  for (int i = 0; i < 30; i++) {
+    vec3 q = ro + rd * t;
+    float hull = max(q.y - mix(1.29, 0.68, clamp((q.z - 0.2) / 2.3, 0.0, 1.0)), abs(q.x) - 1.0) * 0.9;
+    float d = hull > 0.14 ? hull : scMap(q);
+    if (d < 0.0012 + t * 0.00035) return t;
+    t += max(d, 0.004 + t * 0.0012);
+    if (t > tb) return -1.0;
+  }
+  return t;
+}
+
+// the paint and the glass, the lamps and the light in the nose
+vec3 scCarColour(vec3 q, vec3 rdW, vec3 Pw, float t) {
+  const vec2 e = vec2(0.0035, -0.0035);
+  vec3 n = normalize(e.xyy * scMap(q + e.xyy) + e.yyx * scMap(q + e.yyx) + e.yxy * scMap(q + e.yxy) + e.xxx * scMap(q + e.xxx));
+  vec3 nw = normalize(scR * n.x + scU * n.y + scF * n.z);
+  float ax = abs(q.x), z = q.z, y = q.y;
+  float cosV = max(dot(nw, -rdW), 0.0);
+  vec3 r = reflect(rdW, nw);
+  vec3 env = scEnv(r);
+  // the poles going by, sliding across the shine
+  if (r.y > 0.02 && r.x > 0.06) {
+    float zh = Pw.z + uScZ.w + r.z / r.x * 10.5;
+    float fh = abs(fract(zh / 30.0) - 0.5) * 30.0;
+    env *= 1.0 - 0.8 * smoothstep(0.0, 0.5, 0.22 - (15.0 - fh) * 0.05);
+  }
+  float fres = pow(1.0 - cosV, 5.0);
+  vec3 w;
+  float wd = scWheel(q, w);
+  vec3 col;
+  // ---- a wheel
+  if (wd < scBody(q) * 0.62 + 0.002) {
+    float rr = length(w.yz);
+    float rim = 0.0;
+    vec3 tyre = vec3(0.012) + 0.05 * nw.y * max(nw.y, 0.0) * mix(SC_H, SC_M, 0.5);
+    if (ax > 0.82 && rr < 0.215) {
+      // a dark dish with a bright ring, its spokes a blur at speed
+      float a = atan(w.y, w.z) + uScCar[2].w;
+      float blur = smoothstep(4.0, 22.0, uScCar[0].w);
+      float spokes = mix(step(0.5, fract(a * 6.0 / 6.28318)), 0.5, blur);
+      rim = smoothstep(0.215, 0.2, rr) * smoothstep(0.175, 0.19, rr);
+      col = vec3(0.02 + 0.04 * spokes) * (0.6 + env) + rim * (env * 0.22 + vec3(0.06));
+    } else {
+      col = tyre;
+    }
+    return col;
+  }
+  // ---- what the body is made of here: 0 paint, 1 glass, 2 dull black
+  float mat = 0.0;
+  float low = scTopLow(ax, z), cab = scTopCab(ax, z);
+  float zz = z + 0.4 * ax * ax;
+  bool onCab = cab > low + 0.004 && y > low - 0.01;
+  if (onCab) {
+    if (zz < 0.62 && zz > -0.13) mat = ax < 0.645 - 0.13 * (0.62 - zz) ? 1.0 : 0.0;   // the screen, its pillars in paint
+    if (zz <= -0.13 && zz > -0.72) mat = abs(q.x) < 0.045 ? 0.0 : 1.0;      // the roof's two dark glass panels
+    if (zz <= -0.72 && zz > -2.03) mat = ax < 0.63 - 0.12 * smoothstep(-1.0, -2.1, z) ? 1.0 : 0.0;   // the bubble of glass behind
+    if (n.x * n.x > 0.42 && y > 0.915 && z < 0.34 && z > -1.25) mat = 1.0;  // the side windows
+  }
+  if ((y < 0.3 && z < 1.85) || n.y < -0.6) mat = 2.0;
+  if (ax > 0.81 && y > 0.87 && z > 0.42 && z < 0.58) mat = 2.0;     // the mirrors                            // the sills
+  if (z > 0.6 && z < 0.74 && !onCab && ax < 0.74) mat = 2.0;     // the cowl's dark strip
+  float gloss = mat < 0.5 ? 0.13 : (mat < 1.5 ? 0.075 : 0.02);
+  float graze = mat > 1.5 ? 0.35 : (mat > 0.5 ? 0.42 : 0.62);
+  // (from above, the paint holds the sky's glow; what faces us holds less of the horizon)
+  if (mat < 0.5) { env += SC_M * 0.3 * max(r.y, 0.0); if (n.z > 0.55) gloss *= 0.62; }
+  col = env * (gloss + (1.0 - gloss) * fres * graze);
+  col += vec3(0.008, 0.008, 0.011) + mix(SC_H, SC_M, 0.6) * 0.05 * max(nw.y, 0.0) * (mat > 1.5 ? 0.3 : 1.0);
+  // a highlight along the sun's line of the sky
+  vec3 sunD = normalize(vec3(scSun.x, 0.12, scSun.y));
+  col += SC_H * pow(max(dot(r, sunD), 0.0), 60.0) * (mat > 1.5 ? 0.1 : 1.1);
+  // the headlamps' spill and the boost's fire from below
+  col += vec3(1.0, 0.42, 0.1) * uScFx.y * max(-nw.y - 0.3, 0.0) * 0.22;
+  if (mat > 0.5 && mat < 1.5) {
+    // behind the screen: the dash's small lights, low down
+    if (zz < 0.62 && zz > -0.13) {
+      float dl = smoothstep(0.32, 0.56, zz);
+      vec2 g = vec2(q.x * 26.0, zz * 16.0);
+      float on = step(0.72, hash12(floor(g))) * (0.5 + 0.5 * sin(uTime * 7.0 + hash12(floor(g) + 3.0) * 40.0));
+      vec3 lamp = hash12(floor(g) + 1.0) > 0.45 ? vec3(1.0, 0.12, 0.05) : vec3(1.0, 0.55, 0.1);
+      col += lamp * on * dl * 0.35 * smoothstep(0.5, 0.1, length(fract(g) - 0.5));
+    }
+  }
+  // ---- the seams and lamps that make the car read
+  if (n.y > 0.5 && z > 1.0 && !onCab) {
+    // the headlamp lids lying shut at the corners of the bonnet
+    vec2 l = abs(vec2(ax - 0.595, z - 1.87)) - vec2(0.2, 0.27);
+    float lid = length(max(l, 0.0)) + min(max(l.x, l.y), 0.0);
+    col *= 1.0 - 0.8 * smoothstep(0.013, 0.004, abs(lid));
+  }
+  if (n.x * n.x > 0.3 && !onCab) {
+    // the door's cuts, the strip along the flank, the amber lamp ahead of the wheel
+    float seam = min(abs(z - 0.42), abs(z + 0.95));
+    col *= 1.0 - 0.8 * smoothstep(0.012, 0.004, seam) * step(0.28, y) * step(y, 0.88);
+    col = mix(col, vec3(0.012), smoothstep(0.018, 0.006, abs(y - 0.47)) * 0.9);
+    if (z > 1.74 && z < 1.98 && y > 0.5 && y < 0.56) col = vec3(0.75, 0.32, 0.03) * (0.35 + 0.3 * uHat);
+  }
+  // the nose
+  if (z > 1.95 && n.z > 0.15) {
+    float halfW = 0.26 + (y - 0.515) * 0.45;
+    if (y > 0.515 && y < 0.598 && ax < halfW) {
+      // the slot: dark glass, eight lamps, the one lit burning hot
+      float sx = (q.x + halfW) / (2.0 * halfW);
+      float cell = fract(sx * 8.0);
+      float lit = scLamp(sx) * (0.9 + 0.8 * uKick);
+      float shape = smoothstep(0.0, 0.09, cell) * smoothstep(1.0, 0.91, cell) * smoothstep(0.515, 0.525, y) * smoothstep(0.598, 0.588, y);
+      col = vec3(0.09, 0.004, 0.004) + env * 0.1;
+      col += vec3(1.0, 0.07, 0.03) * lit * shape * 2.6 + vec3(1.0, 0.55, 0.35) * pow(lit, 4.0) * shape * 1.8;
+    } else if (y < 0.365 && y > 0.235) {
+      // the dark band across the nose and its lamps, the beak of the body coming down between them
+      if (!(ax < 0.27 && y > 0.3)) {
+        col = env * 0.05 + vec3(0.006);
+        float g = mod(ax - 0.31, 0.165);
+        float cellN = floor((ax - 0.31) / 0.165);
+        if (ax > 0.31 && cellN < 3.0 && g < 0.125 && y > 0.272 && y < 0.326) {
+          vec2 lens = vec2((g - 0.0625) / 0.0625, (y - 0.299) / 0.027);
+          float ribs = 0.72 + 0.28 * sin(g * 240.0);
+          col = vec3(1.0, 0.95, 0.8) * (0.8 + 0.6 * uKick) * ribs * (0.55 + 0.45 * (1.0 - dot(lens, lens) * 0.5));
+        }
+      }
+    } else if (y < 0.235 && y > 0.19 && ax < 0.56) {
+      col = env * 0.04 + vec3(0.005);                            // the chin's air slot
+    }
+  }
+  // the tail: a black panel the width of the car, a red line along its foot
+  if (z < -2.2 && n.z < -0.3) {
+    if (y > 0.6 && y < 0.83) {
+      col = env * 0.05 + vec3(0.006);
+      float slat = smoothstep(0.3, 0.5, abs(fract(y * 40.0) - 0.5));
+      col += vec3(0.5, 0.02, 0.01) * (0.14 + 0.9 * uScCar[3].w) * slat * step(0.05, ax);
+      if (y < 0.635) col = vec3(1.0, 0.06, 0.03) * (0.7 + 1.5 * uScCar[3].w);
+    }
+    if (y < 0.33) col = vec3(0.008);
+  }
+  return col;
+}
+
+// ---- light in the air ----
+vec2 scScreen(vec3 v) {
+  float z = dot(v, uScCam[3].xyz);
+  if (z < 0.2) return vec2(1e3);
+  return vec2(dot(v, uScCam[1].xyz), dot(v, uScCam[2].xyz)) * uScCam[0].w / z;
+}
+
+vec3 scFlares(vec2 p, float tScene) {
+  vec3 c = vec3(0.0);
+  vec3 toEye = -scC;
+  float facing = dot(normalize(toEye), scF);
+  if (facing > 0.0) {
+    float s = smoothstep(0.0, 0.3, facing);
+    // the light in the nose: a hot point, a wide soft glow and a streak across the lens
+    vec3 lp = scC + scF * 2.4 + scU * 0.56 + scR * scSweep() * 0.27;
+    vec2 d = p - scScreen(lp);
+    float dist = length(lp);
+    float size = clamp(uScCam[0].w * 3.0 / dist, 0.02, 1.2);
+    float q = dot(d, d) / (size * size);
+    c += vec3(1.0, 0.07, 0.03) * s * (0.55 + 0.5 * uKick) * (0.7 * exp(-q * 900.0) + 0.1 * exp(-q * 110.0) + 0.016 * exp(-q * 9.0));
+    c += vec3(1.0, 0.12, 0.05) * s * 0.11 * exp(-abs(d.y) / (0.012 * size + 0.002)) * exp(-abs(d.x) / (size * 0.9 + 0.05));
+    // the headlamps
+    for (int k = 0; k < 2; k++) {
+      float sd = k == 0 ? -1.0 : 1.0;
+      vec3 hl = scC + scF * 2.32 + scU * 0.3 + scR * sd * 0.56;
+      vec2 hd = p - scScreen(hl);
+      float hq = dot(hd, hd) / (size * size);
+      c += vec3(1.0, 0.93, 0.78) * s * s * (0.7 + 0.4 * uKick) * (0.55 * exp(-hq * 900.0) + 0.1 * exp(-hq * 60.0) + 0.012 * exp(-hq * 5.0));
+      c += vec3(0.75, 0.82, 1.0) * s * s * 0.07 * exp(-abs(hd.y) / (0.008 * size + 0.002)) * exp(-abs(hd.x) / (size * 1.3 + 0.08));
+    }
+  } else {
+    // the tail lamps from behind
+    float s = smoothstep(0.0, -0.4, facing);
+    for (int k = 0; k < 2; k++) {
+      float sd = k == 0 ? -1.0 : 1.0;
+      vec3 hl = scC - scF * 2.44 + scU * 0.66 + scR * sd * 0.55;
+      vec2 hd = p - scScreen(hl);
+      float dist = length(hl);
+      float size = clamp(uScCam[0].w * 3.0 / dist, 0.02, 1.2);
+      float hq = dot(hd, hd) / (size * size);
+      c += vec3(1.0, 0.06, 0.03) * s * (0.22 + 0.9 * uScCar[3].w) * (exp(-hq * 110.0) + 0.07 * exp(-hq * 10.0));
+    }
+  }
+  // the boost: two jets of fire under the car, and at the tail
+  if (uScFx.y > 0.01) {
+    for (int k = 0; k < 2; k++) {
+      float sd = k == 0 ? -1.0 : 1.0;
+      vec3 j = scC - scF * 2.0 + scU * 0.2 + scR * sd * 0.5;
+      vec2 hd = p - scScreen(j);
+      float dist = length(j);
+      float size = clamp(uScCam[0].w * 3.0 / dist, 0.02, 1.2);
+      float hq = dot(hd, hd) / (size * size);
+      float fl = 0.75 + 0.35 * sin(uTime * 83.0 + sd * 2.0);
+      c += mix(vec3(1.0, 0.3, 0.05), vec3(1.0, 0.85, 0.5), fl * 0.5) * uScFx.y * fl * (0.8 * exp(-hq * 170.0) + 0.06 * exp(-hq * 12.0));
+    }
+  }
+  return c;
+}
+
+// the headlamps' beams in the dusty air, seen from outside them
+vec3 scHaze(vec3 rd, float tScene) {
+  vec3 mid = scC + scF * 22.0;
+  float al = dot(mid, rd);
+  vec3 off = mid - rd * al;
+  if (dot(off, off) > 420.0) return vec3(0.0);
+  float a = max(al - 28.0, 0.5), b = min(al + 28.0, tScene);
+  if (b <= a) return vec3(0.0);
+  float dt = (b - a) / 4.0, t = a + dt * hash12(gl_FragCoord.xy + fract(uTime));
+  float s = 0.0;
+  for (int i = 0; i < 4; i++) { s += scBeam(rd * t); t += dt; }
+  return vec3(1.0, 0.94, 0.82) * s * dt * 0.0085;
+}
+
+vec3 scParticles(vec3 col, vec3 rd, float tScene) {
+  for (int i = 0; i < 24; i++) {
+    vec4 e = uScPart[i];
+    if (e.w == 0.0) break;
+    float along = dot(e.xyz, rd);
+    if (along < 0.2 || along > tScene + 1.0) continue;
+    vec3 off = e.xyz - rd * along;
+    float pp = dot(off, off);
+    if (e.w > 0.0) {
+      float r = max(along * scPix * 1.6, 0.03);
+      col += vec3(1.0, 0.62, 0.2) * e.w * (exp(-pp / (r * r)) * 2.4 + 0.25 * exp(-pp / (r * r * 16.0)));
+    } else {
+      float life = -e.w;
+      float r = 0.7 + 2.0 * (1.0 - life);
+      float a = exp(-pp / (r * r)) * life * 0.55;
+      col = mix(col, mix(SC_H, vec3(0.5, 0.4, 0.3), 0.55) * 0.8, a);
+    }
+  }
+  return col;
+}
+
+// ---- from the driver's seat: the screen, the bonnet ahead, the dash and the car's voice ----
+vec3 scDash(vec2 p, vec3 world) {
+  vec3 col = world;
+  float x = p.x, y = p.y;
+  float ax = abs(x);
+  // the bonnet going away from the screen, the sky along it, the red light's glow at its far edge
+  float hb = -0.09 - 0.07 * ax * ax;
+  if (y < hb) {
+    float u = (hb - y) / 0.2;
+    vec3 sh = mix(SC_H * 0.34 + SC_M * 0.06, SC_M * 0.06, smoothstep(0.0, 0.7, u));
+    sh *= 1.0 - 0.45 * smoothstep(0.012, 0.0, abs(ax - 0.17 - u * 0.14));
+    sh += vec3(0.012);
+    col = sh;
+    float sw = scSweep();
+    col += vec3(1.0, 0.07, 0.03) * exp(-pow((x - sw * 0.09) * 9.0, 2.0)) * exp(-u * 9.0) * (0.7 + 0.5 * uKick);
+  }
+  // the screen's frame: the pillars, the roof, the mirror
+  float pil = ax - (0.78 - y * 0.42);
+  if (pil > 0.0) col = vec3(0.012) + SC_M * 0.015;
+  if (y > 0.43 - 0.03 * ax * ax) col = vec3(0.01);
+  vec2 mq = abs(p - vec2(0.0, 0.405)) - vec2(0.17, 0.038);
+  if (max(mq.x, mq.y) < 0.0) col = mix(SC_T * 0.3, SC_H * 0.3, smoothstep(0.37, 0.42, y));
+  // the dash
+  float top = -0.2 - 0.05 * ax * ax;
+  if (y < top) {
+    col = vec3(0.016, 0.016, 0.02) + vec3(0.012) * smoothstep(top - 0.05, top, y);
+    // the small lights: rows in amber, red and green, flickering with the music
+    vec2 g = vec2(x * 34.0, y * 34.0);
+    vec2 cell = floor(g);
+    bool panel = (ax > 0.3 && ax < 0.72 && y > -0.44 && y < -0.26);
+    if (panel && mod(cell.y, 3.0) < 1.5) {
+      float h = hash12(cell);
+      float rowOn = step(fract(x * 1.5 + cell.y * 0.37), 0.25 + 0.75 * (0.5 + 0.5 * sin(uTime * 2.0 + cell.y)) * (0.35 + uArp + uHat));
+      vec3 lamp = h > 0.66 ? vec3(1.0, 0.1, 0.04) : (h > 0.33 ? vec3(1.0, 0.56, 0.08) : vec3(0.25, 1.0, 0.25));
+      vec2 fr = abs(fract(g) - 0.5);
+      col += lamp * rowOn * (0.25 + 1.2 * h) * step(fr.x, 0.42) * step(fr.y, 0.34);
+    }
+    // the speed, in red segments on the left
+    vec2 sq = (p - vec2(-0.66, -0.29)) / 0.03;
+    float mph = floor(uScFx.w * 2.237 + 0.5);
+    for (int k = 0; k < 3; k++) {
+      float pw = k == 0 ? 100.0 : (k == 1 ? 10.0 : 1.0);
+      int dg = int(mod(floor(mph / pw), 10.0));
+      vec2 dq = sq - vec2(float(k) * 1.5, 0.0);
+      if (dq.x > 0.0 && dq.x < 1.0 && dq.y > 0.0 && dq.y < 2.0) col = mix(col, vec3(1.0, 0.1, 0.04), digit7(dq, dg));
+    }
+    // the car's voice: three columns of bars opening from the middle, talking with the melody
+    vec2 c = p - vec2(0.0, -0.355);
+    float box = max(abs(c.x) - 0.215, abs(c.y) - 0.125);
+    if (box < 0.0) {
+      col = vec3(0.018, 0.003, 0.003);
+      float amt[3];
+      amt[0] = clamp(uBass * 0.8 + uPad * 0.25, 0.0, 1.0);
+      amt[1] = clamp(uLead * 0.9 + uArp * 0.5 + uKick * 0.15, 0.0, 1.0);
+      amt[2] = clamp(uStab * 0.5 + uSnare * 0.55 + uArp * 0.4, 0.0, 1.0);
+      for (int k = 0; k < 3; k++) {
+        float cx = (float(k) - 1.0) * 0.14;
+        float dx = abs(c.x - cx);
+        if (dx < (k == 1 ? 0.06 : 0.05)) {
+          float rows = 5.0;
+          float row = floor(abs(c.y) / 0.115 * rows);
+          float rf = fract(abs(c.y) / 0.115 * rows);
+          float lit = step((row + 0.5) / rows, amt[k] * (k == 1 ? 1.0 : 0.82) + 0.06);
+          float seg = step(rf, 0.68) * step(abs(c.y), 0.115);
+          float hot = 1.0 - row / rows * 0.4;
+          col += vec3(1.0, 0.07, 0.03) * seg * (0.1 + lit * 1.9 * hot);
+        }
+      }
+    }
+    // its glow on the glass above and the dark round it
+    col += vec3(1.0, 0.07, 0.03) * 0.09 * (uLead + uBass * 0.6) * exp(-dot(c, c) * 9.0);
+    // the wheel, in shadow against the lights
+    vec2 wq = (p - vec2(-0.43, -0.56)) * vec2(1.0, 1.15);
+    float wd = abs(length(wq) - 0.3) - 0.024;
+    if (wd < 0.0) col = vec3(0.006);
+  }
+  return col;
 }
 
 vec3 render(vec2 p, vec2 uv) {
-  float t = uTime;
-  float beats = uTime / uSpb;
-  float horizon = 0.06;
-  vec3 col;
+  // the seed's dusk
+  float k = uSeed.z;
+  if (k < 0.34) { SC_H = vec3(1.0, 0.5, 0.2); SC_M = vec3(0.62, 0.2, 0.34); SC_T = vec3(0.05, 0.05, 0.17); }
+  else if (k < 0.67) { SC_H = vec3(0.98, 0.34, 0.46); SC_M = vec3(0.42, 0.13, 0.5); SC_T = vec3(0.04, 0.03, 0.16); }
+  else { SC_H = vec3(0.62, 0.62, 0.66); SC_M = vec3(0.18, 0.28, 0.5); SC_T = vec3(0.02, 0.04, 0.13); }
+  float sa = uSeed.x * 6.28318;
+  scSun = vec2(cos(sa), sin(sa));
 
-  // the night: a violet sky, a few stars, hills on the horizon
-  float hill = horizon + 0.03 + 0.025 * sin(p.x * 4.0 + uSeed.x * 6.0) + 0.015 * sin(p.x * 11.0);
-  if (p.y > horizon) {
-    col = mix(vec3(0.16, 0.06, 0.24), vec3(0.02, 0.02, 0.08), clamp((p.y - horizon) * 2.2, 0.0, 1.0));
-    vec2 g = p * 40.0;
-    if (hash12(floor(g)) > 0.96) col += vec3(0.8) * smoothstep(0.3, 0.0, length(fract(g) - 0.5));
-    if (p.y < hill) col = vec3(0.03, 0.02, 0.06);
-  } else {
-    // the road, rushing at us and narrowing to the horizon: faster as the music builds
-    float z = 0.35 / (horizon - p.y + 0.002);
-    float x = p.x * z;
-    float run = t * (6.0 + 6.0 * uEnergy);
-    float fw = fwidth(x);
-    col = vec3(0.06, 0.06, 0.08);
-    if (abs(x) > 0.62) col = vec3(0.02, 0.03, 0.02);                         // the verge
-    col = mix(col, vec3(0.8), (1.0 - smoothstep(0.0, 1.5 * fw, abs(abs(x) - 0.55))) * 0.85);
-    float dash = step(fract(z * 0.5 - run * 0.1), 0.5);
-    col = mix(col, vec3(0.9, 0.78, 0.3), (1.0 - smoothstep(0.0, 1.5 * fw, abs(x) - 0.012)) * dash);
-    col *= clamp(1.4 - z * 0.06, 0.25, 1.0);
-  }
+  scC = uScCar[0].xyz; scR = uScCar[1].xyz; scU = uScCar[2].xyz; scF = uScCar[3].xyz;
+  float lens = uScCam[0].w;
+  bool dash = uScCam[2].w > 0.5;
+  // a blow from the kick, and from the landing
+  vec2 pv = p * (1.0 - 0.02 * uKick - 0.05 * uScFx.x);
+  if (dash) pv.y += 0.1;
+  scPix = 1.0 / (lens * uRes.y);
+  vec3 rd = normalize(pv.x * uScCam[1].xyz + pv.y * uScCam[2].xyz + lens * uScCam[3].xyz);
 
-  // the car, head on and close: long and low, a wedge of a nose, a raked windscreen
-  vec2 c = (p - vec2(0.0, -0.3 + 0.006 * uBass)) / 1.15;
-  // a trapezium between heights y0 and y1, half-widths w0 at the bottom and w1 at the top
-  #define TRAP(q, y0, y1, w0, w1) max(max(y0 - q.y, q.y - y1), abs(q.x) - mix(w0, w1, clamp((q.y - y0) / (y1 - y0), 0.0, 1.0)))
-  float lower = TRAP(c, -0.1, 0.02, 0.43, 0.41);
-  float bonnet = TRAP(c, 0.02, 0.07, 0.41, 0.33);
-  float cabin = TRAP(c, 0.07, 0.17, 0.27, 0.17);
-  float tyres = min(max(abs(c.x + 0.33) - 0.06, abs(c.y + 0.125) - 0.035), max(abs(c.x - 0.33) - 0.06, abs(c.y + 0.125) - 0.035));
-  float car = min(min(lower, bonnet), min(cabin, tyres));
-  if (car < 0.0) {
-    col = vec3(0.025, 0.025, 0.035);
-    // the bonnet's slope catches the sky
-    if (bonnet < 0.0) col += vec3(0.06, 0.06, 0.12) * (c.y - 0.02) / 0.05;
-    // the windscreen, with a streak of reflection sliding across it
-    if (cabin < 0.0) {
-      col = vec3(0.06, 0.04, 0.14) + vec3(0.25, 0.2, 0.45) * smoothstep(0.025, 0.0, abs(c.x + (c.y - 0.07) * 1.6 - 0.1 + 0.25 * sin(t * 0.4)));
+  float tBest = 1e4;
+  vec3 col = scSky(rd, 1.0);
+  float tg = scGroundHit(rd);
+  if (tg > 0.0) { col = scGround(rd * tg, rd, tg); tBest = tg; }
+
+  vec4 ba = scBarrier(rd, tBest);
+  if (ba.w > 0.0) col = ba.xyz;
+  vec4 pr = scProps(rd, tBest);
+  if (pr.w > 0.0) col = mix(col, pr.xyz, pr.w);
+  vec4 wi = scWires(rd, tBest);
+  if (wi.w > 0.0) col = mix(col, wi.xyz, wi.w);
+
+  // the barrier's lamps, flashing in turn on the beat
+  if (abs(uScBar.z) < 700.0) {
+    float c = cos(uScBar.w), s = sin(uScBar.w);
+    for (int i = 0; i < 4; i++) {
+      float lx = (float(i) - 1.5) * 2.6;
+      vec3 L = uScBar.xyz + vec3(c * lx, 1.24, -s * lx);
+      float on = mod(float(i) + floor(uTime / uSpb * 2.0), 2.0) < 0.5 ? 1.0 : 0.08;
+      vec2 d = pv - scScreen(L);
+      float size = clamp(lens * 2.5 / length(L), 0.012, 0.6);
+      col += vec3(1.0, 0.6, 0.1) * on * (1.2 * exp(-dot(d, d) / (size * size) * 60.0) + 0.2 * exp(-dot(d, d) / (size * size) * 6.0));
     }
   }
-  // the edges catch the light
-  float shell = min(min(lower, bonnet), cabin);
-  col += vec3(0.25, 0.3, 0.6) * smoothstep(0.006, 0.0, abs(shell)) * 0.7;
 
-  // slim headlamps at the corners, brighter on the kick
-  for (int k = 0; k < 2; k++) {
-    vec2 hp = c - vec2(k == 0 ? -0.34 : 0.34, 0.035);
-    float hd = length(max(abs(hp) - vec2(0.045, 0.006), 0.0));
-    col += vec3(1.0, 0.95, 0.8) * (smoothstep(0.006, 0.0, hd) + 0.3 * exp(-hd * 25.0) * (0.5 + 0.9 * uKick));
+  // the car, from its own point of view
+  if (!dash) {
+    vec3 ro2 = vec3(dot(-scC, scR), dot(-scC, scU), dot(-scC, scF));
+    vec3 rd2 = vec3(dot(rd, scR), dot(rd, scU), dot(rd, scF));
+    float tc = scCarHit(ro2, rd2);
+    if (tc > 0.0 && tc < tBest) {
+      tBest = tc;
+      col = scCarColour(ro2 + rd2 * tc, rd, rd * tc, tc);
+      col = mix(col, SC_H * 0.62 + SC_M * 0.2, 1.0 - exp(-tc * 0.0021));
+    }
   }
 
-  // the scanner: a long dark slot across the nose, the red light sweeping in it
-  vec2 sq = c - vec2(0.0, -0.025);
-  float sw = 0.24, sh = 0.02;
-  float sx = (clamp(sq.x, -sw, sw) + sw) / (2.0 * sw);
-  if (abs(sq.x) < sw && abs(sq.y) < sh) {
-    col = vec3(0.07, 0.0, 0.0);
-    float cell = fract(sx * 8.0);
-    col += vec3(1.0, 0.1, 0.05) * scanAt(sx, beats) * smoothstep(0.0, 0.1, cell) * smoothstep(1.0, 0.9, cell);
+  if (!dash) col += scHaze(rd, tBest);
+  col = scParticles(col, rd, tBest);
+  if (dash) {
+    col = scDash(p, col);
+    col += vec3(1.0, 0.9, 0.7) * uScFx.x * 0.3;
+    return col;
   }
-  // its glow, spilling round the slot onto the black nose
-  col += vec3(1.0, 0.05, 0.02) * scanAt(sx, beats) * exp(-length(max(abs(sq) - vec2(sw, sh), 0.0)) * 30.0) * 0.7;
-  return col;
+  col += scFlares(pv, tBest);
+  // the landing's flash
+  col += (SC_H * 0.6 + vec3(0.4)) * uScFx.x * uScFx.x * 0.16;
+  // and the eye goes dark at the edges, keeping the car
+  col *= 1.0 - 0.28 * dot(p, p);
+  return col / (1.0 + max(max(col.r, max(col.g, col.b)) - 0.85, 0.0) * 0.5);
 }
 `;
 
@@ -8867,7 +9536,7 @@ const SOURCES = {
 
 /** Post-pass effects a scene asks for: the game scenes get the beat blur. */
 export const STYLE_FX = Object.fromEntries(
-  ['paddles', 'invaders', 'rocks', 'crossing', 'tube', 'tanks', 'football', 'skatepark', 'artillery', 'skyrush', 'maze', 'bricks', 'lightcycles', 'snake', 'boxer', 'starfighter', 'pipes', 'pyramid', 'lcd', 'bobs', 'rubber', 'bumplogo', 'cascade', 'ansi', 'echolines', 'maze3d', 'moonbike', 'timecar', 'animeop', 'djdecks',
+  ['paddles', 'invaders', 'rocks', 'crossing', 'tube', 'tanks', 'football', 'skatepark', 'artillery', 'skyrush', 'maze', 'bricks', 'lightcycles', 'snake', 'boxer', 'starfighter', 'pipes', 'pyramid', 'lcd', 'bobs', 'rubber', 'bumplogo', 'cascade', 'ansi', 'echolines', 'maze3d', 'moonbike', 'timecar', 'scanner', 'animeop', 'djdecks',
    'prism', 'sculpture', 'fractalflight', 'gimbal']
     .map((n) => [n, { impact: 1 }]),
 );
@@ -8892,7 +9561,7 @@ export const STYLE_INFO = {
   ball:        'The bouncing checkered ball: red and white, spinning, landing on every beat',
   rings:       'Interference rings: two sets of rings drifting through each other in a moving moire',
   lcd:         'An LCD juggler in black segments: balls hop along their arcs and land on the beat',
-  scanner:     'A black car on a night road, the red scanner in its nose sweeping on the beat',
+  scanner:     'A black wedge down a desert highway at dusk, a real car on its springs: the red scanner sweeps on the beat, the boost clears a barrier and lands on the music, the dash talks with the melody',
   footsteps:   'Two cups of water on a dashboard, trembling into rings with every footstep',
   twister:     'The twister: a textured bar twisting up the screen, winding up as the music builds',
   bobs:        'Unlimited bobs: a chain of balls sliding behind its head, and a twin the other way, weaving as they cross, surging on the kick',

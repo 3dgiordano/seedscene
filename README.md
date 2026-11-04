@@ -60,7 +60,7 @@ lets the sound start only after a key or a click). Then `H` shows every key.
 
 | | |
 |---|---|
-| **[AUTOPLAY](https://3dgiordano.github.io/seedscene/)** | the endless channel: a new track every forty seconds, era after era |
+| **[AUTOPLAY](https://3dgiordano.github.io/seedscene/)** | the endless channel: a new track every forty seconds, a new scene every twenty, era after era |
 | **[THE JOURNEY](https://3dgiordano.github.io/seedscene/?seed=seedscene&journey=1)** | every era with scenes of its own in turn, 1972 to now |
 | **[Born in 1985](https://3dgiordano.github.io/seedscene/?seed=seedscene&autoplay=1&born=1985)** | AUTOPLAY from the era you were twelve in - change the year in the address, or press `B` |
 | **[Greetings](https://3dgiordano.github.io/seedscene/?seed=hyperspace&scene=cracktro&era=amiga#greets=ANA,LUIS,THE+3+A.M.+CODERS)** | the cracktro greeting your friends - press `G` for your own names |
@@ -89,7 +89,8 @@ on screen (and `H` again to hide it):
 
 | key | |
 |---|---|
-| `O` | **AUTOPLAY** — a new track every 40 seconds, scenes cut on the music, somewhere new each time; in an era you asked for, that era alone |
+| `O` | **AUTOPLAY** — a new track every 40 seconds and a new scene every 20, somewhere new each time; in an era you asked for, that era alone |
+| `K` · `L` | in AUTOPLAY and THE JOURNEY, the seconds a track (`K`) and a scene (`L`) last; with `Shift`, back. Also in the menu |
 | `T` | **THE JOURNEY** — every era with scenes of its own in turn, 1972 to now |
 | `B` | **BORN IN** — type the year you were born: AUTOPLAY opens in the era you were twelve in, and stays near it |
 | `G` | **GREETINGS** — type a few names: they scroll in the greetings, and stay on this screen |
@@ -194,8 +195,9 @@ though both of that era's scenes have boards of their own, so on AUTO it is hear
 there only when forced - the synthesizer's own voices elsewhere). The style of music stays the seed's and the era's: the
 board is only what plays it. Press **`C`** (or use the menu, `?board=` in the
 address, `--board` on the command line) to force one board on all the music.
-In AUTOPLAY and THE JOURNEY a track plays on its first scene's board - a board
-cannot change in the middle of a tune.
+In AUTOPLAY and THE JOURNEY a track has one board, as a board cannot change in
+the middle of a tune: the studio's if any of its scenes asks for the studio, so
+a film never plays on a chip, and otherwise its first scene's.
 
 | board | what it is |
 |---|---|
@@ -210,9 +212,9 @@ cannot change in the middle of a tune.
 
 Press **`T`** live, or run `seedscene journey`, and SEEDSCENE plays a trackmo
 through every era with scenes of its own, oldest first. Each part is its own little production
-— up to three of its era's scenes (fewer where it has fewer, or where a short
-render leaves a part too short for them), cut where the music turns, and its own music at
-its own tempo — and each opens with the line
+— a track of its era's music at its own tempo, forty seconds of it, and a new
+scene of the era every twenty, live and in the mp4 alike ([the pace](#the-pace)
+can be changed) — and each opens with the line
 its machines would have greeted you with: `INSERT COIN`, `LOAD "JOURNEY",8,1`,
 `INSERT DISK 2`, `C:\SEEDSCENE> JOURNEY.EXE`, `PRESS START`,
 `PRECALCULATING...`, `COMPILING SHADERS... DONE`. One seed, 1972 to now. Left playing, it goes round
@@ -224,9 +226,9 @@ part opens on the scene, or plays the style, the one before it ended with.
 
 Press **`O`** and lean back. SEEDSCENE becomes a channel that never ends: a new
 track every forty seconds, three in one era, then on to another. Inside each
-track the picture changes with the music: the scene cuts where the music turns
-— on the drop after the break, on the crash that opens a phrase — so a track
-plays two or three of its era's scenes. Each era deals its scenes and its music
+track a new scene comes every twenty seconds, cut on a bar line — or on a drop
+or a crash that opens a phrase, where one falls close — so a track plays two of
+its era's scenes. Each era deals its scenes and its music
 once, in the seed's order, and every visit to it carries on where the last one
 stopped, so all of it comes round before any of it comes again, and then
 comes round in a new order - never the same scene or the same style twice in
@@ -238,9 +240,21 @@ The tracks mix into each other the way a DJ would mix them. The next track is
 composed and ready as soon as the one before it starts. Its first bars then
 play over the last bars of the outgoing one, beat on beat: across the overlap
 both follow one tempo that glides from the old track's to the new one's. The
-new track comes in thin, its lows filtered away; halfway the basslines swap;
-then the old track fades behind a closing filter. THE JOURNEY's eras are
+new track comes in thin, its lows filtered away; halfway the basslines swap,
+and the picture changes to the new track's first scene right there, on a bar
+line; then the old track fades behind a closing filter. THE JOURNEY's eras are
 mixed the same way.
+
+### The pace
+
+Forty seconds a track and twenty a scene, in AUTOPLAY, THE JOURNEY, the
+screensaver and the mp4s. Both are yours to change: `K` and `L` live (`Shift`
+goes back), the menu's AUTOPLAY TRACK and AUTOPLAY SCENE, `?tracksec=` and
+`?scenesec=` in the address, `--track-seconds` and `--scene-seconds` on the
+command line. A track plays the whole number of scenes nearest what you asked,
+each ending on a bar line, so a scene runs a few seconds either side of it; a
+scene as long as a track or longer plays alone, one a track. A pace is part of
+what a seed makes: the same seed at another pace deals its scenes differently.
 
 Live, AUTOPLAY drops in somewhere new in its channel every time you press
 `O`, so it never plays the same sequence twice. Pressed in an era you asked
@@ -405,7 +419,7 @@ Era by era, oldest first. Each one is a memory of its time, made from scratch.
 | ![lightcycles](docs/gallery/lightcycles.png) | ![pyramid](docs/gallery/pyramid.png) | ![boxer](docs/gallery/boxer.png) |
 | **lightcycles** — the light-cycle duels of the early 80s, on a neon grid: four riders trailing walls of light, turning on the beat; on the downbeat that opens a phrase, one is sent into another's wall. `--scene lightcycles --era 1982 --seed neongrid` | **pyramid** — the cube-pyramid hopper of the 1982 arcades, played: a hop a beat to turn every top, red balls bouncing down between the beats, a snake hatching to chase it, lured off by a disc. `--scene pyramid --era 1982 --seed cubes` | **boxer** — the robot title fights of the 80s consoles: hooks, jabs and uppercuts on the beat, your see-through boxer slipping and punishing; on the crash a star punch, a knockdown and the count. `--scene boxer --era 1982 --seed titlefight` |
 | ![bricks](docs/gallery/bricks.png) | ![outrun](docs/gallery/outrun.png) | ![scanner](docs/gallery/scanner.png) |
-| **bricks** — the brick-breaking arcade of the mid-80s, in neon: a wall broken on the rhythm, every flight of the ball landing on an eighth or a sixteenth. `--scene bricks --era 1982 --seed brickwall` | **outrun** — the synthwave sunset the 80s left behind: a striped sun sinking behind mountains over a neon grid. `--scene outrun --era 1982 --seed nightdrive` | **scanner** — the talking car of 80s television, as an idea: a long black car coming down a night road at you, the red light in its nose sweeping once a beat. `--scene scanner --era 1982 --seed redsweep` |
+| **bricks** — the brick-breaking arcade of the mid-80s, in neon: a wall broken on the rhythm, every flight of the ball landing on an eighth or a sixteenth. `--scene bricks --era 1982 --seed brickwall` | **outrun** — the synthwave sunset the 80s left behind: a striped sun sinking behind mountains over a neon grid. `--scene outrun --era 1982 --seed nightdrive` | **scanner** — the talking car of 80s television, as an idea: a black wedge driven down a desert highway at dusk, its red light sweeping on the beat; the boost clears a barrier and lands on the music's big moments. `--scene scanner --era 1982 --seed redsweep` |
 | ![timecar](docs/gallery/timecar.png) | ![moonbike](docs/gallery/moonbike.png) | ![dottunnel](docs/gallery/dottunnel.png) |
 | **timecar** — the time-travel car of the 80s, as an idea: a stainless wedge charging two onlookers across a wet night parking lot, its readout reaching 88 on the music's big moment, then gone in a burst, leaving trails of fire. `--scene timecar --era 1982 --seed gigawatts` | **moonbike** — the boy and his friend from the stars, as an idea: a bicycle crossing a huge pale moon in silhouette, a bundle in the basket, its wheels turning a turn a beat. `--scene moonbike --era 1982 --seed moonride` | **dottunnel** — the dot tunnels of the 8-bit demos: rings of dots rushing down a snaking tunnel. `--scene dottunnel --era 1982 --seed warpspeed` |
 | ![plasma](docs/gallery/plasma.png) | ![ball](docs/gallery/ball.png) | ![skyrush](docs/gallery/skyrush.png) |
@@ -629,7 +643,9 @@ seedscene info    [options]     show what a seed composes
 | `--board <name>` | `auto` `hifi` `paula` `opl3` `awe32` `ym` `sid` | the sound board: on `auto` each scene its own, or its era's |
 | `--music <name>` | `auto` or one of the thirty-six styles | music of the era |
 | `--res <WxH\|preset>` | `854x480`, or `240p` `360p` `480p` `576p` `720p` `1080p` (or `--width` and `--height`) | `480p` |
-| `--duration <seconds>` | length | 30 render, 180 live, 147 journey (21 s an era, three scenes each), 600 autoplay |
+| `--duration <seconds>` | length | 30 render, 180 live, one pass journey (280 s at the usual pace), 600 autoplay |
+| `--track-seconds <n>` | autoplay, journey, live: the seconds a music track lasts, 12 to 600 | 40 |
+| `--scene-seconds <n>` | autoplay, journey, live: the seconds a scene lasts, 5 to 600; as long as a track or longer, one scene a track | 20 |
 | `--born <year>` | autoplay only: open in the era you were twelve in, and stay near it | — |
 | `--greets "A, B"` | names to greet in the scroller and the cracktro, up to eight | — |
 | `--fps <n>` | frames per second | 30 |
