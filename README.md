@@ -16,7 +16,7 @@ Then ride it through half a century, from 1972 to now.**
 
 ![THE JOURNEY: every era from the arcade to the 64k intro, each with its own card, scenes and music](docs/gallery/journey.gif)
 
-`v0.2` · 7 eras · 57 scenes · 36 music styles · 16 displays · 6 sound boards · endless autoplay · runs in your browser · renders to mp4 ·
+`v0.2` · 7 eras · 58 scenes · 36 music styles · 16 displays · 6 sound boards · endless autoplay · runs in your browser · renders to mp4 ·
 no assets, only maths · built with [3dgiordano/agent-plugins](https://github.com/3dgiordano/agent-plugins)
 
 </div>
@@ -132,7 +132,7 @@ machine name it once had (`--era amiga`).
 | years | | its display (scenes may have their own) | its scenes | the music it brings |
 |---|---|---|---|---|
 | **1972–1981** | the first video games | ARCADE | paddles, invaders, rocks, maze, lcd, crossing, tube, tanks | arcade attract, cyborg pulse, derelict ship, synth-pop |
-| **1982–1989** | home computers, arcades and the video shop | C64 | lightcycles, pyramid, boxer, bricks, outrun, scanner, timecar, moonbike, dottunnel, plasma, ball | SID chiptune, synth-pop, ST buzz, italo disco — on the C64's SID, the Atari ST's YM2149 or the synthesizer's own voices, by the seed |
+| **1982–1989** | home computers, arcades and the video shop | C64 | lightcycles, pyramid, boxer, bricks, outrun, scanner, timecar, moonbike, dottunnel, plasma, ball, skyrush | SID chiptune, synth-pop, ST buzz, italo disco — on the C64's SID, the Atari ST's YM2149 or the synthesizer's own voices, by the seed |
 | **1990–1993** | the demoscene's golden years | AMIGA | the Amiga effects - copper, kefrens, vector balls, the chessboards, the cracktro and more - plasma, metaballs, tunnel, fractal, bumplogo, fireworks, morph; footsteps, starfighter, cascade, echolines, football | Amiga rave, New Beat, orchestral trackers, dreamwave, tracker jazz, beast lands, lament, musicdisk ballad, jolly march, hip-hop blaster, terrace drums — on Paula's 8-bit samples |
 | **1994–1996** | the PC demos and the multimedia years | VGA | fire, pipes, ansi, maze3d, artillery; fractal, tunnel, metaballs, plasma, bumplogo | ambient techno, acid, gabber, eurodance, jungle, FM metal, MIDI quest — on a Sound Blaster 16's FM or an AWE32's wavetable; and keygen, the party's tracker tunes, played from samples as a module player did; and trip-hop, its strings and Rhodes on the card; and lament and jolly march, played on the card |
 | **1997–1999** | 3D consoles and pocket screens | COMPOSITE TV | snake, animeop, coderain, skatepark | heroic game soundtracks, eurodance, chip rock and roll, star pilot, MIDI quest, the anime opening, skate punk, handheld chip, jolly march — on wavetable |
@@ -309,7 +309,7 @@ a battery saver, a policy - leaves the screen to the computer's settings.
 
 ![paddles, invaders, rocks, a maze, a brick wall, light riders, a snake, a robot title fight and a space run, each moving to its own music](docs/gallery/arcade.gif)
 
-Before the demoscene there was the arcade, and SEEDSCENE starts there: seventeen
+Before the demoscene there was the arcade, and SEEDSCENE starts there: eighteen
 game-inspired visualizers that move to the music instead of a joystick. Not a
 replay of the games — a show made of them. Every game scene plays on a
 **board floating in space** — and a game that is a device of its own, the LCD
@@ -318,7 +318,7 @@ new angle on every eight-bar phrase, a punch in on the kick, a lean on the
 snare, the board's neon frame breathing with the bass, and a zoom blur on
 every kick.
 
-Fifteen of them are real games underneath, run as small simulations locked to
+Sixteen of them are real games underneath, run as small simulations locked to
 the beat. The chomper hunts the nearest dot and dodges, while the wisps chase
 it — one straight at it, one cutting it off, one keeping its distance — and
 flee after a power dot. The snake steers for its food, keeps itself room to
@@ -337,7 +337,7 @@ egg hatches into a snake that chases; a ball on its cube and it stops and
 swears in a balloon, and with the snake close behind it rides a disc to the
 top and the snake, following, falls.
 
-Ten of those fifteen play on the music's own grid, so their big moments land on it.
+Eleven of those sixteen play on the music's own grid, so their big moments land on it.
 In **paddles** every return falls on a beat, and on an accent - the crash
 that opens a phrase, the drop - the paddle the ball is heading for misses
 and is blown apart on that very note; the other side scores. In **invaders**
@@ -363,14 +363,17 @@ real crossing allows and does an air there, its time aloft set by gravity,
 grinds along the coping before the drop, and goes twice as high on it, the
 combo banked. In **artillery** a soldier of one side and then the other fires
 on each bar line, the shell arcing through the wind to land on the snare and
-blow a crater in the hill; on the drop it splits in five. Same seed, same
-game, move for move.
+blow a crater in the hill; on the drop it splits in five. In **skyrush** a
+wave of saucers comes in on each bar and the flyer fires on every beat, each
+shot reaching its saucer on the next; a serpent of orbs weaves in through the
+build and bursts on the drop. Same seed, same game, move for move.
 
 They are homages, drawn from nothing but maths — no sprite, no maze, no
 character and no tune is copied from any game. The creatures in the
 formation, the mazes, the rocks and the challenger robot are all made up by
 the seed; the hopper, the tube's climbers and its claw, the tanks, the skater, the
-little soldiers and the footballers' kits are drawn here or chosen by it.
+little soldiers, the flyer and his serpent, and the footballers' kits are
+drawn here or chosen by it.
 
 ## Scenes, straight out of the scene
 
@@ -399,8 +402,8 @@ Era by era, oldest first. Each one is a memory of its time, made from scratch.
 | **bricks** — the brick-breaking arcade of the mid-80s, in neon: a wall broken on the rhythm, every flight of the ball landing on an eighth or a sixteenth. `--scene bricks --era 1982 --seed brickwall` | **outrun** — the synthwave sunset the 80s left behind: a striped sun sinking behind mountains over a neon grid. `--scene outrun --era 1982 --seed nightdrive` | **scanner** — the talking car of 80s television, as an idea: a long black car coming down a night road at you, the red light in its nose sweeping once a beat. `--scene scanner --era 1982 --seed redsweep` |
 | ![timecar](docs/gallery/timecar.png) | ![moonbike](docs/gallery/moonbike.png) | ![dottunnel](docs/gallery/dottunnel.png) |
 | **timecar** — the time-travel car of the 80s, as an idea: a stainless wedge charging two onlookers across a wet night parking lot, its readout reaching 88 on the music's big moment, then gone in a burst, leaving trails of fire. `--scene timecar --era 1982 --seed gigawatts` | **moonbike** — the boy and his friend from the stars, as an idea: a bicycle crossing a huge pale moon in silhouette, a bundle in the basket, its wheels turning a turn a beat. `--scene moonbike --era 1982 --seed moonride` | **dottunnel** — the dot tunnels of the 8-bit demos: rings of dots rushing down a snaking tunnel. `--scene dottunnel --era 1982 --seed warpspeed` |
-| ![plasma](docs/gallery/plasma.png) | ![ball](docs/gallery/ball.png) |   |
-| **plasma** — the plasma every demo of the 80s and 90s had: sine waves melting through a cycling palette. *Also 1990–1993 · 1994–1996.* `--scene plasma --era 1982 --seed 1989` | **ball** — the bouncing checkered ball of the Amiga's first demos: red and white, spinning on its tilted axis, bouncing across a grid room and landing on every beat. `--scene ball --era 1982 --seed boing` |   |
+| ![plasma](docs/gallery/plasma.png) | ![ball](docs/gallery/ball.png) | ![skyrush](docs/gallery/skyrush.png) |
+| **plasma** — the plasma every demo of the 80s and 90s had: sine waves melting through a cycling palette. *Also 1990–1993 · 1994–1996.* `--scene plasma --era 1982 --seed 1989` | **ball** — the bouncing checkered ball of the Amiga's first demos: red and white, spinning on its tilted axis, bouncing across a grid room and landing on every beat. `--scene ball --era 1982 --seed boing` | **skyrush** — the behind-view arcade shooters of the 80s: a jetpack flyer over a checkered plain rushing at you, columns and bushes going by, saucers in waves; a serpent of orbs bursting on the drop. `--scene skyrush --era 1982 --seed checker` |
 
 ### 1990–1993 · the demoscene's golden years
 
@@ -614,7 +617,7 @@ seedscene info    [options]     show what a seed composes
 | option | meaning | default |
 |---|---|---|
 | `--seed <word>` | anything at all; the same word always gives the same demo | random |
-| `--scene <name>` | one of the fifty-seven scenes (`--style`, its old name, works too) | chosen by the seed - one of the era's, if the era is given |
+| `--scene <name>` | one of the fifty-eight scenes (`--style`, its old name, works too) | chosen by the seed - one of the era's, if the era is given |
 | `--era <name>` | `auto` `1972` `1982` `1990` `1994` `1997` `2000` `2010` — or any year inside one, or its old name (`arcade` `c64` `amiga` `dos` `console` `handheld` `y2k` `modern`) | an era the scene belongs to |
 | `--display <name>` | `auto` `bw` `arcade` `vector` `colorvector` `mono` `c64` `vhs` `ega` `amiga` `vga` `snes` `composite` `gameboy` `nokia` `svga` `modern` | the screen: on `auto` each scene its own, or its era's |
 | `--board <name>` | `auto` `hifi` `paula` `opl3` `awe32` `ym` `sid` | the sound board: on `auto` each scene its own, or its era's |
@@ -684,7 +687,7 @@ src/core/music.js     composer, thirty-six styles, synthesizer, feature track
 src/core/chips.js     the sound chips: Paula, OPL3, AWE32, YM2149, SID
 src/core/visual.js    renderer, palette, title plate, scroller, era cards
 src/core/gl.js        WebGL2 helpers
-src/styles/index.js   the fifty-seven scenes, the 3D stage, the About part, the display's screen
+src/styles/index.js   the fifty-eight scenes, the 3D stage, the About part, the display's screen
 src/app.js            ties the music and the picture together
 web/index.html        the live page
 web/boot.js           the C64 boot screen

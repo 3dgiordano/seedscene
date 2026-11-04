@@ -6905,6 +6905,168 @@ vec3 render(vec2 p, vec2 uv) {
 }
 `;
 
+const skyrush = `
+// The behind-view shooter: a flyer with a jetpack seen from behind over a checkered plain rushing toward the
+// screen, columns and bushes going by, a pastel sky - as the behind-view arcade shooters of the 80s showed it.
+// The game runs as a simulation (src/core/sims.js): waves of saucers on each bar, a shot on each beat landing on
+// the next; two bars before the drop a serpent of glowing orbs weaves in, and bursts on it.
+uniform vec4 uSkyHero;      // the flyer on the screen: x, y, the ground under him, his depth
+uniform vec4 uSkyFoes[8];   // saucers on the screen: x, y, depth, there
+uniform vec4 uSkyShots[6];  // shots: x, y, depth, flying
+uniform vec4 uSkyBooms[6];  // bursts: x, y, depth, since
+uniform vec4 uSerp[8];      // the serpent's orbs: x, y, depth, -1 none, -0.5 coming, since it burst
+uniform vec4 uSkyFx;        // score, beats travelled, the flyer's x in the world
+const float F = 0.9, EYE = 1.0, HOR = 0.06;
+float skMin(float a, float b, float k) { float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0); return mix(b, a, h) - k * h * (1.0 - h); }
+vec3 sky2(float t) { vec3 c = unblack(pal(t)); return c / max(max(c.r, c.g), max(c.b, 0.3)); }
+
+// the scenery: on each three metres of the way ahead, a column or a bush, left or right of the flight
+vec3 scenery(vec3 col, vec2 p, float travel) {
+  for (int k = 12; k >= 0; k--) {
+    float cell = floor(travel / 3.0) + float(k) + 1.0;
+    float z = cell * 3.0 - travel;
+    if (z < 0.8) continue;
+    float h = hash11(cell * 7.13 + uSeed.x * 5.0);
+    float x = (h < 0.5 ? -1.0 : 1.0) * (1.3 + 3.0 * hash11(cell * 3.7)) - uSkyFx.z * 0.4;
+    float kind = hash11(cell * 11.3);
+    vec2 base = vec2(x / z * F, HOR - EYE / z * F);
+    float sc = F / z;
+    vec2 q = (p - base) / sc;
+    float fog = exp(-z * 0.03);
+    // its shadow on the ground
+    col *= 1.0 - 0.35 * (1.0 - smoothstep(0.0, 0.05, length(q * vec2(1.0, 4.0)) - 0.35)) * fog;
+    if (kind < 0.55) {
+      // a column, shaded round, a capital on top
+      float hgt = 2.2 + 1.5 * hash11(cell * 5.1);
+      if (abs(q.x) < 0.22 && q.y > 0.0 && q.y < hgt) {
+        float sh = 0.55 + 0.45 * cos(q.x / 0.22 * 1.4);
+        vec3 c = mix(vec3(0.75, 0.72, 0.65), sky2(0.1 + uSeed.y), 0.25) * sh;
+        c *= 0.9 + 0.1 * step(0.5, fract(q.y * 4.0));
+        col = mix(col, c, fog);
+      }
+      if (abs(q.x) < 0.3 && q.y > hgt && q.y < hgt + 0.15) col = mix(col, vec3(0.85, 0.82, 0.75) * (0.8 + 0.2 * step(0.0, q.x)), fog);
+    } else {
+      // a bush: a cluster of round green lumps
+      float b = 1e9;
+      for (int j = 0; j < 5; j++) { float fj = float(j); b = min(b, length(q - vec2((fj - 2.0) * 0.28, 0.25 + 0.2 * hash11(fj + cell))) - 0.3); }
+      if (b < 0.0) col = mix(col, vec3(0.15, 0.5, 0.15) * (0.7 + 0.5 * vnoise(q * 9.0 + cell)), fog);
+    }
+  }
+  return col;
+}
+
+vec3 render(vec2 p, vec2 uv) {
+  float travel = uSkyFx.y * 1.5;                // (three metres every two beats: the ground runs with the music)
+  // the sky, pale toward the horizon; a far skyline on it
+  vec3 col = mix(sky2(0.55 + uSeed.y) * 0.9 + 0.1, sky2(0.7 + uSeed.y), smoothstep(HOR, 0.5, p.y));
+  float sk = HOR + 0.025 + 0.02 * step(0.5, hash11(floor(p.x * 30.0))) + 0.01 * sin(p.x * 40.0);
+  if (p.y > HOR && p.y < sk) col = mix(col, sky2(0.6 + uSeed.y) * 0.7, 0.6);
+  // the checkered plain, rushing toward the screen
+  if (p.y < HOR) {
+    float z = EYE * F / (HOR - p.y);
+    float x = p.x * z / F + uSkyFx.z * 0.4;
+    float chk = mod(floor(x / 1.5) + floor((z + travel) / 1.5), 2.0);
+    vec3 g = mix(sky2(0.2 + uSeed.z) * 0.7, sky2(0.25 + uSeed.z), chk);
+    col = mix(col, g, exp(-z * 0.025));
+  }
+  col = scenery(col, p, travel);
+  // the saucers: a dome on a disc, a light ringing them
+  for (int i = 0; i < 8; i++) {
+    vec4 f = uSkyFoes[i];
+    if (f.w < 0.5) continue;
+    float sc = F / f.z;
+    vec2 q = (p - f.xy) / sc;
+    float disc = length(q * vec2(1.0, 3.2)) - 0.32;
+    float dome = max(length(q - vec2(0.0, 0.04)) - 0.15, -q.y + 0.02);
+    vec3 fc = sky2(0.9 + uSeed.x);
+    col = mix(col, mix(vec3(0.85), fc, 0.6) * (0.7 + 0.4 * smoothstep(0.1, -0.1, q.y)), 1.0 - smoothstep(0.0, 0.02, disc));
+    col = mix(col, vec3(0.6, 0.85, 1.0), 1.0 - smoothstep(0.0, 0.02, dome));
+    col += fc * exp(-abs(disc) * 30.0) * 0.3;
+  }
+  // the serpent of orbs, far to near: each glowing, bursting in turn on the drop
+  for (int i = 7; i >= 0; i--) {
+    vec4 o = uSerp[i];
+    if (o.w < -0.9) continue;
+    float sc = F / o.z;
+    vec2 q = (p - o.xy) / sc;
+    vec3 oc = sky2(0.35 + float(i) * 0.04 + uSeed.w);
+    if (o.w < 0.0) {
+      float r = length(q) - (i == 0 ? 1.0 : 0.8);
+      col = mix(col, oc * (0.6 + 0.6 * smoothstep(0.3, -0.3, q.x + q.y)), 1.0 - smoothstep(0.0, 0.03, r));
+      col += oc * exp(-max(r, 0.0) * 8.0) * 0.25;
+      if (i == 0) col = mix(col, vec3(1.0), (1.0 - smoothstep(0.0, 0.03, min(length(q - vec2(0.33, 0.22)), length(q - vec2(-0.33, 0.22))) - 0.14)));
+    } else if (o.w < 0.8) {
+      float r = length(q);
+      col += mix(vec3(1.0, 0.95, 0.7), oc, smoothstep(0.0, 0.6, o.w)) * (1.0 - smoothstep(0.4 + o.w * 3.0, 0.6 + o.w * 3.0, r)) * (1.0 - o.w / 0.8);
+    }
+  }
+  // shots: bright balls shrinking into the distance
+  for (int i = 0; i < 6; i++) {
+    vec4 s = uSkyShots[i];
+    if (s.w < 0.5) continue;
+    float r = length(p - s.xy) / (F / s.z);
+    col += vec3(1.0, 0.9, 0.5) * (1.0 - smoothstep(0.08, 0.14, r)) * 1.5 + vec3(1.0, 0.6, 0.2) * exp(-r * 6.0) * 0.4;
+  }
+  // bursts: a flash and a ring of sparks
+  for (int i = 0; i < 6; i++) {
+    vec4 b = uSkyBooms[i];
+    if (b.w > 0.7) continue;
+    vec2 q = (p - b.xy) / (F / b.z);
+    float r = length(q);
+    col += vec3(1.0, 0.85, 0.5) * exp(-r * 4.0) * exp(-b.w * 6.0) * 1.5;
+    col += vec3(1.0, 0.6, 0.2) * (1.0 - smoothstep(0.0, 0.08, abs(r - b.w * 2.2))) * (1.0 - b.w / 0.7);
+  }
+  // the flyer, from behind: his shadow on the ground, a jetpack and its flames, the jacket, the head, legs trailing,
+  // the blaster under his arm
+  vec2 h = uSkyHero.xy;
+  float hs = F / uSkyHero.w;
+  col *= 1.0 - 0.35 * (1.0 - smoothstep(0.0, 0.02, length((p - vec2(h.x, uSkyHero.z)) * vec2(1.0, 4.0)) - 0.09 * hs));
+  vec2 q = (p - h) / hs;
+  if (length(q) < 1.3) {
+    float lean = 0.12 * sin(uSkyFx.y * 3.14159 * 0.25);
+    q = rot(lean) * q;
+    // one silhouette of melted shapes: the jacket over shoulders and trunk, sleeves, the belt, two legs - one
+    // straight, one bent back at the knee as he flies - boots, the head seen from behind under its hair
+    float jk = skMin(sdSeg(q, vec2(-0.21, 0.47), vec2(0.21, 0.47)) - 0.085, sdSeg(q, vec2(0.0, 0.42), vec2(0.0, 0.04)) - 0.165, 0.06);
+    float slL = skMin(sdSeg(q, vec2(-0.25, 0.45), vec2(-0.36, 0.2)) - 0.068, sdSeg(q, vec2(-0.36, 0.2), vec2(-0.35, 0.0)) - 0.058, 0.03);
+    float slR = skMin(sdSeg(q, vec2(0.25, 0.45), vec2(0.33, 0.22)) - 0.068, sdSeg(q, vec2(0.33, 0.22), vec2(0.24, 0.1)) - 0.058, 0.03);
+    jk = skMin(jk, min(slL, slR), 0.04);
+    float handL = length(q - vec2(-0.35, -0.04)) - 0.05;
+    float lL = skMin(sdSeg(q, vec2(-0.09, -0.02), vec2(-0.12, -0.42)) - 0.085, sdSeg(q, vec2(-0.12, -0.42), vec2(-0.1, -0.76)) - 0.07, 0.04);
+    float lR = skMin(sdSeg(q, vec2(0.09, -0.02), vec2(0.15, -0.36)) - 0.085, sdSeg(q, vec2(0.15, -0.36), vec2(0.27, -0.56)) - 0.07, 0.04);
+    float legs = skMin(lL, lR, 0.03);
+    float boots = min(length((q - vec2(-0.1, -0.8)) * vec2(1.0, 0.8)) - 0.075, length((q - vec2(0.29, -0.6)) * vec2(0.9, 1.0)) - 0.075);
+    float neck = sdSeg(q, vec2(0.0, 0.5), vec2(0.0, 0.62)) - 0.05;
+    float head = length((q - vec2(0.0, 0.72)) * vec2(1.0, 0.9)) - 0.12;
+    float ears = min(length(q - vec2(-0.12, 0.7)) - 0.03, length(q - vec2(0.12, 0.7)) - 0.03);
+    // on his back the jetpack, its two nozzles, their flames; under his right arm the blaster
+    float pack = max(abs(q.x) - 0.15, abs(q.y - 0.25) - 0.17) - 0.05;
+    float nz = min(length(q - vec2(-0.08, 0.03)) - 0.045, length(q - vec2(0.08, 0.03)) - 0.045);
+    float fl = min(length((q - vec2(-0.08, -0.12)) * vec2(2.4, 0.7)) - 0.1, length((q - vec2(0.08, -0.12)) * vec2(2.4, 0.7)) - 0.1) - 0.03 * sin(uTime * 40.0);
+    float gun = sdSeg(q, vec2(0.18, 0.1), vec2(0.44, 0.16)) - 0.07;
+    vec3 jacket = sky2(0.0 + uSeed.w);
+    float lit = 0.75 + 0.3 * smoothstep(0.2, -0.2, q.x);
+    col = mix(col, vec3(1.0, 0.75, 0.3), 1.0 - smoothstep(0.0, 0.05, fl));
+    col = mix(col, vec3(1.0, 0.95, 0.75), 1.0 - smoothstep(0.0, 0.03, fl + 0.05));
+    col = mix(col, vec3(0.18, 0.22, 0.45) * lit, 1.0 - smoothstep(0.0, 0.015, legs));
+    col = mix(col, vec3(0.25, 0.15, 0.1) * lit, 1.0 - smoothstep(0.0, 0.015, boots));
+    col = mix(col, jacket * lit, 1.0 - smoothstep(0.0, 0.015, jk));
+    col = mix(col, vec3(0.15), (1.0 - smoothstep(0.0, 0.015, abs(q.y - 0.05) - 0.03)) * (1.0 - smoothstep(0.0, 0.015, jk)));   // the belt
+    col = mix(col, vec3(0.9, 0.7, 0.55) * lit, 1.0 - smoothstep(0.0, 0.015, min(min(handL, neck), ears)));
+    col = mix(col, vec3(0.85, 0.65, 0.3) * (0.8 + 0.3 * smoothstep(0.1, -0.1, q.x)), 1.0 - smoothstep(0.0, 0.015, head));   // the hair, from behind
+    col = mix(col, vec3(0.55, 0.58, 0.63) * (0.7 + 0.35 * smoothstep(0.1, -0.15, q.x + q.y * 0.3)), 1.0 - smoothstep(0.0, 0.015, pack));
+    col = mix(col, vec3(0.25, 0.25, 0.28), 1.0 - smoothstep(0.0, 0.015, nz));
+    col = mix(col, vec3(0.35, 0.36, 0.4) * lit, 1.0 - smoothstep(0.0, 0.015, gun));
+  }
+  // the score, top right
+  for (int k = 0; k < 6; k++) {
+    int dg = int(mod(floor(uSkyFx.x / pow(10.0, float(5 - k))), 10.0));
+    col = mix(col, vec3(1.0, 0.95, 0.5), digit7((p - vec2(0.55 + float(k) * 0.045, 0.37)) / 0.04, dg));
+  }
+  return col;
+}
+`;
+
 const artillery = `
 // The artillery: two teams of little soldiers on a hill of earth, seen from
 // the side, as the turn-based artillery games of the PC showed it - mountains
@@ -7907,6 +8069,7 @@ const SOURCES = {
   tanks: staged(tanks, 0.35, 0.45),
   football: staged(football, 0.6, 0.4),
   artillery: staged(artillery, 0.45, 0.4),
+  skyrush: staged(skyrush, 0.4, 0.4),
   skatepark: staged(skatepark, 0.35, 0.45),
   maze: staged(maze, 0.7, 0.4),
   bricks: staged(bricks, 0.6, 0.35),
@@ -7922,7 +8085,7 @@ const SOURCES = {
 
 /** Post-pass effects a scene asks for: the game scenes get the beat blur. */
 export const STYLE_FX = Object.fromEntries(
-  ['paddles', 'invaders', 'rocks', 'crossing', 'tube', 'tanks', 'football', 'skatepark', 'artillery', 'maze', 'bricks', 'lightcycles', 'snake', 'boxer', 'starfighter', 'pipes', 'pyramid', 'lcd', 'bobs', 'rubber', 'bumplogo', 'cascade', 'ansi', 'echolines', 'maze3d', 'moonbike', 'timecar', 'animeop', 'djdecks',
+  ['paddles', 'invaders', 'rocks', 'crossing', 'tube', 'tanks', 'football', 'skatepark', 'artillery', 'skyrush', 'maze', 'bricks', 'lightcycles', 'snake', 'boxer', 'starfighter', 'pipes', 'pyramid', 'lcd', 'bobs', 'rubber', 'bumplogo', 'cascade', 'ansi', 'echolines', 'maze3d', 'moonbike', 'timecar', 'animeop', 'djdecks',
    'prism', 'sculpture', 'fractalflight', 'gimbal']
     .map((n) => [n, { impact: 1 }]),
 );
@@ -7978,6 +8141,7 @@ export const STYLE_INFO = {
   invaders:    'A seed-made formation on the beat; aliens burst on the kick',
   rocks:       'A vector ship that flies, dodges and splits the rocks it hits',
   skatepark:   'A skater on a half-pipe in a warehouse: a trick at every bar line, a grind along the coping through the build, a huge air on the drop, the combo counter',
+  skyrush:     'A jetpack flyer seen from behind over a checkered plain: saucers in waves on the bar, a shot on every beat, a serpent of orbs bursting on the drop',
   artillery:   'Two teams of little soldiers on a hill: a shot each bar line, arcing through the wind to land on the snare, craters in the earth, a shell that splits in five on the drop',
   football:    'Football seen from above, the camera on the ball: a pass on every beat, a run down the wing through the build, the header in on the drop, the crowd going up',
   tanks:       'A battlefield of green lines through a tank\'s sight: the tank comes round after the enemy on the beat, fires on the backbeat, the radar sweeping once a bar',

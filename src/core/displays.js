@@ -143,7 +143,7 @@ export const SCENE_DISPLAY = {
   tube: 'colorvector',                // (the tube shooter of 1981, on the colour vector tube)
   tanks: 'colorvector',               // (a black-and-white beam behind a green overlay and a red strip: drawn as the colour tube's green and red)
   invaders: 'arcade', maze: 'arcade', crossing: 'arcade', bricks: 'arcade', lightcycles: 'arcade',
-  boxer: 'arcade', pyramid: 'arcade', outrun: 'arcade',
+  boxer: 'arcade', pyramid: 'arcade', outrun: 'arcade', skyrush: 'arcade',
   lcd: 'modern',
   snake: 'nokia',                     // (the phone's game, on the phone's screen)
   starfighter: 'snes',                // (the 16-bit console's polygons)
