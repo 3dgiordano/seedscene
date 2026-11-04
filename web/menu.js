@@ -85,6 +85,16 @@ export function createMenu({ root, styles, musics, musicLabel, eras, eraLabel, d
       change: (s, d) => actions.setDuration(step(LENGTHS, s.duration, d)),
     },
     {
+      id: 'track', label: 'AUTOPLAY TRACK',
+      value: (s) => `${s.trackSeconds} S`,
+      change: (s, d) => actions.stepTrack(d),
+    },
+    {
+      id: 'scene', label: 'AUTOPLAY SCENE',
+      value: (s) => (s.sceneSeconds >= s.trackSeconds ? `${s.sceneSeconds} S (ONE A TRACK)` : `${s.sceneSeconds} S`),
+      change: (s, d) => actions.stepScene(d),
+    },
+    {
       id: 'overlay', label: 'TITLES & SCROLLER',
       value: (s) => (s.overlay ? 'ON' : 'OFF'),
       change: (s) => actions.setOverlay(!s.overlay),

@@ -21,15 +21,14 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   machine name), `E` and `1`–`7` live, or `auto`: the seed picks an era the
   scene belongs to, then music of that era.
 - **THE JOURNEY** (`T` live, `seedscene journey` for an mp4): a trackmo
-  through every era with scenes of its own, oldest first — each part with up
-  to three of its scenes and music at its own tempo, opened by a card with the
+  through every era with scenes of its own, oldest first — each part a track
+  of music at its own tempo and scenes of its era, opened by a card with the
   line its machines would have greeted you with. Each era's music mixes into the next, deterministic like
   everything else.
 - **AUTOPLAY** (`O` live, `seedscene autoplay` for an mp4 of any length up
   to ten hours): an endless channel — a new track every forty seconds, three
-  in an era, then another era. Inside each track the scene cuts where the
-  music turns, on the drop and on the crash that opens a phrase, so a track
-  plays two or three of its era's scenes, in a fresh order every block, never
+  in an era, then another era. Inside each track a new scene comes every
+  twenty, cut on a bar line, in a fresh order every block, never
   the same pairing twice in a row. Era cards open each era; a NOW PLAYING
   lower third opens every other track. The tracks mix into each other like a
   DJ set: the next one is composed ahead, its first bars overlap the last bars
@@ -144,10 +143,15 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   three once the music picks up); the side button goes down for each catch,
   and the score counts them. No brand name or logo.
 - **The scanner car** (`scanner`, arcade): the talking car of 80s television,
-  as an idea — a long, low black car coming down a night road, the red light
-  in its nose sweeping left and right, one pass on every beat with a trail
-  fading behind it; the road rushes faster as the music builds and the
-  headlamps glow on the kick. No name, no logo, no design of any one car.
+  as an idea — a low black wedge driven down a desert highway at dusk, a
+  simulation rather than a drawing: a driver who looks ahead, tyres that grip
+  until they slide, four springs under a body that dives, leans and flies, on
+  a road of straights, sweepers and rises laid out ahead of it. The red light
+  sweeps one pass on every beat, quickening toward a stunt; a flight's time
+  before a big moment of the music the boost fires, so the car clears a
+  barrier and lands on the moment; cameras cut on the bars; and from the
+  driver's seat the bars of the car's voice talk with the melody. No name, no
+  logo.
 - **The footsteps** (`footsteps`, 32-bit console): the dinosaur films' most
   famous warning, as an idea — two short plastic cups of water on a car's
   dashboard at night in the rain, the water trembling into rings with every
@@ -934,6 +938,20 @@ scene now has one era, a span of years (see **Eras are spans of years** and
 
 ### Changed
 
+- **One pace for every programme: a track of forty seconds, a scene of twenty.**
+  AUTOPLAY's scenes ran anywhere from 9 to 30 seconds and THE JOURNEY's about
+  8.5, its length taken from the page's; now both, the screensaver and the mp4s
+  play the same pace, each scene within a few seconds of twenty on a bar line.
+  Both are the viewer's to change: `--track-seconds`, `--scene-seconds`, `K`
+  and `L` live, the menu, `?tracksec=` and `?scenesec=`. A rendered journey is
+  one pass unless `--duration` says otherwise. A seed's programmes now deal
+  their scenes for this pace, so an old seed plays another sequence.
+- **The picture changes track with the music.** It used to change at the end of
+  the overlap, some eight seconds after the new track came in and four after the
+  basslines swapped, the last scene playing largely over the next track's music.
+  Now it changes on the new track's bar line where the basslines swap.
+- **A rendered AUTOPLAY's picture and music are one programme.** The picture was
+  held in the seed's own era while the soundtrack travelled them all.
 - **The vector tube and the wireframe tanks, with the punch of the other arcade
   scenes** (`tube`, `tanks`). Both now play on a new display, `neonvector`, the
   colour vector tube as memory has it: the beam's filter drew only outlines,
@@ -970,7 +988,8 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   the studio's, and so a game whose machine has no board here - the 16-bit
   space shooter, the phone's snake, the LCD game; the Amiga's ball the Amiga's
   chip, the PC desktop's things the sound card) or its era's; `C` live, the menu, `?board=` and `--board` force
-  one. A programme's track plays on its first scene's board.
+  one. A programme's track plays on HI-FI if any of its scenes asks for it, and
+  otherwise on its first scene's board.
 - **Eras are spans of years.** Seven, keyed by the year they start - 1972–1981,
   1982–1989, 1990–1993, 1994–1996, 1997–1999, 2000–2009, 2010–now - and a game
   or a film goes to the year it came out (the light-cycle film, the

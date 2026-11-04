@@ -1,26 +1,33 @@
 // Programmes: demos played one after another.
 //
-//   THE JOURNEY  one part per era, oldest first, three of the era's scenes in each,
-//                cut where the music turns. Played again it goes on through
-//                each era's list, three scenes a time, and its music, so
-//                every pass shows what the last did not: the seed sets the
-//                order the lists start in, not how much of them is seen.
+//   THE JOURNEY  one track per era, oldest first, with as many of the era's
+//                scenes as the pace gives. Played again it goes on through
+//                each era's list and its music, so every pass shows what the
+//                last did not: the seed sets the order the lists start in,
+//                not how much of them is seen.
 //   AUTOPLAY     an endless mix: a few tracks in one era, then another era.
 //                Born in a year, it opens in the era the viewer was twelve in
 //                and keeps coming back to it, the eras between drawn from the
 //                ones nearest it. Held in one era, it never leaves it.
-//                Every 40 seconds a new track, and inside each track the
-//                scene changes where the music turns - on the drop, on the
-//                crash that opens a phrase - two or three scenes a track.
 //                Each era deals its scenes and its music once, in the seed's
 //                order, and every visit to it goes on where the last one
 //                stopped, so the whole catalogue comes round before any of
 //                it comes again. It can run for hours and never repeats a
 //                pairing in a row.
 //
+// THE PACE is the same for both, live and in an mp4: a track of TRACK_SECONDS
+// and scenes of SCENE_SECONDS, both the viewer's to change. A track plays the
+// whole number of scenes that comes nearest (one, if a scene is asked to be as
+// long as a track or longer), shared out evenly, each cut on a bar line - or on
+// a drop or a crash that opens a phrase, where one falls close enough.
+//
+// The picture changes track when the music does: on the new track's bar line
+// halfway through the overlap, where the basslines swap - not at the end of the
+// overlap, when the new track has already been playing for several seconds.
+//
 // Every part has its own sub-seed, scene, era and music, composed at its own
 // tempo, and is built only when it is needed — on the page and in the
-// AudioWorklet alike, from the same seed, so both always agree.
+// AudioWorklet alike, from the same seed and pace, so both always agree.
 //
 // One track mixes into the next the way a DJ would. The next track is
 // composed and its synth made ready as soon as the one before it starts. Its
@@ -34,7 +41,7 @@
 import { composeScore, scoreTempo, Features, Synth, SAMPLE_RATE, prepareChip } from './music.js';
 import { ERAS, SCENE_ERAS as ERA_NAMES } from './eras.js';   // (the eras with scenes of their own)
 import { ERA_CHIPS } from './chips.js';
-import { boardFor, chipOfBoard } from './boards.js';
+import { trackBoardFor, chipOfBoard } from './boards.js';
 import { SCENE_DISPLAY } from './displays.js';
 import { Rng } from './rng.js';
 
@@ -52,12 +59,22 @@ export const ERA_CARDS = {
 const CHIME_OF = { arcade: 'arcade', c64: 'c64', amiga: 'amiga', vga: 'dos', composite: 'console', snes: 'console', gameboy: 'handheld', nokia: 'handheld' };
 
 const BLOCK = 3;               // autoplay: tracks per era before moving on
-const SCENES_PER_TRACK = 3;    // autoplay: at most this many scenes in one track
-const MIN_SCENE = 9;           // autoplay: seconds a scene plays at least
-const JOURNEY_SCENES = 3;      // THE JOURNEY: scenes in each era's part
-const JOURNEY_MIN_SCENE = 7;   // THE JOURNEY: seconds a scene plays at least (a short part plays fewer)
-export const AUTOPLAY_PART = 40;
 const TWELVE = 12;             // born in: the age the era is the viewer's own
+const SNAP = 0.1;              // a cut moves to a drop or a crash this share of a scene away, at most
+
+/** THE PACE: seconds a track and a scene last, unless the viewer says otherwise. */
+export const TRACK_SECONDS = 40;
+export const SCENE_SECONDS = 20;
+export const PACE_LIMITS = { track: [12, 600], scene: [5, 600] };
+
+/** A pace as asked for (numbers, text, or nothing), in range and whole. */
+export function cleanPace({ track, scene } = {}) {
+  const clean = (v, dflt, [lo, hi]) => {
+    const n = Number(v);
+    return v === undefined || v === null || v === '' || !Number.isFinite(n) ? dflt : Math.min(hi, Math.max(lo, Math.round(n)));
+  };
+  return { track: clean(track, TRACK_SECONDS, PACE_LIMITS.track), scene: clean(scene, SCENE_SECONDS, PACE_LIMITS.scene) };
+}
 
 /** Born in: the era of the year the viewer turned twelve - or, if that era has no scenes yet, the latest before it that has. */
 export function bornInHome(year) {
@@ -135,9 +152,9 @@ class Transition {
 
 export class Programme {
   /**
-   * @param {{seed:string, kind:'journey'|'autoplay', partSec:number, count?:number, passes?:number, era?:string}} o
+   * @param {{seed:string, kind:'journey'|'autoplay', partSec:number, sceneSec?:number, count?:number, passes?:number, era?:string}} o
    */
-  constructor({ seed, kind, partSec, count, bornIn, passes, board, era }) {
+  constructor({ seed, kind, partSec, sceneSec = SCENE_SECONDS, count, bornIn, passes, board, era }) {
     this.seed = seed;
     this.kind = kind;
     this.board = board || 'auto';  // SOUND BOARD: auto (each track its first scene's), or one forced on all
@@ -148,10 +165,14 @@ export class Programme {
     this.era = kind === 'autoplay' && this.bornIn === null && ERA_NAMES.includes(era) ? era : null;
     this.opening = 0;              // held in one era: the track its card opens (where the page dropped in)
     this.partSec = partSec;
-    // THE JOURNEY: every era once a pass; live, pass after pass
-    this.count = kind === 'journey' ? ERA_NAMES.length * Math.max(1, passes || 1) : (count || 100000);
+    this.sceneSec = sceneSec;
+    // scenes a track plays: the whole number nearest the pace, at least one
+    this.sceneCount = Math.max(1, Math.round(partSec / sceneSec));
+    // THE JOURNEY: every era once a pass; live, pass after pass (or as many tracks as a render asks for)
+    this.count = count || (kind === 'journey' ? ERA_NAMES.length * Math.max(1, passes || 1) : 100000);
     this.cache = new Map();
     this.transitions = new Map();
+    this.leads = new Map();
     this.visits = [];              // autoplay: how many blocks before each one were in its era
     this.deals = new Map();        // each list's rounds dealt so far
     this.journeyPlans = [];        // THE JOURNEY: the parts planned so far (each opens away from the one before)
@@ -182,7 +203,7 @@ export class Programme {
     const order = this.blockScenes(block);
     return {
       era,
-      style: order[(k * SCENES_PER_TRACK) % order.length],
+      style: order[(k * this.sceneCount) % order.length],
       music: music[k % music.length],
       seed: `${this.seed}/${i}`,
       // held in one era, its card opens only the first track seen; every other one has its NOW PLAYING
@@ -201,9 +222,12 @@ export class Programme {
     const pass = Math.floor(i / ERA_NAMES.length);
     const e = ERAS[era];
     const key = `${this.seed}/${era}`;
-    const k = Math.min(e.scenes.length, this.journeyScenes());
+    const k = Math.min(e.scenes.length, this.sceneCount);
     const scenes = Array.from({ length: k }, (_, j) => this.deal(key, 'journey-scenes', e.scenes, pass * k + j));
     let music = this.deal(key, 'journey-music', e.music, pass);
+    // (an era of few scenes can deal the last pass's again: not in the same order)
+    const lastPass = this.journeyPlans[i - ERA_NAMES.length];
+    if (k > 1 && lastPass && scenes.every((sc, j) => sc === lastPass.scenes[j])) [scenes[0], scenes[1]] = [scenes[1], scenes[0]];
     if (before) {
       const last = before.scenes[before.scenes.length - 1];
       const j = scenes.indexOf(last) === 0 ? scenes.findIndex((sc) => sc !== last) : -1;
@@ -272,13 +296,22 @@ export class Programme {
    * places its last track could have reached, or the one it may have swapped.
    */
   blockScenes(block) {
-    const draw = (n) => this.eraDeal(n, 'scenes', ERAS[this.blockEra(n)].scenes, BLOCK * SCENES_PER_TRACK);
+    const share = (n, skip) => this.eraDeal(n, 'scenes', ERAS[this.blockEra(n)].scenes, BLOCK * this.sceneCount, skip);
+    // (an era of few scenes can deal the last visit's order again: then it starts one further on in its deal;
+    // not where a block follows another in its era, which goes on from it, scene after scene)
+    const draw = (n) => {
+      const mine = share(n, 0);
+      if (n > 0 && this.blockEra(n - 1) === this.blockEra(n)) return mine;
+      let c = n - 1;
+      while (c >= 0 && this.blockEra(c) !== this.blockEra(n)) c--;
+      return c >= 0 && share(c, 0).join() === mine.join() ? share(n, 1) : mine;
+    };
     const order = draw(block);
     // (a block after one in its own era carries on in the era's deal, which never repeats a scene in a row)
     if (block > 0 && this.blockEra(block - 1) !== this.blockEra(block)) {
       const prev = draw(block - 1);
-      const last = (BLOCK - 1) * SCENES_PER_TRACK;
-      const maybe = [0, last, last + 1, last + 2].map((j) => prev[j % prev.length]);
+      const last = (BLOCK - 1) * this.sceneCount;
+      const maybe = [0, ...Array.from({ length: this.sceneCount }, (_, j) => last + j)].map((j) => prev[j % prev.length]);
       // (and where the swap leaves no scene next to itself, in the order the block plays them)
       const fits = (sc, j) => j > 0 && !maybe.includes(sc);
       const apart = (j) => [j - 1, j + 1].every((n) => n < 1 || n >= order.length || order[n] !== order[0])
@@ -306,59 +339,64 @@ export class Programme {
     return order;
   }
 
-  /** THE JOURNEY: scenes in each part - three, or fewer where a part is too short to show them. */
-  journeyScenes() {
-    return Math.max(1, Math.min(JOURNEY_SCENES, Math.floor(this.partSec / JOURNEY_MIN_SCENE)));
+  /** The scenes track i plays, in order; never the same one twice in a track (an era with few plays fewer). */
+  trackScenes(i, pl) {
+    if (this.kind === 'journey') return pl.scenes;
+    const order = this.blockScenes(Math.floor(i / BLOCK));
+    const first = (i % BLOCK) * this.sceneCount;
+    const n = Math.min(this.sceneCount, ERAS[pl.era].scenes.length);
+    return Array.from({ length: n }, (_, j) => order[(first + j) % order.length]);
   }
 
   /**
-   * THE JOURNEY: where part i changes scene - the part shared out evenly between its scenes, each cut
-   * moved onto a drop or a crash that opens a phrase if one falls near it, or else onto the nearest bar
-   * line, as long as every scene keeps its time.
+   * Where track i's scenes change, in seconds into its slot: its time on screen shared out evenly, each cut
+   * moved onto a drop or a crash that opens a phrase if one falls close, or else onto the nearest bar line.
    */
-  journeyCuts(pl, score, inOffset) {
-    const k = pl.scenes.length;
-    if (k < 2) return [{ from: 0, style: pl.style }];
+  sceneCuts(i, scenes, score, inOffset) {
+    const from = this.viewFrom(i), to = this.partSec - this.leadOf(i + 1);
+    const n = scenes.length;
+    const each = (to - from) / n;
     const { barSec } = score.meta;
-    const len = this.partSec;
-    const at = (bar) => bar * barSec - inOffset;
+    const at = (bar) => bar * barSec - inOffset;         // a bar line, in seconds into the slot
     const marks = [];
     score.arrangement.forEach((x, bar) => { if (x.drop || x.crash) marks.push(at(bar)); });
-    const cuts = [];
-    for (let q = 1; q < k; q++) {
-      const even = (len * q) / k;
-      const ok = (t) => t - (cuts.length ? cuts[cuts.length - 1] : 0) >= JOURNEY_MIN_SCENE && len - t >= JOURNEY_MIN_SCENE * (k - q);
-      const near = marks.filter((t) => Math.abs(t - even) <= len / (3 * k) && ok(t)).sort((x, y) => Math.abs(x - even) - Math.abs(y - even))[0];
+    const cuts = [from];
+    for (let q = 1; q < n; q++) {
+      const even = from + each * q;
+      const fits = (t) => t - cuts[cuts.length - 1] >= each / 2 && to - t >= (n - q) * each / 2;
+      const near = marks.filter((t) => Math.abs(t - even) <= each * SNAP && fits(t)).sort((x, y) => Math.abs(x - even) - Math.abs(y - even))[0];
       const bar = at(Math.round((even + inOffset) / barSec));
-      const lo = (cuts.length ? cuts[cuts.length - 1] : 0) + JOURNEY_MIN_SCENE, hi = len - JOURNEY_MIN_SCENE * (k - q);
-      cuts.push(near !== undefined ? near : ok(bar) ? bar : Math.min(hi, Math.max(lo, even)));
+      cuts.push(near !== undefined ? near : fits(bar) ? bar : even);
     }
-    return [0, ...cuts].map((from, j) => ({ from, style: pl.scenes[j] }));
+    return cuts.map((t, j) => ({ from: t, style: scenes[j] }));
   }
 
   /**
-   * Autoplay: where the scene changes inside part i - on the drop, and on the
-   * crashes that open a phrase, each scene playing at least MIN_SCENE seconds.
-   * With nothing in the music to cut on, it cuts on the bar nearest the middle.
+   * Seconds before its slot that track i comes on screen: the new track's bar line nearest the middle of
+   * the overlap, where the basslines swap (without an overlap - the first track, or none before it - none).
    */
-  sceneCuts(i, score, inOffset) {
-    const { barSec } = score.meta;
-    const len = this.partSec;
-    const at = (bar) => bar * barSec - inOffset;         // a bar line, in seconds into the slot
-    const fits = (t, cuts) => t >= MIN_SCENE && len - t >= MIN_SCENE && cuts.every((c) => Math.abs(c - t) >= MIN_SCENE);
-    // (an era with one scene has nothing to cut to; with two, one cut)
-    const most = Math.min(SCENES_PER_TRACK, ERAS[this.blockEra(Math.floor(i / BLOCK))].scenes.length) - 1;
-    if (most < 1) return [{ from: 0, style: this.blockScenes(Math.floor(i / BLOCK))[0] }];
-    const cuts = [];
-    score.arrangement.forEach((x, bar) => { if (x.drop && cuts.length < most && fits(at(bar), cuts)) cuts.push(at(bar)); });
-    score.arrangement.forEach((x, bar) => {
-      if (x.crash && cuts.length < most && fits(at(bar), cuts)) cuts.push(at(bar));
-    });
-    if (!cuts.length) cuts.push(at(Math.round((inOffset + len / 2) / barSec)));
-    cuts.sort((x, y) => x - y);
-    const order = this.blockScenes(Math.floor(i / BLOCK));
-    const first = (i % BLOCK) * SCENES_PER_TRACK;
-    return [0, ...cuts].map((from, j) => ({ from, style: order[(first + j) % order.length] }));
+  leadOf(i) {
+    const into = this.transition(i - 1);
+    if (!into) return 0;
+    if (this.leads.has(i)) return this.leads.get(i);
+    const { barBeats } = this.tempo(i);
+    const swapBeat = Math.round(into.beats / barBeats / 2) * barBeats;
+    const lead = into.seconds * (1 - into.fractionAt(swapBeat));
+    this.leads.set(i, lead);
+    if (this.leads.size > 8) this.leads.delete(this.leads.keys().next().value);
+    return lead;
+  }
+
+  /** When track i comes on screen, in seconds into its slot (at or before 0). */
+  viewFrom(i) { return -this.leadOf(i); }
+
+  /** When track i comes on screen, in seconds of the programme. */
+  viewStart(i) { return i * this.partSec - this.leadOf(i); }
+
+  /** The track on screen at t: the slot's, until the next track's swap. */
+  viewIndexAt(t) {
+    const i = this.indexAt(t);
+    return i + 1 < this.count && t >= this.viewStart(i + 1) ? i + 1 : i;
   }
 
   /**
@@ -402,8 +440,9 @@ export class Programme {
     const inBeats = into ? into.beats : 0, inSec = into ? into.seconds : 0;
     const midBeats = out ? out.middle : this.partSec / spb;
     const outBeats = out ? out.beats : 0, outSec = out ? out.seconds : 0;
-    // the track's sound board: its first scene's (a board cannot change in the middle of a tune), or the forced one
-    const score = composeScore(pl.seed, (inBeats + midBeats + outBeats) * spb, pl.music, chipOfBoard(boardFor(pl.style, pl.era, pl.seed, this.board)));
+    // the track's one sound board (it cannot change in the middle of a tune): see trackBoardFor
+    const trackScenes = this.trackScenes(i, pl);
+    const score = composeScore(pl.seed, (inBeats + midBeats + outBeats) * spb, pl.music, chipOfBoard(trackBoardFor(trackScenes, pl.era, pl.seed, this.board)));
     yield;
     // score time -> seconds after the track starts sounding
     const warp = (s) => {
@@ -425,15 +464,18 @@ export class Programme {
     }
     const startSec = i * this.partSec;
     const inOffset = inBeats * spb;
-    const between = this.between(pl, inSec, audioSec, score.meta);
+    const lead = this.leadOf(i);
+    const between = this.between(pl, inSec, audioSec, score.meta, lead);
     let features = null;
     const p = {
       index: i, ...pl,
-      // the scenes this part plays, and from when (seconds into the part)
-      scenes: this.kind === 'autoplay' ? this.sceneCuts(i, score, inOffset) : this.journeyCuts(pl, score, inOffset),
+      // the scenes this part plays, and from when (seconds into the part; the first from before it, at the swap)
+      scenes: this.sceneCuts(i, trackScenes, score, inOffset),
       startSec,
       start: Math.round(startSec * SAMPLE_RATE),
       duration: this.partSec,
+      // when it is on screen, in seconds into the part: from one swap to the next
+      view: { from: -lead, to: this.partSec - this.leadOf(i + 1) },
       // what the synth plays: the score with its first and last beats laid on the shared tempo
       audio: { meta: score.meta, events, totalSamples: Math.round(audioSec * SAMPLE_RATE) },
       // the sounds between the tracks, played over the mix rather than in it
@@ -442,9 +484,12 @@ export class Programme {
       outStart: Math.round((startSec + this.partSec - outSec) * SAMPLE_RATE),
       inOffset,
       /** Score time at t seconds into the part's slot, on the same clock the music plays. */
-      scoreTimeAt: (t) => (!out || t < this.partSec - outSec
-        ? inOffset + t
-        : (inBeats + midBeats + out.beatsAt((t - (this.partSec - outSec)) / outSec)) * spb),
+      scoreTimeAt: (t) => {
+        if (into && t < 0) return into.beatsAt((t + inSec) / inSec) * spb;   // on screen already, in the overlap's second half
+        return !out || t < this.partSec - outSec
+          ? inOffset + t
+          : (inBeats + midBeats + out.beatsAt((t - (this.partSec - outSec)) / outSec)) * spb;
+      },
       score,
       meta: score.meta,
       // the visuals' feature track, built only when something draws it (the synth never does)
@@ -465,15 +510,15 @@ export class Programme {
    * sounding, inSec where its slot opens): a modem's handshake through the mix into the
    * years from 2000 (the Y2K PC stands in for the media-player years), the line connecting on
    * the drop (not held in one era, where no track comes in from another); a cartridge going in as a track starts whose scene is on the Game Boy's screen;
-   * and in THE JOURNEY, the era's chime as it opens, on the incoming track's key.
+   * and in THE JOURNEY, the era's chime as it comes on screen, on the incoming track's key.
    */
-  between(pl, inSec, audioSec, meta) {
+  between(pl, inSec, audioSec, meta, lead = 0) {
     const events = [];
     const at = (sec) => Math.round(sec * SAMPLE_RATE);
     if (String(pl.era) === '2000' && pl.eraChanged && inSec > 0 && !this.era) events.push({ t: 0, instr: 'modem', note: 0, vel: 0.8, dur: at(inSec) });
     if (SCENE_DISPLAY[pl.style] === 'gameboy') events.push({ t: 0, instr: 'cartridge', note: 0, vel: 0.8, dur: at(0.4) });
     if (this.kind === 'journey' && pl.eraChanged && ERAS[pl.era].display !== 'svga') {
-      events.push({ t: at(inSec), instr: 'chime', kit: CHIME_OF[ERAS[pl.era].display] || 'bell', note: 60 + meta.root, vel: 0.55, dur: at(2.5) });
+      events.push({ t: at(inSec - lead), instr: 'chime', kit: CHIME_OF[ERAS[pl.era].display] || 'bell', note: 60 + meta.root, vel: 0.55, dur: at(2.5) });
     }
     return {
       meta: { fx: { reverb: 0.5, delay: 0.3, delayBeats: 0.5 }, spb: meta.spb, chip: null },
@@ -532,27 +577,31 @@ export class Programme {
 }
 
 /**
- * THE JOURNEY: every era once a pass, the length split evenly between them. A render is one pass;
- * live it goes on, each pass three new scenes an era and the next of its music.
+ * THE JOURNEY: every era once a pass, each a track at the pace. `duration` seconds of it for a render
+ * (one pass is SCENE_ERAS x the track's length); with none, `passes` passes - live, one after another,
+ * each with the next scenes of every era and the next of its music.
  */
-export function composeJourney(seed, duration, passes = 1, board = 'auto') {
-  return new Programme({ seed, kind: 'journey', partSec: Math.max(12, duration / ERA_NAMES.length), passes, board });
+export function composeJourney(seed, duration = null, passes = 1, board = 'auto', pace = {}) {
+  const { track, scene } = cleanPace(pace);
+  const count = duration ? Math.max(1, Math.ceil(duration / track)) : undefined;
+  return new Programme({ seed, kind: 'journey', partSec: track, sceneSec: scene, count, passes, board });
 }
 /** Passes a live journey plays before it comes round to the first again. */
 export const JOURNEY_PASSES = 500;
 
 /** AUTOPLAY: an endless mix, or `duration` seconds of it for a render; born in a year, round its era; or held in one era. */
-export function composeAutoplay(seed, duration, bornIn = null, board = 'auto', era = null) {
-  const count = duration ? Math.max(1, Math.ceil(duration / AUTOPLAY_PART)) : undefined;
-  return new Programme({ seed, kind: 'autoplay', partSec: AUTOPLAY_PART, count, bornIn, board, era });
+export function composeAutoplay(seed, duration, bornIn = null, board = 'auto', era = null, pace = {}) {
+  const { track, scene } = cleanPace(pace);
+  const count = duration ? Math.max(1, Math.ceil(duration / track)) : undefined;
+  return new Programme({ seed, kind: 'autoplay', partSec: track, sceneSec: scene, count, bornIn, board, era });
 }
 
 /**
- * The part playing at time t (seconds), t inside its slot, the scene showing
+ * The track on screen at time t (seconds), t within its view, the scene showing
  * then, and the time in its score - the clock its music and features run on.
  */
 export function partAt(programme, t) {
-  const part = programme.part(programme.indexAt(t));
+  const part = programme.part(programme.viewIndexAt(t));
   const local = t - part.startSec;
   let scene = part.scenes[0];
   for (const sc of part.scenes) if (sc.from <= local) scene = sc;

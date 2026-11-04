@@ -40,7 +40,7 @@ export const GALLERY = [
   { style: 'crossing',    era: '1972',     seed: 'frogs' },
   { style: 'tube',        era: '1972',     seed: 'tempo' },
   { style: 'tanks',       era: '1972',     seed: 'radar' },
-  { style: 'scanner',     era: '1982',     seed: 'redsweep' },
+  { style: 'scanner',     era: '1982',     seed: 'redsweep', at: 19.2 },
   { style: 'footsteps',   era: '1990',    seed: 'impact' },
   { style: 'twister',     era: '1990',      seed: 'stonebar' },
   { style: 'bobs',        era: '1990',      seed: 'copperlist' },
@@ -138,13 +138,14 @@ async function main() {
     // ---- THE JOURNEY: each era's card, then a moment of its scene
     await openRender(page, origin, {
       seed: JOURNEY.seed, programme: 'journey', duration: String(JOURNEY.duration), fps: String(GIF.fps),
+      tracksec: String(JOURNEY.duration / ERA_NAMES.length), scenesec: '8',
     }, GIF.w, GIF.h);
-    const partSec = JOURNEY.duration / ERA_NAMES.length;
     let n = 0;
     for (let part = 0; part < ERA_NAMES.length; part++) {
+      const onScreen = await page.evaluate((i) => window.SEEDSCENE.viewStart(i), part);
       for (const [a, b] of [JOURNEY.card, JOURNEY.scene]) {
         for (let t = a; t < b; t += 1 / GIF.fps) {
-          const frame = Math.round((part * partSec + t) * GIF.fps);
+          const frame = Math.round((onScreen + t) * GIF.fps);
           await writeFile(path.join(tmp, `j${String(n++).padStart(4, '0')}.png`), await grab(page, frame));
         }
       }

@@ -11,7 +11,7 @@ import { sceneTour, sceneList, musicTour } from '../src/core/catalogue.js';
 import { DISPLAYS, DISPLAY_NAMES } from '../src/core/displays.js';
 import { BOARDS, BOARD_NAMES } from '../src/core/boards.js';
 import { resolveChoices } from '../src/core/choose.js';
-import { bornInHome } from '../src/core/journey.js';
+import { bornInHome, cleanPace, TRACK_SECONDS, SCENE_SECONDS } from '../src/core/journey.js';
 import { cleanGreets } from '../src/brand.js';
 
 const params = new URLSearchParams(location.search);
@@ -49,6 +49,9 @@ const cfg = {
   greets: cleanGreets(new URLSearchParams(location.hash.slice(1)).get('greets')),
   // seconds without input before the screensaver comes on; 0 never
   saver: /^\d+$/.test(params.get('saver') || '') ? parseInt(params.get('saver'), 10) : 60,
+  // THE PACE: the seconds of a track and of a scene, in AUTOPLAY, THE JOURNEY and the screensaver
+  trackSeconds: cleanPace({ track: params.get('tracksec') }).track,
+  sceneSeconds: cleanPace({ scene: params.get('scenesec') }).scene,
 };
 if (cfg.music !== 'auto' && !MUSIC_NAMES.includes(cfg.music)) cfg.music = 'auto';
 if (cfg.era !== 'auto' && !ERA_NAMES.includes(cfg.era)) cfg.era = 'auto';
@@ -162,6 +165,7 @@ function connectSynth(startPart = 0) {
     processorOptions: {
       seed: demo.seed, duration: demo.duration, music: demo.music, chip: demo.chip, board: cfg.board, loop: true,
       programme: pr ? pr.kind : null, startPart, bornIn: pr ? pr.bornIn : null, era: pr ? pr.era : null,
+      trackSeconds: cfg.trackSeconds, sceneSeconds: cfg.sceneSeconds,
     },
   });
   node = current;
@@ -334,7 +338,7 @@ function setBoard(name) {
   cfg.board = name;
   remember('board', name === 'auto' ? null : name);
   const pr = demo.programme;
-  const at = pr ? pr.indexAt(now() % pr.meta.duration) : 0;
+  const at = pr ? pr.viewIndexAt(now() % pr.meta.duration) : 0;
   if (demo.setBoard(name).musicChanged) connectSynth(at);
   updateHud();
   toast(name === 'auto' ? `SOUND BOARD: AUTO (${BOARDS[demo.board].name})` : `SOUND BOARD: ${BOARDS[name].name} - ${BOARDS[name].label.toUpperCase()}`);
@@ -366,6 +370,32 @@ function setDuration(seconds) {
   updateHud();
   connectSynth();          // a new length is a new arrangement
 }
+
+/**
+ * THE PACE: the seconds of a track and of a scene. A programme playing is made again at it, and the
+ * track on screen starts again; otherwise it is kept for the next one (O, T, B, the screensaver).
+ */
+function setPace(track, scene) {
+  const pr = demo.programme;
+  const at = pr ? pr.viewIndexAt(now() % pr.meta.duration) : 0;
+  const pace = cleanPace({ track, scene });
+  cfg.trackSeconds = pace.track;
+  cfg.sceneSeconds = pace.scene;
+  remember('tracksec', pace.track === TRACK_SECONDS ? null : pace.track);
+  remember('scenesec', pace.scene === SCENE_SECONDS ? null : pace.scene);
+  demo.setPace(pace);
+  if (pr) connectSynth(at);
+  toast(`TRACK ${pace.track} S  ·  SCENE ${pace.scene >= pace.track ? `${pace.track} S (ONE A TRACK)` : `${pace.scene} S`}`);
+}
+const TRACK_STEPS = [20, 30, 40, 60, 90, 120, 180];
+const SCENE_STEPS = [5, 10, 15, 20, 30, 40, 60, 90];
+/** The step after (or before) a value - one typed into the address need not be on the list. */
+function nextStep(list, v, d) {
+  const found = d > 0 ? list.find((x) => x > v) : [...list].reverse().find((x) => x < v);
+  return found !== undefined ? found : d > 0 ? list[0] : list[list.length - 1];
+}
+const stepTrack = (d) => setPace(nextStep(TRACK_STEPS, cfg.trackSeconds, d), cfg.sceneSeconds);
+const stepScene = (d) => setPace(cfg.trackSeconds, nextStep(SCENE_STEPS, cfg.sceneSeconds, d));
 
 function setOverlay(on) {
   cfg.overlay = on;
@@ -436,7 +466,7 @@ function programmeChrome(kind, on) {
 /** In a programme: jump to the next (or previous) part, sound and picture. */
 function skipPart(d) {
   const pr = demo.programme;
-  const i = (pr.indexAt(now() % pr.meta.duration) + d + pr.count) % pr.count;
+  const i = (pr.viewIndexAt(now() % pr.meta.duration) + d + pr.count) % pr.count;
   connectSynth(i);
   toast(pr.kind === 'journey' ? ERAS[pr.plan(i).era].label.toUpperCase() : (d > 0 ? 'NEXT TRACK' : 'PREVIOUS TRACK'));
 }
@@ -462,8 +492,10 @@ function commands() {
     + (cfg.board === 'auto' ? '' : ` --board ${cfg.board}`)
     + ` --res ${cfg.width}x${cfg.height} --duration ${cfg.duration}`
     + (cfg.overlay ? '' : ' --no-overlay');
+  const pace = (cfg.trackSeconds === TRACK_SECONDS ? '' : ` --track-seconds ${cfg.trackSeconds}`)
+    + (cfg.sceneSeconds === SCENE_SECONDS ? '' : ` --scene-seconds ${cfg.sceneSeconds}`);
   return {
-    live: `node bin/seedscene.js live ${base}${cfg.sound ? '' : ' --mute'}`,
+    live: `node bin/seedscene.js live ${base}${pace}${cfg.sound ? '' : ' --mute'}`,
     render: `node bin/seedscene.js render ${base}`,
   };
 }
@@ -481,7 +513,7 @@ const menu = createMenu({
   eraLabel: (e) => (e === 'auto' ? `AUTO: ${ERAS[demo.era].label}` : `${ERAS[e].label} ${ERAS[e].title}`),
   getState: () => ({ ...cfg }),
   actions: {
-    setSeed, randomSeed, setStyle, stepStyle, setEra, setMusic, stepMusic, setDisplay, setBoard, setResolution, setDuration, setOverlay, setSound, commands,
+    setSeed, randomSeed, setStyle, stepStyle, setEra, setMusic, stepMusic, setDisplay, setBoard, setResolution, setDuration, stepTrack, stepScene, setOverlay, setSound, commands,
   },
 });
 
@@ -641,6 +673,8 @@ const KEYS = [
   ['O', 'AUTOPLAY: ERA AFTER ERA, FOR HOURS (SPACE SKIPS)'],
   ['T', `THE JOURNEY: EVERY ERA, ${ERAS[ERA_NAMES[0]].year} TO NOW`],
   ['B', 'BORN IN: TYPE YOUR YEAR, AUTOPLAY FROM WHEN YOU WERE TWELVE'],
+  ['K', 'AUTOPLAY AND JOURNEY: SECONDS A TRACK LASTS (SHIFT: BACK)'],
+  ['L', 'AUTOPLAY AND JOURNEY: SECONDS A SCENE LASTS (SHIFT: BACK)'],
   ['G', 'GREETINGS: TYPE NAMES FOR THE SCROLLER (THEY STAY ON THIS SCREEN)'],
   ['S', 'NEW RANDOM SEED'],
   ['M', 'MENU: TYPE YOUR OWN SEED AND MORE'],
@@ -679,6 +713,8 @@ addEventListener('keydown', (e) => {
   if (k === 'v') { handled(); setSound(!cfg.sound); return; }
   if (k === 'd') { handled(); stepDisplay(1); return; }
   if (k === 'c') { handled(); stepBoard(1); return; }
+  if (k === 'k') { handled(); stepTrack(e.shiftKey ? -1 : 1); return; }
+  if (k === 'l') { handled(); stepScene(e.shiftKey ? -1 : 1); return; }
   if (k === 'f') {
     if (document.fullscreenElement) document.exitFullscreen();
     else document.documentElement.requestFullscreen();

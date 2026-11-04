@@ -7,7 +7,8 @@
 // sample chip, the PC desktop's things its sound card. SOUND BOARD on AUTO keeps all that; any other board
 // is forced on everything. The music style stays the seed's and the era's: the board is only what plays it.
 //
-// A programme's track has one board - its first scene's - since a board cannot change in the middle of a tune.
+// A programme's track has one board, since a board cannot change in the middle of a tune: the studio's if any of
+// its scenes asks for the studio, or else its first scene's.
 
 import { chipFor } from './chips.js';
 
@@ -58,6 +59,12 @@ export function boardFor(scene, era, seed, forced = 'auto') {
   if (forced && forced !== 'auto' && BOARDS[forced]) return forced;
   if (SCENE_BOARD[scene]) return SCENE_BOARD[scene];
   return chipFor(era, seed) || 'hifi';
+}
+
+/** The one board a programme's track plays on, whichever of its scenes is showing: forced, the studio if any scene asks for it, or its first scene's. */
+export function trackBoardFor(scenes, era, seed, forced = 'auto') {
+  if ((!forced || forced === 'auto') && scenes.some((scene) => SCENE_BOARD[scene] === 'hifi')) return 'hifi';
+  return boardFor(scenes[0], era, seed, forced);
 }
 
 /** The chip the synthesizer plays a board on (null: its own voices). */

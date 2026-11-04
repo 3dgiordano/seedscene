@@ -51,6 +51,7 @@ three, **L** a new system the rest stands on.
 | 2026-10-28 | Game sounds and their eras: the first paddle game, the invaders, the rock shooter, the maze chase, the brick breaker, each with a visualizer of its own; an AUTOPLAY that plays music and visuals of one era together, for hours. Film scores with a signature: the cyborg films and the space-horror films of the 80s. The light-cycle film's look. Pop and rock and roll. Catchy, energizing, memorable. |
 | 2026-10-28 | The visuals move with the music, in 3D, with blur — not just the game redrawn. the snake game of the phones; the console boxing games (on the NES, and again on the Wii); the 16-bit space shooter and its music. |
 | 2026-10-28 | Scenes cut on the music in AUTOPLAY, never the same sequence; a new track every 40 s, mixed into the next. |
+| 2026-11-04 | Every programme, live and in the mp4s: a track of 40 s, a scene of 20, both settable by argument and on screen. |
 | 2026-10-28 | Realistic game simulations: the loser of a point explodes on a key note; invaders and bricks die on the rhythm; the console boxer's dodges and showing off, a see-through player; the light-cycle film's light walls and their speed. |
 | 2026-10-28 | Music that sounds like the Amiga, DOS and the better sound cards — Sound Blaster 16, Sound Blaster 32, AWE — not like a C64. |
 | 2026-10-28 | For later: racing games (the arcade road racers of the 80s, the police-chase racers of the 90s and others of the kind) and the music of the cyberpunk film of 1999. |

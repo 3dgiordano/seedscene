@@ -6652,4 +6652,690 @@ export class SkyrushSim extends PlannedSim {
   }
 }
 
-export const SIMS = { skyrush: SkyrushSim, artillery: ArtillerySim, skatepark: SkateSim, football: FootballSim, tanks: TankSim, tube: TubeSim, crossing: CrossingSim, coderain: CoderainSim, animeop: AnimeopSim, timecar: TimecarSim, moonbike: MoonbikeSim, maze3d: Maze3dSim, echolines: EcholinesSim, ansi: AnsiSim, cascade: CascadeSim, cracktro: CracktroSim, rubber: RubberSim, chessfloor: ChessfloorSim, bobs: BobsSim, pyramid: PyramidSim, pipes: PipesSim, maze: MazeSim, snake: SnakeSim, rocks: RocksSim, starfighter: StarSim, paddles: PaddlesSim, invaders: InvadersSim, bricks: BricksSim, lightcycles: LightcyclesSim };
+// ---------------------------------------------------------------------------
+// The scanner car: a real car on a real road. The road is laid out ahead of the
+// car in samples - long straights, sweepers, rises and dips - and the car drives
+// it as a vehicle does: a driver looks ahead and steers, the tyres grip until
+// they slide, four springs carry the body, which dives, squats and leans, and
+// leaves the ground when it is thrown off it. The music plans the stunts: on its
+// big moments the car lands, so the boost fires a flight's time before them, over
+// a barrier across a stretch of road kept straight for it. A director cuts between
+// cameras on the bars. Everything goes to the shader relative to the eye, so the
+// numbers stay small however far the car has gone.
+// ---------------------------------------------------------------------------
+
+export const SC_ROAD = 64, SC_PROPS = 22, SC_PARTS = 24;
+const SC_DT = 1 / 120;
+const SC_STEP = 30;                  // metres of road between samples (the shader has the same)
+const SC_TILE = 3000;                // the road's markings and grit repeat after this
+const SC_G = 9.81;
+const SC_MASS = 1500, SC_IZ = 2500, SC_IP = 2200, SC_IR = 550;
+const SC_LF = 1.33, SC_LR = 1.23, SC_TRACK = 0.79, SC_H = 0.5;  // axles, half track, height of the weight
+const SC_WHEEL = 0.33;
+const SC_K = 30000, SC_C = 2400;     // each spring and damper
+const SC_SAG = SC_MASS * SC_G / (4 * SC_K);
+const SC_DROOP = 0.14, SC_BUMP = 0.11;
+const SC_MUF = 1.04, SC_MUR = 1.0, SC_CORNER = 95000;
+const SC_LANE = 1.85;
+
+export class ScannerSim {
+  constructor(seed, spb, meta, features) {
+    this.seed = seed;
+    this.grid = new MusicGrid(spb, meta);
+    this.spb = this.grid.spb;
+    this.sh = 0;
+    for (let i = 0; i < String(seed).length; i++) this.sh = Math.imul(this.sh ^ String(seed).charCodeAt(i), 16777619) >>> 0;
+    // how hard the music is going, smoothed: the car's pace
+    this.energy = null;
+    this.kicks = null;
+    if (features) {
+      const tr = features.tracks, n = features.n;
+      const k = 1 - Math.exp(-1 / (1.4 * FEATURE_RATE));
+      this.energy = new Float32Array(n);
+      this.kicks = tr.kick;
+      let en = 0.1, top = 0;
+      for (let i = 0; i < n; i++) {
+        const e = Math.min(1, tr.kick[i] * 0.55 + tr.snare[i] * 0.4 + tr.bass[i] * 0.35 + tr.lead[i] * 0.3 + tr.arp[i] * 0.25 + tr.pad[i] * 0.4);
+        en += (e - en) * k;
+        this.energy[i] = en;
+        top = Math.max(top, en);
+      }
+      this.energyTop = Math.max(0.05, top);    // (a thin tune and a thick one both reach the car's top pace)
+    }
+    // a flight lasts four beats, or two when four would throw it too high
+    this.flight = 4 * this.spb <= 2.3 ? 4 * this.spb : 2 * this.spb;
+    this.road = new Float32Array(SC_ROAD * 2);
+    this.props = new Float32Array(SC_PROPS * 4);
+    this.parts = new Float32Array(SC_PARTS * 4);
+    this.reset();
+  }
+
+  reset() {
+    this.rng = new Rng(this.seed, 'scanner-sim');
+    this.t = 0;
+    // the road
+    this.rx = []; this.ry = []; this.rk = [];
+    this.ri = 0;                     // samples laid: index i is at z = (i - 64) * SC_STEP
+    this.th = 0; this.kap = 0; this.kapT = 0; this.seg = 300;
+    this.y1 = this.rng.float(0, 6.28); this.y2 = this.rng.float(0, 6.28);
+    // the music's stunts
+    this.stunts = [];
+    this.scanBar = 1;
+    this.lastStunt = -1e9;
+    this.lastZ = 0; this.lastT = -1;
+    // the car: position, heading, speed along and across, yaw rate, steering
+    this.X = 0; this.Z = 0; this.psi = 0; this.u = 34; this.w = 0; this.r = 0; this.delta = 0;
+    this.ax = 0; this.ae = 0;
+    this.scheduleStunts();
+    this.layRoad();
+    this.X = this.roadX(0) + SC_LANE;
+    // the body on its springs
+    this.Y = this.roadY(0); this.vy = 0; this.pitch = 0; this.pv = 0; this.roll = 0; this.rv = 0;
+    this.c = [SC_SAG, SC_SAG, SC_SAG, SC_SAG];
+    this.F = [0, 0, 0, 0];
+    this.wy = [SC_WHEEL, SC_WHEEL, SC_WHEEL, SC_WHEEL];
+    this.air = false; this.airFrom = 0; this.lastLand = -9;
+    this.spin = 0;
+    this.lane = SC_LANE; this.laneT = SC_LANE; this.nextLane = 6;
+    this.brake = 0;
+    // the light
+    this.phase = 0; this.rate = 1;
+    this.boost = 0; this.flash = 0; this.shake = 0;
+    this.particles = [];
+    this.emit = 0;
+    this.landings = [];              // when each flight ended (for the checks)
+    this.maxOff = 0;
+    this.maxSlip = 0;
+    // the eye
+    this.shot = null; this.lastKinds = [];
+    this.cutAt = 0;
+    this.cam = [0, 1, 0]; this.look = [0, 1, 10]; this.cv = [0, 0, 0];
+    this.nextCut();
+    this.placeEye(1);
+  }
+
+  // ---- the road ----
+  roadSample(arr, u) {
+    const i = Math.floor(u), f = u - i;
+    const a = arr[i - 1], b = arr[i], c = arr[i + 1], d = arr[i + 2];
+    return b + 0.5 * f * (c - a + f * (2 * a - 5 * b + 4 * c - d + f * (3 * (b - c) + d - a)));
+  }
+  roadX(z) { return this.roadSample(this.rx, z / SC_STEP + 64); }
+  roadY(z) { return this.roadSample(this.ry, z / SC_STEP + 64); }
+
+  /** How far z lies inside the straight, level stretch a stunt keeps for itself: 0 to 1. */
+  zone(z) {
+    let w = 0;
+    for (const s of this.stunts) {
+      const a = s.zOff - 180, b = s.zEnd + 160;
+      w = Math.max(w, smooth(a - 200, a, z) * (1 - smooth(b, b + 200, z)));
+    }
+    return w;
+  }
+
+  /** Lay the road a kilometre and more ahead of the car. */
+  layRoad() {
+    const until = this.Z + 1150;
+    while ((this.ri - 64) * SC_STEP < until) {
+      const i = this.ri++, z = (i - 64) * SC_STEP;
+      if (z < 0) { this.rx.push(0); this.ry.push(this.heightAt(0)); this.rk.push(0); continue; }
+      if (this.seg <= 0) {
+        const r = this.rng, roll = r.float(0, 1);
+        if (roll < 0.42) {
+          this.kapT = 0; this.seg = r.float(180, 520);
+        } else {
+          const side = Math.abs(this.th) > 0.3 ? -Math.sign(this.th) : (r.bool() ? 1 : -1);
+          const R = roll > 0.82 ? r.float(170, 230) : r.float(320, 800);
+          this.kapT = side / R;
+          this.seg = Math.min(r.float(180, 420), 0.7 * R);
+        }
+      }
+      this.seg -= SC_STEP;
+      const w = this.zone(z);
+      this.kap += (this.kapT * (1 - w) - this.kap) * 0.25;
+      this.th = Math.max(-0.65, Math.min(0.65, this.th + this.kap * SC_STEP));
+      const x0 = this.rx.length ? this.rx[this.rx.length - 1] : 0;
+      this.rx.push(x0 + Math.tan(this.th) * SC_STEP);
+      this.rk.push(this.kap);
+      // each stunt levels the road round it, one easing into the next
+      let h = this.heightAt(z);
+      for (const s of this.stunts) {
+        const a = s.zOff - 180, b = s.zEnd + 160;
+        h += (s.y - h) * smooth(a - 200, a, z) * (1 - smooth(b, b + 200, z));
+      }
+      this.ry.push(h);
+    }
+  }
+  heightAt(z) { return 7 * Math.sin(z * 0.0043 + this.y1) + 1.8 * Math.sin(z * 0.0151 + this.y2); }
+
+  /** The music's big moments, as far ahead as the road is not yet laid. */
+  scheduleStunts() {
+    const barSec = this.grid.barSec;
+    const gap = Math.max(16, barSec * 8 - 0.01);
+    for (;;) {
+      const T = this.scanBar * barSec;
+      if (T - this.t > 60) break;      // (far enough that the road there is not yet laid)
+      this.scanBar++;
+      if (!this.grid.isAccent(T)) continue;
+      const off = T - this.flight;
+      if (off - this.t < 9 || T < this.lastStunt + gap) continue;
+      const v = Math.max(34, 27 + 27 * this.energyAt(off));
+      // from the last landing planned, or from here: at a pace the car can hold
+      const from = this.lastT > this.t ? [this.lastZ, this.lastT] : [this.Z, this.t];
+      const zOff = from[0] + (off - from[1]) * v;
+      const span = v * this.flight;
+      this.stunts.push({ T, off, zOff, zBar: zOff + span / 2, zEnd: zOff + span, y: this.heightAt(zOff), done: false });
+      this.lastStunt = T;
+      this.lastT = T;
+      this.lastZ = zOff + span;
+    }
+  }
+
+  energyAt(t) {
+    if (!this.energy) return 0.5;
+    return this.energy[Math.min(this.energy.length - 1, Math.max(0, Math.floor(t * FEATURE_RATE)))] / this.energyTop;
+  }
+  kickAt(t) {
+    if (!this.kicks) return 0;
+    return this.kicks[Math.min(this.kicks.length - 1, Math.max(0, Math.floor(t * FEATURE_RATE)))];
+  }
+
+  /** The stunt still to come or in flight. */
+  stunt() {
+    for (const s of this.stunts) if (s.T + 0.8 > this.t) return s;
+    return null;
+  }
+
+  // ---- a sixtieth or so of the world ----
+  step() {
+    const dt = SC_DT, t = this.t;
+    this.scheduleStunts();
+    this.layRoad();
+    const s = this.stunt();
+
+    // the driver: the pace the music asks, what the bend ahead allows, and being on time for the stunt
+    const e = this.energyAt(t);
+    let vT = 29 + 27 * e;
+    const iNow = Math.floor(this.Z / SC_STEP) + 64, iFar = Math.floor((this.Z + this.u * 2.2) / SC_STEP) + 64;
+    let kMax = 0;
+    for (let i = iNow; i <= iFar && i < this.rk.length; i++) kMax = Math.max(kMax, Math.abs(this.rk[i]));
+    if (kMax > 1e-4) vT = Math.min(vT, Math.sqrt(8.8 / kMax));
+    if (s && t < s.off) {
+      // the nearer the stunt, the closer to the one speed that arrives on time
+      const left = s.off - t;
+      const avg = Math.max(0, s.zOff - this.Z) / Math.max(0.05, left);
+      const give = 0.3 * Math.min(1, Math.max(0, (left - 1.5) / 14));
+      vT = Math.max(20, Math.min(58, Math.max(avg * (1 - give), Math.min(avg * (1 + give), vT))));
+      if (kMax > 1e-4) vT = Math.min(vT, Math.sqrt(8.8 / kMax));
+      // the barrier stands where the flight will be highest, settled while it is still a speck
+      if (left > 4) s.zBar = this.Z + this.u * (left + this.flight / 2);
+    }
+    const dv = vT - this.u;
+    let ax = Math.max(-10, Math.min(7.5, dv * 1.6));
+    this.brake += ((ax < -2.5 && !this.air ? 1 : 0) - this.brake) * Math.min(1, dt * 12);
+
+    // and where it points her: a point on the lane ahead
+    if (t > this.nextLane) {
+      this.nextLane = t + this.rng.float(4, 11);
+      this.laneT = this.rng.bool(0.62) ? SC_LANE : -SC_LANE * 0.2;
+    }
+    if (s && t > s.off - 6 && t < s.T + 1) this.laneT = 0;
+    this.lane += (this.laneT - this.lane) * Math.min(1, dt * 0.7);
+    const La = 7 + this.u * 0.72;
+    const px = this.roadX(this.Z + La) + this.lane;
+    const ang = Math.atan2(px - this.X, La) - this.psi;
+    const L = SC_LF + SC_LR;
+    let dT = Math.atan(2 * L * Math.sin(ang) / La);
+    dT = Math.max(-0.42, Math.min(0.42, dT));
+    this.delta += Math.max(-1.6 * dt, Math.min(1.6 * dt, dT - this.delta));
+
+    // the tyres, as far as each axle is pressed to the road
+    const Nf = this.F[0] + this.F[1], Nr = this.F[2] + this.F[3];
+    const uu = Math.max(4, this.u);
+    const afz = this.delta - Math.atan((this.w + SC_LF * this.r) / uu);
+    const arz = -Math.atan((this.w - SC_LR * this.r) / uu);
+    const limF = SC_MUF * Nf;
+    const drive = ax > 0 ? SC_MASS * ax : SC_MASS * ax * 0.35;
+    // (the throttle is held to what the rear tyres can give and still hold a line)
+    const limLong = Math.abs(ax > 0 ? 0.72 * SC_MUR * Nr : SC_MUF * Nf);
+    const longF = Math.max(-limLong, Math.min(limLong, ax > 0 ? drive : SC_MASS * ax));
+    const limR = Math.sqrt(Math.max(0, (SC_MUR * Nr) ** 2 - (ax > 0 ? longF * longF : (0.35 * longF) ** 2)));
+    const Ff = limF > 1 ? limF * Math.tanh(SC_CORNER * afz / limF) : 0;
+    const Fr = limR > 1 ? limR * Math.tanh(SC_CORNER * arz / limR) : 0;
+    ax = (Nf + Nr) > 10 ? longF / SC_MASS : 0;
+
+    // a car built for this keeps herself straight: the brakes on one side answer a yaw she was not asked for
+    const yawWanted = this.u * Math.tan(this.delta) / L;
+    const yawKeep = (Nf + Nr) > 10 ? -9000 * (this.r - yawWanted) : 0;
+
+    this.w += ((Ff + Fr) / SC_MASS - this.u * this.r) * dt;
+    this.r += ((SC_LF * Ff - SC_LR * Fr + yawKeep) / SC_IZ) * dt;
+    if (Nf + Nr < 10) this.r *= 1 - dt * 1.2;     // in the air she keeps her line and slowly stops turning
+    this.u = Math.max(4, this.u + (ax + this.w * this.r) * dt);
+    this.psi += this.r * dt;
+    const sp = Math.sin(this.psi), cp = Math.cos(this.psi);
+    this.X += (this.u * sp + this.w * cp) * dt;
+    this.Z += (this.u * cp - this.w * sp) * dt;
+    this.ax = ax;
+    this.ae = (Ff + Fr) / SC_MASS;
+    this.spin = (this.spin + this.u / SC_WHEEL * dt) % 6.283185;
+
+    // the body on its four springs
+    const sumF = this.suspend(sp, cp, dt);
+
+    // the boost: a flight's time before the moment
+    if (s && !s.done && t >= s.off) {
+      s.done = true;
+      this.vy += SC_G * this.flight / 2;
+      this.pv += 0.32;
+      this.boost = 1;
+      this.burst(10, 6);
+      this.airFrom = t;
+    }
+    // (a blow, then she flies on what it gave her)
+    this.boost *= 1 - dt * 3.5;
+
+    // back to earth
+    const airNow = sumF < 1;
+    if (this.air && !airNow && t - this.airFrom > 0.2 && t - this.lastLand > 0.8) {
+      this.flash = 1;
+      this.shake = 1;
+      this.burst(16, 8);
+      this.landings.push(t);
+      this.lastLand = t;
+    }
+    if (!this.air && airNow) this.airFrom = this.airFrom || t;
+    this.air = airNow;
+    this.flash *= 1 - dt * 4.5;
+    this.shake *= 1 - dt * 4;
+
+    // the sweep: a pass on every beat, faster as the stunt nears
+    let rate = 1;
+    if (s && t > s.off - 2 * this.spb * 2 && t < s.T) rate = 2;
+    if (s && s.done && t < s.T) rate = 4;
+    this.rate = rate;
+    this.phase = (this.phase + rate * dt / this.spb) % 2;
+
+    this.moveParticles(sp, cp, Math.abs(arz), dt);
+    this.maxOff = Math.max(this.maxOff, Math.abs(this.X - this.roadX(this.Z)));
+    this.maxSlip = Math.max(this.maxSlip, Math.abs(arz));
+
+    this.t += dt;
+    if (this.t >= this.cutAt) this.nextCut();
+    this.moveEye(dt);
+  }
+
+  /** Each corner's spring and the body's answer; returns what the ground pushes with. */
+  suspend(sp, cp, dt) {
+    let up = 0, tp = 0, tr = 0;
+    const m = SC_MASS, sinP = Math.sin(this.pitch), sinR = Math.sin(this.roll);
+    for (let i = 0; i < 4; i++) {
+      const sx = i % 2 === 0 ? -SC_TRACK : SC_TRACK;
+      const sz = i < 2 ? SC_LF : -SC_LR;
+      const wx = this.X + cp * sx + sp * sz, wz = this.Z - sp * sx + cp * sz;
+      // the road's own grain: a seam here and there, a long shallow ripple
+      const G = this.roadY(wz) + 0.002 * Math.sin(wz * 2.1 + sx * 3) + 0.012 * Math.sin(wz * 0.53 + sx);
+      const at = this.Y + sz * sinP - sx * sinR;
+      const c = G + SC_SAG - at;                  // how far this spring is pressed
+      const rate = (c - this.c[i]) / dt;
+      this.c[i] = c;
+      let F = 0;
+      if (c > 0) {
+        F = SC_K * c + SC_C * rate;
+        if (c > SC_SAG + SC_BUMP) F += 9 * SC_K * (c - SC_SAG - SC_BUMP) + 3 * SC_C * rate;
+        F = Math.max(0, F);
+      }
+      this.F[i] = F;
+      up += F; tp += F * sz; tr -= F * sx;
+      // where the wheel sits in the body's frame: on the road, or hanging free
+      this.wy[i] = Math.min(SC_WHEEL + SC_BUMP + 0.03, Math.max(SC_WHEEL - SC_SAG - SC_DROOP, G + SC_WHEEL - at));
+      if (c > SC_SAG + 0.13 && this.emit <= 0) {
+        this.emit = 0.012;
+        this.spark(wx, G + 0.05, wz, 1);
+      }
+    }
+    const kick = this.kickAt(this.t) * (this.air ? 0 : 1);
+    this.vy += (up / m - SC_G - kick * 0.9) * dt;
+    this.Y += this.vy * dt;
+    // squat, dive, lean; in the air she levels herself, as a car built for it would
+    const air = up < 1;
+    this.pv += ((tp + m * this.ax * SC_H) / SC_IP - (air ? this.pitch * 2.2 + this.pv * 1.6 : 0)) * dt;
+    this.rv += ((tr - m * this.ae * SC_H) / SC_IR - (air ? this.roll * 3 + this.rv * 2 : 0)) * dt;
+    this.pitch += this.pv * dt;
+    this.roll += this.rv * dt;
+    return up;
+  }
+
+  // ---- sparks and dust ----
+  spark(x, y, z, n) {
+    const r = this.rng;
+    const sp = Math.sin(this.psi), cp = Math.cos(this.psi);
+    for (let k = 0; k < n; k++) {
+      this.addPart({ kind: 1, x, y, z, life: r.float(0.25, 0.7),
+        vx: sp * this.u * 0.75 + r.float(-3.5, 3.5), vy: r.float(1, 5.5), vz: cp * this.u * 0.75 + r.float(-3.5, 3.5) });
+    }
+  }
+  dust(x, y, z, life) {
+    const sp = Math.sin(this.psi), cp = Math.cos(this.psi), r = this.rng;
+    this.addPart({ kind: 2, x, y, z, life, life0: life, vx: sp * this.u * 0.2 + r.float(-1, 1), vy: r.float(0.2, 0.9), vz: cp * this.u * 0.2 + r.float(-1, 1) });
+  }
+  addPart(p) {
+    if (this.particles.length >= SC_PARTS) this.particles.shift();
+    this.particles.push(p);
+  }
+  burst(sparks, puffs) {
+    const sp = Math.sin(this.psi), cp = Math.cos(this.psi), G = this.roadY(this.Z), r = this.rng;
+    for (let k = 0; k < sparks; k++) {
+      const a = r.float(-1, 1), b = r.float(-2.2, 2.2);
+      this.spark(this.X + cp * a + sp * b, G + 0.08, this.Z - sp * a + cp * b, 1);
+    }
+    for (let k = 0; k < puffs; k++) {
+      const a = r.float(-1.6, 1.6), b = r.float(-3, 2);
+      this.dust(this.X + cp * a + sp * b, G + 0.25, this.Z - sp * a + cp * b, r.float(0.8, 1.5));
+    }
+  }
+  moveParticles(sp, cp, slip, dt) {
+    this.emit -= dt;
+    // tyres letting go smoke
+    if (slip > 0.085 && !this.air && this.emit <= 0) {
+      this.emit = 0.05;
+      const s = this.rng.bool() ? -1 : 1;
+      this.dust(this.X + cp * s * SC_TRACK - sp * SC_LR, this.roadY(this.Z) + 0.2, this.Z - sp * s * SC_TRACK - cp * SC_LR, 0.8);
+    }
+    const parts = this.particles;
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const p = parts[i];
+      p.life -= dt;
+      if (p.life <= 0) { parts.splice(i, 1); continue; }
+      if (p.kind === 1) {
+        p.vy -= SC_G * dt;
+        p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
+        const G = this.roadY(p.z);
+        if (p.y < G) { p.y = G; p.vy *= -0.45; p.vx *= 0.8; p.vz *= 0.8; }
+      } else {
+        const k = 1 - dt * 1.3;
+        p.vx *= k; p.vz *= k;
+        p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
+      }
+    }
+  }
+
+  // ---- the director ----
+  nextCut() {
+    const r = this.rng, bar = this.grid.barSec, t = this.t;
+    const s = this.stunt();
+    let kind, dur;
+    const pickBars = () => {
+      const e = this.energyAt(t);
+      const bars = bar * 4 <= 5.5 ? 4 : (bar * 4 <= 9.5 && e < 0.45 ? 4 : 2);
+      const d = bars * bar;
+      return d < 3 ? d * 2 : d;
+    };
+    if (s && t >= s.T - 0.01 && t < s.T + 0.5) {
+      kind = 'land'; dur = 2 * bar;
+    } else if (s && t >= s.off - 2 * this.spb - 0.01 && t < s.T) {
+      kind = 'stunt'; dur = s.T - t;
+    } else {
+      if (this.t < 0.01) {
+        kind = 'fly'; dur = Math.max(5, pickBars());
+      } else {
+        const bag = ['front', 'side', 'rear', 'nose', 'fly', 'crane', 'dash', 'tail', 'quarter', 'quarter'];
+        for (;;) {
+          kind = bag[Math.floor(r.float(0, bag.length))];
+          if (!this.lastKinds.includes(kind)) break;
+        }
+        dur = pickBars();
+        if (kind === 'dash' || kind === 'nose') dur = Math.min(dur, Math.max(3, 2 * bar));
+      }
+      // never run past the shot that watches the boost
+      if (s && t < s.off - 2 * this.spb && t + dur > s.off - 2 * this.spb) {
+        dur = s.off - 2 * this.spb - t;
+        if (dur < 1.6 && this.shot) { kind = this.shot.kind === 'rear' ? 'tail' : 'rear'; }
+      }
+    }
+    this.lastKinds.push(kind);
+    if (this.lastKinds.length > 2) this.lastKinds.shift();
+    this.cutAt = t + Math.max(0.25, dur);
+    const sd = r.bool() ? 1 : -1;
+    const shot = { kind, t0: t, dur: Math.max(0.25, dur), side: sd, a: r.float(0, 1), b: r.float(0, 1), snap: true };
+    if (kind === 'fly') {
+      const zp = this.Z + this.u * shot.dur * 0.62;
+      this.layRoad();
+      const y = this.roadY(zp), x = this.roadX(zp);
+      shot.at = [x + 1.85 + sd * (4.8 + 1.5 * shot.b), y + 0.42 + 0.35 * shot.a, zp];
+    }
+    if (kind === 'stunt' && s) {
+      const y = this.roadY(s.zBar), x = this.roadX(s.zBar);
+      shot.at = [x - 9.5, y + 0.34, s.zBar + 3];
+    }
+    this.shot = shot;
+    this.placeEye(1);
+  }
+
+  /** Where this shot wants the eye and what it looks at, given the car. */
+  aim() {
+    const s = this.shot, sp = Math.sin(this.psi), cp = Math.cos(this.psi);
+    const h = Math.min(1, (this.t - s.t0) / s.dur);
+    const car = [this.X, this.Y, this.Z];
+    const onRoad = (along, lat, up) => {
+      const z = this.Z + along;
+      const x0 = this.roadX(z), x1 = this.roadX(z + 2);
+      const tn = (x1 - x0) / 2, n = Math.hypot(tn, 1);
+      return [x0 + (lat) / n, this.roadY(z) + up, z - lat * tn / n];
+    };
+    let eye, look, f = 2, omega = 7, lookO = 12;
+    switch (s.kind) {
+      case 'front':
+        eye = onRoad(8.5 + 2.5 * s.a, this.lane + (s.side * 1.6 * s.b), 0.5 + 0.5 * s.a);
+        look = [car[0], car[1] + 0.55, car[2] + 1.2];
+        f = 2.3; omega = 3.2;
+        break;
+      case 'quarter':
+        // ahead and to one side, low: the car as its photographs show it
+        eye = onRoad(6.6 + 1.6 * s.a, this.lane + s.side * (3.6 + 1.2 * s.b), 0.62 + 0.5 * s.a);
+        look = [car[0], car[1] + 0.5, car[2] + 0.4];
+        f = 2.1; omega = 4;
+        break;
+      case 'side': {
+        const along = (s.side > 0 ? 1 : -1) * (5.5 - 11 * h);
+        eye = onRoad(along, this.lane - 7.2, 0.75 + 0.5 * s.a);
+        look = [car[0], car[1] + 0.55, car[2]];
+        f = 1.75; omega = 5;
+        break;
+      }
+      case 'rear':
+        eye = onRoad(-9.5, this.lane + 0.5 * s.side * s.a, 2.1 + 0.8 * s.b);
+        look = [car[0] + sp * 12, car[1] + 0.8, car[2] + cp * 12];
+        f = 1.4; omega = 2.8;
+        break;
+      case 'tail':
+        eye = onRoad(-13, this.lane + 1.2 * s.side, 0.6);
+        look = [car[0], car[1] + 0.65, car[2] - 1];
+        f = 3; omega = 2.4;
+        break;
+      case 'nose':
+        eye = [car[0] + sp * 4.3 + cp * (s.side * 0.55), car[1] + 0.68, car[2] + cp * 4.3 - sp * (s.side * 0.55)];
+        look = [car[0] + sp * 1.7, car[1] + 0.62, car[2] + cp * 1.7];
+        f = 1.55; omega = 16; lookO = 22;
+        break;
+      case 'fly':
+        eye = s.at;
+        look = [car[0] + sp * 1, car[1] + 1.0, car[2] + cp * 1];
+        // a long lens on the car far off, opening as it arrives
+        f = 1.7 + 3.2 * Math.pow(1 - Math.min(1, h / 0.62), 2); omega = 1e3; lookO = 9;
+        break;
+      case 'crane': {
+        const along = 12 - 20 * h;
+        eye = onRoad(along, this.lane - 8.5 * s.side, 5.5 + 3 * s.a);
+        look = [car[0] + sp * 0.6, car[1] + 0.5, car[2] + cp * 0.6];
+        f = 2; omega = 4; lookO = 20;
+        break;
+      }
+      case 'dash':
+        // from the driver's seat, looking out over the bonnet
+        eye = [car[0] + sp * 0.1 - cp * 0.34, car[1] + 1.06, car[2] + cp * 0.1 + sp * 0.34];
+        look = [car[0] + sp * 40, car[1] + 0.85, car[2] + cp * 40];
+        f = 1.3; omega = 1e3; lookO = 18;
+        break;
+      case 'stunt':
+        eye = s.at;
+        look = [car[0], car[1] + 1.1, car[2]];
+        f = 1.5; omega = 1e3; lookO = 8;
+        break;
+      default: // 'land'
+        eye = onRoad(12, this.lane - 0.8, 0.42);
+        look = [car[0], car[1] + 0.5, car[2]];
+        f = 2.8; omega = 3.5;
+    }
+    return { eye, look, f, omega, lookO };
+  }
+
+  placeEye() {
+    const a = this.aim(), car = [this.X, this.Y, this.Z];
+    this.cam = a.eye.slice(); this.look = a.look.slice(); this.f = a.f;
+    this.camRel = a.eye.map((v, i) => v - car[i]);
+    this.lookRel = a.look.map((v, i) => v - car[i]);
+    this.cv = [0, 0, 0];
+  }
+
+  /** The eye follows as an operator would: late relative to the car, never left behind by its speed. */
+  moveEye(dt) {
+    const a = this.aim(), car = [this.X, this.Y, this.Z];
+    const k = 1 - Math.exp(-dt * a.omega), kl = 1 - Math.exp(-dt * a.lookO);
+    for (let i = 0; i < 3; i++) {
+      this.camRel[i] += (a.eye[i] - car[i] - this.camRel[i]) * k;
+      this.lookRel[i] += (a.look[i] - car[i] - this.lookRel[i]) * kl;
+      const n = car[i] + this.camRel[i];
+      this.cv[i] = (n - this.cam[i]) / dt;
+      this.cam[i] = n;
+      this.look[i] = car[i] + this.lookRel[i];
+    }
+    // the ground is under the eye whatever the car does
+    const floor = this.roadY(this.cam[2]) + 0.22;
+    if (this.cam[1] < floor) this.cam[1] = floor;
+    this.f += (a.f - this.f) * Math.min(1, dt * 4);
+  }
+
+  advanceTo(t) {
+    if (t < this.t - 1e-6) this.reset();
+    while (this.t + SC_DT <= t) this.step();
+  }
+
+  // ---- what the shader sees: everything relative to the eye ----
+  uniforms(t) {
+    this.advanceTo(t);
+    const ex = Math.max(0, t - this.t);
+    const sp = Math.sin(this.psi), cp = Math.cos(this.psi);
+    const vx = this.u * sp + this.w * cp, vz = this.u * cp - this.w * sp;
+    // a shake that dies away, on the eye only
+    const sh = this.shake * this.shake;
+    const cx = this.cam[0] + this.cv[0] * ex + sh * 0.1 * Math.sin(t * 61);
+    const cy = this.cam[1] + this.cv[1] * ex + sh * 0.14 * Math.sin(t * 73 + 1);
+    const cz = this.cam[2] + this.cv[2] * ex;
+    const lx = this.look[0] + vx * ex - cx, ly = this.look[1] - cy, lz = this.look[2] + vz * ex - cz;
+    const ll = Math.hypot(lx, ly, lz) || 1;
+    const F = [lx / ll, ly / ll, lz / ll];
+    const hr = Math.hypot(F[2], F[0]) || 1;
+    const lean = sh * 0.02 * Math.sin(t * 47);
+    let Rx = F[2] / hr, Ry = lean, Rz = -F[0] / hr;
+    const rl = Math.hypot(Rx, Ry, Rz) || 1; Rx /= rl; Ry /= rl; Rz /= rl;
+    const U = [F[1] * Rz - F[2] * Ry, F[2] * Rx - F[0] * Rz, F[0] * Ry - F[1] * Rx];
+    const eyeSpeed = Math.hypot(this.cv[0], this.cv[1], this.cv[2]);
+
+    // the body's axes: its heading, then pitch and lean, a little more than life so they read
+    const pi = this.pitch * 1.25, ro = this.roll * 1.35;
+    const cP = Math.cos(pi), sP = Math.sin(pi), cR = Math.cos(ro), sR = Math.sin(ro);
+    const f = [sp * cP, sP, cp * cP];
+    const r0 = [cp, 0, -sp];
+    const u0 = [-sp * sP, cP, -cp * sP];
+    const R = [r0[0] * cR - u0[0] * sR, r0[1] * cR - u0[1] * sR, r0[2] * cR - u0[2] * sR];
+    const Up = [r0[0] * sR + u0[0] * cR, r0[1] * sR + u0[1] * cR, r0[2] * sR + u0[2] * cR];
+    const carX = this.X + vx * ex - cx, carY = this.Y + this.vy * ex - cy, carZ = this.Z + vz * ex - cz;
+
+    // the road, sampled round the eye
+    const i0 = Math.floor(cz / SC_STEP);
+    const base = i0 - 31 + 64;
+    for (let j = 0; j < SC_ROAD; j++) {
+      const k = Math.max(0, Math.min(this.rx.length - 1, base + j));
+      this.road[j * 2] = this.rx[k] - cx;
+      this.road[j * 2 + 1] = this.ry[k] - cy;
+    }
+
+    this.fillProps(cx, cy, cz, F, i0);
+
+    // sparks and dust
+    this.parts.fill(0);
+    for (let k = 0; k < this.particles.length && k < SC_PARTS; k++) {
+      const p = this.particles[k];
+      this.parts[k * 4] = p.x + p.vx * ex - cx;
+      this.parts[k * 4 + 1] = p.y + p.vy * ex - cy;
+      this.parts[k * 4 + 2] = p.z + p.vz * ex - cz;
+      this.parts[k * 4 + 3] = p.kind === 1 ? Math.min(1, p.life * 3) : -Math.max(0.001, p.life / (p.life0 || 1));
+    }
+
+    // the barrier of the stunt in hand
+    let bar = [0, 0, 1e4, 0];
+    const s = this.stunt();
+    if (s && t < s.T + 2) {
+      const x0 = this.roadX(s.zBar), x1 = this.roadX(s.zBar + 4);
+      bar = [x0 - cx, this.roadY(s.zBar) - cy, s.zBar - cz, Math.atan2(x1 - x0, 4)];
+    }
+
+    const phase = (this.phase + this.rate * ex / this.spb) % 2;
+    const zt = ((cz % SC_TILE) + SC_TILE) % SC_TILE;
+    return {
+      uScCam: { v: [0, 0, 0, this.f, Rx, Ry, Rz, eyeSpeed, U[0], U[1], U[2], this.shot.kind === 'dash' ? 1 : 0, F[0], F[1], F[2], 0], kind: '4fv' },
+      uScCar: { v: [carX, carY, carZ, this.u, R[0], R[1], R[2], this.delta, Up[0], Up[1], Up[2], this.spin, f[0], f[1], f[2], this.brake], kind: '4fv' },
+      uScWheel: { v: [this.wy[0], this.wy[1], this.wy[2], this.wy[3]], kind: '4f' },
+      uScZ: { v: [cz - i0 * SC_STEP, phase, this.rate, zt], kind: '4f' },
+      uScFx: { v: [this.flash, this.boost, this.air ? 1 : 0, this.u], kind: '4f' },
+      uScBar: { v: bar, kind: '4f' },
+      uScRoad: { v: this.road, kind: '2fv' },
+      uScProp: { v: this.props, kind: '4fv' },
+      uScPart: { v: this.parts, kind: '4fv' },
+    };
+  }
+
+  /** What stands by the road near the eye and in its view, nearest first. */
+  fillProps(cx, cy, cz, F, i0) {
+    const hash = (i, k) => {
+      let x = Math.imul(i * 73856093 ^ k * 19349663 ^ this.sh, 0x5bd1e995);
+      x ^= x >>> 13; x = Math.imul(x, 0x5bd1e995);
+      return ((x ^ (x >>> 15)) >>> 0) / 4294967296;
+    };
+    const fl = Math.hypot(F[0], F[2]) || 1, fx = F[0] / fl, fz = F[2] / fl;
+    const cosCone = Math.cos(Math.atan(1.05 / Math.max(1, this.f)) + 0.12);
+    let n = 0;
+    this.props.fill(-1);
+    const put = (x, y, z, code) => {
+      if (n >= SC_PROPS) return;
+      const dx = x - cx, dz = z - cz, d = Math.hypot(dx, dz);
+      if (d > 430) return;
+      if (d > 26 && (dx * fx + dz * fz) / d < cosCone) return;
+      const o = n * 4;
+      this.props[o] = dx; this.props[o + 1] = dz; this.props[o + 2] = y - cy; this.props[o + 3] = code;
+      n++;
+    };
+    const items = (i) => {
+      if (i < 0 || i >= this.rx.length - 2) return;
+      const idx = i - 64, z = idx * SC_STEP, x = this.rx[i], y = this.ry[i];
+      put(x + 11.5, y, z, 0.5);                                 // a pole on every sample
+      const a = hash(idx, 1), b = hash(idx, 2), c = hash(idx, 3);
+      const s = a < 0.5 ? -1 : 1;
+      const dz = (b - 0.5) * SC_STEP * 0.9;
+      const xz = this.roadSample(this.rx, Math.max(2, Math.min(this.rx.length - 3, i + dz / SC_STEP)));
+      const yz = this.roadSample(this.ry, Math.max(2, Math.min(this.rx.length - 3, i + dz / SC_STEP)));
+      put(xz + s * (13.5 + 42 * c * c), yz, z + dz, (c < 0.6 ? 1 : 2) + 0.998 * b);
+      const d = hash(idx, 4);
+      if (d < 0.5) put(x - s * (8 + 26 * hash(idx, 5)), y, z + 7, 2 + 0.998 * d * 2);
+      if (idx % 11 === 3) put(x + 6.4, y, z + 3, 3.5);
+    };
+    const near = i0 + 64;
+    for (let k = 0; n < SC_PROPS && k < 16; k++) {
+      items(near + k);
+      if (k > 0) items(near - k);
+    }
+  }
+}
+
+export const SIMS = { scanner: ScannerSim, skyrush: SkyrushSim, artillery: ArtillerySim, skatepark: SkateSim, football: FootballSim, tanks: TankSim, tube: TubeSim, crossing: CrossingSim, coderain: CoderainSim, animeop: AnimeopSim, timecar: TimecarSim, moonbike: MoonbikeSim, maze3d: Maze3dSim, echolines: EcholinesSim, ansi: AnsiSim, cascade: CascadeSim, cracktro: CracktroSim, rubber: RubberSim, chessfloor: ChessfloorSim, bobs: BobsSim, pyramid: PyramidSim, pipes: PipesSim, maze: MazeSim, snake: SnakeSim, rocks: RocksSim, starfighter: StarSim, paddles: PaddlesSim, invaders: InvadersSim, bricks: BricksSim, lightcycles: LightcyclesSim };
