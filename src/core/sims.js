@@ -4189,4 +4189,172 @@ function rotateAxis(v, k, ang) {
   return [v[0] * c + kv[0] * s + k[0] * kd * (1 - c), v[1] * c + kv[1] * s + k[1] * kd * (1 - c), v[2] * c + kv[2] * s + k[2] * kd * (1 - c)];
 }
 
-export const SIMS = { skatepark: SkateSim, football: FootballSim, tanks: TankSim, tube: TubeSim, crossing: CrossingSim, coderain: CoderainSim, animeop: AnimeopSim, timecar: TimecarSim, moonbike: MoonbikeSim, maze3d: Maze3dSim, echolines: EcholinesSim, ansi: AnsiSim, cascade: CascadeSim, cracktro: CracktroSim, rubber: RubberSim, chessfloor: ChessfloorSim, bobs: BobsSim, pyramid: PyramidSim, pipes: PipesSim, maze: MazeSim, snake: SnakeSim, rocks: RocksSim, starfighter: StarSim, paddles: PaddlesSim, invaders: InvadersSim, bricks: BricksSim, lightcycles: LightcyclesSim };
+// ---------------------------------------------------------------------------
+// The artillery: two teams of little soldiers on a hill, shots on the bar
+// ---------------------------------------------------------------------------
+
+export const ART_CRATERS = 32;
+export const ART_SOLDIERS = 10;
+const ART_GRAV = 0.9;                       // board units a second squared
+
+/** The hill before any crater: a few slow waves, the seed's; the same sum the shader draws. */
+function artBase(x, k) {
+  return -0.18 + 0.16 * Math.cos(x * 2.6 + k[0]) * 0.6 + 0.09 * Math.sin(x * 5.3 + k[1]) + 0.045 * Math.sin(x * 11.0 + k[2]) + 0.12 * Math.exp(-x * x * 6.0) * k[3];
+}
+
+/**
+ * The artillery: two teams of five little soldiers on a hill of earth, seen
+ * from the side, as the turn-based artillery games of the PC showed it. On
+ * each bar line a soldier of one side and then the other fires; the shell
+ * arcs through the wind and lands on the beat where the snare is, blowing a
+ * crater in the hill and anyone near it. On the accented bar - the drop - the
+ * shell splits in five at the top of its arc. A side wiped out, the other
+ * cheers, and two bars later a new round starts on a whole hill.
+ */
+export class ArtillerySim extends PlannedSim {
+  reset() {
+    this.rng = new Rng(this.seed, 'artillery-sim');
+    const r = new Rng(this.seed, 'artillery-hill');
+    this.k = [r.float(0, 6.28), r.float(0, 6.28), r.float(0, 6.28), r.float(0.3, 1)];
+    this.clock = 0;
+    this.kept = 0;
+    this.round = 0;
+    this.craters = [];            // {t, x, y, r}
+    this.shells = [];             // {t0, t1, x0, y0, vx, vy, split, kids}
+    this.booms = [];              // {t, x, y, size}
+    this.deaths = [];             // {t, i}
+    this.rounds = [{ t: -1e9 }];
+    this.turn = this.rng.int(0, 1);
+    this.next = 0;
+    this.deploy(0);
+  }
+
+  /** The ground's height at x, the craters dug out of it so far. */
+  surface(x, t = Infinity) {
+    let y = artBase(x, this.k);
+    let from = -1e9;
+    for (const r of this.rounds) if (r.t <= t) from = r.t;
+    for (const c of this.craters) {
+      if (c.t > t || c.t < from) continue;
+      const dx = Math.abs(x - c.x);
+      if (dx >= c.r) continue;
+      const h = Math.sqrt(c.r * c.r - dx * dx);
+      if (c.y + h > y) y = Math.min(y, c.y - h);
+    }
+    return y;
+  }
+
+  deploy(t) {
+    this.soldiers = [];
+    this.rounds.push({ t, soldiers: this.soldiers });
+    for (let team = 0; team < 2; team++) {
+      for (let i = 0; i < 5; i++) {
+        const x = (team ? 1 : -1) * (0.18 + i * 0.13 + this.rng.float(-0.03, 0.03));
+        this.soldiers.push({ x, team, alive: true, died: null });
+      }
+    }
+    this.wind = this.rng.float(-0.35, 0.35);
+  }
+
+  plan() {
+    const bar = this.grid.barSec, spb = this.grid.spb;
+    const t = this.next;
+    this.clock = t;
+    this.next = t + bar;
+    const alive = (team) => this.soldiers.filter((q) => q.alive && q.team === team);
+    if (!alive(0).length || !alive(1).length) {
+      // a side wiped out: two bars of cheering, then a whole hill and both sides again
+      this.deploy(t + bar);
+      this.next = t + 2 * bar;
+      return;
+    }
+    const shooter = this.rng.pick(alive(this.turn));
+    const targets = alive(1 - this.turn);
+    const target = this.rng.pick(targets);
+    this.turn = 1 - this.turn;
+    if (this.rng.bool(0.3)) this.wind = Math.max(-0.4, Math.min(0.4, this.wind + this.rng.float(-0.15, 0.15)));
+    const big = this.grid.isAccent(t);
+    // it lands on the snare: the fourth beat (the second, when the tempo is slow)
+    const land = t + (spb < 0.45 ? 3 : 1) * spb;
+    const x0 = shooter.x, y0 = this.surface(x0, t) + 0.035;
+    const miss = this.rng.bool(0.55) ? this.rng.float(0.07, 0.16) * (this.rng.bool() ? 1 : -1) : 0;
+    const tx = target.x + miss, ty = this.surface(tx, land);
+    const T = land - t;
+    const vx = (tx - x0 - 0.5 * this.wind * T * T) / T, vy = (ty - y0 + 0.5 * ART_GRAV * T * T) / T;
+    const shell = { t0: t, t1: land, x0, y0, vx, vy, from: this.soldiers.indexOf(shooter), split: big, round: this.rounds[this.rounds.length - 1] };
+    this.shells.push(shell);
+    // where it lands: one crater, or five from the split
+    const hits = big ? [-0.16, -0.08, 0, 0.08, 0.16].map((d) => tx + d) : [tx];
+    for (const hx of hits) {
+      const hy = this.surface(hx, land);
+      const rr = big ? 0.075 : 0.06;
+      this.craters.push({ t: land, x: hx, y: hy, r: rr });
+      this.booms.push({ t: land, x: hx, y: hy, size: big ? 1.4 : 1 });
+      for (const q of this.soldiers) {
+        if (q.alive && Math.abs(q.x - hx) < rr + 0.02) { q.alive = false; q.died = land; this.deaths.push({ t: land, i: this.soldiers.indexOf(q), from: hx }); }
+      }
+    }
+    // the next one fires on the next bar line
+  }
+
+  advanceTo(t) {
+    if (t < this.kept) this.reset();
+    while (this.clock <= t + 2 * this.grid.barSec) this.plan();
+    const keep = t - 4;
+    this.shells = this.shells.filter((q) => q.t1 > keep);
+    this.booms = this.booms.filter((q) => q.t > keep);
+    this.deaths = this.deaths.filter((q) => q.t > keep);
+    const from = this.rounds.filter((r) => r.t <= t).pop();
+    this.craters = this.craters.filter((c) => c.t >= (from ? from.t : -1e9) - 1e-6 || c.t > t);
+    while (this.rounds.length > 2 && this.rounds[2].t <= t) this.rounds.shift();
+    this.kept = Math.max(0, this.rounds[1] ? this.rounds[1].t : 0);
+  }
+
+  uniforms(t) {
+    this.advanceTo(t);
+    // the round in play at t, and its soldiers as they stood then
+    const round = this.rounds.filter((r) => r.t <= t).pop() || this.rounds[0];
+    const cr = new Float32Array(ART_CRATERS * 4);
+    let n = 0;
+    for (const c of this.craters) {
+      if (c.t > t || c.t < round.t || n >= ART_CRATERS) continue;
+      cr.set([c.x, c.y, c.r, t - c.t], 4 * n++);
+    }
+    for (let i = n; i < ART_CRATERS; i++) cr.set([0, 0, 0, 99], 4 * i);
+    const so = new Float32Array(ART_SOLDIERS * 4);
+    // (the soldiers of the round shown: the plan may already have dealt the next one)
+    const live = round.soldiers || this.soldiers;
+    live.forEach((q, i) => {
+      const dead = q.died !== null && q.died <= t;
+      const since = dead ? t - q.died : -1;
+      const shooting = this.shells.find((s) => s.round === round && s.from === i && t >= s.t0 - this.grid.spb && t < s.t0 + 0.2);
+      so.set([q.x, this.surface(q.x, t), q.team + (shooting ? 2 : 0), dead ? since : -1], i * 4);
+    });
+    const sh = new Float32Array(24);
+    let m = 0;
+    for (const s of this.shells) {
+      if (t < s.t0 || t >= s.t1 || m >= 6) continue;
+      const u = t - s.t0;
+      const x = s.x0 + s.vx * u + 0.5 * this.wind * u * u, y = s.y0 + s.vy * u - 0.5 * ART_GRAV * u * u;
+      const apex = s.vy / ART_GRAV;
+      if (s.split && u > apex) {
+        for (const d of [-0.16, -0.08, 0, 0.08, 0.16]) if (m < 6) sh.set([x + d * (u - apex) / (s.t1 - s.t0 - apex), y, 1, 1], 4 * m++);
+      } else sh.set([x, y, 1, 0], 4 * m++);
+    }
+    const bo = new Float32Array(24);
+    const bl = recent(this.booms, t, 6);
+    for (let i = 0; i < 6; i++) { const b = bl[i]; bo.set(b ? [b.x, b.y, t - b.t, b.size] : [0, 0, 99, 0], i * 4); }
+    const a0 = live.filter((q) => q.team === 0 && !(q.died !== null && q.died <= t)).length;
+    const a1 = live.filter((q) => q.team === 1 && !(q.died !== null && q.died <= t)).length;
+    return {
+      uArtK: { v: this.k, kind: '4f' },
+      uCraters: { v: cr, kind: '4fv' },
+      uSoldiers: { v: so, kind: '4fv' },
+      uShells: { v: sh, kind: '4fv' },
+      uABooms: { v: bo, kind: '4fv' },
+      uArtFx: { v: [this.wind, a0, a1, t - round.t], kind: '4f' },
+    };
+  }
+}
+
+export const SIMS = { artillery: ArtillerySim, skatepark: SkateSim, football: FootballSim, tanks: TankSim, tube: TubeSim, crossing: CrossingSim, coderain: CoderainSim, animeop: AnimeopSim, timecar: TimecarSim, moonbike: MoonbikeSim, maze3d: Maze3dSim, echolines: EcholinesSim, ansi: AnsiSim, cascade: CascadeSim, cracktro: CracktroSim, rubber: RubberSim, chessfloor: ChessfloorSim, bobs: BobsSim, pyramid: PyramidSim, pipes: PipesSim, maze: MazeSim, snake: SnakeSim, rocks: RocksSim, starfighter: StarSim, paddles: PaddlesSim, invaders: InvadersSim, bricks: BricksSim, lightcycles: LightcyclesSim };

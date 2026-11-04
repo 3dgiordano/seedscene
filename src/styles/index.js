@@ -6905,6 +6905,118 @@ vec3 render(vec2 p, vec2 uv) {
 }
 `;
 
+const artillery = `
+// The artillery: two teams of little soldiers on a hill of earth, seen from
+// the side, as the turn-based artillery games of the PC showed it - mountains
+// behind, the ground blown into craters. The game runs as a simulation
+// (src/core/sims.js): a shot on each bar line, one side and then the other,
+// arcing through the wind to land where the snare is; on the drop the shell
+// splits in five.
+uniform vec4 uArtK;          // the hill's waves, the seed's
+uniform vec4 uCraters[32];   // x, y, radius, since
+uniform vec4 uSoldiers[10];  // x, the ground under him, team (+2 firing), since he fell (-1 standing)
+uniform vec4 uShells[6];     // x, y, flying, split
+uniform vec4 uABooms[6];     // x, y, since, size
+uniform vec4 uArtFx;         // wind, soldiers left on each side, since the round began
+float artBase(float x) {
+  return -0.18 + 0.16 * cos(x * 2.6 + uArtK.x) * 0.6 + 0.09 * sin(x * 5.3 + uArtK.y) + 0.045 * sin(x * 11.0 + uArtK.z) + 0.12 * exp(-x * x * 6.0) * uArtK.w;
+}
+vec3 teamCol(float team) {
+  vec3 c = unblack(pal(team < 0.5 ? 0.05 + uSeed.x * 0.3 : 0.55 + uSeed.x * 0.3));
+  return c / max(max(c.r, c.g), max(c.b, 0.3));
+}
+vec3 render(vec2 p, vec2 uv) {
+  // the night sky, and two ranges of mountains behind
+  vec3 col = mix(vec3(0.03, 0.02, 0.1), vec3(0.12, 0.05, 0.25), smoothstep(-0.2, 0.5, p.y));
+  col += vec3(0.8, 0.85, 1.0) * step(0.997, hash12(floor(p * 220.0))) * 0.6;
+  float far = 0.08 + 0.08 * sin(p.x * 3.1 + uArtK.y) + 0.05 * sin(p.x * 7.7 + uArtK.x) + 0.02 * vnoise(vec2(p.x * 20.0, 0.0));
+  if (p.y < far) col = mix(vec3(0.1, 0.12, 0.35), vec3(0.18, 0.22, 0.55), smoothstep(far - 0.25, far, p.y)) * (0.8 + 0.2 * vnoise(p * 30.0));
+  float near = -0.02 + 0.07 * sin(p.x * 4.4 + uArtK.z) + 0.03 * sin(p.x * 13.0);
+  if (p.y < near) col = vec3(0.06, 0.07, 0.2) * (0.8 + 0.2 * vnoise(p * 40.0));
+  // the hill: earth under a grass edge, the craters dug out of it, burnt round their rims
+  float g = artBase(p.x);
+  bool ground = p.y < g;
+  float rim = 1e9;
+  for (int i = 0; i < 32; i++) {
+    vec4 c = uCraters[i];
+    if (c.w > 90.0) continue;
+    float d = length(p - c.xy) - c.z;
+    if (d < 0.0) ground = false;
+    rim = min(rim, abs(d));
+  }
+  if (ground) {
+    float soil = vnoise(p * vec2(60.0, 80.0)) * 0.6 + vnoise(p * 180.0) * 0.4;
+    col = mix(vec3(0.32, 0.2, 0.1), vec3(0.45, 0.3, 0.16), soil);
+    col *= 0.75 + 0.25 * step(0.75, hash12(floor(p * vec2(90.0, 120.0))));          // stones
+    col = mix(col, vec3(0.2, 0.55, 0.15), (1.0 - smoothstep(0.0, 0.014, g - p.y)) * step(0.0, g - p.y));   // the grass
+    col *= 1.0 - 0.55 * (1.0 - smoothstep(0.0, 0.018, rim));                              // scorched round a crater
+  }
+  // the soldiers: a helmet in the side's colour, a body, two legs; the one firing with his bazooka up; the fallen
+  // flung away and gone
+  for (int i = 0; i < 10; i++) {
+    vec4 s = uSoldiers[i];
+    if (s.w > 0.8) continue;
+    float team = mod(s.z, 2.0), facing = team < 0.5 ? 1.0 : -1.0;
+    vec2 base = vec2(s.x, s.y);
+    if (s.w >= 0.0) base += vec2(-facing * s.w * 0.25, s.w * 0.6 - s.w * s.w * 0.9);
+    vec2 q = (p - base) * vec2(facing, 1.0) / 1.5;          // (drawn half as big again, as the games drew theirs)
+    if (s.w >= 0.0) q = rot(s.w * 9.0) * q;
+    if (length(q - vec2(0.0, 0.025)) > 0.05) continue;
+    float fade = s.w >= 0.0 ? 1.0 - s.w / 0.8 : 1.0;
+    float legs = min(sdSeg(q, vec2(-0.004, 0.01), vec2(-0.007, 0.0)), sdSeg(q, vec2(0.004, 0.01), vec2(0.007, 0.0)));
+    float body = sdSeg(q, vec2(0.0, 0.012), vec2(0.0, 0.024)) - 0.006;
+    float head = length(q - vec2(0.001, 0.031)) - 0.0055;
+    float helmet = max(length(q - vec2(0.0, 0.033)) - 0.0075, -(q.y - 0.032));
+    float tube = sdSeg(q, vec2(-0.006, 0.024), s.z > 1.5 ? vec2(0.02, 0.04) : vec2(0.016, 0.022)) - 0.0025;
+    vec3 tc = teamCol(team);
+    col = mix(col, vec3(0.15, 0.17, 0.1), (1.0 - smoothstep(0.0, 0.0015, legs - 0.002)) * fade);
+    col = mix(col, tc * 0.7, (1.0 - smoothstep(0.0, 0.0015, body)) * fade);
+    col = mix(col, vec3(0.3, 0.32, 0.25), (1.0 - smoothstep(0.0, 0.0015, tube)) * fade);
+    col = mix(col, vec3(0.9, 0.7, 0.55), (1.0 - smoothstep(0.0, 0.0015, head)) * fade);
+    col = mix(col, tc, (1.0 - smoothstep(0.0, 0.0015, helmet)) * fade);
+    if (s.z > 1.5) col += vec3(1.0, 0.8, 0.4) * exp(-length(q - vec2(0.024, 0.042)) * 260.0) * 2.0;
+  }
+  // the shells, a dark round with a tracer behind it
+  for (int i = 0; i < 6; i++) {
+    vec4 s = uShells[i];
+    if (s.z < 0.5) continue;
+    col = mix(col, vec3(0.05), 1.0 - smoothstep(0.004, 0.006, length(p - s.xy)));
+    col += vec3(1.0, 0.85, 0.5) * exp(-length(p - s.xy) * 200.0) * 0.8;
+  }
+  // the bursts: a flash, a fireball swelling and going to smoke, earth thrown up
+  for (int i = 0; i < 6; i++) {
+    vec4 b = uABooms[i];
+    if (b.z > 1.5) continue;
+    vec2 d = p - b.xy;
+    float r = length(d);
+    float fire = (0.03 + 0.05 * sqrt(b.z)) * b.w;
+    col = mix(col, mix(vec3(1.0, 0.9, 0.5), vec3(0.9, 0.3, 0.05), smoothstep(0.0, fire, r)), (1.0 - smoothstep(fire * 0.8, fire, r)) * max(0.0, 1.0 - b.z * 2.5));
+    col = mix(col, vec3(0.25, 0.23, 0.22), (1.0 - smoothstep(fire, fire * 1.6, r + 0.02 * vnoise(d * 40.0 + b.z))) * smoothstep(0.2, 0.5, b.z) * max(0.0, 1.0 - b.z / 1.5) * 0.8);
+    for (int k = 0; k < 8; k++) {
+      float fk = float(k), a = fk * 0.6 + 0.3 + hash11(fk + b.x * 13.0) * 0.4;
+      vec2 v = vec2(cos(a) * 0.5, abs(sin(a)) + 0.3) * (0.25 + 0.2 * hash11(fk * 3.0 + b.y));
+      vec2 pk = b.xy + v * b.z - vec2(0.0, 0.9 * b.z * b.z);
+      col = mix(col, vec3(0.35, 0.22, 0.1), (1.0 - smoothstep(0.003, 0.005, length(p - pk))) * step(b.z, 1.0));
+    }
+    col += vec3(1.0, 0.8, 0.5) * exp(-b.z * 12.0) * 0.25 * b.w;
+  }
+  // the bars of each side's strength at the top, the wind below
+  for (int t = 0; t < 2; t++) {
+    float left = t == 0 ? uArtFx.y : uArtFx.z;
+    float x0 = t == 0 ? -0.8 : 0.08;
+    vec2 bq = p - vec2(x0, 0.43);
+    if (bq.x > 0.0 && bq.x < 0.72 && abs(bq.y) < 0.018) col = mix(vec3(0.05), teamCol(float(t)), step(bq.x, 0.72 * left / 5.0)) * (abs(bq.y) < 0.012 ? 1.0 : 0.6);
+  }
+  vec2 wq = p - vec2(0.0, -0.45);
+  if (abs(wq.y) < 0.012 && abs(wq.x) < 0.3) {
+    col = vec3(0.08);
+    float w = uArtFx.x / 0.4 * 0.28;
+    if ((wq.x - 0.0) * sign(w) > 0.0 && abs(wq.x) < abs(w)) col = vec3(0.3, 0.55, 1.0);
+  }
+  return col;
+}
+`;
+
 const skatepark = `
 // The skate park: a wooden half-pipe in a warehouse, the skater riding wall
 // to wall and up into the air at every bar line - a spin, a flip, a grab -
@@ -7794,6 +7906,7 @@ const SOURCES = {
   tube: staged(tube, 0.4, 0.45),
   tanks: staged(tanks, 0.35, 0.45),
   football: staged(football, 0.6, 0.4),
+  artillery: staged(artillery, 0.45, 0.4),
   skatepark: staged(skatepark, 0.35, 0.45),
   maze: staged(maze, 0.7, 0.4),
   bricks: staged(bricks, 0.6, 0.35),
@@ -7809,7 +7922,7 @@ const SOURCES = {
 
 /** Post-pass effects a scene asks for: the game scenes get the beat blur. */
 export const STYLE_FX = Object.fromEntries(
-  ['paddles', 'invaders', 'rocks', 'crossing', 'tube', 'tanks', 'football', 'skatepark', 'maze', 'bricks', 'lightcycles', 'snake', 'boxer', 'starfighter', 'pipes', 'pyramid', 'lcd', 'bobs', 'rubber', 'bumplogo', 'cascade', 'ansi', 'echolines', 'maze3d', 'moonbike', 'timecar', 'animeop', 'djdecks',
+  ['paddles', 'invaders', 'rocks', 'crossing', 'tube', 'tanks', 'football', 'skatepark', 'artillery', 'maze', 'bricks', 'lightcycles', 'snake', 'boxer', 'starfighter', 'pipes', 'pyramid', 'lcd', 'bobs', 'rubber', 'bumplogo', 'cascade', 'ansi', 'echolines', 'maze3d', 'moonbike', 'timecar', 'animeop', 'djdecks',
    'prism', 'sculpture', 'fractalflight', 'gimbal']
     .map((n) => [n, { impact: 1 }]),
 );
@@ -7865,6 +7978,7 @@ export const STYLE_INFO = {
   invaders:    'A seed-made formation on the beat; aliens burst on the kick',
   rocks:       'A vector ship that flies, dodges and splits the rocks it hits',
   skatepark:   'A skater on a half-pipe in a warehouse: a trick at every bar line, a grind along the coping through the build, a huge air on the drop, the combo counter',
+  artillery:   'Two teams of little soldiers on a hill: a shot each bar line, arcing through the wind to land on the snare, craters in the earth, a shell that splits in five on the drop',
   football:    'Football seen from above, the camera on the ball: a pass on every beat, a run down the wing through the build, the header in on the drop, the crowd going up',
   tanks:       'A battlefield of green lines through a tank\'s sight: the tank comes round after the enemy on the beat, fires on the backbeat, the radar sweeping once a bar',
   tube:        'A claw on the rim of a glowing tube, things climbing its lanes on the beat, the shots on the backbeat, a dive down the tube on the drop',
