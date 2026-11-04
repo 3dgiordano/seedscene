@@ -2605,7 +2605,7 @@ vec3 render(vec2 p, vec2 uv) {
     if (q.y > 2.6 && rd.y > 0.0) { t = 20.0; break; }
     h = scMap(q);
     if (h.x < 0.0015 * t || t > 18.0) break;
-    t += h.x * 1.05;
+    t += h.x;   // (never longer than the distance: a ray meeting a face head-on would land inside it, and read as shadowed)
   }
   if (t < 18.0) {
     vec3 pos = ro + rd * t, n = scNormal(pos);
