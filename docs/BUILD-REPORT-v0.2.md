@@ -2286,8 +2286,7 @@ The owner approved the time car on 2026-10-31, every scene loading well.
 
 The owner approved the time car and said go on; the next piece was the anime
 opening (`animeop`, 32-bit console). The references were frames of two
-openings of the late 80s that Latin American television played through the
-90s: a title card of thick letters with a black outline and a yellow-to-orange
+openings of the late 80s that television played through the 90s: a title card of thick letters with a black outline and a yellow-to-orange
 or blue fill, over horizontal streaks rushing past; the team lined up against
 a flat red; the hero in armour against ruins and the cosmos; figures flying
 across a sky of clouds; close-ups; flat colours, black outlines. No character,

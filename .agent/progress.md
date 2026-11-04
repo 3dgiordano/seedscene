@@ -1,6 +1,6 @@
 # Progress
 
-Updated: 2026-11-03
+Updated: 2026-11-04
 Plan: docs/PLAN-v0.2.md section 8, "What 0.2.0 still takes", then docs/BUILD-REPORT-v0.2.md "Before release"; after it docs/PLAN-v0.3.md
 
 ## Open
@@ -11,4 +11,4 @@ Plan: docs/PLAN-v0.2.md section 8, "What 0.2.0 still takes", then docs/BUILD-REP
 - returned: keys, seeds and names that still echo titles (scene outrun and the About's OUTRUN SUNSETS; styles beast, agony; seeds gigawatts, boing, juggler, powerpill; track names in PLAN-v0.2; the NOKIA display) - renaming changes commands and links, the owner's call
 - returned: dead air in 19 approved styles, found by `npm run review:music -- gaps`; whether to fill them (intros and breakdowns, likely) is the owner's ([detail](progress-music.md))
 
-Next: the owner opens the PR for docs-catchup-c; then C's rest: skate park, kart race, behind-view shooter, cartoon castle, artillery.
+Next: the owner opens the PR for scene-wording; then C's rest: skate park, kart race, behind-view shooter, cartoon castle, artillery.

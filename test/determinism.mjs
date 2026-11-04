@@ -246,9 +246,13 @@ check('AUTOPLAY sounds the same every time, whatever the block size', ah === pro
   const order = listed.map((m) => m[1]).join() === expected.join() && expected.length === STYLE_NAMES.length;
   const images = expected.every((s) => section.includes(`![${s}](docs/gallery/${s}.png)`));
   const long = listed.filter((m) => m[2].split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length > 40).map((m) => m[1]);
+  // every row of the tables three cells wide, so no entry falls into a fourth column the page does not show
+  const rows = section.split('\n').filter((l) => l.startsWith('| ') && !l.startsWith('|---'));
+  const cells = (l) => l.replace(/`[^`]*`/g, '').split('|').length - 2;
+  const wide = rows.filter((l) => cells(l) !== 3).map((l) => (l.match(/\*\*(\w+)\*\*|!\[(\w+)\]/) || [])[1] || (l.match(/!\[(\w+)\]/) || [])[1] || l.slice(0, 20));
   check('The README lists every scene once, era by era, with its image, in forty words or fewer',
-    at >= 0 && order && images && long.length === 0,
-    at < 0 ? 'no "## Scenes, straight out of the scene" heading' : `${listed.length} entries${long.length ? `, too long: ${long.join(', ')}` : ''}`);
+    at >= 0 && order && images && long.length === 0 && wide.length === 0,
+    at < 0 ? 'no "## Scenes, straight out of the scene" heading' : `${listed.length} entries${long.length ? `, too long: ${long.join(', ')}` : ''}${wide.length ? `, rows not three cells: ${wide.join(', ')}` : ''}`);
 }
 {
   // born in 1985: twelve in 1997, the 32-bit console's year - it opens there and comes back every other

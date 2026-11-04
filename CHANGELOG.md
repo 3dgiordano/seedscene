@@ -420,7 +420,7 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   screenshots of the top-down football games of 1985-1989; the kits are the
   seed's, no team, name or sprite of any game.
 - **Terrace drums** (`terrace`), a music style for 1990–1993 and 2010–now:
-  the football crowds of Latin America and Europe - the big bass drums on one
+  the football terraces, the stands where the crowd sings - the big bass drums on one
   and three with a pick-up before each and a cymbal struck with them, the
   snares on the eighths with a drag and a roll into each phrase, the crowd's
   hands on two and four once it is going, a tuba under it, the trumpets'
@@ -757,8 +757,8 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   tunes an echo channel playing it again a few rows later, quieter, on the
   other side; a bouncing octave bass and drum samples. On DOS it plays from
   samples, as a module player did, whatever card the seed chose.
-- **The anime opening** (`animeop`, 32-bit console): the openings the 90s
-  brought to Latin America, as they are remembered - a cut on every
+- **The anime opening** (`animeop`, 32-bit console): the anime openings of
+  the 90s, as they are remembered - a cut on every
   bar: the team in a row against a red sunburst, three of them against a
   sunset, a power-up over two bars - the charge, then on the downbeat a white
   flash, a column of fire bursting up and a ring of dust, lightning out of the
