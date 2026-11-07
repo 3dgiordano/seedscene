@@ -7,7 +7,7 @@
 v0.2 takes the v0.1 tool ([BUILD-REPORT-v0.1.md](BUILD-REPORT-v0.1.md)) and
 turns it into **SEEDSCENE**: a name, a nostalgic front door, a live mode you
 drive from the keyboard, an About part, seven eras of computing from 1972 to
-now with a journey through them, an endless AUTOPLAY channel, fifty-eight
+now with a journey through them, an endless AUTOPLAY channel, fifty-nine
 scenes and thirty-six styles of music, each scene on its own display and
 sound board.
 
@@ -28,7 +28,7 @@ sound board.
 
 ## Where it stands, 2026-11-03
 
-- **Built:** fifty-eight scenes in seven eras (spans of years, 1972 to now), thirty-six music styles, sixteen
+- **Built:** fifty-nine scenes in seven eras (spans of years, 1972 to now), thirty-six music styles, sixteen
   displays and six sound boards, each scene with its own or its era's; THE
   JOURNEY (three scenes an era, going on through the lists over replays),
   AUTOPLAY, born in, greetings, the screensaver, the sounds between the tracks,
@@ -5057,6 +5057,202 @@ HI-FI forced; four chip tracks do not.
 
 `--format jpeg` fails on a programme, on the code before this round too: ffmpeg
 cannot identify the first frame, which is black. The default, png, works.
+
+## The kart race
+
+Piece C's next scene (2026-11-07), in 1997–1999. `karts`: the kart racers of
+the 32-bit consoles. The look from Wikipedia's gameplay screenshots of three
+kart racers of 1997-1999, each held against the frames: the camera low behind
+the player's kart, the kart about a tenth of the screen across at two thirds
+of the way down, the horizon a third of the way down; the place big in a lower
+corner, the lap and the time along the top, a column of the racers' order down
+the side, a map of the course in a corner; grey tarmac with white edges and a
+dashed middle, red and white kerbs, barriers in two colours, round trees and
+arrow boards on the bends as flat pictures; a sand course between red rocks;
+animal drivers seen from behind, the colour of the kart under each.
+
+**What is built.** Eight karts round a closed course, a bear, a cat, a
+rabbit, a mouse, a frog, a pig, a fox and a dog at the wheels, in the round
+(a kart of blended shapes - a pan, a nose, side pods, a seat, two exhausts,
+fat tyres behind, a wheel on its column - and the driver: a short round body
+sat low, arms in a shirt out to white gloves on the wheel, a big head with the
+animal's ears and muzzle). Each race is a new
+course, a loop pushed out of round by three slow waves, sampled every half
+metre, thrown away if a bend is tighter than 15 m or two parts of it come
+within reach of each other's barriers; in one of three looks, a park, a canyon
+or a night circuit. Trees, palms, cacti, lamps, floodlight towers, tyre stacks
+and arrow boards stand round it as flat pictures always facing the eye, as
+those games drew them; item cubes stand in two rows across the track.
+
+**The music's part.** Every accented bar at least six bars (and a lap's time
+at 30 m/s) after the last finish is a finish: the player's distance round the
+course is solved for it, the pace that ends the last lap exactly on that
+bar, given a boost of 42% from the pad it crosses as the build begins (two
+bars before) and eased from the last race's pace over its first 1.2 s; the
+laps of a race are as many as keep that pace between 15 and 31 m/s. The pack
+holds gaps to the player planned every two bars and eased through by a cubic:
+at the finish the leader is level with the player, 22 cm ahead or behind
+(the player wins 55% of them), the rest strung out 3 to 20 m behind, coming
+there at no more than 2.5 m/s against the player, so the pack moves as one
+through the build as the player boosts past it. Items leave on a snare (the
+snares of the score; the backbeat without one), at most one every other bar,
+and burst on the next beat: the thrower is behind its target by 5 to 26 m and
+the item outruns it at 6 m/s or more; the kart hit is thrown up spinning a
+whole turn and falls 5 m back, won back over three seconds. On the drop the
+camera is across the line on the leaders' side; the frame on the line is held
+for a beat in sepia, a red line through the leaders' noses, then 1ST! or 2ND
+big in the middle.
+
+**The karts as solid things.** Across the track each kart is stepped like a
+driver, 60 times a second: it aims for the inside of the bend ahead over a
+lane of its own, and gives way to a kart beside it or that will be within the
+next 1.6 s (where each will be is planned, so it is known), the one behind
+doing most of the moving; a last check holds any two side by side apart.
+Through bends tighter than 26 m they slide, the tail out, with sparks, blue,
+then orange after 0.8 s, and a burst of flame out of a long slide. The camera
+turns after the player's way round, late, so the slide shows.
+
+| Check | Result |
+|---|---|
+| Frames against the screenshots, at the run, the line, the photo and each look | the kart's size and place, the horizon, the HUD's corners and the course's dressing as above; the drivers animals of the seed's colours, no character, item or course of any game |
+| Finishes on four tempos and accent lists, 150 s each (`npm test`) | 31 finishes, every one on an accented bar, the player's middle on the line, the leader within 22 cm, the rest 3 m behind or more |
+| Two karts side by side, six seeds, 200 s each | never nearer than 7 cm (the check asks for more than 0) and never past the barriers' lanes; a few sideways corrections faster than 10 m/s in each 200 s (1 to 14), the fastest about 0.8 m in a step |
+| Items | 109 in 600 s of races, each thrown on the backbeat and landing on a beat, ahead of its thrower all the way |
+| Going on and coming back against fresh runs | the same state |
+| The simulation, jumping 170 s into a race | 160 ms (artillery 236 on the same score); about 0.5 ms a frame after |
+| Cost a frame at 1280×720 on the real GPU (Intel UHD 630, headless, with the frame read back) | karts 66 ms, skatepark 51, pipes 109 in the same run |
+| Cost a frame at 854×480, SwiftShader | karts about 800 ms, skatepark 282-295 in the same runs: the course, the barriers, the props, the HUD and eight karts in the round; renders take longer for it |
+| Compiled and drawn on the real GPU (Direct3D 11), muted, live | no error |
+| `npm run test:quick` | passes, the README's entry and the new checks included |
+
+Not checked: how the race feels at full speed live, judged here from stills;
+that is the owner's look.
+
+### Rhythm and punch, and a steadier pack
+
+The owner asked (2026-11-07) for a better simulation and for everything to
+have the rhythm and punch of the catalogue's other scenes, which tie their
+light, their view and their events to the kick, the snare, the bass and the
+bar. The race got beats of its own: a pad a bar into each race (and every
+eight bars in a long one) is a 20% boost for a bar that takes the player 2.5 m
+past the pack, given back over two bars; a ramp across the track on the bar
+halfway to the build, 2.6 m long and half a metre high, the player's jump
+leaving on that downbeat and landing a whole number of beats later (as many as
+make it closest to 0.85 s), at most 1.6 m high, the kart pitched nose up off
+the lip and down to land, dust and a shake of the view on landing; the whole
+pack jumps it as it passes. The picture: the view punched in 3.5% on the kick
+and leaned on the snare, shaken by a landing, a hit on the player or a blast
+within 15 m; a wave of light running sixty metres ahead along the barriers'
+tops and the lines once a bar; the pads' and ramps' arrows and the arrow
+boards stepping on the beat; lamps, floodlights, neon, flames and cubes
+flaring with the kick; the drivers nodding; speed lines on each kick;
+fireworks after a win, a burst every other beat; the place popping as it
+changes; FINAL LAP as the last lap starts. A kart nearer the eye than 4.2 m
+fades out in a dither.
+
+The sideways moves were the defect left: a kart could be snapped up to 0.88 m
+in one step when the planned gaps closed with no room. Now the hard
+separation moves a kart at most 14 cm a step, and a kart still boxed in holds
+back along the track, easing back to its place at 1.5 m/s.
+
+| Check | Result |
+|---|---|
+| Sideways moves, six seeds, 200 s each | steps faster than 10 m/s down from 54 to 22, the worst from 0.88 to 0.34 m in a step; a boxed-in kart held back 5.6 m at most; two karts side by side never nearer than 5 cm |
+| Jumps (`npm test`) | 32 in the four runs, each leaving on a bar line and landing on a beat, the player in the air between |
+| Frames at a pad, the ramp, in the air, the landing, after a finish | as described; the dust on landing, the shadows under the karts in the air |
+| Cost a frame at 1280×720 on the real GPU (headless, read back) | karts 79 ms, skatepark 47, pipes 101 in the same run |
+| Cost a frame at 854×480, SwiftShader | karts about 1100 ms (was 800) |
+| Compiled and drawn on the real GPU (Intel UHD 630, Direct3D 11) | no error |
+| `npm run test:quick` | passes |
+
+### The drivers' proportions, the wheel, and the cost
+
+The owner found (2026-11-07) the drivers' trunks too tall for the kart, and
+the wheels at the wrong angle, and asked for the scene to cost less. The
+driver was a capsule from the seat to 0.98 m with the head's middle at 1.06 m,
+a torso as tall as the kart is long; it is now as those games drew theirs: a
+short round body, its top at 0.67 m, no higher than the seat's back, the
+shoulders level with the wheel, the head grown by a ninth and set straight on
+the body at 0.88 m, white gloves on the wheel. The wheel lay 37 degrees off the
+flat, like a bus's; it now stands 65 degrees off it, its face to the driver,
+the column meeting it from below.
+
+The cost, measured in the software renderer, which runs every branch of a
+shader but stops a loop where its count says: the eight animals were eight
+branches of shapes and are one shape now, driven by a table of each one's
+ears, muzzle and eyes; the driver is skipped by a ray passing well clear of
+it; every loop over props, particles, cubes, items, pads, ramps and flames
+runs only over as many as the simulation says are in view; the HUD's letters
+have a drop shadow (two looks at the font) for the rim all round (five); the
+clouds take three octaves, the ground's grain one; a ray that lands past a
+barrier tests only that side's barrier.
+
+| Check | Result |
+|---|---|
+| Cost a frame at 854×480, SwiftShader, the same 20 frames | 1133 ms before, 721 after (skatepark 331 in the same run) |
+| Cost on the real GPU | not measured to better than its noise: the same 30 frames took 94 and 133 ms in one run at 1280×720, read back, against skatepark 54-55; the scene without its picture measured 42 |
+| Frames at the run, the front shot and the line, the three looks | the drivers sat low, the wheels upright, the animals as before; the barriers as before |
+| Compiled and drawn on the real GPU (Intel UHD 630, Direct3D 11) | no error |
+| `npm run test:quick` | passes |
+
+### The wait on the way in, and the screens' glow
+
+The owner found (2026-11-07) that a programme could stop for ten seconds or
+more on its way into the kart race, though the scene came up at once when
+asked for directly. The cause, measured on the owner's GPU (Intel UHD 630,
+Direct3D 11): the scene's shader took **59 s** to compile (skatepark 11.6,
+artillery 14.7, pipes 0.3 in the same run). Asked for directly, it compiles
+under the boot screen; in a programme, the track's scenes are compiled when
+the track starts, and one the background compile has not reached yet is
+waited for. Compiled with a part taken out: without the HUD's lettering 24 s
+(each of its seven labels was its own copy of the font code, five looks
+each), without the karts 39 s, without the props 47 s. Now the simulation
+writes the HUD's words as data (where, how big, which letters, what colour)
+and one piece of the shader draws them all; the kart's shape is looked at in
+one place, its march and the four samples of its normal one loop; the loops
+over karts, props, items and the HUD take their counts from the simulation,
+so the compiler cannot unroll them; each animal's numbers come with the frame.
+**5.3 to 7.2 s** now (skatepark 3.0 and artillery 4.7 in the later run - the
+GPU's compile times vary by run).
+
+The cost a frame, by the GPU's own timer at 854×480 against the skate park in
+alternating rounds: 2.83 times it before, about 2.3-2.4 after - the sky drawn
+only where nothing else is met (it had been drawn under the whole track), the
+animals' table out of the march. Bounding the kart's parts in groups and a
+march of 36 steps for 44 changed nothing measurable. The owner asked whether
+the CRT filter was the cost: measured, the composite TV screen took 15-20 ms
+a frame more than the plain modern screen, more than the skate park's own
+picture - most of it the glow, 24 samples with a cosine and a sine each for
+every pixel of the screen. Its directions are written out now; the picture is
+the same (85-90 dB), the TV screen's extra a third less (skatepark 29 ms to
+22, its modern screen 13.5 to 11).
+
+| Check | Result |
+|---|---|
+| Compile on the real GPU | 59 s before, 5.3-7.2 s after |
+| GPU time a frame, 854×480, against skatepark | 2.83 times before, 2.3-2.4 after |
+| The glow's change, pixels before and after (composite screen, three frames) | 85-90 dB |
+| Software renderer, the same frames | about 720 ms (skatepark 331-357) |
+| Frames: the HUD's words, the photo, the banners, the drivers' lighting | as before |
+| `npm test` | passes, the byte-identical renders included |
+
+**A programme no longer waits for a compile** (at the owner's word, the same
+day). Live, a track's scenes were compiled when the track began, and any the
+background had not reached were waited for, the page frozen. Now the renderer
+can say whether a scene is ready without waiting (`isReady`, starting its
+compile if need be) and start several without waiting (`prepare`); live, a
+new track stays dark on its card until its first scene is ready and fades in
+from then, and within a track the scene on screen plays on until the next one
+is ready, the cut coming then. Offline (the mp4 renders, the gallery) every
+frame is still the one asked for, compiled when needed.
+
+| Check | Result |
+|---|---|
+| A minute of AUTOPLAY held in 1997–1999, 12 s tracks of 5 s scenes, live on the GPU, longest pauses | before: 21.4 s at 22 s, then 0.5; after: 0.65 s, 0.52, 0.18 - and 3467 frames drawn against 2172 |
+| `npm test` | passes; the two renders byte-identical, the same file as before the change |
+
+Not found: what the remaining half-second pauses are (at a track's start, where
+a new score's features are built and a scene's game catches up to the music).
 
 ## What went wrong in the first round
 

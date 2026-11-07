@@ -4,7 +4,7 @@
 
 The release that turns the tool into **SEEDSCENE**: a name, a personality,
 a Commodore 64 front door, seven eras of computing from 1972 to now,
-fifty-eight scenes, thirty-six styles of music, seventeen displays and six
+fifty-nine scenes, thirty-six styles of music, seventeen displays and six
 sound boards, an endless AUTOPLAY channel, and a live mode you
 can drive entirely from the keyboard.
 
@@ -484,6 +484,49 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   skateboarding arcade game of 1997 and Wikipedia's of a console
   skateboarding game of 1999. The skater and the park are drawn here, no
   name, skater or level of any game.
+- **The kart race** (`karts`, 1997–1999), the kart racers of the 32-bit
+  consoles: eight karts round a closed course, an animal at each wheel - a
+  bear, a cat, a rabbit, a mouse, a frog, a pig, a fox, a dog - in the round,
+  sat low as those games drew them, a short round body no taller than the
+  seat's back, white gloves on an upright wheel, a big head with no neck,
+  the camera riding behind the player's kart as those games framed it, the
+  kart a tenth of the screen across, low in the middle, the road ahead. The
+  place big in a corner, the lap and the time, the order down the side and a
+  map of the course with every kart on it. Each race is a new course, laid
+  from the seed - bends, a hairpin or two, a straight - in one of three looks:
+  a park of tarmac, kerbs, checked barriers, trees and arrow boards on the
+  bends; a canyon of red dirt between mesas, cacti and palms; a night circuit
+  of neon lines under floodlights and a skyline. The music sets the finishes:
+  every accented bar far enough from the last - the drop - ends a race, so the
+  player's pace round the course is solved for its last lap to end exactly
+  there, with a boost through the build from a pad on the track where the
+  build begins; the leader comes level, and they cross the line nose to nose,
+  caught by the photo-finish camera across the line, frozen in sepia for a
+  beat with the line marked, then the place - 1ST! or 2ND - big in the
+  middle. The rest of the pack keep their places by gaps planned every two
+  bars and eased between, overtaking and falling back; items - a bouncing
+  bomb or a rocket - leave on a snare and burst on the next beat, the kart hit
+  thrown up spinning, losing ground it wins back. A race has beats of its own:
+  a pad a bar in boosts the player past the kart ahead, and halfway to the
+  build a ramp across the track throws the pack into the air, the player's
+  jump leaving on the downbeat and landing on a beat in dust, the kart nose up
+  off the lip and down to land. All of it on the music, as the other scenes
+  are: the view punched in on the kick and leaned on the snare, shaken by a
+  landing or a blast nearby; a wave of light running ahead along the barriers
+  and the lines once a bar; the pads' and ramps' arrows and the bends' arrow
+  boards stepping on the beat; lamps, floodlights, neon and exhaust flames
+  flaring with the kick; the drivers nodding to it; speed lines on each kick;
+  fireworks over the course after a win; the place popping as it changes and
+  FINAL LAP flashing as the last lap starts. A kart passing under the eye fades
+  in a dither, so it never fills the screen. Across the track each kart
+  is steered like a driver: it holds the inside of a bend and gives way to the
+  kart beside it or closing on it, so no two ever touch - and with no room
+  across the track, the one behind holds back and catches up after - and it slides through
+  the tight bends with sparks, a burst of flame out of a long slide. Item
+  cubes in rows across the track, taken by whoever passes through them. Drawn
+  against Wikipedia's screenshots of three kart racers of 1997-1999; the
+  drivers, karts and courses are drawn here, no character, item or course of
+  any game.
 - **The football match** (`football`, 1990–1993), the top-down football
   games of the arcades and the Amiga: two sides of eleven on a pitch mown in
   stripes, seen from above, the camera following the ball - the lines, the
@@ -1091,6 +1134,29 @@ scene now has one era, a span of years (see **Eras are spans of years** and
 - Scale names read naturally ("harmonic minor", not "HARMONICMINOR").
 
 ### Fixed
+
+- **A programme never stops for a scene still compiling.** Live, AUTOPLAY and
+  THE JOURNEY waited for any scene their track needed that the background had
+  not compiled yet - 21 s at once in a minute of AUTOPLAY on a laptop's GPU.
+  Now a new track stays dark on its card until its first scene is ready and
+  fades in from then, and within a track the scene on screen plays on until the
+  next is ready, the cut coming then; the longest pause in the same minute was
+  0.65 s. Offline renders are frame for frame as before.
+- **The screens' glow costs less.** The bloom of the CRT and TV screens worked
+  out a cosine and a sine for each of its 24 samples at every pixel of the
+  screen; its twelve directions are written out now. The picture is the same
+  (85-90 dB against the old, rounding only); on a laptop's integrated GPU
+  the composite TV screen costs a frame about a third less (the skate park's
+  29 ms to 22 at 854×480, the kart race's about 57 to 38).
+- **The kart race no longer stops a programme for most of a minute.** Its
+  shader took 59 s to compile on a laptop's integrated GPU (Direct3D 11): a
+  programme reaching it before the background compile was done waited for the
+  rest. Each label of the HUD was its own copy of the lettering, the kart's
+  shape was copied for every step of its march and its normal, and loops the
+  compiler could count were unrolled; now the simulation sends the HUD's words
+  as data and one piece of code draws them, the kart's shape is looked at in
+  one place, and the loops' counts come from outside. 5-7 s now, near the
+  other game scenes' 3-15 s.
 
 - AUTOPLAY and THE JOURNEY repeated themselves. An era whose scenes a visit
   or a part uses up exactly (the three of 1997–1999, 2000–2009 and 2010–now,

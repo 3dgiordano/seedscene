@@ -198,29 +198,46 @@ export class Demo {
       return;
     }
     const { part, local, scene, time } = partAt(this.programme, t);
+    // Live, a scene still compiling is never waited for: the programme goes on with what it has - in a new track
+    // the screen stays dark on its card until the track's first scene is ready and then fades in; within a track,
+    // the scene on screen plays on until the next one is ready, and the cut comes then. (The driver compiles in the
+    // background meanwhile. Offline every frame is the one asked for: there, scenes compile when needed, as before.)
+    const wait = !!this.opts.live;
     if (part.index !== this.partIndex) {
+      if (wait) this.renderer.prepare(part.scenes.map((sc) => sc.style));
+      if (wait && !this.renderer.isReady(scene.style)) {
+        this.renderer.fade = 1;
+        this.renderer.card = { ...part.card, era: part.era, t: local - part.view.from, index: part.index, title: part.meta.title,
+          music: part.meta.musicLabel, style: scene.style };
+        this.renderer.draw(this.lastTime || 0, this.lastFeatures || part.features.at(0));
+        return;
+      }
       this.partIndex = part.index;
       this.sceneStyle = scene.style;
-      // every scene this track will cut to, compiled now, under the fade from black
-      for (const sc of part.scenes) this.renderer.programFor(sc.style);
+      // every scene this track will cut to, compiled now, under the fade from black (live: started above)
+      if (!wait) for (const sc of part.scenes) this.renderer.programFor(sc.style);
       this.renderer.setStyle(scene.style);
       this.renderer.setEra(part.era);
       this.renderer.setSeed(part.seed, part.meta, part.features);
       this.renderer.sceneStart = part.scoreTimeAt(scene.from);
-    } else if (scene.style !== this.sceneStyle) {
+      // (a track that waited for its scene fades in from when it came, not from where it would have)
+      this.shownFrom = Math.max(part.view.from, local - 1 / 60);
+    } else if (scene.style !== this.sceneStyle && (!wait || this.renderer.isReady(scene.style))) {
       // the music turned: cut to the next scene on the beat
       this.sceneStyle = scene.style;
       this.renderer.setStyle(scene.style);
       this.renderer.sceneStart = part.scoreTimeAt(scene.from);
     }
     // in from black, out to black: each era its own reel
-    const onScreen = local - part.view.from;
+    const onScreen = local - (wait ? this.shownFrom : part.view.from);
     const fadeIn = Math.max(0, 1 - onScreen / 0.7);
     const fadeOut = Math.max(0, 1 - (part.view.to - local) / 0.5);
     this.renderer.fade = Math.min(1, Math.max(fadeIn, fadeOut));
     this.renderer.card = { ...part.card, era: part.era, t: onScreen, index: part.index, title: part.meta.title,
       music: part.meta.musicLabel, style: scene.style };
     // the picture runs on the score's clock, so its beat stays on the music's through the mix
-    this.renderer.draw(time, part.features.at(time));
+    const f = part.features.at(time);
+    this.renderer.draw(time, f);
+    this.lastTime = time; this.lastFeatures = f;
   }
 }

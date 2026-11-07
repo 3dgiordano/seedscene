@@ -565,10 +565,14 @@ void main() {
   } else if (uBloom > 0.0) {
     vec3 bloom = vec3(0.0);
     float rad = 0.005 + 0.012 * uEnergy;
+    // (the ring's twelve directions, every thirty degrees, written out: worked out with a cosine and a sine for
+    // every pixel of the screen, they cost a scene as much as some scenes do themselves)
+    const vec2 RING[12] = vec2[12](vec2(1.0, 0.0), vec2(0.866025, 0.5), vec2(0.5, 0.866025), vec2(0.0, 1.0),
+      vec2(-0.5, 0.866025), vec2(-0.866025, 0.5), vec2(-1.0, 0.0), vec2(-0.866025, -0.5), vec2(-0.5, -0.866025),
+      vec2(0.0, -1.0), vec2(0.5, -0.866025), vec2(0.866025, -0.5));
     for (int i = 0; i < 12; i++) {
-      float a = float(i) * 0.5236;
-      bloom += texture(uSceneSoft, uv + vec2(cos(a), sin(a)) * rad).rgb;
-      bloom += texture(uSceneSoft, uv + vec2(cos(a), sin(a)) * rad * 0.45).rgb;
+      bloom += texture(uSceneSoft, uv + RING[i] * rad).rgb;
+      bloom += texture(uSceneSoft, uv + RING[i] * (rad * 0.45)).rgb;
     }
     bloom /= 24.0;
     col += max(bloom - 0.33, 0.0) * uBloom;
@@ -9509,6 +9513,875 @@ vec3 render(vec2 p, vec2 uv) {
 }
 `;
 
+const karts = `
+// The kart race: eight karts round a closed course, an animal at each wheel, the
+// camera riding behind the player's as the 32-bit kart racers had it - the place
+// big in a corner, the lap, the time, a map of the course. Items are thrown on
+// the snare and burst on the next beat; through the build the player's kart
+// boosts off a pad, and on the drop the leaders cross the line nose to nose,
+// caught by the photo-finish camera. The race runs as a simulation
+// (src/core/sims.js); this traces the course, the karts and what stands round it.
+#define STAGE_OPAQUE
+uniform vec4 uKtCam[4];     // the eye and its lens; forward; right; up
+uniform vec4 uKtSeg[72];    // the course's middle, evenly round it: x, z, and its right
+uniform vec4 uKtCourse;     // the lap's length, the look (0 park, 1 canyon, 2 night), seconds into the race, the shot
+uniform vec4 uKtK0[8];      // each kart: x, how high it is thrown, z, its heading
+uniform vec4 uKtK1[8];      // how far its wheels have turned, -, its boost, its driver
+uniform vec4 uKtK2[8];      // its slide, how spun it is
+uniform vec4 uKtShot[8];    // items in flight: x, y, z, kind (0 none, 1 a bomb, 2 a rocket); then its way x, z, age
+uniform vec4 uKtCube[8];    // the item cubes: x, y, z, size
+uniform vec4 uKtPad[4];     // the boost pads: x, z, heading, lit (above 1: the build's big one)
+uniform vec4 uKtRamp[2];    // the ramps standing: x, z where they start, heading, there
+uniform vec4 uKtN[3];       // how many there are: props, particles, cubes, items; pads, ramps, karts to look at for flames, karts;
+                            // the course's pieces, a kart's march steps, an item's, the HUD's lines (counts the compiler cannot unroll)
+uniform vec4 uKtLook[40];   // each kart's animal by numbers: ears' base and tip and radii, muzzle's, eyes and nose
+uniform vec4 uKtText[32];   // the HUD's lines: top left and a font pixel and how many letters; letters 0-3; 4-7; colour
+uniform vec4 uKtBeat;       // the player round the course, how hard the eye is shaken, since the place and the lap last changed
+float ktWave(float along);
+vec3 ktWallFace0(vec3 wq, float th);
+uniform vec4 uKtProp[20];   // what stands by the track: x, z, kind (0, 1 the look's two trees, 2/3 an arrow left/right, 4 tyres), height
+uniform vec4 uKtPart[32];   // sparks, smoke, blasts, glitter: where on the screen, its depth, kind + age
+uniform vec4 uKtHud;        // the player's place, lap, laps, seconds since the last finish
+uniform vec4 uKtHud2;       // how the last finish went (1 won, 2 second), the player's boost, the map's middle
+uniform vec4 uKtMap;        // the map's half size; where the photo's line crosses the leaders
+uniform vec4 uKtRank[2];    // the karts in their order
+uniform vec4 uFont[24];     // the 5x7 font, two letters a vec4: rows 0-3, rows 4-6
+
+const float KHALF = 6.0, KWALL = 8.4, KWH = 0.9;
+
+vec3 ktHue(float h) { return clamp(abs(fract(h + vec3(0.0, 2.0 / 3.0, 1.0 / 3.0)) * 6.0 - 3.0) - 1.0, 0.0, 1.0); }
+// each kart its own colour, spread round the wheel from the seed
+vec3 ktColour(float i) { return mix(vec3(1.0), ktHue(fract(uSeed.x + i * 0.125)), 0.85) * 0.92; }
+
+// ---- the 5x7 font
+float ktBit(float g, float fx, float fy) {
+  if (fx < 0.0 || fy < 0.0 || fx >= 5.0 || fy >= 7.0) return 0.0;
+  int gi = int(g + 0.5);
+  vec4 v = uFont[gi / 2];
+  float lo = v.x, hi = v.y;
+  if (gi % 2 == 1) { lo = v.z; hi = v.w; }
+  float x = floor(fx), y = floor(fy);
+  float bits = lo, bit = y * 5.0 + x;
+  if (y >= 4.0) { bits = hi; bit = (y - 4.0) * 5.0 + x; }
+  return mod(floor(bits / exp2(bit)), 2.0);
+}
+// the HUD's lines, each its letters with a shadow down and to the left; one piece of code draws every line
+vec3 ktHudText(vec2 p, vec3 col) {
+  int n = int(uKtN[2].w);
+  for (int i = 0; i < n; i++) {
+    vec4 a = uKtText[i * 4], c0 = uKtText[i * 4 + 1], c1 = uKtText[i * 4 + 2], cl = uKtText[i * 4 + 3];
+    vec2 q = p - a.xy;
+    float px = a.z;
+    int len = int(a.w + 0.5);
+    if (q.x < -2.0 * px || q.x > float(len) * 6.0 * px + px || q.y > 2.0 * px || q.y < -9.5 * px) continue;
+    for (int s = 0; s < len + 2; s++) {
+      if (s >= 2) break;
+      vec2 qq = q;
+      if (s == 0) qq = q + vec2(-px, px) * 1.2;
+      float fx = qq.x / px, fy = -qq.y / (px * 1.15);
+      int k = int(floor(fx / 6.0));
+      if (fx < 0.0 || k >= len || fy < 0.0 || fy >= 7.0) continue;
+      float b = ktBit(k < 4 ? c0[k] : c1[k - 4], fx - float(k) * 6.0, fy);
+      if (s == 0) col = mix(col, vec3(0.05, 0.02, 0.1), b);
+      else col = mix(col, cl.rgb, b);
+    }
+  }
+  return col;
+}
+
+// ---- the course: how far a point is from the middle of the track (right positive), and how far round
+// (found coarse then fine: the nearest of every fourth sample, then the pieces either side of it - the course's parts
+// are never near enough each other for the coarse pass to pick the wrong one for a point on or by the track)
+float ktTrack(vec2 q, out float along) {
+  float best = 1e9, side = 1.0;
+  along = 0.0;
+  int c0 = 0;
+  for (int i = 0; i < 72; i += 4) {
+    vec2 e = q - uKtSeg[i].xy;
+    float dd = dot(e, e);
+    if (dd < best) { best = dd; c0 = i; }
+  }
+  best = 1e9;
+  for (int k = -6; k < 6; k++) {
+    int i = (c0 + k + 72) % 72;
+    vec4 a = uKtSeg[i], b = uKtSeg[(i + 1) % 72];
+    vec2 ab = b.xy - a.xy, qa = q - a.xy;
+    float h = clamp(dot(qa, ab) / dot(ab, ab), 0.0, 1.0);
+    vec2 e = qa - ab * h;
+    float dd = dot(e, e);
+    if (dd < best) { best = dd; along = float(i) + h; side = dot(e, a.zw + (b.zw - a.zw) * h) >= 0.0 ? 1.0 : -1.0; }
+  }
+  along *= uKtCourse.x / 72.0;
+  return sqrt(best) * side;
+}
+
+// the barriers either side: the nearest a ray meets below their top; along the course, height, which side. Only the
+// pieces between the eye's and the ground's are looked at: a ray can only meet a barrier on its way there
+float ktWalls(vec3 ro, vec3 rd, float tMax, int i0, int n, int s0, int s1, out vec3 wq) {
+  float best = tMax;
+  wq = vec3(0.0);
+  vec2 r = rd.xz;
+  for (int k = 0; k < 72; k++) {
+    if (k >= n) break;
+    int i = (i0 + k) % 72;
+    vec4 a = uKtSeg[i], b = uKtSeg[(i + 1) % 72];
+    for (int s = s0; s <= s1; s += 2) {
+      float sd = float(s) * KWALL;
+      vec2 A = a.xy + a.zw * sd, B = b.xy + b.zw * sd, e = B - A, oa = A - ro.xz;
+      float den = r.x * e.y - r.y * e.x;
+      if (abs(den) < 1e-6) continue;
+      float t = (oa.x * e.y - oa.y * e.x) / den;
+      float u = (oa.x * r.y - oa.y * r.x) / den;
+      if (t > 0.05 && t < best && u >= 0.0 && u <= 1.0) {
+        float y = ro.y + rd.y * t;
+        if (y > 0.0 && y < KWH) { best = t; wq = vec3((float(i) + u) * uKtCourse.x / 72.0, y, float(s)); }
+      }
+    }
+  }
+  return best;
+}
+
+// ---- the sky and the land beyond
+vec3 ktSun(float th) {
+  if (th < 0.5) return normalize(vec3(0.5, 0.55, 0.6));
+  if (th < 1.5) return normalize(vec3(-0.7, 0.18, 0.6));
+  return normalize(vec3(0.3, 0.35, 0.9));
+}
+vec3 ktSky(vec3 rd, float th) {
+  float y = max(rd.y, 0.0), az = atan(rd.x, rd.z);
+  vec3 L = ktSun(th);
+  vec3 c;
+  if (th < 0.5) {
+    c = mix(vec3(0.62, 0.8, 1.0), vec3(0.18, 0.42, 0.92), pow(y, 0.6));
+    if (y > 0.02 && y < 0.6) {
+      vec2 cq = vec2(az * 3.0, y * 9.0) + vec2(uTime * 0.01, 0.0);
+      float cl = smoothstep(0.55, 0.8, 0.53 * vnoise(cq) + 0.3 * vnoise(cq * 2.02) + 0.17 * vnoise(cq * 4.1)) * smoothstep(0.02, 0.12, y) * (1.0 - smoothstep(0.35, 0.6, y));
+      c = mix(c, vec3(1.0), cl * 0.9);
+    }
+  } else if (th < 1.5) {
+    c = mix(vec3(1.0, 0.72, 0.42), vec3(0.55, 0.32, 0.55), pow(y, 0.5));
+    c += vec3(1.0, 0.6, 0.25) * pow(max(dot(rd, L), 0.0), 8.0) * 0.5;
+  } else {
+    c = mix(vec3(0.16, 0.08, 0.28), vec3(0.02, 0.02, 0.08), pow(y, 0.4));
+    vec2 st = vec2(az * 40.0, y * 60.0);
+    float h = hash12(floor(st));
+    c += vec3(0.9, 0.9, 1.0) * step(0.985, h) * (1.0 - smoothstep(0.0, 0.25, length(fract(st) - 0.5))) * (0.6 + 0.4 * uHat);
+  }
+  // the sun, or the moon
+  float sd = dot(rd, L);
+  if (th < 1.5) c += vec3(1.0, 0.95, 0.8) * smoothstep(0.9985, 0.9992, sd) * 1.4 + vec3(1.0, 0.85, 0.6) * pow(max(sd, 0.0), 120.0) * 0.4;
+  else c = mix(c, vec3(0.95, 0.95, 0.85), smoothstep(0.9993, 0.9996, sd));
+  // the land beyond the course: hills, mesas or a skyline
+  float h;
+  vec3 land;
+  if (th < 0.5) {
+    h = 0.015 + 0.06 * (vnoise(vec2(az * 2.5, 1.0) + uSeed.xy * 7.0) * 0.65 + vnoise(vec2(az * 6.0, 2.0)) * 0.35);
+    land = mix(vec3(0.3, 0.55, 0.4), vec3(0.5, 0.65, 0.75), 0.5);
+  } else if (th < 1.5) {
+    float m = vnoise(vec2(az * 1.8, 3.0) + uSeed.yz * 5.0) * 0.7 + vnoise(vec2(az * 5.0, 1.0)) * 0.3;
+    h = 0.01 + 0.09 * smoothstep(0.45, 0.6, m);
+    land = vec3(0.62, 0.3, 0.2) * (0.8 + 0.3 * smoothstep(0.0, 0.08, rd.y));
+  } else {
+    float col = floor(az * 30.0);
+    h = 0.02 + 0.06 * hash11(col + 7.0) * step(0.3, hash11(col));
+    land = vec3(0.04, 0.04, 0.1);
+    vec2 w = fract(vec2(az * 30.0 * 4.0, rd.y * 120.0));
+    land += vec3(1.0, 0.8, 0.4) * step(0.7, hash12(floor(vec2(az * 120.0, rd.y * 120.0)))) * step(0.3, w.x) * step(0.3, w.y) * 0.5;
+  }
+  if (rd.y < h) c = land;
+  c = mix(c, c * unblack(pal(0.15 + uSeed.z)), 0.12);
+  return c;
+}
+
+vec3 ktHaze(float th) {
+  if (th < 0.5) return vec3(0.7, 0.82, 0.95);
+  if (th < 1.5) return vec3(0.95, 0.68, 0.45);
+  return vec3(0.1, 0.06, 0.2);
+}
+
+// ---- the ground: the track, its kerbs and lines, the run-off, the land
+vec3 ktGround(vec3 h, float d, float along, float th, out float shine) {
+  float ad = abs(d);
+  shine = 0.0;
+  float n = vnoise(h.xz * 2.6);
+  vec3 c;
+  // beyond the track: grass in mown stripes, sand, or dark grass
+  if (th < 0.5) c = mix(vec3(0.22, 0.52, 0.16), vec3(0.28, 0.6, 0.2), step(0.5, fract(along / 6.0))) * (0.85 + 0.25 * n);
+  else if (th < 1.5) c = vec3(0.93, 0.76, 0.5) * (0.88 + 0.2 * n);
+  else c = vec3(0.05, 0.12, 0.09) * (0.8 + 0.4 * n);
+  if (ad < KHALF + 0.5) {
+    vec3 road;
+    if (th < 0.5) road = vec3(0.36, 0.36, 0.38) * (0.85 + 0.25 * n);
+    else if (th < 1.5) road = vec3(0.52, 0.3, 0.17) * (0.8 + 0.3 * n) * (1.0 - 0.18 * smoothstep(0.35, 0.0, abs(ad - 1.6)));
+    else road = vec3(0.1, 0.1, 0.13) * (0.85 + 0.25 * n);
+    // the lines: white edges, a dashed middle (on tarmac); on the night course they glow
+    if (th < 0.5 || th > 1.5) {
+      float edge = 1.0 - smoothstep(0.08, 0.12, abs(ad - (KHALF - 0.55)));
+      float mid = (1.0 - smoothstep(0.06, 0.1, ad)) * step(0.5, fract(along / 5.0));
+      vec3 lc = th > 1.5 ? unblack(pal(0.6 + uSeed.w)) * (1.1 + 0.6 * uBass + 0.6 * uKick) : vec3(0.95);
+      lc += vec3(1.0, 0.95, 0.8) * ktWave(along) * 1.2;
+      road = mix(road, lc, max(edge, mid));
+      if (th > 1.5) shine = max(edge, mid);
+    }
+    // the kerbs, red and white
+    if (ad > KHALF - 0.3) {
+      float alt = step(1.0, mod(floor(along / 1.5), 2.0));
+      vec3 kerb = mix(vec3(0.9, 0.15, 0.12), vec3(0.95), alt);
+      if (th > 0.5 && th < 1.5) kerb = mix(vec3(0.95, 0.9, 0.78), vec3(0.72, 0.24, 0.12), alt);
+      road = kerb * (0.85 + 0.15 * n);
+    }
+    // the finish line: two rows of checks across the track, the noses on its edge as the karts' middles reach the line
+    float fl = mod(along - 0.95, uKtCourse.x);
+    if (fl < 1.2 && ad < KHALF - 0.3) {
+      float ch = mod(floor(fl / 0.6) + floor((d + 12.0) / 0.6), 2.0);
+      road = mix(vec3(0.06), vec3(0.97), ch);
+    }
+    c = road;
+  }
+  // the boost pads: arrows that run forward a step on every beat, glowing harder on the kick
+  // (every loop runs only over what is there this frame: the software renderer runs a loop no longer than that)
+  int nPads = int(uKtN[1].x);
+  for (int i = 0; i < nPads; i++) {
+    vec4 pd = uKtPad[i];
+    if (pd.w <= 0.0) continue;
+    vec2 pq = h.xz - pd.xy;
+    vec2 pl = vec2(dot(pq, vec2(cos(pd.z), sin(pd.z))), dot(pq, vec2(-sin(pd.z), cos(pd.z))));
+    if (abs(pl.x) < 2.2 && abs(pl.y) < 1.5) {
+      float chev = fract((pl.x - abs(pl.y) * 0.8) / 1.1 - floor(uTime / uSpb) * 0.25 - fract(uTime / uSpb) * 0.25);
+      vec3 pc = mix(vec3(1.0, 0.45, 0.05), vec3(1.0, 0.95, 0.3), smoothstep(0.4, 0.7, chev));
+      if (pd.w > 1.2) pc = mix(vec3(0.2, 0.6, 1.0), vec3(0.9, 1.0, 1.0), smoothstep(0.4, 0.7, chev));
+      c = mix(vec3(0.15, 0.08, 0.02), pc * (0.6 + 0.6 * min(pd.w, 1.0)) * (1.0 + 0.8 * uKick), step(0.45, chev));
+      shine = max(shine, step(0.45, chev) * min(pd.w, 1.0));
+    }
+  }
+  // the karts' shadows
+  for (int i = 0; i < 8; i++) {
+    vec4 k = uKtK0[i];
+    vec2 kq = h.xz - k.xz;
+    vec2 kl = vec2(dot(kq, vec2(-sin(k.w), cos(k.w))), dot(kq, vec2(cos(k.w), sin(k.w))));
+    float e = length(kl / vec2(0.78, 1.05));
+    c *= 1.0 - 0.5 * (1.0 - smoothstep(0.75, 1.05, e)) / (1.0 + k.y * 1.5);
+  }
+  return c;
+}
+
+// the barrier's face: checks in two colours, a wooden fence, or a lit rail
+// a wave of light that runs ahead of the player along the course once a bar, from its kart to sixty metres on
+float ktWave(float along) {
+  float lap = uKtCourse.x;
+  float x = mod(along - uKtBeat.x - fract(uBar) * 60.0 + lap * 0.5, lap) - lap * 0.5;
+  return exp(-abs(x) * 0.35) * (1.0 - fract(uBar) * 0.6);
+}
+vec3 ktWallFace(vec3 wq, float th) {
+  vec3 lit = ktWallFace0(wq, th);
+  // the barrier's top lit by the wave and the kick
+  float top = smoothstep(KWH - 0.18, KWH - 0.05, wq.y);
+  return lit * (1.0 + 0.35 * uKick) + (vec3(1.0, 0.95, 0.8) * ktWave(wq.x) * 1.5 + unblack(pal(0.6 + uSeed.w)) * uKick * 0.5) * top;
+}
+vec3 ktWallFace0(vec3 wq, float th) {
+  float u = wq.x, y = wq.y;
+  if (th < 0.5) {
+    float ch = mod(floor(u / 1.2) + floor(y / 0.45), 2.0);
+    return mix(unblack(pal(0.1 + uSeed.y)) * 0.9 + 0.1, vec3(0.95, 0.85, 0.15), ch) * (0.75 + 0.25 * step(0.06, abs(y - 0.45)));
+  }
+  if (th < 1.5) return vec3(0.55, 0.35, 0.18) * (0.7 + 0.3 * step(0.08, fract(u / 0.6))) * (0.85 + 0.15 * sin(y * 40.0));
+  return mix(vec3(0.08, 0.08, 0.12), unblack(pal(0.6 + uSeed.w)) * 2.0, smoothstep(KWH - 0.12, KWH - 0.02, y));
+}
+
+// ---- the karts, in the round
+float ktBox(vec3 q, vec3 h, float r) { vec3 d = abs(q) - h + r; return length(max(d, 0.0)) + min(max(d.x, max(d.y, d.z)), 0.0) - r; }
+float ktCap(vec3 p, vec3 a, vec3 b, float r) { vec3 pa = p - a, ba = b - a; float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0); return length(pa - ba * h) - r; }
+float ktCone(vec3 p, vec3 a, vec3 b, float r1, float r2) { vec3 pa = p - a, ba = b - a; float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0); return length(pa - ba * h) - mix(r1, r2, h); }
+float ktSmin(float a, float b, float k) { float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0); return mix(b, a, h) - k * h * (1.0 - h); }
+// a tyre across x: rounded at its shoulders
+float ktTyre(vec3 q, float r, float w) { vec2 d = vec2(length(q.yz) - r + 0.04, abs(q.x) - w + 0.04); return min(max(d.x, d.y), 0.0) + length(max(d, 0.0)) - 0.04; }
+
+// the kart and its driver; q across, up, ahead; what is nearest: 1 body, 2 tyre, 3 metal, 4 seat, 5 fur, 6 muzzle, 7 shirt, 8 eyes and nose
+// what makes a driver the animal it is, for a kart (a table in the shader, looked up at every step of the march, cost
+// the GPU more than the rest of the kart; looked up once a kart it still cost: the numbers come from the simulation)
+struct KtLook { vec3 eb, et, sb, st, eye; vec2 er, sr; float wide, nose; };
+KtLook ktLook(int i) {
+  // (each kart's numbers come in with the frame, from the simulation's table of the animals)
+  vec4 a = uKtLook[i * 5], b = uKtLook[i * 5 + 1], c = uKtLook[i * 5 + 2], d = uKtLook[i * 5 + 3], e = uKtLook[i * 5 + 4];
+  KtLook L;
+  L.eb = a.xyz; L.er.x = a.w; L.et = b.xyz; L.er.y = b.w;
+  L.sb = c.xyz; L.sr.x = c.w; L.st = d.xyz; L.sr.y = d.w;
+  L.eye = e.xyz; L.nose = e.w;
+  L.wide = L.nose == 0.0 ? 1.15 : 1.0;
+  return L;
+}
+
+vec2 ktKart(vec3 q, KtLook L) {
+  vec3 qs = vec3(abs(q.x), q.y, q.z);
+  // the body: a low pan, the nose, side pods
+  float body = ktBox(q - vec3(0.0, 0.2, 0.05), vec3(0.4, 0.06, 0.74), 0.05);
+  body = min(body, ktBox(q - vec3(0.0, 0.32, 0.56), vec3(0.3, 0.1, 0.26), 0.09));
+  body = min(body, ktBox(qs - vec3(0.4, 0.28, -0.08), vec3(0.1, 0.08, 0.38), 0.06));
+  vec2 r = vec2(body, 1.0);
+  // (each group of parts below is looked at only when the point is nearer it than what is already found)
+  if (ktBox(q - vec3(0.0, 0.42, -0.32), vec3(0.28, 0.23, 0.17), 0.0) < r.x) {
+    float seat = min(ktBox(q - vec3(0.0, 0.46, -0.42), vec3(0.22, 0.15, 0.05), 0.05), ktBox(q - vec3(0.0, 0.3, -0.22), vec3(0.22, 0.05, 0.17), 0.04));
+    if (seat < r.x) r = vec2(seat, 4.0);
+  }
+  // the metal, in two groups each looked at only near it: behind, the bumper, the engine and two exhausts; in front,
+  // the bumper and the wheel on its column (the wheel stands nearly upright, its face to the driver, 65 degrees
+  // off the flat)
+  if (ktBox(q - vec3(0.0, 0.36, -0.76), vec3(0.56, 0.2, 0.2), 0.0) < r.x) {
+    float metal = ktBox(q - vec3(0.0, 0.26, -0.84), vec3(0.52, 0.04, 0.04), 0.03);
+    metal = min(metal, ktBox(q - vec3(0.0, 0.42, -0.6), vec3(0.2, 0.12, 0.13), 0.04));
+    metal = min(metal, ktCap(qs, vec3(0.17, 0.42, -0.66), vec3(0.17, 0.48, -0.88), 0.05));
+    if (metal < r.x) r = vec2(metal, 3.0);
+  }
+  if (ktBox(q - vec3(0.0, 0.42, 0.58), vec3(0.46, 0.3, 0.38), 0.0) < r.x) {
+    float metal = ktBox(q - vec3(0.0, 0.17, 0.92), vec3(0.42, 0.035, 0.035), 0.03);
+    metal = min(metal, ktCap(q, vec3(0.0, 0.42, 0.5), vec3(0.0, 0.6, 0.23), 0.025));
+    vec3 sw = q - vec3(0.0, 0.62, 0.2);
+    sw.yz = mat2(0.423, -0.906, 0.906, 0.423) * sw.yz;
+    metal = min(metal, length(vec2(length(sw.xz) - 0.14, sw.y)) - 0.022);
+    if (metal < r.x) r = vec2(metal, 3.0);
+  }
+  // fat tyres at the back, small ones in front
+  if (ktBox(qs - vec3(0.58, 0.27, 0.0), vec3(0.2, 0.28, 0.86), 0.0) < r.x) {
+    float wh = min(ktTyre(qs - vec3(0.6, 0.27, -0.55), 0.27, 0.15), ktTyre(qs - vec3(0.56, 0.2, 0.58), 0.2, 0.1));
+    if (wh < r.x) r = vec2(wh, 2.0);
+  }
+  // the driver, as those games drew them: sat low in the kart, a short round body no taller than the seat's back
+  // and the shoulders level with the wheel, a big head on it with no neck between (all of it skipped by a ray that
+  // passes well clear)
+  if (ktBox(q - vec3(0.0, 0.53, -0.06), vec3(0.3, 0.2, 0.3), 0.0) < r.x) {
+    float shirt = (length((q - vec3(0.0, 0.5, -0.28)) / vec3(0.21, 0.17, 0.16)) - 1.0) * 0.16;
+    shirt = min(shirt, ktCap(qs, vec3(0.17, 0.6, -0.24), vec3(0.21, 0.5, -0.03), 0.062));
+    shirt = min(shirt, ktCap(qs, vec3(0.21, 0.5, -0.03), vec3(0.13, 0.6, 0.15), 0.052));
+    if (shirt < r.x) r = vec2(shirt, 7.0);
+    // white gloves on the wheel
+    float glove = length(qs - vec3(0.13, 0.61, 0.16)) - 0.065;
+    if (glove < r.x) r = vec2(glove, 9.0);
+  }
+  if (length(q - vec3(0.0, 0.92, -0.24)) - 0.62 > r.x) return r;
+  // the head, big, and what makes it the animal it is (drawn at its own size and grown by a ninth)
+  const float HS = 1.12;
+  vec3 h = (q - vec3(0.0, 0.88 - 0.04 * uKick, -0.24 + 0.035 * uKick)) / HS;    // (nodding to the kick)
+  vec3 hs = vec3(abs(h.x), h.y, h.z);
+  float head = (length(h / vec3(0.23 * L.wide, 0.21, 0.21)) - 1.0) * 0.2;
+  float ears = ktCone(hs, L.eb, L.et, L.er.x, L.er.y);
+  float snout = ktCone(h, L.sb, L.st, L.sr.x, L.sr.y);
+  float fur = ktSmin(head, ears, 0.03) * HS;
+  if (fur < r.x) r = vec2(fur, 5.0);
+  if (snout * HS < r.x) r = vec2(snout * HS, 6.0);
+  float dots = min(length(hs - L.eye) - 0.034, length(h - vec3(0.0, -0.05, L.nose)) - 0.035);
+  if (dots * HS < r.x) r = vec2(dots * HS, 8.0);
+  return r;
+}
+
+vec3 ktFur(float sp, float inner) {
+  vec3 f;
+  if (sp < 0.5) f = vec3(0.45, 0.28, 0.15);
+  else if (sp < 1.5) f = vec3(0.95, 0.55, 0.2);
+  else if (sp < 2.5) f = vec3(0.95, 0.93, 0.9);
+  else if (sp < 3.5) f = vec3(0.6, 0.6, 0.66);
+  else if (sp < 4.5) f = vec3(0.35, 0.75, 0.25);
+  else if (sp < 5.5) f = vec3(0.98, 0.68, 0.7);
+  else if (sp < 6.5) f = vec3(0.92, 0.42, 0.12);
+  else f = vec3(0.85, 0.68, 0.42);
+  if (inner > 0.5) {
+    if (sp > 4.5 && sp < 5.5) return vec3(0.9, 0.5, 0.55);
+    return mix(f, vec3(0.97, 0.92, 0.85), 0.7);
+  }
+  return f;
+}
+
+
+// the nearest kart a ray meets before tMax: which, what it met, where in the kart's own frame, and the surface's
+// normal there. The kart's shape is looked at in one place only - marching, then four samples round the hit for the
+// normal, in the same loop - and the loops' counts come from outside: a compiler that copies the shape for every
+// step it can count took most of a minute over it
+float ktMarch(vec3 ro, vec3 rd, float tMax, out int who, out float mat, out vec3 lq, out vec3 ln) {
+  float best = tMax;
+  who = -1; mat = 0.0; lq = vec3(0.0); ln = vec3(0.0, 1.0, 0.0);
+  int nk = int(uKtN[1].w), steps = int(uKtN[2].y);
+  for (int i = 0; i < nk; i++) {
+    vec4 k = uKtK0[i];
+    vec3 oc = ro - vec3(k.x, k.y + 0.62, k.z);
+    float b = dot(oc, rd), h = b * b - dot(oc, oc) + 1.35 * 1.35;
+    if (h <= 0.0) continue;
+    h = sqrt(h);
+    float ts = max(-b - h, 0.0), te = min(-b + h, best);
+    if (ts >= te) continue;
+    // (a kart passing right under the eye is let fade, in a dither as the consoles did, so it never fills the screen)
+    float near = length(ro - k.xyz - vec3(0.0, 0.6, 0.0));
+    if (near < 2.8 || (near < 4.2 && hash12(floor(gl_FragCoord.xy)) > (near - 2.8) / 1.4)) continue;
+    vec3 f = vec3(cos(k.w), 0.0, sin(k.w)), rr = vec3(-sin(k.w), 0.0, cos(k.w));
+    vec3 o = ro - k.xyz;
+    vec3 lo = vec3(dot(o, rr), o.y, dot(o, f)), ld = vec3(dot(rd, rr), rd.y, dot(rd, f));
+    // pitched about its middle over a jump, nose up off the lip and down to land
+    float pc = cos(uKtK2[i].z), ps = sin(uKtK2[i].z);
+    vec3 pv = vec3(0.0, 0.35, 0.0);
+    lo = lo - pv;
+    lo = vec3(lo.x, pc * lo.y - ps * lo.z, ps * lo.y + pc * lo.z) + pv;
+    ld = vec3(ld.x, pc * ld.y - ps * ld.z, ps * ld.y + pc * ld.z);
+    // (the kart's own box - wheels, driver and the tallest ears - is far tighter than the sphere round it)
+    {
+      vec3 inv = 1.0 / ld, b0 = (vec3(-0.78, 0.0, -0.98) - lo) * inv, b1 = (vec3(0.78, 1.48, 0.98) - lo) * inv;
+      vec3 tn = min(b0, b1), tf = max(b0, b1);
+      ts = max(ts, max(max(tn.x, tn.y), tn.z));
+      te = min(te, min(min(tf.x, tf.y), tf.z));
+      if (ts >= te) continue;
+    }
+    KtLook look = ktLook(i);
+    float t = ts, hitM = 0.0;
+    int phase = 0;                       // 0 marching; 1-4 the normal's samples
+    vec3 hitQ = vec3(0.0), nacc = vec3(0.0);
+    for (int s = 0; s < steps + 4; s++) {
+      vec3 q = lo + ld * t;
+      vec3 e = vec3(0.0);
+      if (phase > 0) {
+        int j = phase - 1;
+        e = 0.5773 * (2.0 * vec3(float((j + 3) >> 1 & 1), float(j >> 1 & 1), float(j & 1)) - 1.0);
+        q = hitQ + e * 0.004;
+      } else {
+        float shell = ktBox(q - vec3(0.0, 0.66, -0.02), vec3(0.78, 0.68, 1.0), 0.2);
+        if (shell > 0.04) { t += shell; if (t > te) break; continue; }
+      }
+      vec2 m = ktKart(q, look);
+      if (phase == 0) {
+        // (as fine as a pixel at that distance needs)
+        if (m.x < 0.002 + 0.0012 * t) { phase = 1; hitQ = q; hitM = m.y; continue; }
+        t += m.x * 0.9;
+        if (t > te) break;
+      } else {
+        nacc += e * m.x;
+        phase++;
+        if (phase == 5) {
+          best = t; who = i; mat = hitM; lq = hitQ;
+          // the normal back out of the pitch
+          vec3 nl = normalize(nacc);
+          ln = vec3(nl.x, pc * nl.y + ps * nl.z, -ps * nl.y + pc * nl.z);
+          break;
+        }
+      }
+    }
+  }
+  return best;
+}
+
+// a thing by the track, drawn as the 32-bit games drew them: a flat picture always facing the eye. Colour, and whether it is there
+vec4 ktSprite(float kind, float h, float u, float v, float th) {
+  vec4 c = vec4(0.0);
+  float n = vnoise(vec2(u, v) * 3.0);
+  if (kind > 3.5) {
+    // a stack of tyres: three rows, the middle one painted
+    if (abs(u) < 0.55 && v < 1.1) {
+      float row = floor(v / 0.37), ry = fract(v / 0.37);
+      vec3 t = vec3(0.07) * (0.7 + 0.6 * (1.0 - abs(ry - 0.5) * 2.0));
+      if (row == 1.0 && th < 0.5) t = mix(t, vec3(0.9, 0.15, 0.1), 0.6);
+      c = vec4(t, 1.0);
+    }
+    return c;
+  }
+  if (kind > 1.5) {
+    // an arrow board on two legs: red, white chevrons pointing the way the bend goes
+    float dir = kind > 2.5 ? 1.0 : -1.0;
+    if (v < 0.4 && abs(abs(u) - 0.8) < 0.05) return vec4(0.3, 0.3, 0.32, 1.0);
+    if (abs(u) < 1.2 && v > 0.35 && v < 1.4) {
+      // (lit in turn, a step on every beat, as the bends' arrow lights run)
+      float ch = fract((u * dir - abs(v - 0.875) * 0.9) / 0.6);
+      float run = fract(floor((u * dir - abs(v - 0.875) * 0.9) / 0.6) / 4.0 - floor(uTime / uSpb) / 4.0);
+      vec3 b = mix(vec3(0.85, 0.08, 0.06), vec3(1.0) * (1.0 + 1.2 * step(run, 0.2) * (0.5 + uKick)), step(0.55, ch));
+      if (th > 1.5) b = mix(vec3(0.05), unblack(pal(0.6 + uSeed.w)) * 2.0, step(0.55, ch));
+      if (abs(u) > 1.12 || v < 0.43 || v > 1.32) b = vec3(0.95);
+      return vec4(b, 1.0);
+    }
+    return c;
+  }
+  float a = kind;    // the look's first tree, or its second
+  if (th < 0.5) {
+    if (a < 0.5) {
+      // a round tree: a trunk, a ball of leaves lit from the side
+      if (abs(u) < h * 0.035 && v < h * 0.5) return vec4(vec3(0.35, 0.22, 0.12) * (0.8 + 0.2 * n), 1.0);
+      vec2 q = vec2(u, v - h * 0.62);
+      float r = h * 0.32 * (0.92 + 0.12 * vnoise(vec2(atan(q.y, q.x) * 3.0, 1.0)));
+      if (length(q) < r) return vec4(vec3(0.16, 0.48, 0.12) * (0.7 + 0.4 * smoothstep(-r, r, q.x * 0.6 + q.y)) * (0.85 + 0.25 * n), 1.0);
+    } else {
+      // a pine: tiers of green
+      if (abs(u) < h * 0.03 && v < h * 0.2) return vec4(0.3, 0.2, 0.1, 1.0);
+      float y = (v - h * 0.15) / (h * 0.85);
+      float w = (1.0 - y) * h * 0.24 * (0.75 + 0.25 * fract(y * 4.0));
+      if (y > 0.0 && y < 1.0 && abs(u) < w) return vec4(vec3(0.08, 0.36, 0.16) * (0.75 + 0.35 * smoothstep(-w, w, u)), 1.0);
+    }
+  } else if (th < 1.5) {
+    if (a < 0.5) {
+      // a palm: a leaning trunk, fronds drooping from the crown
+      float lean = h * 0.06 * (v / h) * (v / h);
+      if (abs(u - lean) < h * 0.03 && v < h * 0.92) return vec4(vec3(0.5, 0.36, 0.2) * (0.75 + 0.25 * step(0.5, fract(v * 2.5))), 1.0);
+      vec2 q = vec2(u - h * 0.06, v - h * 0.92);
+      float ang = atan(q.y, q.x), r = length(q);
+      float fr = abs(fract(ang * 7.0 / 6.283) - 0.5);
+      float droop = q.y + r * r / h * 1.2;
+      if (r < h * 0.36 && fr < 0.22 * (1.0 - r / (h * 0.36)) + 0.05 && droop > -h * 0.15) return vec4(vec3(0.15, 0.5, 0.15) * (0.8 + 0.3 * n), 1.0);
+    } else {
+      // a cactus: a trunk and two arms
+      float w = h * 0.06;
+      bool on = abs(u) < w && v < h * 0.8;
+      on = on || (abs(u - h * 0.16) < w * 0.8 && v > h * 0.35 && v < h * 0.62) || (abs(u + h * 0.15) < w * 0.8 && v > h * 0.45 && v < h * 0.7);
+      on = on || (abs(v - h * 0.35) < w * 0.8 && u > 0.0 && u < h * 0.16) || (abs(v - h * 0.45) < w * 0.8 && u < 0.0 && u > -h * 0.15);
+      if (on) return vec4(vec3(0.25, 0.5, 0.2) * (0.8 + 0.3 * step(0.5, fract(u * 6.0))), 1.0);
+    }
+  } else {
+    if (a < 0.5) {
+      // a lamp: a post, the light at its top
+      if (abs(u) < 0.07 && v < h) return vec4(0.2, 0.2, 0.25, 1.0);
+      if (abs(u) < 0.5 && abs(v - h) < 0.12) return vec4(vec3(1.0, 0.9, 0.6) * (2.0 + 1.5 * uKick), 1.0);
+    } else {
+      // a floodlight tower: a lattice mast, a bank of lamps at its top
+      float top = h * 1.4;
+      if (abs(u) < 0.12 + 0.05 * (1.0 - v / top) && v < top) return vec4(vec3(0.16, 0.16, 0.2) * (0.7 + 0.3 * step(0.5, fract(v * 3.0 + u * 4.0))), 1.0);
+      vec2 lq = vec2(u, v - top - 0.5);
+      if (abs(lq.x) < 1.0 && abs(lq.y) < 0.5) {
+        vec2 cell = fract(lq * vec2(2.0, 2.0)) - 0.5;
+        return vec4(mix(vec3(0.1), vec3(1.0, 0.97, 0.85) * (2.2 + 1.6 * uKick), 1.0 - smoothstep(0.25, 0.35, length(cell))), 1.0);
+      }
+    }
+  }
+  return c;
+}
+
+// the item cubes: turning, see-through, every face its own colour
+vec4 ktCubes(vec3 ro, vec3 rd, float tMax) {
+  vec4 out4 = vec4(0.0, 0.0, 0.0, tMax);
+  int n = int(uKtN[0].z);
+  for (int i = 0; i < n; i++) {
+    vec4 c = uKtCube[i];
+    if (c.w < 0.05) continue;
+    vec3 oc = ro - c.xyz;
+    float bb = dot(oc, rd);
+    if (bb * bb - dot(oc, oc) + 0.5 * c.w < 0.0 || bb > 0.0) continue;
+    float a = uTime * 1.6 + float(i) * 0.7;
+    mat3 m = mat3(cos(a), 0.0, sin(a), 0.0, 1.0, 0.0, -sin(a), 0.0, cos(a)) * mat3(1.0, 0.0, 0.0, 0.0, 0.83, 0.56, 0.0, -0.56, 0.83);
+    vec3 o = (ro - c.xyz) * m, d = rd * m;
+    float hs = 0.4 * c.w * (1.0 + 0.15 * uKick);
+    vec3 inv = 1.0 / d, t0 = (-hs - o) * inv, t1 = (hs - o) * inv;
+    vec3 tn = min(t0, t1), tf = max(t0, t1);
+    float tin = max(max(tn.x, tn.y), tn.z), tout = min(min(tf.x, tf.y), tf.z);
+    if (tin > tout || tin < 0.0 || tin > out4.w) continue;
+    vec3 q = (o + d * tin) / hs;
+    vec3 aq = abs(q);
+    float edge = smoothstep(0.82, 0.95, aq.x + aq.y + aq.z - max(aq.x, max(aq.y, aq.z)));
+    vec3 nn = step(vec3(max(aq.x, max(aq.y, aq.z))) - 1e-3, aq) * sign(q);
+    vec3 col = ktHue(fract(dot(nn, vec3(0.17, 0.41, 0.67)) + uTime * 0.25)) * 1.1;
+    // a star on each face
+    vec2 fq = q.xy;
+    if (nn.x != 0.0) fq = q.yz;
+    else if (nn.y != 0.0) fq = q.xz;
+    float star = 1.0 - smoothstep(0.08, 0.14, min(abs(fq.x), abs(fq.y)) + length(fq) * 0.25);
+    col = mix(col, vec3(1.0), max(edge, star * 0.8));
+    out4 = vec4(col * (0.8 + 0.4 * uHat), tin);
+  }
+  return out4;
+}
+
+// the items in flight: bombs and rockets
+vec4 ktShots(vec3 ro, vec3 rd, float tMax) {
+  vec4 out4 = vec4(0.0, 0.0, 0.0, tMax);
+  int n = int(uKtN[0].w);
+  for (int i = 0; i < n; i++) {
+    vec4 s = uKtShot[i];
+    if (s.w < 0.5) continue;
+    vec3 oc = ro - s.xyz;
+    float b = dot(oc, rd), h = b * b - dot(oc, oc) + 0.6 * 0.6;
+    if (h <= 0.0) continue;
+    float t = max(-b - sqrt(h), 0.0), te = -b + sqrt(h);
+    vec3 dir = vec3(uKtShot[4 + i].x, 0.0, uKtShot[4 + i].y);
+    int steps = int(uKtN[2].z);
+    for (int k = 0; k < steps; k++) {
+      vec3 q = ro + rd * t - s.xyz;
+      float d = s.w < 1.5 ? length(q) - 0.28 : ktCap(q, -dir * 0.38, dir * 0.38, 0.13);
+      if (d < 0.003) {
+        if (t < out4.w) {
+          vec3 n = normalize(q);
+          vec3 base = vec3(0.08, 0.08, 0.14);
+          if (s.w > 1.5) { n = normalize(q - dir * clamp(dot(q, dir), -0.38, 0.38)); base = mix(vec3(0.9, 0.12, 0.1), vec3(0.95), step(0.25, dot(q, dir))); }
+          float l = 0.4 + 0.6 * max(dot(n, normalize(vec3(0.3, 1.0, 0.2))), 0.0);
+          vec3 col = base * l + vec3(1.0) * pow(max(dot(reflect(rd, n), normalize(vec3(0.3, 1.0, 0.2))), 0.0), 30.0) * 0.8;
+          out4 = vec4(col, t);
+        }
+        break;
+      }
+      t += d;
+      if (t > te) break;
+    }
+  }
+  return out4;
+}
+
+vec3 render(vec2 p, vec2 uv) {
+  float th = uKtCourse.y, shot = uKtCourse.w;
+  // the kick punches the view in, a blast or a landing near the player shakes it, the snare leans it one way then
+  // the other; the HUD stays put
+  vec2 hudP = p;
+  float sk = uKtBeat.y;
+  p *= 1.0 - 0.035 * uKick;
+  p += sk * 0.012 * vec2(sin(uTime * 73.0), cos(uTime * 61.0));
+  p = rot(0.012 * uSnare * (mod(floor(uTime / uSpb), 2.0) * 2.0 - 1.0)) * p;
+  vec3 ro = uKtCam[0].xyz;
+  float focal = uKtCam[0].w;
+  vec3 F = uKtCam[1].xyz, R = uKtCam[2].xyz, U = uKtCam[3].xyz;
+  vec3 rd = normalize(F * focal + R * p.x + U * p.y);
+  vec3 L = ktSun(th), haze = ktHaze(th);
+  float tBest = 1e9, shine = 0.0;
+  vec3 col = vec3(0.0);
+  float dg = 0.0, along = 0.0;
+  if (rd.y < 0.0) {
+    float tg = -ro.y / rd.y;
+    vec3 wq = vec3(0.0);
+    float tw = 1e9;
+    {
+      // where the ray comes down: on the track's own stretch, inside its barriers, it met none; past them, or across
+      // the infield to another part of the course, it looks at the pieces between
+      vec3 g = ro + rd * min(tg, 900.0);
+      dg = ktTrack(g.xz, along);
+      float segLen = uKtCourse.x / 72.0;
+      float ie = uKtMap.w, ig = along / segLen;
+      float fwd = mod(ig - ie + 72.0, 72.0), back = 72.0 - fwd;
+      float lo = fwd <= back ? ie : ig, span = min(fwd, back);
+      float chord = length(g.xz - ro.xz);
+      // (come down past a barrier on the track's own stretch: only that side's barrier can be in the way)
+      bool across = span * segLen > chord * 1.08 + 4.0;
+      if (abs(dg) > KWALL - 0.05 || across) {
+        int sOne = dg > 0.0 ? 1 : -1;
+        tw = ktWalls(ro, rd, tg, int(mod(floor(lo) - 3.0, 72.0)), int(min(span, 60.0)) + 8, across ? -1 : sOne, across ? 1 : sOne, wq);
+      }
+    }
+    if (tw < tg) {
+      tBest = tw;
+      col = ktWallFace(wq, th) * (0.7 + 0.3 * wq.y / KWH);
+      if (th > 1.5) shine = smoothstep(KWH - 0.12, KWH - 0.02, wq.y);
+    } else if (tg < 600.0) {
+      tBest = tg;
+      col = ktGround(ro + rd * tg, dg, along, th, shine);
+      if (th > 1.5) col *= 0.8;
+    }
+  }
+  // the ramps: a wedge across the track in yellow and black, its arrows stepping on the beat, its lip lit on the kick
+  int nRamps = int(uKtN[1].y);
+  for (int i = 0; i < nRamps; i++) {
+    vec4 rp = uKtRamp[i];
+    if (rp.w < 0.5) continue;
+    vec2 f2 = vec2(cos(rp.z), sin(rp.z)), r2 = vec2(-sin(rp.z), cos(rp.z));
+    vec2 o2 = ro.xz - rp.xy;
+    vec3 o = vec3(dot(o2, r2), ro.y, dot(o2, f2)), d = vec3(dot(rd.xz, r2), rd.y, dot(rd.xz, f2));
+    float sl = 0.5 / 2.6;
+    float tt = (sl * o.z - o.y) / (d.y - sl * d.z);
+    vec3 q = o + d * tt;
+    if (tt > 0.0 && tt < tBest && q.z > 0.0 && q.z < 2.6 && abs(q.x) < KHALF - 0.2) {
+      tBest = tt;
+      float chev = fract(q.z * 0.8 - abs(q.x) * 0.5 - floor(uTime / uSpb) * 0.5);
+      col = mix(vec3(0.08), vec3(1.0, 0.8, 0.1), step(0.5, chev)) * (0.8 + 0.3 * uKick);
+      col += vec3(1.0, 0.9, 0.6) * smoothstep(2.4, 2.6, q.z) * (0.8 + 1.2 * uKick);
+      shine = 0.5;
+    }
+    float tb = (2.6 - o.z) / d.z;
+    vec3 qb = o + d * tb;
+    if (tb > 0.0 && tb < tBest && qb.y > 0.0 && qb.y < 0.5 && abs(qb.x) < KHALF - 0.2) {
+      tBest = tb;
+      col = vec3(0.12, 0.1, 0.08) + vec3(1.0, 0.5, 0.1) * step(0.42, qb.y) * (0.6 + uKick);
+    }
+  }
+  // what stands by the track: the two nearest pictures the ray passes through are looked at, nearest first
+  {
+    vec2 n = normalize(-F.xz);
+    vec2 side = vec2(-n.y, n.x);
+    float den = dot(rd.xz, n);
+    vec4 c1 = vec4(1e9, 0.0, 0.0, -1.0), c2 = vec4(1e9, 0.0, 0.0, -1.0);    // t, u, v, which
+    if (den < -1e-4) {
+      int nProps = int(uKtN[0].x);
+      for (int i = 0; i < nProps; i++) {
+        vec4 q = uKtProp[i];
+        float t = dot(q.xy - ro.xz, n) / den;
+        vec3 hp = ro + rd * t;
+        float u = dot(hp.xz - q.xy, side);
+        // (each by its own shape's bounds: a tree's crown, a board, a tyre stack, a floodlight's mast and lamps)
+        vec2 bnd = vec2(q.w * 0.42 + 0.2, q.w * 1.02 + 0.2);
+        if (q.z > 1.5) bnd = q.z > 3.5 ? vec2(0.6, 1.15) : vec2(1.25, 1.45);
+        else if (th > 1.5) bnd = q.z < 0.5 ? vec2(0.55, q.w + 0.15) : vec2(1.05, q.w * 1.4 + 1.05);
+        bool in_ = q.w > 0.0 && t > 0.0 && t < tBest && abs(u) < bnd.x && hp.y > 0.0 && hp.y < bnd.y;
+        if (in_ && t < c1.x) { c2 = c1; c1 = vec4(t, u, hp.y, float(i)); }
+        else if (in_ && t < c2.x) c2 = vec4(t, u, hp.y, float(i));
+      }
+    }
+    int nc = c2.w >= 0.0 ? 2 : (c1.w >= 0.0 ? 1 : 0);
+    for (int k = 0; k < nc; k++) {
+      vec4 c = c1;
+      if (k == 1) c = c2;
+      if (c.w < 0.0) break;
+      vec4 q = uKtProp[int(c.w)];
+      vec4 sp = ktSprite(q.z, q.w, c.y, c.z, th);
+      if (sp.a > 0.5) { tBest = c.x; col = sp.rgb; shine = th > 1.5 && q.z < 0.5 ? 0.6 : 0.0; break; }
+    }
+  }
+  // (the sky only where nothing else was met: drawn everywhere, it cost a third of the scene)
+  if (tBest < 1e8) col = mix(col, haze, (1.0 - exp(-tBest * 0.007)) * (1.0 - shine * 0.7));
+  else col = ktSky(rd, th);
+  // the karts
+  int who;
+  float mat;
+  vec3 lq;
+  vec3 ln;
+  float tk = ktMarch(ro, rd, tBest, who, mat, lq, ln);
+  if (who >= 0) {
+    tBest = tk;
+    vec4 k = uKtK0[who];
+    float sp = uKtK1[who].w;
+    vec3 nw = normalize(vec3(-sin(k.w), 0.0, cos(k.w)) * ln.x + vec3(0.0, 1.0, 0.0) * ln.y + vec3(cos(k.w), 0.0, sin(k.w)) * ln.z);
+    vec3 base;
+    float gloss = 0.1;
+    if (mat < 1.5) { base = ktColour(float(who)); gloss = 0.7; }
+    else if (mat < 2.5) {
+      // the tyres: tread turning with the road, a hub in the kart's colour
+      bool front = lq.z > 0.0;
+      vec2 ax = mix(vec2(0.27, -0.55), vec2(0.2, 0.58), float(front));
+      vec2 w = vec2(lq.y - ax.x, lq.z - ax.y);
+      float ang = atan(w.y, w.x) + uKtK1[who].x * (front ? 1.35 : 1.0);
+      base = vec3(0.07) * (0.7 + 0.5 * step(0.5, fract(ang * 14.0 / 6.283)));
+      if (length(w) < (front ? 0.09 : 0.12) && abs(lq.x) > (front ? 0.6 : 0.68)) { base = ktColour(float(who)) * 0.8 + 0.2; gloss = 0.6; }
+    }
+    else if (mat < 3.5) { base = vec3(0.72, 0.74, 0.78); gloss = 0.9; }
+    else if (mat < 4.5) base = vec3(0.1, 0.1, 0.12);
+    else if (mat < 5.5) base = ktFur(sp, 0.0);
+    else if (mat < 6.5) base = ktFur(sp, 1.0);
+    else if (mat < 7.5) base = mix(ktColour(float(who)), vec3(1.0), 0.45);
+    else if (mat < 8.5) base = vec3(0.03);
+    else base = vec3(0.95);
+    float dif = max(dot(nw, L), 0.0), amb = 0.42 + 0.22 * nw.y;
+    if (th > 1.5) amb = 0.3 + 0.2 * nw.y;
+    float spec = pow(max(dot(reflect(rd, nw), L), 0.0), 24.0) * gloss;
+    float rim = pow(1.0 - max(dot(nw, -rd), 0.0), 3.0);
+    col = base * (amb + 0.85 * dif) + vec3(1.0) * spec + haze * rim * 0.35;
+    if (th > 1.5) col += unblack(pal(0.6 + uSeed.w)) * rim * 0.5;
+    // hit: a flash as it spins
+    col += vec3(1.0, 0.85, 0.4) * uKtK2[who].y * 0.35 * step(0.5, fract(uTime * 14.0));
+    col = mix(col, haze, 1.0 - exp(-tk * 0.007));
+  }
+  // the item cubes and the items in flight
+  vec4 cb = ktCubes(ro, rd, tBest);
+  if (cb.w < tBest) { col = mix(col, cb.rgb, 0.8); tBest = cb.w; }
+  vec4 sh = ktShots(ro, rd, tBest);
+  if (sh.w < tBest) { col = sh.rgb; tBest = sh.w; }
+  // flames from the exhausts of a kart on boost, and behind a rocket
+  int nFlames = int(uKtN[1].z);
+  for (int i = 0; i < nFlames; i++) {
+    float bo = uKtK1[i].z;
+    if (bo < 0.02) continue;
+    vec4 k = uKtK0[i];
+    vec3 f = vec3(cos(k.w), 0.0, sin(k.w)), rr = vec3(-sin(k.w), 0.0, cos(k.w));
+    float len = (0.35 + 0.6 * bo) * (0.8 + 0.4 * hash11(floor(uTime * 30.0) + float(i))) * (1.0 + 0.5 * uKick);
+    for (int s = -1; s <= 1; s += 2) {
+      vec3 a = k.xyz + rr * (0.17 * float(s)) + vec3(0.0, 0.48, 0.0) - f * 0.9;
+      vec3 b = a - f * len;
+      // the ray's nearest approach to the flame's axis
+      vec3 ba = b - a, oa = ro - a;
+      float d1 = dot(rd, ba), d2 = dot(ba, ba), d3 = dot(rd, oa), d4 = dot(ba, oa);
+      float den = d2 - d1 * d1;
+      float hh = clamp((d4 - d1 * d3) / max(den, 1e-6), 0.0, 1.0);
+      float tt = max(dot(a + ba * hh - ro, rd), 0.0);
+      if (tt > tBest + 0.3) continue;
+      float dist = length(ro + rd * tt - (a + ba * hh));
+      float r = mix(0.11, 0.02, hh) * (0.7 + 0.5 * bo);
+      float g = exp(-dist * dist / (r * r)) * bo;
+      col += mix(vec3(0.7, 0.85, 1.0), vec3(1.0, 0.45, 0.1), hh) * g * 2.2;
+    }
+  }
+  // sparks, smoke, blasts and glitter, at their depth (placed on the screen by the simulation)
+  float zHit = tBest * dot(rd, F);
+  int nParts = int(uKtN[0].y);
+  for (int i = 0; i < nParts; i++) {
+    vec4 q = uKtPart[i];
+    if (q.w < 0.5) continue;
+    if (q.z > zHit + 0.5) continue;
+    float d = length(p - q.xy) * q.z / focal;    // in metres, at its depth
+    if (d > 2.2) continue;
+    float kind = floor(q.w), age = fract(q.w) / 0.9;
+    if (kind < 1.5) col += vec3(0.4, 0.75, 1.0) * exp(-d * d / 0.0025) * (1.0 - age) * 2.0;
+    else if (kind < 2.5) col += vec3(1.0, 0.6, 0.15) * exp(-d * d / 0.003) * (1.0 - age) * 2.2;
+    else if (kind < 3.5) col = mix(col, vec3(0.75, 0.75, 0.78), exp(-d * d / (0.04 + age * 0.25)) * (1.0 - age) * 0.6);
+    else if (kind < 4.5) {
+      float r = 0.4 + age * 1.6;
+      col += mix(vec3(1.0, 0.95, 0.7), vec3(1.0, 0.35, 0.05), age) * exp(-d * d / (r * r)) * (1.0 - age) * 2.5;
+    }
+    else col += ktHue(fract(q.w * 3.7)) * exp(-d * d / 0.004) * (1.0 - age) * 2.0;
+  }
+  // the photo: the frozen moment, in sepia, the line marked, a flash as it is taken
+  float since = uKtHud.w, hold = max(uSpb, 0.45);
+  if (shot > 1.5 && shot < 2.5) {
+    float lum = dot(col, vec3(0.3, 0.55, 0.15));
+    col = vec3(lum) * vec3(1.08, 0.95, 0.78);
+    vec3 v = vec3(uKtMap.y, 0.5, uKtMap.z) - ro;
+    float sx = dot(v, R) / max(dot(v, F), 0.1) * focal;
+    col = mix(col, vec3(0.9, 0.1, 0.08), 1.0 - smoothstep(0.002, 0.004, abs(p.x - sx)));
+    col += vec3(1.0) * exp(-since * 40.0) * 1.2;
+    col *= 1.0 - 0.5 * smoothstep(0.35, 0.95, length(p * vec2(0.6, 1.0)));
+    col = ktHudText(hudP, col);
+    return col;
+  }
+  // a blast or a landing by the player: a warm flash
+  col += vec3(1.0, 0.8, 0.5) * min(sk, 1.0) * 0.1;
+  // fireworks over the course after a win: a burst every other beat for four of them
+  if (tBest > 1e8 && uKtHud2.x > 0.5 && uKtHud2.x < 1.5 && since > hold && since < hold + 9.0 * uSpb) {
+    for (int k = 0; k < 4; k++) {
+      float a = since - hold - float(k) * 2.0 * uSpb;
+      if (a < 0.0 || a > 1.4) continue;
+      vec2 c = vec2(hash11(float(k) + uSeed.x * 9.0) * 1.2 - 0.6, 0.18 + 0.22 * hash11(float(k) * 3.1 + 2.0));
+      vec2 dq = p - c;
+      float r = length(dq), ray = pow(abs(cos(atan(dq.y, dq.x) * 8.0)), 24.0);
+      col += ktHue(hash11(float(k) * 7.0 + uSeed.y)) * exp(-abs(r - a * 0.3) * 70.0) * (0.35 + ray) * (1.0 - a / 1.4) * 1.8;
+    }
+  }
+  // the boost: speed lines rushing out from the middle; a touch of them on every kick
+  float bo = max(uKtHud2.y, 0.35 * uKick);
+  if (bo > 0.01 && shot < 0.5) {
+    float a = atan(p.y, p.x), r = length(p);
+    float line = step(0.9, hash11(floor(a * 70.0))) * smoothstep(0.3, 0.85, r) * step(0.4, fract(r * 3.0 - uTime * 6.0 + hash11(floor(a * 70.0)) * 5.0));
+    col += vec3(1.0) * line * 0.35 * bo;
+  }
+  // ---- the HUD: the place, the lap, the time, the order, the map (not punched or shaken)
+  p = hudP;
+  if (shot < 0.5 || shot > 2.5) {
+    // the order, down the left
+    if (abs(p.x + 0.84) < 0.03 && p.y < 0.4 && p.y > 0.0) for (int i = 0; i < 8; i++) {
+      float id = uKtRank[i / 4][i % 4];
+      vec2 bq = p - vec2(-0.84, 0.36 - float(i) * 0.045);
+      float box = max(abs(bq.x), abs(bq.y)) - 0.016;
+      if (box < 0.006) col = vec3(step(id, 0.5) * (0.95 + 0.8 * uKick) + 0.05);
+      if (box < 0.0) col = ktColour(id);
+    }
+    // the map, bottom right: the course, every kart a dot
+    vec2 mq = p - vec2(0.7, -0.3);
+    if (abs(mq.x) < 0.17 && abs(mq.y) < 0.17) {
+      vec2 w = uKtHud2.zw + vec2(mq.x, -mq.y) / 0.16 * uKtMap.x;
+      float dm = 1e9;
+      // (the loop's own count keeps it to the map: the software renderer runs an if's inside everywhere, a loop only as long as a pixel needs it)
+      int nm = abs(mq.x) < 0.17 && abs(mq.y) < 0.17 ? 72 : 0;
+      for (int i = 0; i < nm; i++) {
+        vec4 a = uKtSeg[i], b = uKtSeg[i == 71 ? 0 : i + 1];
+        dm = min(dm, sdSeg(w, a.xy, b.xy));
+      }
+      float px = uKtMap.x / 0.16;
+      col = mix(col, vec3(0.0, 0.0, 0.05), 0.35 * (1.0 - smoothstep(0.0, 0.012 * px, dm - 0.004 * px)));
+      col = mix(col, vec3(1.0), 1.0 - smoothstep(0.003 * px, 0.006 * px, dm));
+      for (int i = 7; i >= 0; i--) {
+        vec2 kq = (uKtK0[i].xz - uKtHud2.zw) / uKtMap.x * 0.16;
+        float r = length(mq - vec2(kq.x, -kq.y));
+        float rr = i == 0 ? 0.013 : 0.009;
+        if (r < rr + 0.003) col = vec3(0.05);
+        if (r < rr) { col = ktColour(float(i)); if (i == 0) col = vec3(1.0); }
+      }
+    }
+    // the words: the place, the lap, the time, FINAL LAP, how the last race went
+    col = ktHudText(p, col);
+  }
+  return col;
+}
+`;
+
 const SOURCES = {
   plasma, tunnel, metaballs, starfield, copper, fractal,
   shadebobs, vectorballs, dottunnel, fireworks, fire, kefrens, ball, rings, scanner, footsteps, twister, bobs, dualchess, chessfloor, rubber, bumplogo, cracktro, ansi, echolines, maze3d, moonbike, timecar, animeop, pipes, ripple, outrun, morph, prism, sculpture, fractalflight, coderain, gimbal, djdecks,
@@ -9522,6 +10395,7 @@ const SOURCES = {
   artillery: staged(artillery, 0.2, 0.2),
   skyrush: staged(skyrush, 0.4, 0.4),
   skatepark: staged(skatepark, 0.35, 0.45),
+  karts: staged(karts, 0.3, 0.4),
   maze: staged(maze, 0.7, 0.4),
   bricks: staged(bricks, 0.6, 0.35),
   lightcycles: staged(lightcycles, 0.95, 0.6),
@@ -9536,7 +10410,7 @@ const SOURCES = {
 
 /** Post-pass effects a scene asks for: the game scenes get the beat blur. */
 export const STYLE_FX = Object.fromEntries(
-  ['paddles', 'invaders', 'rocks', 'crossing', 'tube', 'tanks', 'football', 'skatepark', 'artillery', 'skyrush', 'maze', 'bricks', 'lightcycles', 'snake', 'boxer', 'starfighter', 'pipes', 'pyramid', 'lcd', 'bobs', 'rubber', 'bumplogo', 'cascade', 'ansi', 'echolines', 'maze3d', 'moonbike', 'timecar', 'scanner', 'animeop', 'djdecks',
+  ['paddles', 'invaders', 'rocks', 'crossing', 'tube', 'tanks', 'football', 'skatepark', 'karts', 'artillery', 'skyrush', 'maze', 'bricks', 'lightcycles', 'snake', 'boxer', 'starfighter', 'pipes', 'pyramid', 'lcd', 'bobs', 'rubber', 'bumplogo', 'cascade', 'ansi', 'echolines', 'maze3d', 'moonbike', 'timecar', 'scanner', 'animeop', 'djdecks',
    'prism', 'sculpture', 'fractalflight', 'gimbal']
     .map((n) => [n, { impact: 1 }]),
 );
@@ -9592,6 +10466,7 @@ export const STYLE_INFO = {
   invaders:    'A seed-made formation on the beat; aliens burst on the kick',
   rocks:       'A vector ship that flies, dodges and splits the rocks it hits',
   skatepark:   'A skater on a half-pipe in a warehouse, moved by gravity and its own pumping, the camera chasing behind it: an air at every lip, a grind along the coping through the build, a huge air on the drop, the combo counter',
+  karts:       'A kart race of eight animal drivers round a new course each race, the camera behind the player: items thrown on the snare burst on the next beat, a boost off a pad through the build, the leaders nose to nose on the drop and the photo-finish camera',
   skyrush:     'A jetpack flyer free over a checkered plain, running a stride to the beat, seen from another side wherever he goes; the horizon rises with him, foes fly set ways and fire where he was, low things trip him and a serpent of orbs closes each stage, bursting on the drop',
   artillery:   'Two teams of beetles on an island: missiles, grenades and bounces in real physics, each blast solved to land on the snare, the camera zooming and following every shot',
   football:    'Football seen from above, the camera on the ball: a pass on every beat, a run down the wing through the build, the header in on the drop, the crowd going up',

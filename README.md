@@ -16,7 +16,7 @@ Then ride it through half a century, from 1972 to now.**
 
 ![THE JOURNEY: every era from the arcade to the 64k intro, each with its own card, scenes and music](docs/gallery/journey.gif)
 
-`v0.2` · 7 eras · 58 scenes · 36 music styles · 17 displays · 6 sound boards · endless autoplay · runs in your browser · renders to mp4 ·
+`v0.2` · 7 eras · 59 scenes · 36 music styles · 17 displays · 6 sound boards · endless autoplay · runs in your browser · renders to mp4 ·
 no assets, only maths · built with [3dgiordano/agent-plugins](https://github.com/3dgiordano/agent-plugins)
 
 </div>
@@ -136,7 +136,7 @@ machine name it once had (`--era amiga`).
 | **1982–1989** | home computers, arcades and the video shop | C64 | lightcycles, pyramid, boxer, bricks, outrun, scanner, timecar, moonbike, dottunnel, plasma, ball, skyrush | SID chiptune, synth-pop, ST buzz, italo disco — on the C64's SID, the Atari ST's YM2149 or the synthesizer's own voices, by the seed |
 | **1990–1993** | the demoscene's golden years | AMIGA | the Amiga effects - copper, kefrens, vector balls, the chessboards, the cracktro and more - plasma, metaballs, tunnel, fractal, bumplogo, fireworks, morph; footsteps, starfighter, cascade, echolines, football | Amiga rave, New Beat, orchestral trackers, dreamwave, tracker jazz, beast lands, lament, musicdisk ballad, jolly march, hip-hop blaster, terrace drums — on Paula's 8-bit samples |
 | **1994–1996** | the PC demos and the multimedia years | VGA | fire, pipes, ansi, maze3d, artillery; fractal, tunnel, metaballs, plasma, bumplogo | ambient techno, acid, gabber, eurodance, jungle, FM metal, MIDI quest — on a Sound Blaster 16's FM or an AWE32's wavetable; and keygen, the party's tracker tunes, played from samples as a module player did; and trip-hop, its strings and Rhodes on the card; and lament and jolly march, played on the card |
-| **1997–1999** | 3D consoles and pocket screens | COMPOSITE TV | snake, animeop, coderain, skatepark | heroic game soundtracks, eurodance, chip rock and roll, star pilot, MIDI quest, the anime opening, skate punk, handheld chip, jolly march — on wavetable |
+| **1997–1999** | 3D consoles and pocket screens | COMPOSITE TV | snake, animeop, coderain, skatepark, karts | heroic game soundtracks, eurodance, chip rock and roll, star pilot, MIDI quest, the anime opening, skate punk, handheld chip, jolly march — on wavetable |
 | **2000–2009** | the 64k intro | SVGA | morph, gimbal, djdecks | trance, happy hardcore, keygen, trip-hop |
 | **2010–now** | shader art | MODERN | prism, sculpture, fractalflight | synthwave, dreamwave, terrace drums |
 
@@ -378,7 +378,11 @@ and its own pumping, and gravity sets the time of a crossing, so the peak of eac
 comes on the nearest eighth or sixteenth, the time left over in a phrase is
 spent grinding on the coping, and it pumps back up to a 540 on the drop, the
 combo banked. The camera chases it with a weight of its own, and cuts once, to
-the 540 seen from the flat. In **artillery** two sides of beetles fight from the ends of an island in real
+the 540 seen from the flat. In **karts** the player's pace round the course is
+solved so its last lap ends on the drop, the leader beside it nose to nose for
+the photo; a pad a bar into each race boosts it past the pack, the jump halfway
+leaves on the downbeat and lands on a beat, items leave on the snare and burst on
+the next beat, and no two karts ever touch. In **artillery** two sides of beetles fight from the ends of an island in real
 physics: wind, bounces, fuses, blasts that throw them into the sea. Each shot is
 solved to land on the snare, the big ones on the drop, and the camera zooms and
 follows it. In **skyrush** the flyer goes where he likes on the screen and is seen
@@ -465,8 +469,8 @@ Era by era, oldest first. Each one is a memory of its time, made from scratch.
 |---|---|---|
 | ![snake](docs/gallery/snake.png) | ![animeop](docs/gallery/animeop.png) | ![coderain](docs/gallery/coderain.png) |
 | **snake** — the snake game of the pocket phones, in neon: a snake that hunts its food, grows, and bursts when it boxes itself in. `--scene snake --era 1997 --seed longsnake` | **animeop** — the anime openings of the 90s, as an idea: a cut on every bar, a team posing against sunbursts, a power-up in lightning, and the seed slammed in as the show's title on the drop. `--scene animeop --era 1997 --seed hikari` | **coderain** — the falling green code of the millennium's cyberpunk screens, as an idea: glyphs typing their way down in sheets of depth, and out of the rain each phrase a face in dark glasses, the seed, SEEDSCENE. `--scene coderain --era 1997 --seed greenrain` |
-| ![skatepark](docs/gallery/skatepark.png) |   |   |
-| **skatepark** — the skateboarding games of the late 90s: a skater on a wooden half-pipe in a warehouse, a trick at every lip, a grind along the coping; a huge air on the drop, the combo banked. `--scene skatepark --era 1997 --seed halfpipe` |   |   |
+| ![skatepark](docs/gallery/skatepark.png) | ![karts](docs/gallery/karts.png) |   |
+| **skatepark** — the skateboarding games of the late 90s: a skater on a wooden half-pipe in a warehouse, a trick at every lip, a grind along the coping; a huge air on the drop, the combo banked. `--scene skatepark --era 1997 --seed halfpipe` | **karts** — the kart racers of the 32-bit consoles: eight animal drivers round a new course each race, items thrown on the snare, a boost through the build, and a photo finish on the drop. `--scene karts --era 1997 --seed kartcup` |   |
 
 ### 2000–2009 · the 64k intro
 
@@ -637,7 +641,7 @@ seedscene info    [options]     show what a seed composes
 | option | meaning | default |
 |---|---|---|
 | `--seed <word>` | anything at all; the same word always gives the same demo | random |
-| `--scene <name>` | one of the fifty-eight scenes (`--style`, its old name, works too) | chosen by the seed - one of the era's, if the era is given |
+| `--scene <name>` | one of the fifty-nine scenes (`--style`, its old name, works too) | chosen by the seed - one of the era's, if the era is given |
 | `--era <name>` | `auto` `1972` `1982` `1990` `1994` `1997` `2000` `2010` — or any year inside one, or its old name (`arcade` `c64` `amiga` `dos` `console` `handheld` `y2k` `modern`) | an era the scene belongs to |
 | `--display <name>` | `auto` `bw` `arcade` `vector` `colorvector` `neonvector` `mono` `c64` `vhs` `ega` `amiga` `vga` `snes` `composite` `gameboy` `nokia` `svga` `modern` | the screen: on `auto` each scene its own, or its era's |
 | `--board <name>` | `auto` `hifi` `paula` `opl3` `awe32` `ym` `sid` | the sound board: on `auto` each scene its own, or its era's |
@@ -709,7 +713,7 @@ src/core/music.js     composer, thirty-six styles, synthesizer, feature track
 src/core/chips.js     the sound chips: Paula, OPL3, AWE32, YM2149, SID
 src/core/visual.js    renderer, palette, title plate, scroller, era cards
 src/core/gl.js        WebGL2 helpers
-src/styles/index.js   the fifty-eight scenes, the 3D stage, the About part, the display's screen
+src/styles/index.js   the fifty-nine scenes, the 3D stage, the About part, the display's screen
 src/app.js            ties the music and the picture together
 web/index.html        the live page
 web/boot.js           the C64 boot screen

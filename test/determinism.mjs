@@ -18,7 +18,7 @@ import { sceneTour } from '../src/core/catalogue.js';
 import { DISPLAYS, DISPLAY_NAMES, SCENE_DISPLAY, displayFor, displayUniforms, displayResolution } from '../src/core/displays.js';
 import { BOARDS, BOARD_NAMES, SCENE_BOARD, boardFor, trackBoardFor, chipOfBoard } from '../src/core/boards.js';
 import { STYLE_NAMES } from '../src/styles/index.js';
-import { SIMS, TANK_REACH, TANK_RANGE } from '../src/core/sims.js';
+import { SIMS, TANK_REACH, TANK_RANGE, KT_LONG, KT_WIDE, KT_LANE } from '../src/core/sims.js';
 import { renderVideo } from '../tools/render.js';
 
 const sha = (b) => createHash('sha256').update(b).digest('hex').slice(0, 16);
@@ -463,6 +463,66 @@ check('AUTOPLAY sounds the same every time, whatever the block size', ah === pro
   check('The scanner car stays on its road, clears each barrier, lands on the music\'s big moments, and going back replays the same drive',
     off < 4.8 && flights >= 8 && landed === flights && late < 0.04 && low + 0.17 > 1.3 && same,
     `${landed} of ${flights} landings, at worst ${(late * 1000).toFixed(0)} ms off; ${off.toFixed(1)} m from the middle of the road at most; ${(low + 0.17 - 1.3).toFixed(2)} m over the barrier at least`);
+}
+
+{
+  // the kart race: each race ends on an accented bar - the drop - with the player's kart on the line and the leader
+  // beside it, nose to nose, the rest behind; no two karts ever touch or leave the track between its barriers;
+  // items leave on a snare and land on a beat, ahead of whoever threw them; going back replays the same race
+  let jumps = 0, offJump = 0;
+  let finishes = 0, offBar = 0, apart = 0, ahead = 0, offLine = 0, touch = Infinity, wide = 0, shots = 0, offBeat = 0, behindThrower = 0, same = true;
+  for (const [seed, spb, accents] of [['kartcup', 0.451, [8, 16, 24, 28, 32, 40, 48]], ['aurora', 0.36, null], ['hikari', 0.75, null], ['grandprix', 0.328, [0, 16, 36, 59, 67]]]) {
+    const meta = { spb, steps: 16, barSec: spb * 4, accents };
+    const sim = new SIMS.karts(seed, spb, meta, null);
+    const seen = new Set(), done = new Set();
+    const finish = (r) => {
+      finishes++;
+      // its jumps leave on a bar line and land on a beat, the player in the air in between and down after
+      for (const q of r.ramps) {
+        jumps++;
+        const b = q.T / meta.barSec, k = q.T1 / spb;
+        if (Math.abs(b - Math.round(b)) > 1e-6 || Math.abs(k - Math.round(k)) > 1e-6) offJump++;
+        if (!sim.jumpAt(0, r, (q.T + q.T1) / 2, 0).air || sim.jumpAt(0, r, q.T1 + 0.01, 0).air) offJump++;
+      }
+      const b = r.t1 / meta.barSec;
+      if (Math.abs(b - Math.round(b)) > 1e-6 || (accents && !accents.includes(Math.round(b)) && b < 64)) offBar++;
+      const sP = sim.sRace(r, r.t1);
+      offLine = Math.max(offLine, Math.abs(sP / r.lap - Math.round(sP / r.lap)) * r.lap);
+      apart = Math.max(apart, Math.abs(sim.gap(r.photo, r.t1)));
+      for (let i = 1; i < 8; i++) if (i !== r.photo && sim.gap(i, r.t1) > -2) ahead++;
+    };
+    for (let t = 0; t < 150; t += 1 / 60) {
+      sim.advanceTo(t);
+      // (each finish looked at as it is crossed, while its race is still kept)
+      for (const r of sim.races) if (r.t1 <= t && r.cum && !done.has(r)) { done.add(r); finish(r); }
+      for (let i = 0; i < 8; i++) wide = Math.max(wide, Math.abs(sim.d[i]) - KT_LANE);
+      for (const h of sim.hits) {
+        if (seen.has(h) || t < h.T || t >= h.Th || h.dFrom === null) continue;
+        seen.add(h);
+        shots++;
+        // (on the grid's backbeat without features; on the next beat)
+        if (Math.abs(h.T / spb - Math.round(h.T / spb)) > 1e-6 || Math.round(h.T / spb) % 2 !== 1) offBeat++;
+        if (Math.abs(h.Th / spb - Math.round(h.Th / spb)) > 1e-6) offBeat++;
+        const race = sim.raceAt(t), q = sim.shotAt(h, race, (h.T + h.Th) / 2);
+        const sThrower = sim.sRace(race, (h.T + h.Th) / 2) + sim.gap(h.from, (h.T + h.Th) / 2);
+        const sShot = sim.sRace(race, h.T) + sim.gap(h.from, h.T) + 1.2 + (sim.sRace(race, h.Th) + sim.gap(h.to, h.Th) - 0.8 - (sim.sRace(race, h.T) + sim.gap(h.from, h.T) + 1.2)) * 0.5;
+        if (!q || sShot < sThrower) behindThrower++;
+      }
+    }
+    touch = Math.min(touch, sim.minGap);
+    const a = new SIMS.karts(seed, spb, meta, null).uniforms(40), c2 = new SIMS.karts(seed, spb, meta, null);
+    c2.uniforms(70);
+    const c = c2.uniforms(40);
+    for (const k of ['uKtCam', 'uKtK0', 'uKtK1', 'uKtShot', 'uKtPart', 'uKtHud']) if (String(a[k].v) !== String(c[k].v)) same = false;
+  }
+  check('The kart race ends each race on an accented bar, the player on the line and the leader nose to nose beside it, the rest behind',
+    finishes >= 16 && offBar === 0 && offLine < 1e-6 && apart < 0.3 && ahead === 0,
+    `${finishes} finishes; the leader ${(apart * 100).toFixed(0)} cm from the player at most`);
+  check("The kart race's jumps leave on a bar line and land on a beat",
+    jumps >= 10 && offJump === 0, `${jumps} jumps`);
+  check('No two karts ever touch or leave the track, items leave on the snare and land on the beat ahead of their thrower, and going back replays the same race',
+    touch > 0 && wide <= 1e-9 && shots > 20 && offBeat === 0 && behindThrower === 0 && same,
+    `${shots} items; two karts side by side never nearer than ${(touch * 100).toFixed(0)} cm`);
 }
 
 {

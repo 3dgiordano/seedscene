@@ -7338,4 +7338,956 @@ export class ScannerSim {
   }
 }
 
-export const SIMS = { scanner: ScannerSim, skyrush: SkyrushSim, artillery: ArtillerySim, skatepark: SkateSim, football: FootballSim, tanks: TankSim, tube: TubeSim, crossing: CrossingSim, coderain: CoderainSim, animeop: AnimeopSim, timecar: TimecarSim, moonbike: MoonbikeSim, maze3d: Maze3dSim, echolines: EcholinesSim, ansi: AnsiSim, cascade: CascadeSim, cracktro: CracktroSim, rubber: RubberSim, chessfloor: ChessfloorSim, bobs: BobsSim, pyramid: PyramidSim, pipes: PipesSim, maze: MazeSim, snake: SnakeSim, rocks: RocksSim, starfighter: StarSim, paddles: PaddlesSim, invaders: InvadersSim, bricks: BricksSim, lightcycles: LightcyclesSim };
+// ---------------------------------------------------------------------------
+// The kart race: a pack of eight round a course, the photo finish on the drop
+// ---------------------------------------------------------------------------
+
+export const KT_N = 8, KT_SEG = 72, KT_PROPS = 20, KT_PARTS = 32, KT_SHOTS = 4;
+export const KT_HALF = 6.0;                 // the track's half width, in metres
+export const KT_WALL = 8.4;                 // the barrier either side, from the middle
+export const KT_LANE = 5.05;                // how far from the middle a kart's middle may go
+export const KT_LONG = 1.8, KT_WIDE = 1.3;  // a kart over its bumpers and its wheels
+const KT_DT = 1 / 60;
+const KT_FINE = 720;                        // samples round a course, for the karts (one every half metre)
+const KT_V0 = 24;                           // the pace, m/s
+const KT_RAMP = 2.6;                        // a ramp's length up to its lip, half a metre high
+const KT_ROWS = [0.3, 0.68];                // the rows of item cubes, as parts of the lap
+const KT_CUBE_D = [-4.2, -1.4, 1.4, 4.2];
+// each animal by numbers, one shape for all: its ears (a tapering stub from a base to a tip, the frog's eyes on top)
+// with their radii, its muzzle likewise, its eyes, how far out its nose is (0: the frog, whose head is wider)
+const KT_LOOK = [
+  [[0.15, 0.16, -0.02, 0.07], [0.16, 0.18, -0.02, 0.07], [0, -0.05, 0.16, 0.1], [0, -0.05, 0.17, 0.1], [0.08, 0.04, 0.18, 0.27]],     // bear
+  [[0.12, 0.13, -0.02, 0.075], [0.16, 0.31, -0.04, 0.01], [0, -0.05, 0.16, 0.1], [0, -0.05, 0.17, 0.1], [0.08, 0.04, 0.18, 0.27]],  // cat
+  [[0.07, 0.16, -0.04, 0.05], [0.1, 0.47, -0.1, 0.05], [0, -0.05, 0.16, 0.1], [0, -0.05, 0.17, 0.1], [0.08, 0.04, 0.18, 0.27]],     // rabbit
+  [[0.16, 0.16, -0.04, 0.12], [0.17, 0.19, -0.05, 0.11], [0, -0.05, 0.16, 0.1], [0, -0.05, 0.17, 0.1], [0.08, 0.04, 0.18, 0.27]],   // mouse
+  [[0.1, 0.14, 0.07, 0.075], [0.1, 0.15, 0.07, 0.075], [0, 0, 0, 0.01], [0, 0, 0.01, 0.01], [0.1, 0.16, 0.13, 0]],                  // frog
+  [[0.13, 0.13, -0.02, 0.06], [0.17, 0.23, 0.02, 0.015], [0, -0.03, 0.15, 0.08], [0, -0.03, 0.24, 0.08], [0.08, 0.04, 0.18, 0.27]], // pig
+  [[0.11, 0.13, -0.03, 0.08], [0.15, 0.36, -0.05, 0.01], [0, -0.04, 0.12, 0.1], [0, -0.06, 0.32, 0.03], [0.08, 0.04, 0.18, 0.33]],  // fox
+  [[0.19, 0.09, -0.03, 0.06], [0.23, -0.1, -0.05, 0.06], [0, -0.05, 0.16, 0.1], [0, -0.05, 0.17, 0.1], [0.08, 0.04, 0.18, 0.27]],   // dog
+];
+const KT_SPECIES = 8;                       // bear, cat, rabbit, mouse, frog, pig, fox, dog
+const KT_NOSE = 0.95;                       // a kart's nose ahead of its middle: the line is crossed when the nose is on it
+const ktWrap = (a) => a - Math.round(a / (2 * Math.PI)) * 2 * Math.PI;
+
+/**
+ * A closed course from a seed: a loop pushed out of round by a few slow waves -
+ * bends, a hairpin or two, a straight - sampled evenly by length. A loop is
+ * thrown away if a bend is tighter than a kart can take or two parts of it come
+ * near enough for their barriers to meet.
+ */
+function ktCourse(rng, lap) {
+  for (let attempt = 0; attempt < 80; attempt++) {
+    const sx = rng.float(1.05, 1.6);
+    const H = [[2, rng.float(0.1, 0.26), rng.float(0, 6.283)], [3, rng.float(0.05, 0.16), rng.float(0, 6.283)], [4, rng.float(0, 0.06), rng.float(0, 6.283)]];
+    const pts = ktSample((a) => {
+      let r = 1;
+      for (const [k, am, ph] of H) r += am * Math.cos(k * a + ph);
+      return [sx * r * Math.cos(a), r * Math.sin(a)];
+    }, lap);
+    const c = ktShape(pts, lap);
+    if (c.tight >= 15 && c.near >= 2 * KT_WALL + 12) return c;
+  }
+  // (an oval always fits)
+  return ktShape(ktSample((a) => [1.5 * Math.cos(a), Math.sin(a)], lap), lap);
+}
+
+function ktSample(f, lap) {
+  const M = 2048, raw = [];
+  for (let i = 0; i < M; i++) raw.push(f(i / M * 2 * Math.PI));
+  const cum = [0];
+  for (let i = 1; i <= M; i++) { const a = raw[i - 1], b = raw[i % M]; cum.push(cum[i - 1] + Math.hypot(b[0] - a[0], b[1] - a[1])); }
+  const k = lap / cum[M], pts = [];
+  let j = 0;
+  for (let i = 0; i < KT_FINE; i++) {
+    const want = i / KT_FINE * cum[M];
+    while (cum[j + 1] < want) j++;
+    const u = (want - cum[j]) / (cum[j + 1] - cum[j]);
+    const a = raw[j], b = raw[(j + 1) % M];
+    pts.push([(a[0] + (b[0] - a[0]) * u) * k, (a[1] + (b[1] - a[1]) * u) * k]);
+  }
+  return pts;
+}
+
+/** The course's frame at each sample: where, the way on, the bend (positive: turning right), and how tight and close it gets. */
+function ktShape(pts, lap) {
+  const n = pts.length, step = lap / n;
+  const tx = new Float64Array(n), tz = new Float64Array(n), kap = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    const a = pts[(i - 1 + n) % n], b = pts[(i + 1) % n];
+    const l = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    tx[i] = (b[0] - a[0]) / l; tz[i] = (b[1] - a[1]) / l;
+  }
+  let tight = Infinity;
+  for (let i = 0; i < n; i++) {
+    const a = (i - 4 + n) % n, b = (i + 4) % n;
+    kap[i] = ktWrap(Math.atan2(tz[b], tx[b]) - Math.atan2(tz[a], tx[a])) / (8 * step);
+    tight = Math.min(tight, 1 / Math.max(Math.abs(kap[i]), 1e-6));
+  }
+  let near = Infinity;
+  for (let i = 0; i < n; i += 4) for (let q = i + 4; q < n; q += 4) {
+    if (Math.min(q - i, n - (q - i)) * step < 70) continue;
+    near = Math.min(near, Math.hypot(pts[i][0] - pts[q][0], pts[i][1] - pts[q][1]));
+  }
+  return { pts, tx, tz, kap, lap, step, tight, near };
+}
+
+/** The course at s metres round it: where, the way on, its right, the bend. */
+function ktAt(c, s) {
+  const n = c.pts.length;
+  let u = (s / c.step) % n;
+  if (u < 0) u += n;
+  const i = Math.floor(u), f = u - i, j = (i + 1) % n;
+  const a = c.pts[i], b = c.pts[j];
+  let x = c.tx[i] + (c.tx[j] - c.tx[i]) * f, z = c.tz[i] + (c.tz[j] - c.tz[i]) * f;
+  const l = Math.hypot(x, z);
+  x /= l; z /= l;
+  return { x: a[0] + (b[0] - a[0]) * f, z: a[1] + (b[1] - a[1]) * f, tx: x, tz: z, rx: -z, rz: x, kap: c.kap[i] + (c.kap[j] - c.kap[i]) * f };
+}
+
+/** What stands round a course: trees past the barriers, arrow boards on the outside of the bends, tyres. */
+function ktDress(c, rng) {
+  const props = [];
+  const clear = (x, z, r) => {
+    for (let i = 0; i < c.pts.length; i += 6) if (Math.hypot(c.pts[i][0] - x, c.pts[i][1] - z) < r) return false;
+    return true;
+  };
+  for (let s = 0; s < c.lap; s += 4) {
+    const a = ktAt(c, s);
+    // arrow boards along the outside of a tight bend, pointing the way it turns
+    if (Math.abs(a.kap) > 1 / 45 && Math.round(s / 4) % 2 === 0) {
+      const side = -Math.sign(a.kap), off = KT_WALL + 0.9;
+      const x = a.x + a.rx * side * off, z = a.z + a.rz * side * off;
+      if (clear(x, z, KT_WALL + 0.5)) props.push([x, z, a.kap > 0 ? 3 : 2, 1.5]);
+      continue;
+    }
+    if (Math.round(s / 4) % 3 !== 0) continue;
+    for (const side of [-1, 1]) {
+      if (!rng.bool(0.55)) continue;
+      const off = KT_WALL + rng.float(2.2, 14);
+      const x = a.x + a.rx * side * off + rng.float(-1.5, 1.5), z = a.z + a.rz * side * off + rng.float(-1.5, 1.5);
+      if (!clear(x, z, KT_WALL + 2)) continue;
+      const kind = rng.bool(0.12) ? 4 : rng.bool(0.5) ? 0 : 1;          // a tyre stack, or one of the course's two trees
+      props.push([x, z, kind, kind === 4 ? 1.1 : rng.float(4.5, 8)]);
+    }
+  }
+  return props;
+}
+
+/**
+ * The kart race. Eight karts round a closed course, each driven by an animal: the
+ * camera rides behind the player's. The music sets the finishes: every accented
+ * bar far enough from the last - the drop - ends a race, the player and the
+ * leader crossing the line nose to nose, caught by the photo-finish camera. The
+ * player's distance round the course is planned for that: its pace is solved so
+ * the last lap ends on the drop, with a boost through the build before it, from a
+ * pad on the track where the build begins. The rest of the pack keep their
+ * places by gaps planned every two bars, eased between, overtaking and falling
+ * back; items are thrown on the snare and land on the next beat, the kart hit
+ * spinning out and losing ground it wins back. Across the track the karts are
+ * stepped like drivers: each holds the inside of a bend and gives way to the
+ * kart beside it, so no two ever touch. Each race is a new course.
+ */
+export class KartSim {
+  constructor(seed, spb, meta, features) {
+    this.seed = seed;
+    this.grid = new MusicGrid(spb, meta);
+    // the snares: thrown items leave on them
+    this.snares = null;
+    if (features && features.tracks && features.tracks.snare) {
+      const tr = features.tracks.snare, out = [];
+      let last = -1;
+      for (let i = 1; i < features.n; i++) {
+        if (tr[i] >= 0.3 && tr[i - 1] < 0.3 && i - last > FEATURE_RATE * 0.12) { out.push(i / FEATURE_RATE); last = i; }
+      }
+      this.snares = out;
+    }
+    const r = new Rng(seed, 'kart-cast');
+    const species = r.shuffle([0, 1, 2, 3, 4, 5, 6, 7]);
+    this.species = species.slice(0, KT_N);
+    this.look = new Float32Array(KT_N * 20);
+    this.species.forEach((k, i) => KT_LOOK[k].forEach((v, j) => this.look.set(v, i * 20 + j * 4)));
+    this.font = new Float32Array(48 * 2);
+    CRACK_FONT.forEach((g, i) => {
+      let lo = 0, hi = 0;
+      g.split('|').forEach((row, y) => [...row].forEach((ch, x) => {
+        if (ch !== '#') return;
+        if (y < 4) lo += 2 ** (y * 5 + x); else hi += 2 ** ((y - 4) * 5 + x);
+      }));
+      this.font[i * 2] = lo; this.font[i * 2 + 1] = hi;
+    });
+    this.reset();
+  }
+
+  reset() {
+    this.rng = new Rng(this.seed, 'kart-plan');
+    this.fxr = new Rng(this.seed, 'kart-fx');
+    this.races = [];
+    this.keys = Array.from({ length: KT_N }, () => []);      // each rival's gap to the player: [t, metres ahead]
+    this.hits = [];
+    this.lane = new Float64Array(KT_N);
+    // the stepped state: across the track, how fast, the slide, the eye's heading
+    this.t = 0;
+    this.d = new Float64Array(KT_N); this.vd = new Float64Array(KT_N);
+    this.d0 = new Float64Array(KT_N);
+    this.s1 = new Float64Array(KT_N); this.s0 = new Float64Array(KT_N);
+    this.drift = new Float64Array(KT_N); this.drift0 = new Float64Array(KT_N);
+    this.slide = new Float64Array(KT_N);                      // how long it has slid this bend
+    this.mini = new Float64Array(KT_N);                       // the burst after a long slide, until
+    this.camH = null; this.camH0 = null;
+    this.fut = null; this.futRace = -1;
+    this.off = new Float64Array(KT_N); this.off0 = new Float64Array(KT_N); this.offRace = -1;
+    this.air = new Array(KT_N).fill(false);
+    this.landT = -9; this.placeNow = 0; this.placeT = -9; this.lapNow = -1; this.lapT = -9;
+    this.raceI = 0;
+    this.cubes = [];                                          // when each cube is back
+    this.parts = [];
+    this.snap = null;                                         // the karts at the last finish, for its photo
+    this.minGap = Infinity;                                   // (for the checks: how close two karts came)
+    // the spread at the start: the pack strung out in front of and behind the player
+    const g = this.rng.shuffle([-14, -10, -6.5, -3, 3.5, 7.5, 12]);
+    for (let i = 1; i < KT_N; i++) this.keys[i].push([-4 * this.grid.barSec, g[i - 1]], [0, g[i - 1]]);
+    while (this.races.length < 3) this.planRace();
+    this.laneFor(0);
+    for (let i = 0; i < KT_N; i++) {
+      this.d[i] = this.d0[i] = Math.max(-KT_LANE, Math.min(KT_LANE, this.lane[i] + (i % 2 ? 1 : -1) * 1.2 * ((i >> 1) % 3)));
+      this.s1[i] = this.s0[i] = this.sOf(i, 0);
+    }
+    this.cubesFor(this.races[0]);
+    this.planHits(this.races[0]);
+  }
+
+  // ---- the races ----
+
+  /** The next accented bar far enough on to end a race (a race needs a lap at a kart's top pace). */
+  nextFinish(after, first, lap) {
+    const bar = this.grid.barSec;
+    const gap = first ? Math.max(4 * bar, 6) : Math.max(6 * bar, lap / 30);
+    let b = Math.ceil((after + gap) / bar - 1e-6);
+    for (let k = 0; k < 28; k++, b++) if (this.grid.isAccent(b * bar)) return b * bar;
+    return Math.ceil((after + 16 * bar) / bar - 1e-6) * bar;
+  }
+
+  planRace() {
+    const k = this.races.length, prev = this.races[k - 1], r = this.rng;
+    const bar = this.grid.barSec;
+    const t0 = prev ? prev.t1 : 0;
+    const lap = r.float(300, 360);
+    const course = ktCourse(new Rng(this.seed, `kart-course-${k}`), lap);
+    const props = ktDress(course, new Rng(this.seed, `kart-dress-${k}`));
+    const t1 = this.nextFinish(t0, k === 0, lap);
+    const len = t1 - t0;
+    const B = t1 - (len >= 5 * bar ? 2 : 1) * bar;           // the build: the boost from here to the line
+    // the race's own beats, on its bars: a pad a bar in - a short boost that takes the player past the kart just
+    // ahead - and a ramp on the bar halfway to the build, the jump leaving on the downbeat and landing on a beat; in
+    // a long race again every eight bars; the big pad on the build
+    const spb = this.grid.spb, pads = [], ramps = [];
+    const jumpBeats = Math.max(1, Math.round(0.85 / spb));
+    const b0 = Math.round(t0 / bar), bB = Math.round(B / bar), half = Math.max(2, Math.round((bB - b0) / 2));
+    for (let b = b0 + half; b < bB; b += 8) {
+      const T = b * bar, T1 = T + jumpBeats * spb;
+      if (T1 <= B - 0.5 * bar) ramps.push({ T, T1 });
+    }
+    // (a pad that would fall on a jump's bar goes two bars on)
+    for (let b = b0 + 1; b < bB; b += 8) {
+      const bp = ramps.some((q) => Math.abs(q.T - b * bar) < 1.5 * bar) ? b + 2 : b;
+      if ((bp + 3) * bar <= t1 - 0.5 * bar) pads.push({ T: bp * bar });
+    }
+    const w = (t) => {
+      let v = 1 + 0.42 * smooth(B, B + 0.3, t);
+      for (const q of pads) v += 0.2 * smooth(q.T, q.T + 0.25, t) * (1 - smooth(q.T + bar, q.T + bar + 0.6, t));
+      return v;
+    };
+    const tau = 1.2, vPrev = prev ? prev.vEnd : KT_V0;
+    const n = Math.ceil(len / KT_DT - 1e-9);
+    const dt = len / n;
+    const e = (t) => (k === 0 ? 1 : smooth(t0, t0 + tau, t));
+    let I1 = 0, I2 = 0;
+    for (let i = 0; i < n; i++) { const t = t0 + (i + 0.5) * dt; I1 += (1 - e(t)) * dt; I2 += e(t) * w(t) * dt; }
+    let laps, D, c;
+    if (k === 0) {
+      c = KT_V0; D = c * I2; laps = Math.max(1, Math.ceil(D / lap - 1e-9));
+    } else {
+      laps = Math.max(1, Math.round(len * KT_V0 / lap));
+      while (laps > 1 && laps * lap / len > 31) laps--;
+      while (laps * lap / len < 15) laps++;
+      D = laps * lap;
+      c = (D - vPrev * I1) / I2;
+    }
+    const cum = new Float64Array(n + 1);
+    for (let i = 0; i < n; i++) {
+      const t = t0 + (i + 0.5) * dt;
+      cum[i + 1] = cum[i] + ((1 - e(t)) * vPrev + e(t) * c * w(t)) * dt;
+    }
+    const fix = D / cum[n];
+    for (let i = 0; i <= n; i++) cum[i] *= fix;
+    const race = {
+      k, t0, t1, B, course, props, lap, laps, D, cum, dt,
+      s0: laps * lap - D, vEnd: c * w(t1) * fix,
+      theme: r.int(0, 2),
+      photo: 1 + r.int(0, KT_N - 2), win: r.bool(0.55),
+    };
+    // the pad the player's boost comes from, where it will be when the build begins; the phrases' pads and ramps
+    race.pad = this.sRace(race, B);
+    for (const q of pads) q.s = this.sRace(race, q.T);
+    for (const q of ramps) q.s = this.sRace(race, q.T);
+    race.pads = [...pads, { T: B, s: race.pad, big: true }];
+    race.ramps = ramps;
+    // the pack's gaps: every two bars, the leader ahead through the build, the line nose to nose
+    const times = [];
+    for (let t = t0 + 2 * bar; t < B - 0.5 * bar; t += 2 * bar) times.push(t);
+    times.push(B, t1);
+    // where each ends: the leader beside the player on the line, the rest strung out behind; on the way there each
+    // drifts toward a place a little ahead of its end, the pack moving as one through the build as the player boosts
+    // past it (never more than two and a half metres a second against the player, so the pack never scatters)
+    const behind = r.shuffle([-3.2, -6, -8.8, -11.5, -14, -17, -20.5]);
+    for (let i = 1; i < KT_N; i++) {
+      const ks = this.keys[i];
+      const end = i === race.photo ? (race.win ? -0.22 : 0.22) : behind[i - 1];
+      const aim = i === race.photo ? r.float(3, 6.5) : end + r.float(2.5, 7);
+      let [tl, last] = ks[ks.length - 1];
+      for (const t of times) {
+        const lim = 2.5 * (t - tl);
+        let g;
+        if (t === t1) g = end;
+        else if (t === B) g = aim;
+        else {
+          const p = (t - t0) / Math.max(B - t0, 1e-6);
+          g = last + (aim - last) * 0.45 * p + r.float(-6, 6) * (1 - 0.6 * p);
+          g = Math.max(-24, Math.min(20, g));
+        }
+        if (t !== t1) g = Math.max(last - lim, Math.min(last + lim, g));
+        ks.push([t, g]);
+        tl = t; last = g;
+      }
+    }
+    // no more than two side by side: at each key the pack (the player too, at 0) is spread to two and a half metres
+    // between one and the next, the line's pair excepted
+    for (const t of times) {
+      if (t === t1) continue;
+      const at = [{ i: 0, g: 0 }];
+      for (let i = 1; i < KT_N; i++) at.push({ i, g: this.keys[i].find((k) => k[0] === t)[1] });
+      at.sort((a, b) => a.g - b.g);
+      const z = at.findIndex((o) => o.i === 0);
+      for (let q = z + 1; q < at.length; q++) at[q].g = Math.max(at[q].g, at[q - 1].g + 2.5);
+      for (let q = z - 1; q >= 0; q--) at[q].g = Math.min(at[q].g, at[q + 1].g - 2.5);
+      for (const o of at) if (o.i) this.keys[o.i].find((k) => k[0] === t)[1] = o.g;
+    }
+    this.races.push(race);
+    return race;
+  }
+
+  /** The lanes the rivals like for a race, spread over the track. */
+  laneFor(k) {
+    const r = new Rng(this.seed, `kart-lanes-${k}`);
+    const opts = r.shuffle([-3.6, -2.4, -1.2, 0, 1.2, 2.4, 3.6]);
+    this.lane[0] = 0;
+    for (let i = 1; i < KT_N; i++) this.lane[i] = opts[i - 1];
+  }
+
+  /** The race on at t (a race runs from its start up to its finish). */
+  raceAt(t) {
+    while (this.races[this.races.length - 1].t1 <= t + 2) this.planRace();
+    let i = 0;
+    while (i < this.races.length - 1 && this.races[i].t1 <= t) i++;
+    return this.races[i];
+  }
+
+  /** How far round its course the player is at t, within a race. */
+  sRace(race, t) {
+    const u = Math.max(0, Math.min(race.cum.length - 1, (t - race.t0) / race.dt));
+    const i = Math.min(race.cum.length - 2, Math.floor(u)), f = u - i;
+    return race.s0 + race.cum[i] + (race.cum[i + 1] - race.cum[i]) * f;
+  }
+
+  vRace(race, t) {
+    const i = Math.max(0, Math.min(race.cum.length - 2, Math.floor((t - race.t0) / race.dt)));
+    return (race.cum[i + 1] - race.cum[i]) / race.dt;
+  }
+
+  /** A rival's gap ahead of the player at t: its keys eased through (a cubic through them), less what hits cost it. */
+  gap(i, t) {
+    if (i === 0) return 0;
+    const ks = this.keys[i];
+    let j = 0;
+    while (j < ks.length - 2 && ks[j + 1][0] <= t) j++;
+    const [ta, ga] = ks[j], [tb, gb] = ks[Math.min(j + 1, ks.length - 1)];
+    const h = tb - ta;
+    let g = ga;
+    if (h > 1e-6) {
+      const u = Math.max(0, Math.min(1, (t - ta) / h));
+      const pa = ks[Math.max(0, j - 1)], pb = ks[Math.min(ks.length - 1, j + 2)];
+      const ma = (gb - pa[1]) / Math.max(tb - pa[0], 1e-6) * h, mb = (pb[1] - ga) / Math.max(pb[0] - ta, 1e-6) * h;
+      const u2 = u * u, u3 = u2 * u;
+      g = (2 * u3 - 3 * u2 + 1) * ga + (u3 - 2 * u2 + u) * ma + (-2 * u3 + 3 * u2) * gb + (u3 - u2) * mb;
+    }
+    return g - this.dip(i, t) + this.dip(0, t) - this.surge(t);
+  }
+
+  /** How far a phrase's pad has taken the player past the pack: two and a half metres over a bar, given back over two. */
+  surge(t) {
+    const bar = this.grid.barSec;
+    for (const r of this.races) {
+      if (t < r.t0 || t >= r.t1) continue;
+      let v = 0;
+      for (const q of r.pads) {
+        const x = t - q.T;
+        if (q.big || x <= 0 || x > 3 * bar) continue;
+        v += 2.5 * (x < bar ? smooth(0, bar, x) : 1 - smooth(bar, 3 * bar, x));
+      }
+      return v;
+    }
+    return 0;
+  }
+
+  /** A kart over a ramp while it stands: how high, its nose's pitch (up positive), whether it is in the air. */
+  jumpAt(i, race, t, s) {
+    for (const q of race.ramps || []) {
+      if (t < q.T - 6 || t > q.T + 4) continue;
+      const T = q.T1 - q.T, h = Math.min(1.6, 9.81 * T * T / 8);
+      let tau, v = Math.max(this.vRace(race, t), 5);
+      if (i === 0) tau = t - q.T;
+      else {
+        let ds = (s - q.s) % race.lap;
+        if (ds > race.lap / 2) ds -= race.lap;
+        if (ds < -race.lap / 2) ds += race.lap;
+        tau = ds / v;
+      }
+      const x = -tau * v;                         // (on the ramp: how far from its lip)
+      if (tau < 0 && x < KT_RAMP) return { hop: 0.5 * (1 - x / KT_RAMP), pitch: 0.19, air: false };
+      if (tau >= 0 && tau < T) { const u = tau / T; return { hop: 0.5 * (1 - u) + 4 * h * u * (1 - u), pitch: 0.25 - 0.5 * u, air: true }; }
+    }
+    return { hop: 0, pitch: 0, air: false };
+  }
+
+  /** The ground a kart hit loses: five metres over its spin, won back over three seconds. */
+  dip(i, t) {
+    let v = 0;
+    for (const h of this.hits) {
+      if (h.to !== i) continue;
+      const x = t - h.Th;
+      if (x <= 0 || x > 4) continue;
+      v += 5 * (x < 1.2 ? smooth(0, 1.2, x) : 1 - smooth(1.2, 4, x));
+    }
+    return v;
+  }
+
+  /** Where kart i is round the course at t: the player as planned, the others by their gaps. */
+  sOf(i, t) {
+    const race = this.raceAt(t);
+    return this.sRace(race, t) + this.gap(i, t);
+  }
+
+  snareTimes(a, b) {
+    if (this.snares) return this.snares.filter((t) => t > a && t < b);
+    const out = [], spb = this.grid.spb;
+    for (let t = Math.ceil(a / spb) * spb; t < b; t += spb) if (Math.round(t / spb) % 2 === 1) out.push(t);
+    return out;
+  }
+
+  /** The items of a race: one now and then on a snare, landing on the next beat. */
+  planHits(race) {
+    if (race.hitsPlanned) return;
+    race.hitsPlanned = true;
+    // (the gaps it reads reach into the race after: plan that far first, so it reads the same however it is reached)
+    while (this.races.length < race.k + 3) this.planRace();
+    const r = new Rng(this.seed, `kart-items-${race.k}`), bar = this.grid.barSec;
+    const end = race.t1 - Math.max(2 * bar, 4.6);
+    const snares = this.snareTimes(race.t0 + bar, end);
+    let lastBar = -1;
+    for (const T of snares) {
+      const b = Math.floor(T / bar + 1e-6);
+      if (b <= lastBar + 1 || !r.bool(0.5)) continue;
+      const Th = this.grid.next(T + 0.3, 4);
+      if (Th > end + 0.6) continue;
+      const g = (i, t) => (i === 0 ? 0 : this.gap(i, t));
+      const cands = [], ws = [];
+      for (let a = 0; a < KT_N; a++) for (let q = 0; q < KT_N; q++) {
+        if (a === q || q === race.photo || this.hits.some((h) => (h.to === q || h.to === a) && Math.abs(h.Th - Th) < 2.5)) continue;
+        const ga = g(a, T), gq = g(q, Th);
+        if (Math.abs(ga) > 24 || Math.abs(gq) > 26) continue;
+        const ahead = g(q, T) - ga;
+        if (ahead < 5 || ahead > 26) continue;
+        // the item must outrun the kart that threw it
+        if ((gq - ga) / (Th - T) < 6) continue;
+        cands.push([a, q]);
+        ws.push(a === 0 ? 3 : q === 0 ? 0.6 : 1);
+      }
+      if (!cands.length) continue;
+      const [from, to] = r.weighted(cands, ws);
+      this.hits.push({ T, Th, from, to, kind: r.bool(0.5) ? 0 : 1, dFrom: null, race: race.k });
+      lastBar = b;
+    }
+  }
+
+  cubesFor(race) {
+    this.cubes = KT_ROWS.map(() => KT_CUBE_D.map(() => -1));
+    this.cubeRace = race.k;
+  }
+
+  // ---- the stepped part: across the track ----
+
+  step() {
+    const t = this.t + KT_DT;
+    const race = this.raceAt(t);
+    if (race.k !== this.raceI) {
+      // a new race: a new course, the rivals' favourite lanes, the cubes all back
+      this.raceI = race.k;
+      this.laneFor(race.k);
+      this.cubesFor(race);
+      this.camH = null;
+    }
+    this.planHits(race);
+    const next = this.races[race.k + 1];
+    if (next) this.planHits(next);
+    const c = race.course;
+    for (let i = 0; i < KT_N; i++) { this.s0[i] = this.s1[i]; this.d0[i] = this.d[i]; this.drift0[i] = this.drift[i]; }
+    const v = this.vRace(race, t);
+    // (a kart held up behind another eases back to its own place at a metre and a half a second)
+    for (let i = 0; i < KT_N; i++) {
+      this.off0[i] = this.off[i];
+      if (race.k !== this.offRace) this.off[i] = 0;
+      else this.off[i] -= Math.sign(this.off[i]) * Math.min(Math.abs(this.off[i]), 1.5 * KT_DT);
+      this.s1[i] = this.sRace(race, t) + (i === 0 ? 0 : this.gap(i, t)) + this.off[i];
+    }
+    this.offRace = race.k;
+    const want = new Float64Array(KT_N);
+    for (let i = 0; i < KT_N; i++) {
+      const a = ktAt(c, this.s1[i] + 7);
+      // the inside of the bend coming, as tight as the bend asks, over the lane it likes
+      const inside = Math.sign(a.kap) * Math.min(1, Math.abs(a.kap) * 28) * 3.0;
+      const target = Math.max(-KT_LANE, Math.min(KT_LANE, inside + this.lane[i] * (1 - 0.5 * Math.min(1, Math.abs(a.kap) * 28))));
+      want[i] = Math.max(-3.2, Math.min(3.2, (target - this.d[i]) * 1.3));
+    }
+    // give way: a kart beside another, or that will be within the next second and a half (where each will be is
+    // planned, so it is known), moves over in the time it has before they would touch
+    // (looked at every other step, which is soon enough)
+    const n = Math.round(t / KT_DT);
+    if (n % 2 === 0 || !this.fut || this.futRace !== race.k) {
+      this.ahead = [0, 0.25, 0.5, 0.8, 1.2, 1.6, 2.2].filter((tau) => t + tau < race.t1);
+      this.fut = this.ahead.map((tau) => { const sp = this.sRace(race, t + tau); return Array.from({ length: KT_N }, (_, i) => sp + this.gap(i, t + tau)); });
+      this.futRace = race.k;
+    }
+    const ahead = this.ahead, fut = this.fut;
+    for (let i = 0; i < KT_N; i++) for (let j = i + 1; j < KT_N; j++) {
+      const dd = this.d[j] - this.d[i], need = 2.05;
+      if (Math.abs(dd) >= need) continue;
+      let tc = Infinity;
+      for (let q = 0; q < ahead.length; q++) if (Math.abs(fut[q][j] - fut[q][i]) < KT_LONG + 1.2) { tc = ahead[q]; break; }
+      if (tc === Infinity) continue;
+      let dir = Math.sign(dd) || (this.d[i] > 0 ? 1 : -1);
+      // (against a barrier there is only one way to go)
+      if (Math.abs(this.d[i]) > KT_LANE - 0.3 && Math.sign(this.d[i]) === -dir) dir = -Math.sign(this.d[i]);
+      if (Math.abs(this.d[j]) > KT_LANE - 0.3 && Math.sign(this.d[j]) === dir) dir = -Math.sign(this.d[j]);
+      // (the one behind does most of the moving: the one ahead holds its line)
+      const push = (need - Math.abs(dd)) * (1 / Math.max(tc, 0.3) + 2.5);
+      const jBehind = this.s1[j] < this.s1[i] ? 1.4 : 0.6;
+      want[j] += push * dir * jBehind; want[i] -= push * dir * (2 - jBehind);
+    }
+    for (let i = 0; i < KT_N; i++) {
+      const w = Math.max(-9, Math.min(9, want[i]));
+      this.vd[i] += (w - this.vd[i]) * 0.4;
+      this.d[i] += this.vd[i] * KT_DT;
+      if (Math.abs(this.d[i]) > KT_LANE) { this.d[i] = Math.sign(this.d[i]) * KT_LANE; this.vd[i] = 0; }
+      // sliding through a tight bend, the tail out; a long slide gives a burst out of it
+      const b = ktAt(c, this.s1[i] + 2);
+      const sliding = Math.abs(b.kap) > 1 / 26;
+      this.drift[i] += ((sliding ? Math.sign(b.kap) : 0) - this.drift[i]) * (1 - Math.exp(-KT_DT * 4));
+      if (Math.abs(this.drift[i]) > 0.5) this.slide[i] += KT_DT;
+      else {
+        if (this.slide[i] > 0.8) this.mini[i] = t + 0.7;
+        this.slide[i] = 0;
+      }
+      if (Math.abs(this.drift[i]) > 0.5 && (Math.round(t / KT_DT) + i) % 3 === 0) {
+        const p = this.place(i, race, t);
+        const side = this.fxr.bool() ? 1 : -1;
+        this.parts.push({ x: p.x - p.fx * 0.75 + p.rx * side * 0.6, y: 0.08, z: p.z - p.fz * 0.75 + p.rz * side * 0.6,
+          vx: -p.fx * 3 + this.fxr.float(-1.5, 1.5) - p.rx * this.drift[i] * 3, vy: this.fxr.float(1.5, 3.5), vz: -p.fz * 3 + this.fxr.float(-1.5, 1.5) - p.rz * this.drift[i] * 3,
+          t0: t, life: 0.35, kind: this.slide[i] > 0.8 ? 2 : 1 });
+      }
+    }
+    // and never touching: two karts side by side are held apart, the one against the barrier staying where it is,
+    // never more than six centimetres a step each (what is left is settled along the track, below)
+    const moved = new Float64Array(KT_N);
+    for (let it = 0; it < 4; it++) for (let i = 0; i < KT_N; i++) for (let j = i + 1; j < KT_N; j++) {
+      const ds = Math.abs(this.s1[j] - this.s1[i]);
+      if (ds >= KT_LONG + 0.2) continue;
+      const dd = this.d[j] - this.d[i], need = KT_WIDE + 0.15;
+      if (Math.abs(dd) >= need) continue;
+      const dir = Math.sign(dd) || (this.d[i] > 0 ? 1 : -1);
+      // (inside the margin, eased over a few steps; only a real touch is put right at once)
+      const touch = ds < KT_LONG && Math.abs(dd) < KT_WIDE;
+      let mi = Math.min(0.04, (need - Math.abs(dd)) / 2, 0.14 - moved[i]), mj = Math.min(mi, 0.14 - moved[j]);
+      mi = Math.max(0, mi); mj = Math.max(0, mj);
+      if (Math.abs(this.d[i] - dir * mi) > KT_LANE) { mj += mi; mi = 0; }
+      if (Math.abs(this.d[j] + dir * mj) > KT_LANE) { mi += mj; mj = 0; }
+      this.d[i] = Math.max(-KT_LANE, Math.min(KT_LANE, this.d[i] - dir * mi));
+      this.d[j] = Math.max(-KT_LANE, Math.min(KT_LANE, this.d[j] + dir * mj));
+      moved[i] += mi; moved[j] += mj;
+    }
+    // no room across the track: the kart behind holds back (the player's place is the plan's: the other gives way)
+    for (let it = 0; it < 3; it++) for (let i = 0; i < KT_N; i++) for (let j = 0; j < KT_N; j++) {
+      if (i === j) continue;
+      const ds = this.s1[j] - this.s1[i];             // j behind i when negative
+      if (ds >= 0 || ds <= -KT_LONG - 0.1) continue;
+      if (Math.abs(this.d[j] - this.d[i]) >= KT_WIDE + 0.05) continue;
+      const short = KT_LONG + 0.1 + ds;
+      if (j !== 0) { this.off[j] -= short; this.s1[j] -= short; }
+      else { this.off[i] += short; this.s1[i] += short; }
+    }
+    for (let i = 0; i < KT_N; i++) this.maxOff = Math.max(this.maxOff || 0, Math.abs(this.off[i]));
+    for (let i = 0; i < KT_N; i++) for (let j = i + 1; j < KT_N; j++) {
+      if (Math.abs(this.s1[j] - this.s1[i]) < KT_LONG) this.minGap = Math.min(this.minGap, Math.abs(this.d[j] - this.d[i]) - KT_WIDE);
+    }
+    // the cubes: a kart through a row takes the cube it meets
+    for (let rI = 0; rI < KT_ROWS.length; rI++) {
+      const sr = KT_ROWS[rI] * race.lap;
+      for (let i = 0; i < KT_N; i++) {
+        if (Math.floor((this.s0[i] - sr) / race.lap) === Math.floor((this.s1[i] - sr) / race.lap)) continue;
+        KT_CUBE_D.forEach((cd, q) => {
+          if (Math.abs(this.d[i] - cd) > 1.15 || this.cubes[rI][q] > t) return;
+          this.cubes[rI][q] = t + 2.5;
+          const a = ktAt(c, sr), x = a.x + a.rx * cd, z = a.z + a.rz * cd;
+          for (let m = 0; m < 6; m++) {
+            const an = m / 6 * 6.283 + this.fxr.float(0, 1);
+            this.parts.push({ x, y: 1.0, z, vx: Math.cos(an) * 3 + a.tx * v * 0.6, vy: this.fxr.float(0, 3), vz: Math.sin(an) * 3 + a.tz * v * 0.6, t0: t, life: 0.5, kind: 5, hue: (q / 4 + m * 0.1) % 1 });
+          }
+        });
+      }
+    }
+    // the items: thrown from where the thrower is; a blast where they land
+    for (const h of this.hits) {
+      if (h.race !== race.k) continue;
+      if (h.dFrom === null && t >= h.T) h.dFrom = this.d[h.from];
+      if (t >= h.T && t < h.Th && h.kind === 1 && Math.round(t / KT_DT) % 2 === 0) {
+        const p = this.shotAt(h, race, t);
+        if (p) this.parts.push({ x: p.x, y: p.y, z: p.z, vx: this.fxr.float(-0.5, 0.5), vy: this.fxr.float(0.3, 1), vz: this.fxr.float(-0.5, 0.5), t0: t, life: 0.7, kind: 3 });
+      }
+      if (!h.boomed && t >= h.Th) {
+        h.boomed = true;
+        const p = this.place(h.to, race, h.Th);
+        for (let m = 0; m < 10; m++) {
+          const an = this.fxr.float(0, 6.283), up = this.fxr.float(2, 6);
+          this.parts.push({ x: p.x, y: 0.6, z: p.z, vx: Math.cos(an) * 4 + p.fx * v, vy: up, vz: Math.sin(an) * 4 + p.fz * v, t0: t, life: 0.55, kind: m < 3 ? 4 : 2 });
+        }
+      }
+    }
+    // a jump's landing: dust, and the player's lands under the eye
+    for (let i = 0; i < KT_N; i++) {
+      const j = this.jumpAt(i, race, t, this.s1[i]);
+      if (this.air[i] && !j.air) {
+        const pl = this.place(i, race, t);
+        for (let m = 0; m < 5; m++) this.parts.push({ x: pl.x + this.fxr.float(-0.7, 0.7), y: 0.1, z: pl.z + this.fxr.float(-0.7, 0.7), vx: this.fxr.float(-2, 2), vy: this.fxr.float(0.5, 1.5), vz: this.fxr.float(-2, 2), t0: t, life: 0.6, kind: 3 });
+        if (i === 0) this.landT = t;
+      }
+      this.air[i] = j.air;
+    }
+    // the place and the lap, and when each last changed
+    let place = 1;
+    for (let i = 1; i < KT_N; i++) if (this.s1[i] > this.s1[0]) place++;
+    if (place !== this.placeNow) { this.placeNow = place; this.placeT = t; }
+    const lapNow = Math.floor(this.s1[0] / race.lap);
+    if (lapNow !== this.lapNow) { this.lapNow = lapNow; this.lapT = t; }
+    this.parts = this.parts.filter((q) => t - q.t0 < q.life);
+    // the eye: it turns after the player's way round, late, so the kart's slide shows
+    const way = Math.atan2(ktAt(c, this.s1[0]).tz, ktAt(c, this.s1[0]).tx);
+    this.camH0 = this.camH;
+    if (this.camH === null) this.camH = way;
+    else this.camH += ktWrap(way - this.camH) * (1 - Math.exp(-KT_DT * 5));
+    if (this.camH0 === null) this.camH0 = this.camH;
+    this.t = t;
+  }
+
+  advanceTo(t) {
+    if (t < this.t - 1e-9) this.reset();
+    while (this.t + KT_DT <= t + 1e-9) {
+      const prevRace = this.raceAt(this.t);
+      const before = this.t;
+      this.step();
+      // the finish line crossed this step: keep the karts as they stood on it, for the photo
+      if (before < prevRace.t1 && this.t >= prevRace.t1 - 1e-9) this.snap = { race: prevRace, at: this.view(prevRace.t1, prevRace, 1 - (this.t - prevRace.t1) / KT_DT) };
+    }
+    this.forget(t);
+  }
+
+  forget(t) {
+    const now = this.raceAt(t).k;
+    this.hits = this.hits.filter((h) => h.Th > t - 6 || h.race >= now);
+    // a race long gone lets its course go (its finish time stays: the shots read it)
+    for (const r of this.races) if (r.k < now - 1 && r.course) { r.course = null; r.props = null; r.cum = null; }
+    for (const ks of this.keys) while (ks.length > 8 && ks[2][0] < t - 30) ks.shift();
+  }
+
+  /** Kart i at t on a race's course: where, its way, its right, as the stepped state is between the last two steps. */
+  place(i, race, t, w = 1) {
+    const s = this.sRace(race, t) + (i === 0 ? 0 : this.gap(i, t)) + (race.k === this.offRace ? this.off0[i] + (this.off[i] - this.off0[i]) * w : 0);
+    const d = this.d0[i] + (this.d[i] - this.d0[i]) * w;
+    const a = ktAt(race.course, s);
+    const v = this.vRace(race, t);
+    const head = Math.atan2(a.tz, a.tx) + Math.atan2(this.vd[i], Math.max(v, 1));
+    return { x: a.x + a.rx * d, z: a.z + a.rz * d, fx: Math.cos(head), fz: Math.sin(head), rx: -Math.sin(head), rz: Math.cos(head), head, s, d };
+  }
+
+  /** An item in flight at t: from the thrower to the target, bouncing (a bomb) or straight (a rocket). */
+  shotAt(h, race, t) {
+    if (t < h.T || t >= h.Th || h.dFrom === null) return null;
+    const u = (t - h.T) / (h.Th - h.T);
+    const sa = this.sRace(race, h.T) + (h.from === 0 ? 0 : this.gap(h.from, h.T)) + 1.2;
+    const sb = this.sRace(race, t) + this.gap(h.to, t) - 0.8;
+    const se = this.sRace(race, h.Th) + this.gap(h.to, h.Th) - 0.8;
+    // (straight on at its own pace, so it reaches the target on the beat; never past it)
+    const s = Math.min(sa + (se - sa) * u, sb);
+    // (it homes on the target across the track as it closes)
+    const d = h.dFrom + (this.d[h.to] - h.dFrom) * smooth(0, 1, u);
+    const a = ktAt(race.course, s);
+    const hop = h.kind === 0 ? 0.3 + 1.1 * Math.abs(Math.sin(u * Math.PI * 3)) * (1 - u * 0.5) : 0.55;
+    return { x: a.x + a.rx * d, y: hop, z: a.z + a.rz * d, dx: a.tx, dz: a.tz };
+  }
+
+  /** Everything as the camera sees it at t (w: how far between the last two steps the stepped state is). */
+  view(t, race, w = 1) {
+    const c = race.course;
+    const spb = this.grid.spb;
+    const karts = [];
+    for (let i = 0; i < KT_N; i++) {
+      const p = this.place(i, race, t, w);
+      let yaw = p.head + 0.42 * (this.drift0[i] + (this.drift[i] - this.drift0[i]) * w);
+      let hop = 0, spun = 0;
+      for (const h of this.hits) {
+        if (h.to !== i || h.race !== race.k) continue;
+        const x = t - h.Th;
+        if (x < 0 || x > 1.2) continue;
+        yaw += 2 * Math.PI * smooth(0, 1.0, x);
+        hop = Math.max(hop, x < 0.5 ? 1.2 * 4 * (x / 0.5) * (1 - x / 0.5) : 0);
+        spun = Math.max(spun, 1 - x / 1.2);
+      }
+      const boost = i === 0 ? smooth(race.B, race.B + 0.2, t) * (1 - smooth(race.t1, race.t1 + 0.6, t))
+        : Math.max(t < this.mini[i] ? 1 : 0, Math.max(0, Math.min(1, (this.gapRate(i, t) - 1.5) / 3)) * smooth(race.B, race.B + 0.5, t));
+      const jp = this.jumpAt(i, race, t, p.s);
+      hop = Math.max(hop, jp.hop);
+      karts.push({ ...p, yaw, hop, spun, pitch: jp.pitch, boost: i === 0 ? Math.max(boost, t < this.mini[0] ? 1 : 0) : boost,
+        wheel: p.s / 0.27, drift: this.drift[i], species: this.species[i] });
+    }
+    const shots = [];
+    for (const h of this.hits) {
+      if (h.race !== race.k) continue;
+      const q = this.shotAt(h, race, t);
+      if (q) shots.push({ ...q, kind: h.kind, age: t - h.T });
+    }
+    return { t, race, karts, shots, c, spb };
+  }
+
+  gapRate(i, t) { return (this.gap(i, t + 0.05) - this.gap(i, t - 0.05)) / 0.1; }
+
+  /** Which shot the camera takes at t: behind the player, the photo finish's, or ahead looking back. */
+  shotKind(t) {
+    const bar = this.grid.barSec, spb = this.grid.spb;
+    const app = spb < 0.42 ? 2 * spb : spb, hold = Math.max(spb, 0.45);
+    for (const r of this.races) {
+      if (t >= r.t1 - app && t < r.t1) return { kind: 1, race: r };
+      if (t >= r.t1 && t < r.t1 + hold) return { kind: 2, race: r };
+    }
+    const b = Math.floor(t / bar + 1e-6);
+    const race = this.raceAt(t);
+    if (b % 8 === 4 && t > race.t0 + 2 * bar && t < race.B - bar) return { kind: 3, race };
+    return { kind: 0, race };
+  }
+
+  uniforms(t) {
+    this.advanceTo(t);
+    const w = Math.max(0, Math.min(1, 1 - (this.t - t) / KT_DT));
+    const shot = this.shotKind(t);
+    const spb = this.grid.spb;
+    let V;
+    if (shot.kind === 2 && this.snap && this.snap.race === shot.race) V = this.snap.at;
+    else V = this.view(t, shot.race.k === this.raceI ? shot.race : this.raceAt(t), w);
+    const race = V.race, c = race.course;
+    // ---- the eye
+    const P = V.karts[0];
+    let eye, look, focal = 1.45;
+    if (shot.kind === 0) {
+      const h = this.camH0 + ktWrap(this.camH - this.camH0) * w;
+      const boost = P.boost;
+      // (as the 32-bit kart racers framed it: the kart a tenth of the screen across, low in the middle, the road ahead)
+      const back = 7.6 + 1.0 * boost, up = 2.55 - 0.2 * boost;
+      eye = [P.x - Math.cos(h) * back, up + P.hop * 0.3, P.z - Math.sin(h) * back];
+      look = [P.x + Math.cos(h) * 7, 0.55 + P.hop * 0.3, P.z + Math.sin(h) * 7];
+      focal = 1.5 - 0.3 * boost;
+    } else if (shot.kind === 1 || shot.kind === 2) {
+      // across the line from outside the barrier on the leaders' side, a little toward where they come from, on them
+      const a = ktAt(c, 0);
+      const ld = (P.d + V.karts[race.photo].d) / 2;
+      const side = ld >= 0 ? 1 : -1;
+      eye = [a.x + a.rx * side * (KT_WALL + 2.5) - a.tx * 2.5, 3.0, a.z + a.rz * side * (KT_WALL + 2.5) - a.tz * 2.5];
+      look = [a.x + a.rx * ld - a.tx * 1.5, 0.4, a.z + a.rz * ld - a.tz * 1.5];
+      focal = 1.3;
+    } else {
+      const a = ktAt(c, P.s + 11);
+      eye = [a.x + a.rx * 2.2, 1.3, a.z + a.rz * 2.2];
+      look = [P.x - P.fx * 4, 0.7, P.z - P.fz * 4];
+      focal = 1.6;
+    }
+    const F = norm3([look[0] - eye[0], look[1] - eye[1], look[2] - eye[2]]);
+    const R = norm3([-F[2], 0, F[0]]);
+    const U = [R[1] * F[2] - R[2] * F[1], R[2] * F[0] - R[0] * F[2], R[0] * F[1] - R[1] * F[0]];
+    // ---- the course
+    const seg = new Float32Array(KT_SEG * 4);
+    const every = KT_FINE / KT_SEG;
+    for (let i = 0; i < KT_SEG; i++) {
+      const j = i * every, p = c.pts[j];
+      seg.set([p[0], p[1], -c.tz[j], c.tx[j]], i * 4);
+    }
+    // ---- the karts
+    const k0 = new Float32Array(KT_N * 4), k1 = new Float32Array(KT_N * 4), k2 = new Float32Array(KT_N * 4);
+    V.karts.forEach((k, i) => {
+      k0.set([k.x, k.hop, k.z, k.yaw], i * 4);
+      k1.set([k.wheel, 0, k.boost, k.species], i * 4);
+      k2.set([k.drift, k.spun, k.pitch, 1], i * 4);
+    });
+    // ---- the items in flight
+    const sh = new Float32Array(KT_SHOTS * 8);
+    V.shots.slice(0, KT_SHOTS).forEach((q, i) => { sh.set([q.x, q.y, q.z, 1 + q.kind], i * 4); sh.set([q.dx, q.dz, q.age, 0], (KT_SHOTS + i) * 4); });
+    // ---- the cubes and the pad
+    // (only those in front of the eye and near enough, packed first: the shader looks at as many as there are)
+    const cubes = new Float32Array(8 * 4);
+    let nCubes = 0;
+    KT_ROWS.forEach((fr, rI) => {
+      const a = ktAt(c, fr * race.lap);
+      KT_CUBE_D.forEach((cd, q) => {
+        const back = this.cubes[rI] && this.cubeRace === race.k ? this.cubes[rI][q] : -1;
+        const sc = back < 0 || V.t >= back ? 1 : V.t > back - 0.3 ? smooth(back - 0.3, back, V.t) : 0;
+        const x = a.x + a.rx * cd, z = a.z + a.rz * cd;
+        const fwd = (x - eye[0]) * F[0] + (z - eye[2]) * F[2];
+        if (sc < 0.05 || fwd < -1 || Math.hypot(x - eye[0], z - eye[2]) > 90) return;
+        cubes.set([x, 1.0 + 0.12 * Math.sin(V.t * 3 + q), z, sc], nCubes++ * 4);
+      });
+    });
+    const pads = new Float32Array(4 * 4);
+    const padList = race.pads.filter((q) => q.T > V.t - 8 && q.T < V.t + 25).slice(0, 4);
+    race.pads.filter((q) => q.T > V.t - 8 && q.T < V.t + 25).slice(0, 4).forEach((q, i) => {
+      const a = ktAt(c, q.s), d = this.padLane(race, q.s);
+      pads.set([a.x + a.rx * d, a.z + a.rz * d, Math.atan2(a.tz, a.tx), (V.t < q.T + 0.6 ? 1 : 0.35) * (q.big ? 1.4 : 1)], i * 4);
+    });
+    const ramps = new Float32Array(2 * 4);
+    race.ramps.filter((q) => V.t > q.T - 6 && V.t < q.T + 4).slice(0, 2).forEach((q, i) => {
+      const a = ktAt(c, q.s - KT_RAMP);
+      ramps.set([a.x, a.z, Math.atan2(a.tz, a.tx), 1], i * 4);
+    });
+    // the eye shaken: by a hit on the player, a blast near it, a landing
+    let shake = Math.exp(-Math.max(0, t - this.landT) * 9) * 0.6;
+    for (const h of this.hits) {
+      const x = t - h.Th;
+      if (x < 0 || x > 1.5 || h.race !== race.k) continue;
+      const near = h.to === 0 ? 1 : Math.max(0, 1 - Math.abs(this.gap(h.to, h.Th)) / 15);
+      shake += Math.exp(-x * 6) * near;
+    }
+    // ---- what stands by the track, nearest in front of the eye
+    const props = race.props
+      .map((q) => ({ q, z: (q[0] - eye[0]) * F[0] + (q[1] - eye[2]) * F[2], r: Math.hypot(q[0] - eye[0], q[1] - eye[2]) }))
+      .filter((o) => o.z > -2 && o.r < 140)
+      .sort((a, b) => a.r - b.r)
+      .slice(0, KT_PROPS);
+    const pr = new Float32Array(KT_PROPS * 4);
+    props.forEach((o, i) => pr.set(o.q, i * 4));
+    // ---- sparks, smoke, blasts and confetti, nearest the eye
+    const parts = this.parts
+      .filter((q) => q.t0 <= V.t)
+      .map((q) => {
+        const a = V.t - q.t0;
+        const g = q.kind === 3 ? -0.5 : 9;
+        return { x: q.x + q.vx * a, y: Math.max(0.02, q.y + q.vy * a - 0.5 * g * a * a), z: q.z + q.vz * a, k: q.kind, f: Math.min(0.999, a / q.life), hue: q.hue || 0 };
+      })
+      .map((q) => {
+        const v = [q.x - eye[0], q.y - eye[1], q.z - eye[2]];
+        const z = v[0] * F[0] + v[1] * F[1] + v[2] * F[2];
+        return { ...q, z, sx: (v[0] * R[0] + v[1] * R[1] + v[2] * R[2]) / z * focal, sy: (v[0] * U[0] + v[1] * U[1] + v[2] * U[2]) / z * focal };
+      })
+      .filter((q) => q.z > 0.3 && q.z < 60 && Math.abs(q.sx) < 1.1 && Math.abs(q.sy) < 0.7)
+      .sort((a, b) => a.z - b.z)
+      .slice(0, KT_PARTS);
+    const pt = new Float32Array(KT_PARTS * 4);
+    parts.forEach((q, i) => pt.set([q.sx, q.sy, q.z, q.k + q.f * 0.9], i * 4));
+    // ---- the race as the player sees it: the place, the lap, the time
+    const order = V.karts.map((k, i) => ({ i, s: k.s })).sort((a, b) => b.s - a.s);
+    const place = order.findIndex((o) => o.i === 0) + 1;
+    const lap = Math.max(1, Math.min(race.laps, Math.floor(P.s / race.lap) + 1));
+    const rank = new Float32Array(8);
+    order.forEach((o, i) => { rank[i] = o.i; });
+    // the map: the course's box
+    let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+    for (const p of c.pts) { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); z0 = Math.min(z0, p[1]); z1 = Math.max(z1, p[1]); }
+    // which piece of the course the eye is nearest (the shader looks for barriers from there)
+    let eyeSeg = 0, eyeBest = Infinity;
+    for (let i = 0; i < KT_SEG; i++) { const q = c.pts[i * every]; const dd = (q[0] - eye[0]) ** 2 + (q[1] - eye[2]) ** 2; if (dd < eyeBest) { eyeBest = dd; eyeSeg = i; } }
+    // where the photo's line is drawn: across the leaders' noses, where they stand
+    const fl = ktAt(c, KT_NOSE), lead = (P.d + V.karts[race.photo].d) / 2;
+    const lineX = fl.x + fl.rx * lead, lineZ = fl.z + fl.rz * lead;
+    // since the last finish, and how it went
+    const prev = shot.kind === 2 ? shot.race : this.races[race.k - 1];
+    const since = prev ? t - prev.t1 : 99;
+    // the HUD's words, written here and drawn by one piece of the shader: where each line starts (its top left), a
+    // font pixel, its letters, its colour (a shader that drew each line itself took a minute to compile on a laptop's GPU)
+    const lines = [];
+    const say = (x, y, px, str, rgb) => lines.push({ x, y, px, str: String(str).slice(0, 8), rgb });
+    const flash = Math.floor(t / spb * 2) % 2;
+    const hold = Math.max(spb, 0.45);
+    const p2 = (v) => String(v).padStart(2, '0');
+    if (shot.kind === 2) say(-0.2, 0.43, 0.014, 'PHOTO', [1, 1, 1]);
+    else if (shot.kind === 0 || shot.kind === 3) {
+      const pop = 1 + 0.5 * Math.exp(-Math.max(0, t - this.placeT) * 8);
+      const gold = place === 1 ? [1, 0.85, 0.15] : [1, 0.95, 0.6];
+      say(-0.86, -0.22 + 0.06 * (pop - 1), 0.028 * pop, place, gold);
+      say(-0.69, -0.33, 0.012, ['ST', 'ND', 'RD'][place - 1] || 'TH', gold);
+      say(-0.86, 0.46, 0.007, `LAP ${lap}/${race.laps}`, [1, 0.9, 0.3]);
+      const tm = Math.max(0, V.t - race.t0);
+      say(0.55, 0.46, 0.0065, `${p2(Math.floor(tm / 60))}:${p2(Math.floor(tm % 60))}:${p2(Math.floor((tm % 1) * 100))}`, [0.6, 1, 0.4]);
+      if (race.laps > 1 && lap === race.laps && t - this.lapT < 2.2) {
+        const on = 0.7 + 0.5 * flash;
+        say(-0.255, 0.22, 0.017, 'FINAL', [on, 0.35 * on, 0.2 * on]);
+        say(-0.153, 0.06, 0.017, 'LAP', [on, 0.35 * on, 0.2 * on]);
+      }
+      if (prev && since > hold && since < hold + 2.4) {
+        const pop2 = 1 + 0.6 * Math.exp(-(since - hold) * 9), px = 0.028 * pop2;
+        const word = prev.win ? '1ST!' : '2ND';
+        say(-word.length * 6 * px / 2, 0.12 * pop2, px, word, prev.win ? (flash ? [1, 1, 0.7] : [1, 0.8, 0.1]) : [0.85, 0.9, 1]);
+      }
+    }
+    const text = new Float32Array(8 * 16);
+    lines.slice(0, 8).forEach((l, i) => {
+      const codes = [...l.str].map(crackCode);
+      while (codes.length < 8) codes.push(0);
+      text.set([l.x, l.y, l.px, l.str.length, ...codes, ...l.rgb, 1], i * 16);
+    });
+    return {
+      uKtCam: { v: [eye[0], eye[1], eye[2], focal, F[0], F[1], F[2], 0, R[0], R[1], R[2], 0, U[0], U[1], U[2], 0], kind: '4fv' },
+      uKtSeg: { v: seg, kind: '4fv' },
+      uKtCourse: { v: [race.lap, race.theme, V.t - race.t0, shot.kind], kind: '4f' },
+      uKtK0: { v: k0, kind: '4fv' },
+      uKtK1: { v: k1, kind: '4fv' },
+      uKtK2: { v: k2, kind: '4fv' },
+      uKtShot: { v: sh, kind: '4fv' },
+      uKtCube: { v: cubes, kind: '4fv' },
+      // how many of each there are this frame: props, particles, cubes, items in flight; pads, ramps, karts on boost
+      uKtN: { v: [props.length, parts.length, nCubes, Math.min(V.shots.length, KT_SHOTS), padList.length, ramps.filter((v, i) => i % 4 === 3 && v > 0).length, V.karts.some((k) => k.boost > 0.02) ? KT_N : 0, KT_N, KT_SEG, 36, 24, Math.min(lines.length, 8)], kind: '4fv' },
+      uKtText: { v: text, kind: '4fv' },
+      uKtLook: { v: this.look, kind: '4fv' },
+      uKtPad: { v: pads, kind: '4fv' },
+      uKtRamp: { v: ramps, kind: '4fv' },
+      uKtBeat: { v: [P.s, Math.min(shake, 1.5), t - this.placeT, t - this.lapT], kind: '4f' },
+      uKtProp: { v: pr, kind: '4fv' },
+      uKtPart: { v: pt, kind: '4fv' },
+      uKtHud: { v: [place, lap, race.laps, since], kind: '4f' },
+      uKtHud2: { v: [prev ? (prev.win ? 1 : 2) : 0, P.boost, (x0 + x1) / 2, (z0 + z1) / 2], kind: '4f' },
+      uKtMap: { v: [Math.max(x1 - x0, z1 - z0) / 2 + 4, lineX, lineZ, eyeSeg], kind: '4f' },
+      uKtRank: { v: rank, kind: '4fv' },
+      uFont: { v: this.font, kind: '4fv' },
+    };
+  }
+
+  /** Where across the track the pad lies: on the player's line as it reaches it. */
+  padLane(race, s) {
+    const a = ktAt(race.course, s + 7);
+    return Math.max(-KT_LANE, Math.min(KT_LANE, Math.sign(a.kap) * Math.min(1, Math.abs(a.kap) * 28) * 3.0));
+  }
+}
+
+export const SIMS = { karts: KartSim, scanner: ScannerSim, skyrush: SkyrushSim, artillery: ArtillerySim, skatepark: SkateSim, football: FootballSim, tanks: TankSim, tube: TubeSim, crossing: CrossingSim, coderain: CoderainSim, animeop: AnimeopSim, timecar: TimecarSim, moonbike: MoonbikeSim, maze3d: Maze3dSim, echolines: EcholinesSim, ansi: AnsiSim, cascade: CascadeSim, cracktro: CracktroSim, rubber: RubberSim, chessfloor: ChessfloorSim, bobs: BobsSim, pyramid: PyramidSim, pipes: PipesSim, maze: MazeSim, snake: SnakeSim, rocks: RocksSim, starfighter: StarSim, paddles: PaddlesSim, invaders: InvadersSim, bricks: BricksSim, lightcycles: LightcyclesSim };
