@@ -159,6 +159,26 @@ export class Renderer {
    * (the heaviest takes seconds). Two at a time, in the order given; only where
    * the driver can say when one is done - elsewhere scenes compile when first shown.
    */
+  /**
+   * Whether a scene can be drawn now without the page waiting for the driver: compiled, or its compile done
+   * in the background (then it is finished here). One not started yet is started, and is not ready. Where
+   * the driver cannot say when a compile is done, every scene is ready: it compiles when first shown.
+   */
+  isReady(name) {
+    if (this.programs.has(name) || !this.parallel) return true;
+    const st = this.started.get(name);
+    if (!st) { this.started.set(name, startProgram(this.gl, styleSource(name))); return false; }
+    if (!programDone(this.gl, st, this.parallel)) return false;
+    this.programs.set(name, finishProgram(this.gl, st));
+    this.started.delete(name);
+    return true;
+  }
+
+  /** Start compiling scenes in the background, without waiting for any (those already under way go on). */
+  prepare(names) {
+    for (const n of names) if (this.parallel && !this.programs.has(n) && !this.started.has(n)) this.started.set(n, startProgram(this.gl, styleSource(n)));
+  }
+
   /** A promise kept when a scene's program is ready to draw with (at once where the driver cannot tell). */
   whenReady(name = this.opts.style) {
     return new Promise((resolve) => {

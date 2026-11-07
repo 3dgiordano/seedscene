@@ -67,6 +67,7 @@ export const GALLERY = [
   { style: 'fractalflight', era: '2010',      seed: 'mandelbox' },
   { style: 'coderain',    era: '1997',        seed: 'greenrain', at: 4.5 },
   { style: 'skatepark',   era: '1997',        seed: 'halfpipe', at: 15.6 },
+  { style: 'karts',       era: '1997',        seed: 'kartcup', at: 31.0 },
   { style: 'gimbal',      era: '2000',        seed: 'neonhall' },
   { style: 'djdecks',     era: '2000',        seed: 'backspin' },
   { style: 'outrun',      era: '1982',     seed: 'nightdrive' },

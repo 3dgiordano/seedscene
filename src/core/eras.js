@@ -42,7 +42,7 @@ export const ERAS = {
     label: '1997–1999', year: 1997, to: 1999, title: '3D consoles and pocket screens',
     blurb: 'the 32-bit consoles on the TV, a game on every phone, the anime of the afternoons',
     display: 'composite',
-    scenes: ['snake', 'animeop', 'coderain', 'skatepark'],
+    scenes: ['snake', 'animeop', 'coderain', 'skatepark', 'karts'],
     music: ['heroic', 'eurodance', 'rocknroll', 'starpilot', 'midiquest', 'animeop', 'skatepunk', 'gameboy', 'march'],
   },
   2000: {
