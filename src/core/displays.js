@@ -150,6 +150,7 @@ export const SCENE_DISPLAY = {
   tube: 'neonvector', tanks: 'neonvector',   // (the vector arcade games, with the punch of the other arcade scenes: colorvector is still there to force)
   invaders: 'arcade', maze: 'arcade', crossing: 'arcade', bricks: 'arcade', lightcycles: 'arcade',
   boxer: 'arcade', pyramid: 'arcade', outrun: 'arcade', skyrush: 'arcade',
+  castle: 'arcade',                   // (the laserdisc game played on the arcade's own monitor)
   lcd: 'modern',
   snake: 'nokia',                     // (the phone's game, on the phone's screen)
   starfighter: 'snes',                // (the 16-bit console's polygons)

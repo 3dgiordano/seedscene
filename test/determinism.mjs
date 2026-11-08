@@ -18,7 +18,7 @@ import { sceneTour } from '../src/core/catalogue.js';
 import { DISPLAYS, DISPLAY_NAMES, SCENE_DISPLAY, displayFor, displayUniforms, displayResolution } from '../src/core/displays.js';
 import { BOARDS, BOARD_NAMES, SCENE_BOARD, boardFor, trackBoardFor, chipOfBoard } from '../src/core/boards.js';
 import { STYLE_NAMES } from '../src/styles/index.js';
-import { SIMS, TANK_REACH, TANK_RANGE, KT_LONG, KT_WIDE, KT_LANE } from '../src/core/sims.js';
+import { SIMS, TANK_REACH, TANK_RANGE, KT_LONG, KT_WIDE, KT_LANE, CS_PIT0, CS_PIT1, CS_EXIT, CS_TAIL_R, csBody, csBodyD } from '../src/core/sims.js';
 import { renderVideo } from '../tools/render.js';
 
 const sha = (b) => createHash('sha256').update(b).digest('hex').slice(0, 16);
@@ -523,6 +523,89 @@ check('AUTOPLAY sounds the same every time, whatever the block size', ah === pro
   check('No two karts ever touch or leave the track, items leave on the snare and land on the beat ahead of their thrower, and going back replays the same race',
     touch > 0 && wide <= 1e-9 && shots > 20 && offBeat === 0 && behindThrower === 0 && same,
     `${shots} items; two karts side by side never nearer than ${(touch * 100).toFixed(0)} cm`);
+}
+
+{
+  // the cartoon castle: the leap over the pit leaves on the room's downbeat and is in the air all the way over the hole,
+  // landing clear of it; the gate's dive gets him through before it slams. The clothes are cloth drawn as the
+  // simulation's own triangles: every drawn triangle (its corners, edges and inside) is kept off the body as the shader
+  // draws it - the cape off his back and his tail, the skirts off the legs, and the tail itself over the skirt - save
+  // where the body folds onto itself (a thigh against the belly in the crouch, a figure lying on the floor), where the
+  // cloth stays in the fold; no edge stretches; nothing goes through the floor; going back replays the same
+  let leaps = 0, offLeap = 0, lowOver = 0, dives = 0, caught = 0, same = true, throughGate = 0;
+  let capeIn = 0, skirtIn = 0, uprightIn = 0, samples = 0, capeSamples = 0, upright = 0, inFloor = 0;
+  const capeStretch = [];
+  const RT = CS_TAIL_R;
+  const W = [[1, 0], [0.5, 0.5], [0.5, 0], [0, 0.5], [1 / 3, 1 / 3], [0.6, 0.2]];
+  for (const [seed, spb] of [['trapdoor', 0.522], ['aurora', 0.36], ['hikari', 0.75], ['castle', 0.45]]) {
+    const meta = { spb, steps: 16, barSec: spb * 4, accents: null };
+    const sim = new SIMS.castle(seed, spb, meta);
+    const len = sim.stateAt(0).len;
+    for (let n = 0; n < 4; n++) {
+      const st0 = sim.stateAt(n * len + 0.01), unit = st0.unit;
+      if (st0.R.kind === 'pit') {
+        leaps++;
+        const tl = n * len + 8 * unit;
+        if (Math.abs(tl / spb - Math.round(tl / spb)) > 1e-6 || sim.stateAt(tl - 0.01).hy > 0 || !(sim.stateAt(tl + 0.05).hy > 0)) offLeap++;
+        for (let u = 4.5; u < 10; u += 0.02) { const s = sim.stateAt(n * len + u * unit); if (s.hx > CS_PIT0 && s.hx < CS_PIT1 && s.hy < 0.25) lowOver++; }
+        if (sim.stateAt(n * len + 9.5 * unit).hx < CS_PIT1 + 0.4) offLeap++;
+      }
+      if (st0.R.kind === 'gate') { dives++; if (sim.stateAt(n * len + 11.9 * unit).hx < CS_EXIT + 0.5) caught++; }
+    }
+    for (let t = 0; t < 4 * len; t += 1 / 15) {
+      const u = sim.uniforms(t), st = sim.stateAt(t);
+      // the guard goes through the far doorway only with its gate up
+      if (st.guard && Math.abs(st.gx - CS_EXIT) < 0.35 && u.uCsPit.v[2] < 0.8) throughGate++;
+      for (let f = 0; f < 2; f++) {
+        const sh = sim.shown[f];
+        if (!sh || (f && !st.guard)) continue;
+        const F = sim.figureWorld(t, f), tail = sh.tail.map((q, i) => [...q, RT[f][i]]);
+        const Bt = csBody(F, tail), Bn = csBody(F, null), up = sim.between(t, f).D.hip >= 17;
+        const S = sim.dressState.fig[f];
+        for (const [name, G, B, T] of [['cape', sh.cape, Bt, S.cape], ['skirt', sh.skirt, Bn, S.skirt]]) {
+          if (!G) continue;
+          const { p, C, R } = G, cm = G.wrap ? C : C - 1;
+          // (a skirt gives where a striding thigh pushes it; the cape, a sheet, keeps its length)
+          if (name === 'cape') for (let s = 0; s < T.eLen.length; s++) {
+            const i = T.e[2 * s] * 3, j = T.e[2 * s + 1] * 3;
+            capeStretch.push(Math.hypot(p[i] - p[j], p[i + 1] - p[j + 1], p[i + 2] - p[j + 2]) / T.eLen[s] - 1);
+          }
+          for (let r = 0; r < R - 1; r++) for (let c = 0; c < cm; c++) {
+            const i00 = r * C + c, i01 = r * C + (c + 1) % C, i10 = i00 + C, i11 = i01 + C;
+            for (const [ia, ib, ic] of [[i00, i01, i10], [i01, i11, i10]]) for (const [wa, wb] of W) {
+              const wc = 1 - wa - wb, x = [0, 1, 2].map((k) => p[ia * 3 + k] * wa + p[ib * 3 + k] * wb + p[ic * 3 + k] * wc);
+              samples++; if (name === 'cape') capeSamples++; else if (up) upright++;
+              if (x[1] < 0.005) inFloor++;
+              // (more than half a centimetre in: a pixel and more on the screen, close up)
+              // (the skirt hangs from under the belt: cloth inside the belt is covered by it, and not counted)
+              if (name === 'skirt') {
+                const sx = x[0] - B.pel[0], sy = x[1] - B.pel[1], sz = x[2] - B.pel[2], by = sx * B.up[0] + sy * B.up[1] + sz * B.up[2];
+                if (Math.abs(by - 0.085) < 0.024 && Math.hypot(sx - B.up[0] * by, sy - B.up[1] * by, sz - B.up[2] * by) < 0.106) continue;
+              }
+              let d = csBodyD(name === 'skirt' ? { ...B, pel: [0, -99, 0] } : B, x[0], x[1], x[2]);
+              if (name === 'skirt') d = Math.min(d, csBodyD({ ...Bn, tail, bTail: Bt.bTail, bTrunk: [0, -99, 0, 0], bLeg: [[0, -99, 0, 0], [0, -99, 0, 0]], bArm: [[0, -99, 0, 0], [0, -99, 0, 0]], hea: [0, -99, 0], pel: [0, -99, 0], scab: null }, x[0], x[1], x[2]));
+              if (d < -0.005) { if (name === 'cape') capeIn++; else { skirtIn++; if (up) uprightIn++; } }
+            }
+          }
+        }
+      }
+    }
+    const a = new SIMS.castle(seed, spb, meta).uniforms(20), b2 = new SIMS.castle(seed, spb, meta);
+    b2.uniforms(30);
+    const b = b2.uniforms(20);
+    for (const k of ['uCsCam', 'uCsJ', 'uCsCloth', 'uCsPatch', 'uCsClothN', 'uCsPit', 'uCsTile', 'uCsTail', 'uCsHead']) if (String(a[k].v) !== String(b[k].v)) same = false;
+  }
+  check("The castle's leap over the pit leaves on the downbeat and clears the hole, and the dive beats the gate",
+    leaps >= 2 && offLeap === 0 && lowOver === 0 && dives >= 2 && caught === 0, `${leaps} leaps, ${dives} dives`);
+  capeStretch.sort((x, y) => x - y);
+  const cs99 = capeStretch[Math.floor(capeStretch.length * 0.99)];
+  check("The castle's cape keeps its length, no cloth goes into the floor, and going back replays the same",
+    cs99 < 0.1 && inFloor === 0 && same, `99% of the cape's edges within ${(cs99 * 100).toFixed(0)}% of their length; ${inFloor} points in the floor`);
+  // (more than half a centimetre in; the bounds are this build's own measure, so that worse shows - not a proof of none)
+  check("Hardly any part of the castle figures comes through their cloth: the cape almost never, the skirts mostly where the body folds onto itself",
+    samples > 500000 && capeIn <= capeSamples * 0.0002 && uprightIn <= upright * 0.005 && skirtIn <= (samples - capeSamples) * 0.022,
+    `${capeIn} of the cape's ${capeSamples} points inside him; standing or running, ${uprightIn} of the skirts' ${upright}; all told ${skirtIn} of ${samples - capeSamples}`);
+  check("The castle's guard passes the far door only under a raised gate", throughGate === 0, `${throughGate} times through a lowered gate`);
 }
 
 {

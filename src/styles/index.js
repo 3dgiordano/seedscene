@@ -10382,9 +10382,739 @@ vec3 render(vec2 p, vec2 uv) {
 }
 `;
 
+const castle = `
+// The cartoon castle: the laserdisc cartoon adventures of 1983, as an idea - a
+// hand-painted castle, a cel-drawn hero walking into danger, the way out
+// flashing, the move made on the beat - with its hero moving as the side-view
+// action games of 1989 moved theirs, from drawings rotoscoped from a real
+// runner. The backgrounds are painted, as those films' were: stone laid in with a
+// brush, each block its own tone, dark in the joints, in the dark of the castle
+// lit by torches whose fire lives and flickers. The figures are cel: flat colour,
+// one shadow tone with a hard edge, a coloured ink line that wavers from drawing
+// to drawing. The game runs as a simulation (src/core/sims.js), which places the
+// camera, the figures' joints, the falling floor and the gate.
+uniform vec4 uCsCam[4];     // the eye and its lens; forward (w: how hard it shakes); right; up
+uniform vec4 uCsJ[34];      // the figures' joints: the hero's seventeen, then the guard's
+uniform vec4 uCsBlade[4];   // each figure's sword: from, to, drawn (else in its scabbard), there
+uniform vec4 uCsBound[2];   // a sphere round each figure (radius 0: not there)
+uniform vec4 uCsRoom;       // the room's look, which room, the prompt (1 the stick, 2 the sword), the drawing's number
+uniform vec4 uCsPit;        // the floor's cracks, the floor gone, how far the far gate is up, a strike's flash
+uniform vec4 uCsTile[12];   // the floor's tiles as they fall: where, turned how far (+100: about the other axis)
+uniform vec4 uCsHud;        // the stick's way across and up, pushed, the sword button struck
+uniform vec4 uCsFace[2];    // each figure's face: how wide its eyes, where they look (across, up), how open its mouth
+uniform vec4 uCsN;          // how many tiles, how many figures
+uniform vec4 uCsTail[16];   // each figure's tail, simulated: eight points down it, and how thick it is at each
+uniform vec4 uCsSpark;      // sparks where the blades ring or the riposte goes home: where, and how bright
+uniform vec4 uCsHead[4];    // each figure's head: which way it faces and which way is up for it
+uniform vec4 uCsCloth[209]; // the clothes, as cloth: the points of the hero's cape (7 by 7), his skirt's and the guard's
+                            // (16 round by 5 down); w, each one's facing packed
+uniform vec4 uCsPatch[132]; // the cloth in patches of a few quads: a ball round each; where its row's points start,
+                            // its first column, how many quads, the row's length; its row, the rows, which cloth, whether
+                            // its sides are edges (1 the cape's, its top too; 2 a skirt's, either side of its slit)
+uniform vec4 uCsClothN;     // how many patches are the hero's; where the guard's start, how many
+
+const float CW = 6.0, CD0 = -7.0, CD1 = 3.0, CH = 5.2;     // the hall: its ends, its front, its back wall, its vault's foot
+const float PIT0 = -0.7, PIT1 = 0.7, PITZ = 2.1, PITD = 2.6;
+const float DOORW = 0.95, DOORH = 2.5;                      // the doorways at the hall's ends
+
+// ---- the fire: each torch's flicker, shared by its flame and the light it throws
+float csFlick(float i) {
+  float t = uTime;
+  return 0.72 + 0.16 * vnoise(vec2(t * 7.0, i * 13.0)) + 0.12 * vnoise(vec2(t * 19.0, i * 5.0)) + 0.25 * uKick;
+}
+vec3 csTorch(int i) {
+  if (i < 3) return vec3(-4.0 + float(i) * 4.0, 2.75, CD1 - 0.35);
+  return vec3(CW - 0.35, 2.55, i == 3 ? -1.55 : 1.55);       // either side of the far door
+}
+
+// ---- the painted stone, as the films' painters laid it in: big irregular stones, each a cushion of its own tone
+vec3 csStone(vec2 w, vec3 base, float scale) {
+  vec2 b = w * scale;
+  float rowH = 0.42;
+  float row = floor(b.y / rowH);
+  float rw = 0.55 + 0.45 * hash11(row * 7.3);
+  float x = b.x / (0.75 * (0.8 + 0.4 * rw)) + hash11(row) * 3.0;
+  vec2 id = vec2(floor(x), row);
+  vec2 f = vec2(fract(x), fract(b.y / rowH));
+  vec2 wob = vec2(vnoise(w * 5.0 + id * 3.1), vnoise(w * 5.0 - id * 1.7)) - 0.5;
+  vec2 q = f - 0.5 + wob * 0.07;
+  vec2 dq = abs(q) - vec2(0.43, 0.38);
+  float d = length(max(dq, 0.0)) + min(max(dq.x, dq.y), 0.0) - 0.06;
+  float h = hash12(id + 7.0);
+  vec3 tone = mix(base, base * vec3(0.8, 1.05, 1.15), hash12(id + 3.0));
+  vec3 c = tone * (0.72 + 0.45 * h);
+  c *= 1.0 + 0.35 * smoothstep(0.0, -0.18, d) - 0.25 * smoothstep(-0.12, 0.0, d);
+  c += base * 0.55 * smoothstep(0.06, 0.0, abs(q.y - 0.32)) * step(d, 0.0) * (0.5 + h);
+  c *= 0.88 + 0.22 * vnoise(vec2(w.x * 2.0 + h * 9.0, w.y * 18.0));
+  if (hash12(id + 11.0) > 0.92) {
+    float cr = abs(q.y - 0.08 * sin(q.x * 6.0 + h * 20.0)) - 0.012 * (1.0 - abs(q.x) * 2.0);
+    c = mix(c, c * 0.45, smoothstep(0.01, 0.0, cr) * step(d, 0.0) * step(abs(q.x), 0.38));
+  }
+  return mix(c, base * 0.08, smoothstep(-0.01, 0.025, d));
+}
+
+// the painted light: the torches' pools in the castle's dark, flickering with their fire; laid in a few bands
+vec3 csLight(vec3 p, vec3 n, float look) {
+  vec3 warm = vec3(1.0, 0.56, 0.18), cool = mix(vec3(0.07, 0.08, 0.3), vec3(0.24, 0.1, 0.2), step(0.5, look));
+  vec3 L = vec3(0.0);
+  for (int i = 0; i < 5; i++) {
+    vec3 d = csTorch(i) - p;
+    float r = length(d);
+    L += warm * max(dot(n, d / r), 0.0) * 9.0 / (1.0 + r * r * 0.9) * csFlick(float(i));
+  }
+  vec3 lit = cool + L;
+  return floor(lit * 5.0 + 0.5) / 5.0 * 0.5 + lit * 0.5;
+}
+
+// a doorway at an end of the hall: inside the arch (negative)
+float csDoor(vec2 q) { return min(max(abs(q.x) - DOORW, q.y - DOORH), length(q - vec2(0.0, DOORH)) - DOORW); }
+
+// ---- the far door's portcullis: an iron lattice standing in the doorway's depth, let down as one piece from the slot
+// above the arch - upright bars a hand apart, each ending in a spike at its foot, crossed by flat straps that ride down
+// with it; foot: how high its spikes are off the floor
+float csGate(vec3 p, float foot) {
+  float x = p.x - (CW + 0.14), y = p.y - foot;
+  float zq = p.z + 0.84 - clamp(floor((p.z + 0.84) / 0.24 + 0.5), 0.0, 7.0) * 0.24;
+  float rr = length(vec2(x, zq));
+  float bar = y > 0.0 ? rr - 0.03 : max((rr - 0.03 * (1.0 + y / 0.17)) * 0.9, -y - 0.17);
+  float yq = y - 0.3 - clamp(floor((y - 0.3) / 0.45 + 0.5), 0.0, 7.0) * 0.45;
+  vec3 sq = vec3(abs(x) - 0.018, abs(yq) - 0.04, abs(p.z) - 0.9);
+  float strap = length(max(sq, 0.0)) + min(max(sq.x, max(sq.y, sq.z)), 0.0) - 0.006;
+  return min(bar, strap);
+}
+
+// ---- the hall, its pit, its tiles: the colour met along a ray, and how far (figures beyond a doorway stay seen)
+vec3 csRoom(vec3 ro, vec3 rd, out float tHit) {
+  float look = uCsRoom.x;
+  vec3 stoneA = mix(vec3(0.34, 0.4, 0.92), vec3(0.88, 0.64, 0.3), step(0.5, look));
+  tHit = 1e9;
+  vec3 n = vec3(0.0, 1.0, 0.0);
+  int what = 0;    // 1 floor, 2 back wall, 3 end wall, 4 vault, 5 the pit, 6 a tile, 7 through a doorway
+  float tPit = 1e9;
+  if (rd.y < 0.0) {
+    float t = -ro.y / rd.y;
+    vec3 p = ro + rd * t;
+    bool inPit = p.x > PIT0 && p.x < PIT1 && abs(p.z) < PITZ;
+    if (inPit && uCsPit.y > 0.5) tPit = t;
+    else { tHit = t; what = 1; }
+  }
+  if (rd.z > 0.0) { float t = (CD1 - ro.z) / rd.z; if (t < tHit) { tHit = t; what = 2; n = vec3(0.0, 0.0, -1.0); } }
+  if (abs(rd.x) > 1e-4) {
+    float t = (sign(rd.x) * CW - ro.x) / rd.x;
+    if (t > 0.0 && t < tHit) {
+      vec3 p = ro + rd * t;
+      tHit = t; what = 3; n = vec3(-sign(rd.x), 0.0, 0.0);
+      // through a doorway, where the gate is up
+      if (csDoor(vec2(p.z, p.y)) < 0.0) what = 7;
+    }
+  }
+  {
+    vec2 o = ro.yz - vec2(CH, (CD1 + CD0) * 0.5);
+    float rr = (CD1 - CD0) * 0.5;
+    float a = dot(rd.yz, rd.yz), bq = dot(o, rd.yz), c = dot(o, o) - rr * rr, h = bq * bq - a * c;
+    if (h > 0.0) {
+      float t = (-bq + sqrt(h)) / a;
+      vec3 p = ro + rd * t;
+      if (t > 0.0 && t < tHit && p.y > CH) { tHit = t; what = 4; n = normalize(vec3(0.0, -(p.y - CH), -(p.z - (CD1 + CD0) * 0.5))); }
+    }
+  }
+  // the tiles, still in place or falling: turned boxes
+  int nt = int(uCsN.x);
+  vec3 tileQ = vec3(0.0), tileN = vec3(0.0);
+  for (int i = 0; i < nt; i++) {
+    vec4 tl = uCsTile[i];
+    float ang = tl.w >= 50.0 ? tl.w - 100.0 : tl.w;
+    float ca = cos(ang), sa = sin(ang);
+    vec3 o = ro - (tl.xyz - vec3(0.0, 0.06, 0.0)), d = rd;
+    if (tl.w >= 50.0) { o.xy = mat2(ca, sa, -sa, ca) * o.xy; d.xy = mat2(ca, sa, -sa, ca) * d.xy; }
+    else { o.zy = mat2(ca, sa, -sa, ca) * o.zy; d.zy = mat2(ca, sa, -sa, ca) * d.zy; }
+    vec3 inv = 1.0 / d, b0 = (vec3(-0.34, -0.06, -0.34) - o) * inv, b1 = (vec3(0.34, 0.06, 0.34) - o) * inv;
+    vec3 tn = min(b0, b1), tf = max(b0, b1);
+    float tin = max(max(tn.x, tn.y), tn.z), tout = min(min(tf.x, tf.y), tf.z);
+    if (tin < tout && tin > 0.0 && tin < tHit && tin < tPit + 0.5) {
+      tHit = tin; what = 6; tileQ = o + d * tin;
+      tileN = step(vec3(tin) - 1e-4, tn) * -sign(d);
+    }
+  }
+  // down into the pit, among its spikes
+  vec3 pitN = vec3(0.0);
+  if (tPit < tHit) {
+    float t = tPit;
+    float hitT = -1.0;
+    for (int k = 0; k < 48; k++) {
+      vec3 p = ro + rd * t;
+      float dw = min(min(p.x - PIT0, PIT1 - p.x), PITZ - abs(p.z));
+      vec2 cq = mod(p.xz - vec2(PIT0, -PITZ), 0.35) - 0.175;
+      float hh = clamp((p.y + PITD) / 0.65, 0.0, 1.0);
+      float spike = max((length(cq) - 0.13 * (1.0 - hh)) * 0.85, p.y + PITD - 0.65);
+      float d = min(min(dw, p.y + PITD), spike);
+      if (d < 0.003) { hitT = t; break; }
+      t += d;
+      if (t > tPit + 6.0) break;
+    }
+    if (hitT > 0.0) { tHit = hitT; what = 5; }
+  }
+  vec3 hp = ro + rd * tHit;
+  vec3 col;
+  if (what == 7 && rd.x > 0.0) {
+    // the far door: through it, the portcullis first - marched across the doorway's depth
+    float foot = 3.5 * uCsPit.z, t = tHit;
+    for (int k = 0; k < 24; k++) {
+      vec3 gp = ro + rd * t;
+      if (gp.x > CW + 0.32) break;
+      float d = csGate(gp, foot);
+      if (d < 0.002) {
+        if (csDoor(vec2(gp.z, gp.y)) > 0.0) break;
+        vec2 e = vec2(0.003, 0.0);
+        vec3 gn = normalize(vec3(csGate(gp + e.xyy, foot) - csGate(gp - e.xyy, foot), csGate(gp + e.yxy, foot) - csGate(gp - e.yxy, foot), csGate(gp + e.yyx, foot) - csGate(gp - e.yyx, foot)));
+        // dark iron in the torchlight, a glint where a torch catches it, an ink edge where it turns away
+        vec3 gc = vec3(0.2, 0.19, 0.23) * csLight(gp, gn, look) * 1.5;
+        gc += vec3(1.0, 0.75, 0.45) * 0.5 * pow(max(dot(reflect(rd, gn), normalize(csTorch(3) - gp)), max(dot(reflect(rd, gn), normalize(csTorch(4) - gp)), 0.0)), 16.0);
+        gc = mix(gc, vec3(0.05, 0.03, 0.05), smoothstep(0.35, 0.15, abs(dot(gn, rd))));
+        gc += vec3(1.0, 0.85, 0.4) * 0.45 * step(0.5, uCsRoom.z) * step(0.5, uCsRoom.y) * step(uCsRoom.y, 1.5) * step(0.5, fract(uTime / uSpb * 2.0));
+        tHit = t;
+        return gc;
+      }
+      t += max(d, 0.004);
+    }
+  }
+  if (what == 7) {
+    // beyond the doorway: a corridor in the dark, a torch far down it
+    vec2 q = vec2(hp.z, hp.y);
+    float d = -csDoor(q);
+    col = mix(vec3(0.02, 0.02, 0.06), stoneA * 0.25, exp(-d * 5.0));
+    col += vec3(1.0, 0.55, 0.2) * exp(-length((q - vec2(0.0, 1.3)) / vec2(0.3, 0.55)) * 2.2) * 0.35 * csFlick(9.0);
+    tHit += 8.0;
+    return col;
+  }
+  if (what == 5) {
+    // the pit: its walls in the dark, its spikes catching the light from above
+    vec2 cq = mod(hp.xz - vec2(PIT0, -PITZ), 0.35) - 0.175;
+    bool spike = hp.y < -PITD + 0.66 && length(cq) < 0.14;
+    if (spike) {
+      vec3 sn = normalize(vec3(cq.x, 0.13 / 0.65 * length(cq) + 0.05, cq.y));
+      col = vec3(0.55, 0.58, 0.66) * (0.25 + 0.75 * max(sn.y, 0.0)) + vec3(1.0, 0.7, 0.4) * pow(max(sn.y, 0.0), 12.0) * 0.6;
+    } else {
+      col = csStone(vec2(hp.x + hp.z, hp.y), stoneA * 0.45, 1.2);
+    }
+    col *= 0.25 + 0.75 * exp((hp.y) * 0.9);
+    return col;
+  }
+  if (what == 6) {
+    // a tile: a flagstone's face, its sides dark
+    col = stoneA * vec3(0.8, 0.78, 0.82) * (0.7 + 0.3 * vnoise(tileQ.xz * 6.0));
+    if (abs(tileN.y) < 0.5) col *= 0.45;
+    col *= 1.0 - 0.6 * smoothstep(0.3, 0.34, max(abs(tileQ.x), abs(tileQ.z)));
+    col *= csLight(hp, vec3(0.0, 1.0, 0.0), look);
+    return col;
+  }
+  if (what == 1) {
+    vec2 w = hp.xz / 0.7;
+    vec2 g = fract(w), id = floor(w);
+    float j = 1.0 - smoothstep(0.02, 0.05, min(min(g.x, 1.0 - g.x), min(g.y, 1.0 - g.y)) + vnoise(hp.xz * 6.0) * 0.03);
+    col = stoneA * vec3(0.8, 0.78, 0.82) * (0.75 + 0.35 * hash12(id)) * (0.9 + 0.15 * vnoise(hp.xz * vec2(2.0, 14.0)));
+    col = mix(col, stoneA * 0.15, j);
+    // the floor that will give way: its cracks spreading over a beat
+    if (hp.x > PIT0 - 0.1 && hp.x < PIT1 + 0.1 && abs(hp.z) < PITZ + 0.1 && uCsPit.x > 0.0) {
+      float cr = abs(fract((hp.x * 2.3 + vnoise(hp.xz * 3.0) * 1.2) * 1.5) - 0.5) * 0.4 + abs(fract((hp.z * 1.7 + vnoise(hp.zx * 4.0)) * 1.3) - 0.5) * 0.4;
+      col = mix(col, vec3(0.02), smoothstep(0.02, 0.0, cr - 0.06 * uCsPit.x) * uCsPit.x);
+    }
+    // the far side of the danger lit when the way is shown
+    if (uCsRoom.z > 0.5 && uCsRoom.y < 0.5 && hp.x > PIT1 && hp.x < PIT1 + 1.4 && abs(hp.z) < PITZ)
+      col += vec3(1.0, 0.85, 0.4) * 0.6 * step(0.5, fract(uTime / uSpb * 2.0));
+    // the figures' shadows, pools painted under them, paler off the floor
+    for (int f = 0; f < 2; f++) {
+      if (uCsBound[f].w <= 0.0) continue;
+      vec3 pc = uCsJ[f * 17].xyz;
+      float hgt = max(pc.y - 0.55, 0.0);
+      float sh = length((hp.xz - pc.xz) / vec2(0.32 + hgt * 0.15, 0.24 + hgt * 0.1));
+      col *= 1.0 - 0.6 * (1.0 - smoothstep(0.82, 1.0, sh)) / (1.0 + hgt * 2.0);
+    }
+  } else if (what == 2) {
+    col = csStone(hp.xy, stoneA, 1.0);
+    for (int k = 0; k < 4; k++) {
+      float ax = -4.5 + float(k) * 3.0;
+      vec2 q = hp.xy - vec2(ax, 0.0);
+      float arch = max(abs(q.x) - 0.75, q.y - 2.2);
+      arch = min(arch, length(q - vec2(0.0, 2.2)) - 0.75);
+      if (arch < 0.0) {
+        float d = -arch;
+        float glow = exp(-length((q - vec2(0.0, 0.85)) / vec2(0.26, 0.6)) * 2.4);
+        col = mix(vec3(0.02, 0.02, 0.07), stoneA * 0.3, exp(-d * 7.0));
+        col += vec3(1.0, 0.55, 0.22) * glow * 0.3 * smoothstep(0.0, 0.25, d) * csFlick(float(k) + 20.0);
+        col += stoneA * 0.18 * smoothstep(0.45, 0.0, q.y) * smoothstep(0.05, 0.35, d);
+      } else if (arch < 0.12) col = mix(col, stoneA * 1.25, 0.6);
+    }
+    for (int k = 0; k < 3; k++) {
+      float bx = -3.0 + float(k) * 3.0;
+      vec2 bq = hp.xy - vec2(bx + 0.015 * sin(uTime * 1.3 + float(k)) * (4.5 - hp.y), 0.0);
+      float bot = 2.9 + 0.28 * (abs(bq.x) / 0.32);
+      if (abs(bq.x) < 0.32 && bq.y < 4.5 && bq.y > bot) {
+        vec3 cloth = unblack(pal(0.02 + float(k) * 0.08 + uSeed.z)) * 0.75;
+        cloth *= 0.82 + 0.18 * sin(bq.x * 30.0);
+        float border = min(0.32 - abs(bq.x), min(4.5 - bq.y, bq.y - bot));
+        if (border < 0.04) cloth = vec3(0.9, 0.7, 0.2);
+        vec2 sq2 = bq - vec2(0.0, 3.75);
+        if (length(sq2) - 0.11 * (0.65 + 0.35 * cos(atan(sq2.y, sq2.x) * 5.0)) < 0.0) cloth = vec3(0.95, 0.78, 0.25);
+        col = cloth;
+      }
+    }
+  } else if (what == 3) {
+    col = csStone(hp.zy, stoneA, 1.0);
+    vec2 q = vec2(hp.z, hp.y);
+    float door = csDoor(q);
+    if (door < 0.12 && door > 0.0) col = mix(col, stoneA * 1.25, 0.6);
+  } else if (what == 4) {
+    col = csStone(vec2(hp.x, atan(hp.y - CH, hp.z - (CD1 + CD0) * 0.5) * 5.0), stoneA * 0.7, 1.0);
+  } else {
+    col = vec3(0.02);
+  }
+  if (what == 2 || what == 3) {
+    vec2 wv = what == 2 ? hp.xy : hp.zy;
+    col = mix(col, vec3(0.16, 0.38, 0.18) * (0.7 + 0.5 * vnoise(wv * 9.0)), smoothstep(0.9, 0.0, hp.y) * smoothstep(0.5, 0.7, vnoise(wv * 2.3)) * 0.75);
+  }
+  col *= csLight(hp, n, look);
+  // the torches: an iron sconce, and the fire - tongues rising and licking, white at the heart, red at the tips - its
+  // glow on the wall round it, and embers going up
+  if (what == 2 || what == 3) {
+    for (int i = 0; i < 5; i++) {
+      vec3 tp = csTorch(i);
+      vec2 tq = what == 2 ? hp.xy - tp.xy : hp.zy - tp.zy;
+      if (what == 2 && i >= 3) continue;
+      if (what == 3 && (i < 3 || hp.x < 0.0)) continue;
+      float fl = csFlick(float(i));
+      if (max(abs(tq.x) - 0.07, abs(tq.y + 0.08) - 0.13) < 0.0) col = vec3(0.07, 0.05, 0.05);
+      vec2 fq = tq - vec2(0.0, 0.12);
+      float rise = fq.y / (0.42 * fl);
+      float wav = 0.04 * sin(fq.y * 22.0 - uTime * 16.0) * rise + 0.03 * (vnoise(vec2(fq.y * 9.0 - uTime * 9.0, float(i))) - 0.5);
+      float w = 0.09 * (1.0 - rise) * smoothstep(-0.05, 0.12, rise + 0.08);
+      float flame = abs(fq.x + wav) - w;
+      float inside = step(flame, 0.0) * step(0.0, rise) * step(rise, 1.0);
+      vec3 fc = mix(vec3(1.0, 0.98, 0.75), mix(vec3(1.0, 0.6, 0.12), vec3(0.85, 0.15, 0.05), smoothstep(0.4, 1.0, rise)), smoothstep(0.0, 0.05, -flame) * 0.0 + smoothstep(0.15, 0.7, rise + (abs(fq.x) / max(w, 0.01)) * 0.3));
+      col = mix(col, fc * 1.4, inside);
+      col += vec3(1.0, 0.55, 0.18) * exp(-length(fq - vec2(0.0, 0.12)) * 5.5) * 0.45 * fl;
+      // embers
+      for (int e = 0; e < 3; e++) {
+        float ph = fract(uTime * 0.7 + float(e) * 0.33 + float(i) * 0.17);
+        vec2 ep = vec2(0.05 * sin(ph * 9.0 + float(e * 3 + i)), 0.25 + ph * 0.9);
+        col += vec3(1.0, 0.6, 0.2) * (1.0 - ph) * smoothstep(0.022, 0.0, length(tq - ep)) * 1.5;
+      }
+    }
+  }
+  col = mix(vec3(dot(col, vec3(0.3, 0.55, 0.15))), col, 1.35);
+  col = mix(col, mix(vec3(0.02, 0.02, 0.1), vec3(0.1, 0.04, 0.06), step(0.5, look)), 1.0 - exp(-tHit * 0.06));
+  return col;
+}
+
+// ---- the figures, in the round, shaded as cels are: the one being looked at is copied here before the march, so the
+// shader has one shape for both (the hero, a fox; the guard, a lizard)
+vec3 Jf[17];
+vec3 bladeA, bladeB;
+float bladeOut, figKind;
+float csCap(vec3 p, vec3 a, vec3 b, float r) { vec3 pa = p - a, ba = b - a; float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0); return length(pa - ba * h) - r; }
+float csCone(vec3 p, vec3 a, vec3 b, float r1, float r2) { vec3 pa = p - a, ba = b - a; float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0); return length(pa - ba * h) - mix(r1, r2, h); }
+float csSmin(float a, float b, float k) { float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0); return mix(b, a, h) - k * h * (1.0 - h); }
+// the head in its own frame (across, up, ahead): the fox's round, a pointed muzzle, tall ears; the lizard's long and
+// flat, a crest
+float csHeadD(vec3 hq) {
+  vec3 hs = vec3(abs(hq.x), hq.yz);
+  if (figKind < 0.5) {
+    float head = length(hq / vec3(0.1, 0.092, 0.092)) * 0.092 - 0.092;
+    float muzzle = csCone(hq, vec3(0.0, -0.025, 0.035), vec3(0.0, -0.042, 0.17), 0.058, 0.021);
+    float ears = csCone(hs, vec3(0.058, 0.058, -0.018), vec3(0.09, 0.19, -0.035), 0.042, 0.007);
+    return csSmin(csSmin(head, muzzle, 0.04), ears, 0.02);
+  }
+  float head = length(hq / vec3(0.1, 0.09, 0.12)) * 0.09 - 0.09;
+  float snout = csCone(hq, vec3(0.0, -0.02, 0.05), vec3(0.0, -0.05, 0.26), 0.075, 0.04);
+  float crest = csCone(hq, vec3(0.0, 0.07, -0.02), vec3(0.0, 0.17, -0.12), 0.03, 0.005);
+  return csSmin(csSmin(head, snout, 0.05), crest, 0.02);
+}
+// how far ahead the fox's round head comes at a point of its face (for what sits on it)
+float csHeadZ(vec2 e) { return 0.092 * sqrt(max(0.0, 1.0 - dot(e / vec2(0.1, 0.092), e / vec2(0.1, 0.092)))) + 0.002; }
+// the eyeballs (the right one; the left mirrors it) and their radii; where each looks when it looks ahead
+const vec3 CS_EYE_F = vec3(0.04, 0.03, 0.066), CS_EYE_L = vec3(0.062, 0.05, 0.058);
+const float CS_EYE_FR = 0.034, CS_EYE_LR = 0.042;
+// distance, and what is nearest: 1 fur or scales, 2 white (the fox's) or belly (the lizard's), 3 tunic, 4 armour,
+// 5 leather, 6 blade, 7 gold, 8 eyes and nose
+vec2 csFigure(vec3 p) {
+  vec3 pel = Jf[0], che = Jf[1], hea = Jf[2];
+  // how near the limbs, the cape and the sword are: each within a capsule's reach
+  float nArm = min(min(csCap(p, Jf[3], Jf[4], 0.0), csCap(p, Jf[4], Jf[5], 0.0)), min(csCap(p, Jf[6], Jf[7], 0.0), csCap(p, Jf[7], Jf[8], 0.0))) - 0.07;
+  float nLeg = min(min(csCap(p, Jf[9], Jf[10], 0.0), csCap(p, Jf[10], Jf[11], 0.0)), min(csCap(p, Jf[12], Jf[13], 0.0), csCap(p, Jf[13], Jf[14], 0.0))) - 0.2;
+  float nSword = csCap(p, bladeA, bladeB, 0.0) - 0.16;
+  vec3 sd = normalize(Jf[3] - Jf[6] + vec3(0.0, 0.0, 1e-4));
+  vec3 up = normalize(che - pel);
+  vec3 fb = normalize(cross(sd, up));
+  vec3 fh = normalize(vec3(fb.x, 0.0, fb.z) + vec3(1e-4, 0.0, 0.0));
+  // the trunk: a broad chest the shoulders belong to - a rounded block, the shoulder girdle across its top - tapering
+  // to the waist
+  vec3 shm = (Jf[3] + Jf[6]) * 0.5;
+  vec3 tq = p - (shm - up * 0.1);
+  vec3 tl = vec3(dot(tq, sd), dot(tq, up), dot(tq, fb));
+  vec3 cb = abs(tl) - vec3(0.085, 0.07, 0.05);
+  float chest = length(max(cb, 0.0)) + min(max(cb.x, max(cb.y, cb.z)), 0.0) - 0.045;
+  float girdle = csCap(p, Jf[3] - up * 0.01, Jf[6] - up * 0.01, 0.055);
+  float waist = csCone(p, shm - up * 0.17, pel + up * 0.02, 0.1, 0.085);
+  float trunk = csSmin(csSmin(chest, girdle, 0.05), waist, 0.06);
+  float chestW = 0.13;
+  vec3 sq = p - pel;
+  vec2 r = vec2(trunk, 3.0);
+  // the breastplate over the chest's front, the pauldrons over the shoulders
+  vec3 bc = abs(tl - vec3(0.0, 0.01, 0.014)) - vec3(0.068, 0.05, 0.046);
+  float plate = max(length(max(bc, 0.0)) + min(max(bc.x, max(bc.y, bc.z)), 0.0) - 0.05, -(tl.z - 0.005));
+  plate = min(plate, min(length((p - Jf[3] - up * 0.02) * vec3(1.0, 1.5, 1.0)) - 0.06, length((p - Jf[6] - up * 0.02) * vec3(1.0, 1.5, 1.0)) - 0.06));
+  if (plate < r.x) r = vec2(plate, 4.0);
+  float by = dot(sq, up);
+  float belt = max(abs(by - 0.085) - 0.024, length(sq - up * by) - 0.106);
+  if (belt < r.x) r = vec2(belt, 5.0);
+  float neck = csCap(p, che + up * 0.06, hea - up * 0.05, 0.034);
+  if (neck < r.x) r = vec2(neck, 1.0);
+  if (nArm < r.x) {
+  float arms = min(csSmin(csCone(p, Jf[3], Jf[4], 0.04, 0.03), csCone(p, Jf[4], Jf[5], 0.03, 0.024), 0.015),
+                   csSmin(csCone(p, Jf[6], Jf[7], 0.04, 0.03), csCone(p, Jf[7], Jf[8], 0.03, 0.024), 0.015));
+  if (arms < r.x) r = vec2(arms, 1.0);
+  float gloves = min(min(length(p - Jf[5]) - 0.042, csCone(p, mix(Jf[4], Jf[5], 0.72), Jf[5], 0.03, 0.045)),
+                     min(length(p - Jf[8]) - 0.042, csCone(p, mix(Jf[7], Jf[8], 0.72), Jf[8], 0.03, 0.045)));
+  if (gloves < r.x) r = vec2(gloves, figKind > 0.5 ? 5.0 : 2.0);
+  }
+  if (nLeg < r.x) {
+  float legs = min(csSmin(csCone(p, Jf[9], Jf[10], 0.046, 0.04), csCone(p, Jf[10], Jf[11], 0.04, 0.032), 0.02),
+                   csSmin(csCone(p, Jf[12], Jf[13], 0.046, 0.04), csCone(p, Jf[13], Jf[14], 0.04, 0.032), 0.02));
+  if (legs < r.x) r = vec2(legs, 1.0);
+  float boots = 1e9;
+  for (int k = 0; k < 2; k++) {
+    vec3 kn = k == 0 ? Jf[10] : Jf[13], ft = k == 0 ? Jf[11] : Jf[14];
+    vec3 top = mix(kn, ft, 0.18), dl = normalize(ft - kn);
+    float b = csCone(p, top, ft + vec3(0.0, 0.02, 0.0), 0.052, 0.042);
+    b = min(b, csCone(p, top - dl * 0.01, top + dl * 0.045, 0.07, 0.06));
+    b = csSmin(b, csCone(p, ft + vec3(0.0, 0.005, 0.0) - fh * 0.02, ft + fh * 0.13, 0.044, 0.026), 0.025);
+    boots = min(boots, b);
+  }
+  if (boots < r.x) r = vec2(boots, 5.0);
+  }
+  // the tail, simulated: seven lengths down its points, blended into one smooth curve, thick in the middle, a white
+  // tip on the fox's
+  int tb = int(figKind + 0.5) * 8;
+  if (min(min(csCap(p, uCsTail[tb].xyz, uCsTail[tb + 3].xyz, 0.0), csCap(p, uCsTail[tb + 3].xyz, uCsTail[tb + 5].xyz, 0.0)), csCap(p, uCsTail[tb + 5].xyz, uCsTail[tb + 7].xyz, 0.0)) - 0.12 < r.x) {
+    float tail = 1e9;
+    for (int i = 0; i < 7; i++) {
+      vec4 ta = uCsTail[tb + i], tz = uCsTail[tb + i + 1];
+      tail = csSmin(tail, csCone(p, ta.xyz, tz.xyz, ta.w, tz.w), 0.025);
+    }
+    if (tail < r.x) r = vec2(tail, length(p - uCsTail[tb + 7].xyz) < 0.09 && figKind < 0.5 ? 2.0 : 1.0);
+  }
+  // the head: the fox's round, a pointed muzzle, tall ears, tufts at the cheeks; the lizard's long and flat, a crest
+  if (length(p - hea) - 0.36 < r.x) {
+  // (the head turns on its own: where it looks, steadied, its own up)
+  int hb = int(figKind + 0.5) * 2;
+  vec3 hz = uCsHead[hb].xyz, hy = uCsHead[hb + 1].xyz, hx = cross(hy, hz);
+  vec3 q = p - hea;
+  vec3 hq = vec3(dot(q, hx), dot(q, hy), dot(q, hz));
+  vec3 hs = vec3(abs(hq.x), hq.yz);
+  float hf = csHeadD(hq);
+  if (figKind < 0.5) {
+    if (hf < r.x) r = vec2(hf, hq.y < -0.03 && hq.z > 0.02 ? 2.0 : 1.0);
+    float tufts = csCone(hs, vec3(0.068, -0.034, 0.01), vec3(0.13, -0.066, -0.035), 0.034, 0.004);
+    if (tufts < r.x) r = vec2(tufts, 2.0);
+    // the brows: two short strokes sat on the head over the eyes, raised when the eyes open wide
+    float bt = (uCsFace[0].x - 1.0) * 0.6;
+    vec2 ba = vec2(0.017, 0.068 + 0.017 * bt), bz = vec2(0.059, 0.061 - 0.01 * bt);
+    float brow = csCap(hs, vec3(ba, csHeadZ(ba)), vec3(bz, csHeadZ(bz)), 0.0062);
+    if (brow < r.x) r = vec2(brow, 11.0);
+  } else if (hf < r.x) r = vec2(hf, hq.y < -0.05 && hq.z > 0.05 ? 2.0 : 1.0);
+  // the eyes: two balls set into the head, the fox's to the front, the lizard's high on the sides and bulging; what
+  // is painted on them (the pupil, the lid) is painted on the ball, so it keeps its shape from any side
+  float eyes = length(hs - (figKind > 0.5 ? CS_EYE_L : CS_EYE_F)) - (figKind > 0.5 ? CS_EYE_LR : CS_EYE_FR);
+  if (eyes < r.x) r = vec2(eyes, 10.0);
+  float dots = length(hq - vec3(0.0, figKind > 0.5 ? -0.045 : -0.038, figKind > 0.5 ? 0.3 : 0.172)) - 0.017;
+  if (dots < r.x) r = vec2(dots, 8.0);
+  }
+  // the sword: drawn, a long blade with a gold guard; or in its scabbard at the hip, the hilt out
+  if (nSword < r.x) {
+  vec3 dir = normalize(bladeB - bladeA + vec3(0.0, 1e-4, 0.0));
+  vec3 gx = normalize(cross(dir, vec3(0.0, 1.0, 0.0)) + vec3(0.0, 1e-4, 0.0));
+  if (bladeOut > 0.5) {
+    float blade = csCone(p, bladeA + dir * 0.08, bladeB, 0.014, 0.006);
+    if (blade < r.x) r = vec2(blade, 6.0);
+    float hilt = min(csCap(p, bladeA - dir * 0.05, bladeA + dir * 0.06, 0.018), csCap(p, bladeA + dir * 0.07 - gx * 0.07, bladeA + dir * 0.07 + gx * 0.07, 0.013));
+    if (hilt < r.x) r = vec2(hilt, 7.0);
+  } else {
+    float scab = csCone(p, bladeA, bladeB, 0.028, 0.02);
+    if (scab < r.x) r = vec2(scab, 5.0);
+    float hilt = min(csCap(p, bladeA - dir * 0.14, bladeA, 0.018), csCap(p, bladeA - gx * 0.06, bladeA + gx * 0.06, 0.013));
+    if (hilt < r.x) r = vec2(hilt, 7.0);
+  }
+  }
+  return r;
+}
+
+// ---- the clothes, as cloth: the simulation's own points, drawn as the triangles between them - so what is drawn is
+// what was kept off the body - with each point's facing blended across each triangle, so the cloth shades smooth
+vec3 csUnpack(float w) {
+  float a = floor(w / 2048.0);
+  vec2 e = vec2(a, w - a * 2048.0) / 1023.5 - 1.0;
+  vec3 n = vec3(e, 1.0 - abs(e.x) - abs(e.y));
+  if (n.z < 0.0) n.xy = (1.0 - abs(n.yx)) * vec2(n.x >= 0.0 ? 1.0 : -1.0, n.y >= 0.0 ? 1.0 : -1.0);
+  return normalize(n);
+}
+// the nearest cloth along the ray before tMax, among one figure's patches [p0, p1): how far (tMax if none); its facing,
+// which cloth and how far down it (0 its top, 1 its hem); and inkT, the nearest place the ray passes within a line's
+// width of a free edge of it (the hem, the cape's sides and top), for the ink line round it
+float csCloth(vec3 ro, vec3 rd, int p0, int p1, float tMax, out vec3 cn, out vec2 cm, inout float inkT) {
+  float tc = tMax, hd = 0.0;
+  ivec3 hi = ivec3(0);
+  vec2 hw = vec2(0.0);
+  vec4 hm = vec4(1.0);
+  for (int k = p0; k < p1; k++) {
+    vec4 bd = uCsPatch[k * 3], m = uCsPatch[k * 3 + 1], m2 = uCsPatch[k * 3 + 2];
+    vec3 oc = ro - bd.xyz;
+    float b = dot(oc, rd), h = b * b - dot(oc, oc) + bd.w * bd.w;
+    if (h < 0.0 || -b - sqrt(h) > min(tc, inkT)) continue;
+    int base = int(m.x), C = int(m.w), nq = int(m.z), c0 = int(m.y);
+    bool hem = m2.x > m2.y - 2.5, sides = m2.w > 0.5;
+    for (int q = 0; q < nq; q++) {
+      int c = c0 + q, c1 = c + 1 >= C ? 0 : c + 1;
+      int i00 = base + c, i01 = base + c1;
+      // its two triangles
+      for (int tr = 0; tr < 2; tr++) {
+        int ia = tr == 0 ? i00 : i01, ib = tr == 0 ? i01 : i01 + C, ic = i00 + C;
+        vec3 A = uCsCloth[ia].xyz, e1 = uCsCloth[ib].xyz - A, e2 = uCsCloth[ic].xyz - A, pv = cross(rd, e2);
+        float det = dot(e1, pv);
+        if (abs(det) < 1e-12) continue;
+        vec3 tv = ro - A, qv = cross(tv, e1);
+        float u = dot(tv, pv) / det, v = dot(rd, qv) / det, t = dot(e2, qv) / det;
+        if (u >= 0.0 && v >= 0.0 && u + v <= 1.0 && t > 0.0 && t < tc) {
+          tc = t; hi = ivec3(ia, ib, ic); hw = vec2(u, v); hm = m2; hd = m2.x + (tr == 0 ? v : u + v);
+        }
+      }
+      // its free edges: the hem along the last row; the cape's sides and its top
+      for (int e = 0; e < 4; e++) {
+        bool on = e == 0 ? hem : e == 1 ? sides && c == 0 : e == 2 ? sides && c1 == C - 1 : m2.w > 0.5 && m2.w < 1.5 && m2.x < 0.5;
+        if (!on) continue;
+        vec3 ea = uCsCloth[e == 0 ? i00 + C : e == 2 ? i01 : i00].xyz, eb = uCsCloth[e == 0 ? i01 + C : e == 1 ? i00 + C : e == 2 ? i01 + C : i01].xyz;
+        vec3 ba = eb - ea, oa = ro - ea;
+        float bb = dot(ba, ba), rb = dot(rd, ba), ra = dot(rd, oa);
+        float sg = clamp((dot(oa, ba) - rb * ra) / max(bb - rb * rb, 1e-9), 0.0, 1.0);
+        float te = max(sg * rb - ra, 0.0);
+        if (length(oa + rd * te - ba * sg) < 0.002 * te && te < inkT) inkT = te;
+      }
+    }
+  }
+  if (tc < tMax) {
+    cn = normalize(csUnpack(uCsCloth[hi.x].w) * (1.0 - hw.x - hw.y) + csUnpack(uCsCloth[hi.y].w) * hw.x + csUnpack(uCsCloth[hi.z].w) * hw.y);
+    cm = vec2(hm.z, hd / (hm.y - 1.0));
+  }
+  return tc;
+}
+
+// the mouth, painted on the fox's muzzle where the eye meets it (the eyes and brows are shapes of their own)
+vec3 csFace(vec3 sp, vec3 c, vec4 fc) {
+  int hb = int(figKind + 0.5) * 2;
+  vec3 hz = uCsHead[hb].xyz, hy = uCsHead[hb + 1].xyz, hx = cross(hy, hz);
+  vec3 q = sp - Jf[2];
+  vec3 hq = vec3(dot(q, hx), dot(q, hy), dot(q, hz));
+  if (hq.z < 0.0 || length(q) > 0.22) return c;
+  float m = fc.w;
+  vec2 mq = vec2(hq.x, hq.y + 0.071);
+  if (hq.z > 0.04 && hq.z < 0.145 && figKind < 0.5) {
+    float mouth = length(mq / vec2(0.024 + 0.01 * m, 0.005 + 0.019 * m)) - 1.0;
+    if (mouth < 0.0) c = mix(vec3(0.22, 0.1, 0.05), vec3(0.45, 0.08, 0.1), step(0.4, m) * step(mouth, -0.3));
+  }
+  return c;
+}
+
+vec3 csCel(float m) {
+  if (figKind > 0.5) {
+    if (m < 1.5) return vec3(0.35, 0.62, 0.22);     // scales
+    if (m < 2.5) return vec3(0.85, 0.82, 0.5);      // belly
+    if (m < 3.5) return vec3(0.5, 0.18, 0.5);       // a purple vest
+    if (m < 4.5) return vec3(0.75, 0.65, 0.35);     // brass
+  } else {
+    if (m < 1.5) return vec3(0.93, 0.47, 0.13);
+    if (m < 2.5) return vec3(0.98, 0.93, 0.84);
+    if (m < 3.5) return vec3(0.12, 0.55, 0.52);
+    if (m < 4.5) return vec3(0.78, 0.8, 0.86);
+  }
+  if (m < 5.5) return vec3(0.38, 0.22, 0.12);
+  if (m < 6.5) return vec3(0.48, 0.53, 0.6);
+  if (m < 7.5) return vec3(0.95, 0.75, 0.2);
+  if (m < 8.5) return vec3(0.06, 0.04, 0.04);
+  return vec3(0.56, 0.08, 0.12);                  // the cape
+}
+
+// what is painted on an eyeball at a point of it: the white (the lizard's yellow), the pupil turned where the face
+// looks (the fox's round, smaller when startled; the lizard's a slit), a catch-light, the upper lid down over it as
+// the eye narrows, and an inked line where the ball goes into the head
+vec3 csEye(vec3 sp, vec4 fc) {
+  int hb = int(figKind + 0.5) * 2;
+  vec3 hz = uCsHead[hb].xyz, hy = uCsHead[hb + 1].xyz, hx = cross(hy, hz);
+  vec3 q = sp - Jf[2];
+  vec3 hq = vec3(dot(q, hx), dot(q, hy), dot(q, hz));
+  float sx = hq.x < 0.0 ? -1.0 : 1.0;
+  vec3 hs = vec3(abs(hq.x), hq.yz);
+  bool liz = figKind > 0.5;
+  vec3 d = normalize(hs - (liz ? CS_EYE_L : CS_EYE_F));
+  float open = fc.x, op = clamp(open, 0.0, 1.0);
+  vec3 g = normalize((liz ? vec3(0.5, 0.12, 0.86) : vec3(0.12, 0.03, 1.0)) + vec3(sx * fc.y, fc.z, 0.0) * 0.4);
+  vec3 gx = normalize(cross(vec3(0.0, 1.0, 0.0), g)), gy = cross(g, gx);
+  vec2 a = vec2(dot(d, gx), dot(d, gy));
+  vec3 c = liz ? vec3(1.0, 0.82, 0.12) : vec3(0.98, 0.97, 0.94);
+  if (dot(d, g) > 0.0) {
+    float pupil = liz ? length(a / vec2(0.2 + 0.12 * op, 1.0)) - 0.62 : length(a) - 0.46 * mix(1.0, 0.68, smoothstep(1.15, 1.6, open));
+    if (pupil < 0.0) c = vec3(0.06, 0.04, 0.04);
+    if (!liz && pupil < 0.07 && pupil > 0.0) c = mix(c, vec3(0.5, 0.3, 0.12), 0.6);
+    if (length(a - vec2(-0.2 * sx, 0.22)) < 0.13) c = vec3(1.0);
+  }
+  // the upper lid: level when calm, its nose end lower as the eyes narrow (set, determined)
+  // (a little narrower does not show; two thirds open is set, the lid lower at the nose; nearly shut is spent)
+  float shut = pow(clamp((0.8 - op) / 0.65, 0.0, 1.0), 1.2);
+  float lid = 0.85 * (1.0 - 2.0 * shut) + shut * d.x;
+  if (shut > 0.0 && d.y > lid - 0.08) c = vec3(0.22, 0.1, 0.05);
+  if (shut > 0.0 && d.y > lid) c = csCel(1.0);
+  if (csHeadD(hq) < 0.0045) c = vec3(0.22, 0.1, 0.05);
+  return c;
+}
+
+vec3 render(vec2 p, vec2 uv) {
+  float frame = uCsRoom.w;
+  vec2 hudP = p;
+  // a film's frame: a little weave from the gate; shaken by a slam or a strike; punched in on the kick
+  p += vec2(hash11(frame) - 0.5, hash11(frame + 7.0) - 0.5) * 0.002;
+  p += uCsCam[1].w * 0.02 * vec2(sin(uTime * 71.0), cos(uTime * 59.0));
+  p *= 1.0 - 0.03 * uKick;
+  vec3 ro = uCsCam[0].xyz;
+  float focal = uCsCam[0].w;
+  vec3 F = uCsCam[1].xyz, R = uCsCam[2].xyz, U = uCsCam[3].xyz;
+  vec3 rd = normalize(F * focal + R * p.x + U * p.y);
+  float tRoom;
+  vec3 col = csRoom(ro, rd, tRoom);
+  // the figures: each marched where the ray passes near it; its ink line where the ray passes close without touching
+  int nf = int(uCsN.y);
+  float tBest = tRoom;
+  for (int f = 0; f < nf; f++) {
+    vec4 bd = uCsBound[f];
+    if (bd.w <= 0.0) continue;
+    vec3 oc = ro - bd.xyz;
+    float bb = dot(oc, rd), hh = bb * bb - dot(oc, oc) + bd.w * bd.w;
+    if (hh <= 0.0) continue;
+    float ts = max(-bb - sqrt(hh), 0.0), te = min(-bb + sqrt(hh), tBest);
+    if (ts >= te) continue;
+    for (int i = 0; i < 17; i++) Jf[i] = uCsJ[f * 17 + i].xyz;
+    vec4 b0 = uCsBlade[f * 2], b1 = uCsBlade[f * 2 + 1];
+    bladeA = b0.xyz; bladeB = vec3(b0.w, b1.x, b1.y); bladeOut = b1.z;
+    figKind = float(f);
+    // its clothes first: the nearest of their triangles is as far as its body need be marched
+    vec3 cn = vec3(0.0);
+    vec2 cm = vec2(0.0);
+    float inkC = 1e9, te0 = te;
+    float tc = csCloth(ro, rd, f == 0 ? 0 : int(uCsClothN.y), f == 0 ? int(uCsClothN.x) : int(uCsClothN.y + uCsClothN.z), te, cn, cm, inkC);
+    te = min(te, tc);
+    float t = ts, closest = 1e9, tClose = 0.0;
+    vec2 hit = vec2(1.0, 0.0);
+    bool got = false;
+    // (one loop, one place the figure is evaluated: the march, then - once it touches - four taps round the point for
+    // its normal; the count comes from a uniform so the compiler keeps it a loop)
+    vec3 sp = ro, n = vec3(0.0), e = vec3(0.0);
+    int taps = 0, steps = 68 + int(uCsN.z);
+    for (int k = 0; k < steps; k++) {
+      if (!got && t > te) break;
+      vec3 q = ro + rd * t;
+      if (got) {
+        e = 0.5773 * (2.0 * vec3(float((taps + 3) >> 1 & 1), float(taps >> 1 & 1), float(taps & 1)) - 1.0);
+        q = sp + e * 0.002;
+      }
+      vec2 h = csFigure(q);
+      if (got) {
+        n += e * h.x;
+        taps++;
+        if (taps == 4) break;
+        continue;
+      }
+      hit = h;
+      if (hit.x < closest) { closest = hit.x; tClose = t; }
+      if (hit.x < 0.0015) { got = true; sp = q; continue; }
+      t += hit.x * 0.9;
+    }
+    got = got && taps == 4;
+    float ink = 0.0022 * tClose * (0.8 + 0.45 * hash11(frame * 1.7 + floor(tClose * 3.0) + float(f) * 9.0));
+    if (got) {
+      tBest = t;
+      n = normalize(n);
+      // lit by the nearest torch: the lit tone warm, the shadow tone cool, one hard step; a rim of firelight
+      vec3 L = normalize(csTorch(sp.x > 2.0 ? 3 : 1) - sp + vec3(0.0, 1.0, 0.0));
+      float dif = dot(n, L);
+      vec3 base = csCel(hit.y);
+      if (hit.y < 2.5 || (hit.y > 7.5 && hit.y < 8.5)) base = csFace(sp, base, uCsFace[f]);
+      else if (hit.y > 10.5) base = vec3(0.22, 0.1, 0.05);
+      else if (hit.y > 9.5) base = csEye(sp, uCsFace[f]);
+      vec3 c = dif > 0.0 ? base * vec3(1.08, 0.98, 0.86) : base * vec3(0.52, 0.52, 0.76);
+      if ((hit.y > 3.5 && hit.y < 4.5) || (hit.y > 5.5 && hit.y < 7.5)) c += vec3(1.0, 0.9, 0.7) * step(0.9, dot(reflect(rd, n), L));
+      c += vec3(1.0, 0.6, 0.25) * smoothstep(0.75, 0.95, 1.0 - abs(dot(n, rd))) * 0.35;
+      c = mix(c, vec3(0.22, 0.1, 0.05), smoothstep(0.3, 0.18, abs(dot(n, rd))) * 0.85);
+      col = c;
+    } else {
+      if (tc < te0) {
+        // the cloth: its outside, or its lining where the inside is seen (darker); a gold band at the skirt's hem
+        tBest = tc;
+        vec3 cp = ro + rd * tc;
+        bool inside = dot(cn, rd) > 0.0;
+        vec3 nn = inside ? -cn : cn;
+        vec3 L = normalize(csTorch(cp.x > 2.0 ? 3 : 1) - cp + vec3(0.0, 1.0, 0.0));
+        vec3 base = csCel(cm.x < 5.0 && cm.y > 0.86 ? 7.0 : cm.x);
+        if (inside) base *= cm.x > 8.5 ? vec3(0.62, 0.5, 0.62) : vec3(0.62);
+        vec3 c = dot(nn, L) > 0.0 ? base * vec3(1.08, 0.98, 0.86) : base * vec3(0.52, 0.52, 0.76);
+        c += vec3(1.0, 0.6, 0.25) * smoothstep(0.75, 0.95, 1.0 - abs(dot(nn, rd))) * 0.35;
+        col = mix(c, vec3(0.22, 0.1, 0.05), smoothstep(0.3, 0.18, abs(dot(nn, rd))) * 0.85);
+      }
+      if (closest < ink && tClose < tBest) col = vec3(0.22, 0.1, 0.05);
+    }
+    if (inkC < tBest + 0.01) col = vec3(0.22, 0.1, 0.05);
+  }
+  // the strike's flash, white from where the blades meet
+  col += vec3(1.0, 0.95, 0.85) * uCsPit.w * 0.12;
+  // the sparks: a white star with long streaks on the spot, a few points of red-hot steel thrown off it
+  if (uCsSpark.w > 0.0) {
+    vec3 sv = uCsSpark.xyz - ro;
+    vec3 dd = rd - normalize(sv);
+    vec2 o = vec2(dot(dd, R), dot(dd, U)) * length(sv);
+    float a = uCsSpark.w;
+    float star = exp(-length(o) * 45.0) * 2.5 + exp(-abs(o.x) * 150.0 - abs(o.y) * 7.0) + exp(-abs(o.y) * 150.0 - abs(o.x) * 7.0);
+    star += 0.6 * (exp(-abs(o.x + o.y) * 110.0 - abs(o.x - o.y) * 12.0) + exp(-abs(o.x - o.y) * 110.0 - abs(o.x + o.y) * 12.0));
+    for (int i = 0; i < 6; i++) {
+      float an = float(i) * 1.047 + 0.4, sp = (1.0 - a) * (0.25 + 0.1 * float(i % 3));
+      vec2 c = vec2(cos(an), sin(an)) * sp - vec2(0.0, (1.0 - a) * (1.0 - a) * 0.3);
+      star += exp(-length(o - c) * 260.0) * 2.0;
+    }
+    col += vec3(1.0, 0.85, 0.5) * star * a;
+  }
+  // ---- the panel: the stick and the sword button, as the cabinet had them, lit when the move is to be made
+  p = hudP;
+  vec2 sq = p - vec2(0.62, -0.36);
+  float plate = max(abs(sq.x - 0.06) - 0.15, abs(sq.y) - 0.075);
+  vec2 dir = uCsHud.xy * (0.012 + 0.032 * uCsHud.z);
+  float stick = sdSeg(sq, vec2(0.0), dir) - 0.009;
+  float knob = length(sq - dir) - 0.024;
+  float button = length(sq - vec2(0.15, 0.0)) - 0.03;
+  float pr = uCsRoom.z, blink = step(0.5, fract(uTime / uSpb * 2.0));
+  if (plate < 0.0) col = mix(col, vec3(0.04, 0.03, 0.06), 0.55);
+  if (length(sq) - 0.05 < 0.0) col = vec3(0.12, 0.11, 0.14);
+  if (stick < 0.0) col = vec3(0.3);
+  if (knob < 0.0) col = mix(vec3(0.85, 0.12, 0.08), vec3(1.0, 0.9, 0.4), step(0.5, pr) * step(pr, 1.5) * blink);
+  if (button < 0.0) col = mix(vec3(0.6, 0.45, 0.08), vec3(1.0, 0.95, 0.5), max(step(1.5, pr) * blink, uCsHud.w)) * (0.75 + 0.25 * smoothstep(0.03, 0.0, length(sq - vec2(0.143, 0.008))));
+  vec2 aq = sq - vec2(0.0, 0.11);
+  float arrow = min(sdSeg(aq, vec2(-0.035, 0.0), vec2(0.035, 0.0)), min(sdSeg(aq, vec2(0.035, 0.0), vec2(0.012, 0.022)), sdSeg(aq, vec2(0.035, 0.0), vec2(0.012, -0.022))));
+  col = mix(col, vec3(1.0, 0.9, 0.3), (1.0 - smoothstep(0.005, 0.009, arrow)) * step(0.5, pr) * step(pr, 1.5) * blink);
+  // the film: warm, a fine grain, the corners darker
+  col *= vec3(1.04, 1.0, 0.94);
+  col += (hash12(p * 917.0 + frame) - 0.5) * 0.035;
+  col *= 1.0 - 0.35 * smoothstep(0.45, 1.05, length(p * vec2(0.85, 1.2)));
+  return col;
+}
+`;
+
 const SOURCES = {
   plasma, tunnel, metaballs, starfield, copper, fractal,
-  shadebobs, vectorballs, dottunnel, fireworks, fire, kefrens, ball, rings, scanner, footsteps, twister, bobs, dualchess, chessfloor, rubber, bumplogo, cracktro, ansi, echolines, maze3d, moonbike, timecar, animeop, pipes, ripple, outrun, morph, prism, sculpture, fractalflight, coderain, gimbal, djdecks,
+  shadebobs, vectorballs, dottunnel, fireworks, fire, kefrens, ball, rings, scanner, footsteps, twister, bobs, dualchess, chessfloor, rubber, bumplogo, cracktro, ansi, echolines, maze3d, moonbike, timecar, animeop, pipes, ripple, outrun, morph, prism, sculpture, fractalflight, coderain, gimbal, djdecks, castle,
   paddles: staged(paddles, 0.55, 0.45),
   invaders: staged(invaders, 0.6, 0.35),
   rocks: staged(rocks, 0.45, 0.5),
@@ -10410,7 +11140,7 @@ const SOURCES = {
 
 /** Post-pass effects a scene asks for: the game scenes get the beat blur. */
 export const STYLE_FX = Object.fromEntries(
-  ['paddles', 'invaders', 'rocks', 'crossing', 'tube', 'tanks', 'football', 'skatepark', 'karts', 'artillery', 'skyrush', 'maze', 'bricks', 'lightcycles', 'snake', 'boxer', 'starfighter', 'pipes', 'pyramid', 'lcd', 'bobs', 'rubber', 'bumplogo', 'cascade', 'ansi', 'echolines', 'maze3d', 'moonbike', 'timecar', 'scanner', 'animeop', 'djdecks',
+  ['paddles', 'invaders', 'rocks', 'crossing', 'tube', 'tanks', 'football', 'skatepark', 'karts', 'castle', 'artillery', 'skyrush', 'maze', 'bricks', 'lightcycles', 'snake', 'boxer', 'starfighter', 'pipes', 'pyramid', 'lcd', 'bobs', 'rubber', 'bumplogo', 'cascade', 'ansi', 'echolines', 'maze3d', 'moonbike', 'timecar', 'scanner', 'animeop', 'djdecks',
    'prism', 'sculpture', 'fractalflight', 'gimbal']
     .map((n) => [n, { impact: 1 }]),
 );
@@ -10467,6 +11197,7 @@ export const STYLE_INFO = {
   rocks:       'A vector ship that flies, dodges and splits the rocks it hits',
   skatepark:   'A skater on a half-pipe in a warehouse, moved by gravity and its own pumping, the camera chasing behind it: an air at every lip, a grind along the coping through the build, a huge air on the drop, the combo counter',
   karts:       'A kart race of eight animal drivers round a new course each race, the camera behind the player: items thrown on the snare burst on the next beat, a boost off a pad through the build, the leaders nose to nose on the drop and the photo-finish camera',
+  castle:      'A cartoon castle as the laserdisc adventures had it: a fox knight walks into danger a room a phrase, the way out flashes on the beat before the move, the move is made on the downbeat',
   skyrush:     'A jetpack flyer free over a checkered plain, running a stride to the beat, seen from another side wherever he goes; the horizon rises with him, foes fly set ways and fire where he was, low things trip him and a serpent of orbs closes each stage, bursting on the drop',
   artillery:   'Two teams of beetles on an island: missiles, grenades and bounces in real physics, each blast solved to land on the snare, the camera zooming and following every shot',
   football:    'Football seen from above, the camera on the ball: a pass on every beat, a run down the wing through the build, the header in on the drop, the crowd going up',

@@ -50,6 +50,7 @@ export const BOARD_NAMES = Object.keys(BOARDS);
 export const SCENE_BOARD = {
   scanner: 'hifi', timecar: 'hifi', moonbike: 'hifi', footsteps: 'hifi', animeop: 'hifi', coderain: 'hifi',
   starfighter: 'hifi', snake: 'hifi', lcd: 'hifi',
+  castle: 'hifi',                     // (the laserdisc played its own recorded soundtrack)
   ball: 'paula',                      // (the Amiga's bouncing ball, in the 8-bit decade)
   cascade: 'opl3', echolines: 'opl3', // (the PC desktop's card game and screensaver, in the Amiga's years)
 };
