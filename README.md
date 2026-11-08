@@ -133,7 +133,7 @@ machine name it once had (`--era amiga`).
 | years | | its display (scenes may have their own) | its scenes | the music it brings |
 |---|---|---|---|---|
 | **1972–1981** | the first video games | ARCADE | paddles, invaders, rocks, maze, lcd, crossing, tube, tanks | arcade attract, cyborg pulse, derelict ship, synth-pop |
-| **1982–1989** | home computers, arcades and the video shop | C64 | lightcycles, pyramid, boxer, bricks, outrun, scanner, timecar, moonbike, dottunnel, plasma, ball, skyrush | SID chiptune, synth-pop, ST buzz, italo disco — on the C64's SID, the Atari ST's YM2149 or the synthesizer's own voices, by the seed |
+| **1982–1989** | home computers, arcades and the video shop | C64 | lightcycles, pyramid, boxer, bricks, outrun, scanner, timecar, moonbike, dottunnel, plasma, ball, skyrush, castle | SID chiptune, synth-pop, ST buzz, italo disco — on the C64's SID, the Atari ST's YM2149 or the synthesizer's own voices, by the seed |
 | **1990–1993** | the demoscene's golden years | AMIGA | the Amiga effects - copper, kefrens, vector balls, the chessboards, the cracktro and more - plasma, metaballs, tunnel, fractal, bumplogo, fireworks, morph; footsteps, starfighter, cascade, echolines, football | Amiga rave, New Beat, orchestral trackers, dreamwave, tracker jazz, beast lands, lament, musicdisk ballad, jolly march, hip-hop blaster, terrace drums — on Paula's 8-bit samples |
 | **1994–1996** | the PC demos and the multimedia years | VGA | fire, pipes, ansi, maze3d, artillery; fractal, tunnel, metaballs, plasma, bumplogo | ambient techno, acid, gabber, eurodance, jungle, FM metal, MIDI quest — on a Sound Blaster 16's FM or an AWE32's wavetable; and keygen, the party's tracker tunes, played from samples as a module player did; and trip-hop, its strings and Rhodes on the card; and lament and jolly march, played on the card |
 | **1997–1999** | 3D consoles and pocket screens | COMPOSITE TV | snake, animeop, coderain, skatepark, karts | heroic game soundtracks, eurodance, chip rock and roll, star pilot, MIDI quest, the anime opening, skate punk, handheld chip, jolly march — on wavetable |
@@ -390,13 +390,18 @@ from another side wherever he goes, running a stride to the beat on the ground;
 the horizon rises with him. Rows of scenery pass him on the beat, his shots land on
 the eighths, foes fly set ways and fire where he was, low things trip him and
 tall ones throw him down for exactly a bar; a serpent of orbs closes each stage
-and bursts on the drop. Same seed, same game, move for move.
+and bursts on the drop. In **castle** a fox in a cape takes a room a phrase,
+cut like an animated film: the floor ahead gives way as he arrives, he leaps the
+spikes on the downbeat and lands on a beat, dives under a gate that slams
+on a bar line, and trades cuts with a lizard guard, parrying and parried on the beats, then runs him through on the downbeat, the prompt for each move
+flashing the beat before. He moves as the side-view action games of 1989 moved
+their hero, twelve drawings a second, smoothed in between, the body turning in the round as runners do; his cape, the tails and the skirts are cloth. Same seed, same game, move for move.
 
 They are homages, drawn from nothing but maths — no sprite, no maze, no
 character and no tune is copied from any game. The creatures in the
 formation, the mazes, the rocks and the challenger robot are all made up by
 the seed; the hopper, the tube's climbers and its claw, the tanks, the skater, the
-beetles and their dragonfly, the flyer and his serpent, and the footballers' kits are
+beetles and their dragonfly, the flyer and his serpent, the castle's fox and lizard, and the footballers' kits are
 drawn here or chosen by it.
 
 ## Scenes, straight out of the scene
@@ -428,6 +433,8 @@ Era by era, oldest first. Each one is a memory of its time, made from scratch.
 | **timecar** — the time-travel car of the 80s, as an idea: a stainless wedge charging two onlookers across a wet night parking lot, its readout reaching 88 on the music's big moment, then gone in a burst, leaving trails of fire. `--scene timecar --era 1982 --seed gigawatts` | **moonbike** — the boy and his friend from the stars, as an idea: a bicycle crossing a huge pale moon in silhouette, a bundle in the basket, its wheels turning a turn a beat. `--scene moonbike --era 1982 --seed moonride` | **dottunnel** — the dot tunnels of the 8-bit demos: rings of dots rushing down a snaking tunnel. `--scene dottunnel --era 1982 --seed warpspeed` |
 | ![plasma](docs/gallery/plasma.png) | ![ball](docs/gallery/ball.png) | ![skyrush](docs/gallery/skyrush.png) |
 | **plasma** — the plasma every demo of the 80s and 90s had: sine waves melting through a cycling palette. *Also 1990–1993 · 1994–1996.* `--scene plasma --era 1982 --seed 1989` | **ball** — the bouncing checkered ball of the Amiga's first demos: red and white, spinning on its tilted axis, bouncing across a grid room and landing on every beat. `--scene ball --era 1982 --seed boing` | **skyrush** — the behind-view arcade shooters of the 80s: a jetpack flyer free over a rushing checkered plain, seen from another side wherever he goes; saucers on set ways, things to trip on, a serpent of orbs bursting on the drop. `--scene skyrush --era 1982 --seed checker` |
+| ![castle](docs/gallery/castle.png) | | |
+| **castle** — the hand-drawn laserdisc adventures of the 80s, as an idea: a caped fox running a torchlit castle, leaping a floor that falls away over spikes, diving under a gate, crossing swords with a lizard, each on the beat. `--scene castle --era 1982 --seed trapdoor` | | |
 
 ### 1990–1993 · the demoscene's golden years
 

@@ -21,7 +21,7 @@ export const ERAS = {
     label: '1982–1989', year: 1982, to: 1989, title: 'Home computers, arcades and the video shop',
     blurb: 'the 8-bit home, the arcade hits of the decade, and the films and series on tape',
     display: 'c64',
-    scenes: ['lightcycles', 'pyramid', 'boxer', 'bricks', 'outrun', 'scanner', 'timecar', 'moonbike', 'dottunnel', 'plasma', 'ball', 'skyrush'],
+    scenes: ['lightcycles', 'pyramid', 'boxer', 'bricks', 'outrun', 'scanner', 'timecar', 'moonbike', 'dottunnel', 'plasma', 'ball', 'skyrush', 'castle'],
     music: ['chiptune', 'synthpop', 'stchip', 'italo'],
   },
   1990: {

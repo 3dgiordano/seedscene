@@ -8290,4 +8290,1026 @@ export class KartSim {
   }
 }
 
-export const SIMS = { karts: KartSim, scanner: ScannerSim, skyrush: SkyrushSim, artillery: ArtillerySim, skatepark: SkateSim, football: FootballSim, tanks: TankSim, tube: TubeSim, crossing: CrossingSim, coderain: CoderainSim, animeop: AnimeopSim, timecar: TimecarSim, moonbike: MoonbikeSim, maze3d: Maze3dSim, echolines: EcholinesSim, ansi: AnsiSim, cascade: CascadeSim, cracktro: CracktroSim, rubber: RubberSim, chessfloor: ChessfloorSim, bobs: BobsSim, pyramid: PyramidSim, pipes: PipesSim, maze: MazeSim, snake: SnakeSim, rocks: RocksSim, starfighter: StarSim, paddles: PaddlesSim, invaders: InvadersSim, bricks: BricksSim, lightcycles: LightcyclesSim };
+// ---------------------------------------------------------------------------
+// The cartoon castle: the laserdisc cartoon adventure, a room a phrase
+// ---------------------------------------------------------------------------
+
+export const CS_JOINTS = 17;                // a figure's joints; the hero's, then the guard's
+const CS_K = 0.0275;                        // metres a pixel of the drawings measured: the hero is 42 of them tall
+const CS_THIGH = 10.5, CS_SHIN = 10.6, CS_UPPER = 7.0, CS_FORE = 7.4;
+// The poses, as the side-view action games of 1989 drew their hero - rotoscoped from a real runner, twelve drawings a
+// second - measured from those drawings frame by frame: the hip's height; the head, the shoulders, the hands and the
+// feet, each [ahead of the hip, up from the floor] in the drawings' pixels. The knees and elbows are solved from them,
+// so the limbs keep their length. 'swap': the right hand is the back one. Swords: [ahead, up] the blade points, or none
+// when it is in its scabbard.
+export const CS_DRAW = {
+  // the run: eight drawings, two strides; the left foot strikes in the second
+  run: [
+    { hip: 18, head: [6, 36.5], sh: [3.5, 31], fL: [-1, 5], fR: [-11, 2], hF: [12, 25], hB: [-2, 21] },
+    { hip: 18, head: [7.5, 36.5], sh: [4.5, 31], fL: [7, 1], fR: [-15, 5], hF: [14, 26], hB: [-2, 22] },
+    { hip: 17, head: [6.5, 36], sh: [3.5, 30], fL: [6, 1], fR: [-17, 7], hF: [11, 24], hB: [0, 21] },
+    { hip: 18, head: [4, 35.5], sh: [2, 30], fL: [-1, 1], fR: [-11, 7], hF: [4, 22], hB: [-1, 23] },
+    { hip: 17, head: [6, 35.5], sh: [4, 30], fL: [-9, 2], fR: [1, 5], hF: [12, 22], hB: [-1, 26], swap: 1 },
+    { hip: 18, head: [7.5, 36.5], sh: [4.5, 31], fL: [-16, 5], fR: [9, 1], hF: [14, 24], hB: [0, 22], swap: 1 },
+    { hip: 17, head: [6.5, 36.5], sh: [3.5, 31], fL: [-17, 7], fR: [7, 1], hF: [11, 23], hB: [0, 21], swap: 1 },
+    { hip: 18, head: [5, 35.5], sh: [3, 30], fL: [-10, 7], fR: [-2, 1], hF: [5, 22], hB: [-2, 24], swap: 1 },
+  ],
+  stand: { hip: 21, head: [1, 38], sh: [0.5, 32], fL: [1, 0], fR: [-1, 0], hF: [1, 18], hB: [-1, 17] },
+  // the take: rearing back from what he sees, hands up
+  take: { hip: 20, head: [-3, 37.5], sh: [-2.5, 32], fL: [3, 0], fR: [-4, 0], hF: [6, 30], hB: [3, 31] },
+  // the standing jump: stooping, bending further with the arms going back (the two drawings before the fold); legs
+  // straight, the body folded forward flat with the arms flung back; the arms swung through as
+  // he sinks; the drive off the back foot, arms reaching; up and out; the long split with the body laid forward; the
+  // front leg reaching down; the strike, arms thrown back; the crouch
+  stoop: { hip: 20, head: [6.5, 36.5], sh: [5, 31], fL: [0, 0], fR: [-1, 0], hF: [-1, 20], hB: [-2, 19] },
+  bend: { hip: 19, head: [9.5, 35.5], sh: [8, 30], fL: [1, 0], fR: [0, 0], hF: [-5, 22], hB: [-6, 21] },
+  gather: { hip: 21, head: [15.5, 27.5], sh: [11, 24], fL: [0, 0], fR: [-1, 0], hF: [-5, 23], hB: [-4, 22] },
+  swing: { hip: 19, head: [13.5, 29], sh: [11, 24], fL: [-3, 0], fR: [-4, 0], hF: [16.5, 10.5], hB: [15, 11] },
+  takeoff: { hip: 15, head: [8.5, 30.5], sh: [8, 24], fL: [6, 5], fR: [-11, 1], hF: [22.5, 26.5], hB: [15, 21] },
+  rise: { hip: 17, head: [8.5, 30.5], sh: [7, 26], fL: [10, 5], fR: [-18, 5], hF: [22.5, 33], hB: [20, 31] },
+  split: { hip: 13, head: [19.5, 22.5], sh: [13, 22], fL: [21, 4], fR: [-17, 4], hF: [28, 26], hB: [22, 27] },
+  reach: { hip: 11, head: [19, 22], sh: [11, 22], fL: [19, 1], fR: [-13, 6], hF: [9, 13], hB: [8, 12] },
+  strike: { hip: 12, head: [11, 22], sh: [5, 20], fL: [4, 0], fR: [-10, 5], hF: [-10, 11], hB: [-9, 10] },
+  // set to sprint: low, weight forward, arms back
+  set: { hip: 17, head: [7, 34], sh: [5, 29], fL: [2, 0], fR: [-3, 0], hF: [-6, 20], hB: [-8, 22] },
+  crouch: { hip: 11, head: [9.5, 21.5], sh: [5, 18], fL: [6, 0], fR: [4, 0], hF: [0, 6], hB: [-1, 6] },
+  // a dive under a falling gate: flat out, low, arms ahead
+  dive: { hip: 8, head: [17.5, 10], sh: [12, 9], fL: [-14, 9], fR: [-17, 6], hF: [24, 10], hB: [22, 7] },
+  // the sword, from the fencing drawings: drawn and presented, on guard with the free hand low, the step in with the
+  // blade up and the free arm back, the lunge with the free arm flung up behind
+  draw: { hip: 18, head: [3.5, 34], sh: [2, 29.5], fL: [5, 0], fR: [-5, 0], hF: [10, 29], hB: [-5, 26], sword: [0.6, 0.8] },
+  guard: { hip: 16, head: [6, 32], sh: [3, 27], fL: [8, 0], fR: [-9, 0], hF: [14, 23.5], hB: [-4, 20], sword: [0.8, 0.6] },
+  windup: { hip: 17, head: [1.5, 34], sh: [1, 29], fL: [14, 2], fR: [-12, 0], hF: [16, 28], hB: [-6, 30], sword: [-0.4, 0.9] },
+  lunge: { hip: 13, head: [10.5, 27.5], sh: [6, 24], fL: [12, 0], fR: [-18, 0], hF: [27, 22.5], hB: [-10, 27], sword: [1, 0.02] },
+  // the parry: the blade up across the cut, the free hand low; the cut, stepping in with the blade forward and up;
+  // struck: the arms still out, the knees giving; reeling back, the head thrown back; down on his knees; lying on his
+  // back
+  block: { hip: 17, head: [0, 34.5], sh: [0.5, 29], fL: [8, 0], fR: [-9, 0], hF: [13, 33], hB: [-5, 25], sword: [0.25, 0.97] },
+  cut: { hip: 15, head: [8, 30], sh: [5, 26], fL: [12, 0], fR: [-14, 0], hF: [22, 27], hB: [-8, 26], sword: [0.85, 0.5] },
+  struck: { hip: 14, head: [5.5, 31], sh: [4, 26], fL: [3, 0], fR: [-11, 0], hF: [14.5, 25], hB: [6, 24] },
+  reel: { hip: 15, head: [-1, 32], sh: [1, 28], fL: [5, 0], fR: [-2, 3], hF: [12, 26], hB: [8, 25] },
+  kneel: { hip: 12, head: [5.5, 26.5], sh: [3, 22], fL: [-5, 1], fR: [-4, 1], hF: [6, 12], hB: [5, 11] },
+  down: { hip: 3.5, head: [-20, 4], sh: [-14, 4.5], fL: [19, 2], fR: [16, 4], hF: [-6, 2], hB: [-17, 9] },
+  // knocked back, falling: arms flung up, legs dangling
+  fall: { hip: 18, head: [-2, 34.5], sh: [-1.5, 29], fL: [3, 3], fR: [-3, 5], hF: [5, 44], hB: [-3, 44] },
+};
+// the face with each drawing: how wide the eyes, where they look (across, up), how open the mouth
+export const CS_FACE = { run: [0.85, 0.6, 0, 0.15], stand: [1, 0.2, 0, 0], take: [1.5, -0.2, 0.4, 1], gather: [0.6, 0.8, -0.2, 0], stoop: [0.8, 0.5, -0.3, 0], bend: [0.7, 0.7, -0.3, 0], swing: [0.8, 0.9, 0.1, 0.2], set: [0.6, 0.8, -0.2, 0], takeoff: [1.1, 0.8, 0.3, 0.6],
+  rise: [1.1, 0.8, 0.3, 0.6], split: [1.2, 0.8, 0, 0.5], reach: [1.2, 0.6, -0.4, 0.4], strike: [1.25, 0.3, 0.2, 0.3], crouch: [0.9, 0.4, 0, 0.2],
+  dive: [0.6, 0.9, 0, 0.8], block: [1.1, 0.9, 0.1, 0.25], cut: [0.7, 0.9, 0, 0.7], struck: [1.7, 0, 0.5, 1], reel: [1.5, -0.3, 0.7, 0.9],
+  kneel: [0.6, 0.2, -0.6, 0.5], down: [0.15, 0, 0, 0.3], draw: [0.7, 0.8, 0, 0], guard: [0.65, 0.9, 0, 0], windup: [0.6, 0.9, 0, 0.3], lunge: [1.2, 1, 0, 0.9], fall: [1.6, 0, 0.6, 1] };
+
+/** The 2-bone limb in the drawing's plane: the middle joint from the ends and the bones' lengths; bend 1 ahead, -1 behind. */
+function csIK(a, b, l1, l2, bend) {
+  const dx = b[0] - a[0], dy = b[1] - a[1];
+  const d = Math.max(Math.hypot(dx, dy), 1e-6), dm = Math.min(d, l1 + l2 - 1e-3);
+  const ux = dx / d, uy = dy / d;
+  const A = Math.acos(Math.max(-1, Math.min(1, (l1 * l1 + dm * dm - l2 * l2) / (2 * l1 * dm)))) * bend;
+  const ca = Math.cos(A), sa = Math.sin(A);
+  return { mid: [a[0] + l1 * (ux * ca - uy * sa), a[1] + l1 * (ux * sa + uy * ca)], end: [a[0] + ux * dm, a[1] + uy * dm] };
+}
+
+/**
+ * A drawing as the figure's joints in its own frame: x across (to his right), y up, z ahead; metres.
+ *
+ * The drawings are side views; the body in the round is read from their own limbs, as runners are seen from in front
+ * (the frontal rows of the 1887 motion studies, and the gait laboratories' numbers - the pelvis turning some ten to
+ * fourteen degrees through a stride and dropping eight or nine, the chest turning against it): the pelvis turns with
+ * the leg ahead and the chest with the arm ahead, so the two turn against each other as the arms swing against the
+ * legs; the hip drops on the side of the leg in the air and the shoulders tilt the other way; the trunk sways over
+ * the foot it stands on, and a running foot lands under the body's middle; the hands swing in toward the chest. The
+ * head is steadied - it rides a little of the sway and none of the twist; where it looks is the simulation's.
+ */
+export function csJoints(d, tailSwing) {
+  const k = CS_K;
+  // (the head a neck's length from the shoulders, the way the drawing tips it)
+  const nx = d.head[0] - d.sh[0], ny = d.head[1] - d.sh[1], nl = Math.max(Math.hypot(nx, ny), 1e-6), ns = Math.max(5, Math.min(7, nl)) / nl;
+  d = { ...d, head: [d.sh[0] + nx * ns, d.sh[1] + ny * ns] };
+  const sw = d.swap ? 1 : 0;
+  const hR = sw ? d.hB : d.hF, hL = sw ? d.hF : d.hB;
+  const cl = (v, a) => Math.max(-a, Math.min(a, v));
+  const yawP = cl((d.fR[0] - d.fL[0]) * 0.006, 0.3);
+  const yawT = cl((hR[0] - hL[0]) * 0.008, 0.45);
+  const lift = d.fR[1] - d.fL[1];
+  const rollP = cl(lift * 0.008, 0.12), rollT = -rollP * 0.7;
+  const sway = cl(-lift * 0.0015, 0.02);
+  const footX = 0.035 + 0.045 * Math.max(0, Math.min(1, 1 - Math.max(d.fL[1], d.fR[1]) / 5));
+  // the hips, turned and tilted about the pelvis; the legs solved from them
+  // (the hips a little inside the waist's width, so a belt at the waist and a skirt from it go over them)
+  const hip = (s) => [sway + s * 0.066 * Math.cos(yawP), d.hip * k - s * 0.066 * Math.sin(rollP), s * 0.066 * Math.sin(yawP)];
+  const shoulder = (s) => [sway * 0.8 + s * 0.12 * Math.cos(yawT), d.sh[1] * k - s * 0.12 * Math.sin(rollT), d.sh[0] * k + s * 0.12 * Math.sin(yawT)];
+  const hipR = hip(1), hipL = hip(-1), shR = shoulder(1), shL = shoulder(-1);
+  const leg = (hp, f, s) => {
+    const r = csIK([hp[2] / k, hp[1] / k], f, CS_THIGH, CS_SHIN, 1);
+    const fx = sway * 0.5 + s * footX;
+    return [[(hp[0] + fx) / 2 + s * 0.01, r.mid[1] * k, r.mid[0] * k], [fx, r.end[1] * k, r.end[0] * k]];
+  };
+  const arm = (sp, h, s) => {
+    const r = csIK([sp[2] / k, sp[1] / k], h, CS_UPPER, CS_FORE, -1);
+    const inward = Math.max(0, Math.min(1, (h[0] - d.sh[0]) / 12));
+    return [[sp[0] + s * 0.035, r.mid[1] * k, r.mid[0] * k], [sway * 0.8 + s * (0.16 - 0.07 * inward), r.end[1] * k, r.end[0] * k]];
+  };
+  const [kR, fR] = leg(hipR, d.fR, 1), [kL, fL] = leg(hipL, d.fL, -1);
+  const [eR, wR] = arm(shR, hR, 1), [eL, wL] = arm(shL, hL, -1);
+  const chest = [d.sh[0] * 0.8, d.hip + (d.sh[1] - d.hip) * 0.8];
+  return [
+    [sway, d.hip * k, 0], [sway * 0.85, chest[1] * k, chest[0] * k], [sway * 0.5, d.head[1] * k, d.head[0] * k],
+    shR, eR, wR,
+    shL, eL, wL,
+    hipR, kR, fR,
+    hipL, kL, fL,
+    [sway, d.hip * k + 0.045, -0.125], [sway, d.hip * k - 0.2, -0.3],
+  ];
+}
+
+const csV = {
+  add: (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]],
+  sub: (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]],
+  mul: (a, s) => [a[0] * s, a[1] * s, a[2] * s],
+  dot: (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
+  cross: (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]],
+  norm: (a) => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; },
+};
+// the tails: eight points down each; its length, its thickness along it (root to tip, at five even places between which
+// it runs smoothly), the shape it hangs in (across, up, ahead; s from 0 at the root to 4 at the tip) and how firmly it
+// keeps that shape - the fox's bushy and carried, the lizard's long, heavy and dragged
+export const CS_TAIL_N = 8;
+const CS_TAILS = [
+  { len: 0.34, r: [0.03, 0.058, 0.068, 0.055, 0.016], rest: (s) => [0, -0.07 * s + 0.008 * s * s, -0.06 * s], hold: 0.3, drag: 0.1 },
+  { len: 0.6, r: [0.05, 0.045, 0.035, 0.022, 0.008], rest: (s) => [0, -0.1 * s, -0.11 * s], hold: 0.12, drag: 0.35 },
+].map((T) => ({ ...T, link: T.len / (CS_TAIL_N - 1),
+  rr: Array.from({ length: CS_TAIL_N }, (_, i) => { const s = i / (CS_TAIL_N - 1) * 4, k = Math.min(3, Math.floor(s)); return T.r[k] + (T.r[k + 1] - T.r[k]) * (s - k); }) }));
+/** Each tail's thickness at each of its points (the fox's, the lizard's), as the shader draws it. */
+export const CS_TAIL_R = CS_TAILS.map((T) => T.rr);
+
+/** A figure's frame for its clothes, from its joints (in any frame): the pelvis's axes and the trunk's. */
+export function csDressFrame(F) {
+  const J = F.J, pel = J[0], Y = [0, 1, 0];
+  const up = csV.norm(csV.sub(J[1], J[0]));
+  const su = csV.norm(csV.add(csV.mul(up, 0.55), Y));
+  const hl = csV.sub(J[9], J[12]);
+  const sdP = csV.norm(csV.sub(hl, csV.mul(su, csV.dot(hl, su))));
+  const fbP = csV.norm(csV.cross(sdP, su));
+  const mid = csV.mul(csV.add(J[3], J[6]), 0.5);
+  const u = csV.norm(csV.sub(mid, pel)), sd = csV.norm(csV.sub(J[3], J[6]));
+  const fb = csV.norm(csV.cross(sd, u));
+  return { J, pel, su, sdP, fbP, mid, u, fb, top: csV.add(mid, csV.mul(u, 0.03)),
+    fwd: [F.f[0], 0, F.f[1]], right: csV.norm(csV.cross([F.f[0], 0, F.f[1]], Y)).map((v) => -v) };
+}
+
+const csTailRest = (fr, kind) => Array.from({ length: CS_TAIL_N }, (_, i) => {
+  const o = CS_TAILS[kind].rest(i / (CS_TAIL_N - 1) * 4);
+  return csV.add(csV.add(csV.add(fr.J[15], csV.mul(fr.right, o[0])), [0, o[1], 0]), csV.mul(fr.fwd, o[2]));
+});
+
+/** Out of a capsule from a to b of radius r, straight out; speed into it lost. */
+function csPush(p, o, a, b, r) {
+  const ab = csV.sub(b, a), aa = csV.dot(ab, ab) || 1;
+  const s = Math.max(0, Math.min(1, csV.dot(csV.sub(p, a), ab) / aa));
+  const c = csV.sub(p, csV.add(a, csV.mul(ab, s))), cl = Math.hypot(c[0], c[1], c[2]);
+  if (cl >= r) return;
+  const dir = cl > 1e-6 ? csV.mul(c, 1 / cl) : [0, 1, 0], depth = r - cl;
+  for (let i = 0; i < 3; i++) { p[i] += dir[i] * depth; o[i] += dir[i] * depth; }
+  const vn = csV.dot(csV.sub(p, o), dir);
+  if (vn < 0) for (let i = 0; i < 3; i++) o[i] += dir[i] * vn;
+}
+
+/**
+ * The tail, a chain of eight points by Verlet's method: gravity, the air's drag, a pull toward the shape it hangs in;
+ * each link held at its length and every other point kept apart, so it bends in a curve, never a kink; kept off the
+ * legs, the trunk and the skirt (it comes out above the belt and hangs over the skirt); on the floor it drags.
+ */
+function csTailStep(S, fr, dt) {
+  const J = fr.J, T = CS_TAILS[S.kind], C = S.tail, Y = [0, -9.8, 0], N = CS_TAIL_N;
+  const legs = [[J[9], J[10], 0.06], [J[10], J[11], 0.05], [J[12], J[13], 0.06], [J[13], J[14], 0.05]];
+  const tr = csTailRest(fr, S.kind), hip = csV.add(fr.pel, csV.mul(fr.u, 0.1)), hem = csV.sub(fr.pel, csV.mul(fr.su, 0.26));
+  for (let i = 1; i < N; i++) {
+    const p = C.p[i], o = C.q[i], v = csV.sub(p, o), a = csV.add(Y, csV.mul(csV.sub(tr[i], p), T.hold / (dt * dt) * 0.02));
+    C.q[i] = p.slice();
+    for (let k = 0; k < 3; k++) p[k] += v[k] * 0.98 + a[k] * dt * dt;
+  }
+  C.p[0] = J[15].slice(); C.q[0] = J[15].slice();
+  const link = (A, B, len, min) => {
+    const d = csV.sub(B, A), dl = Math.hypot(d[0], d[1], d[2]) || 1;
+    if (min && dl >= len) return;
+    const e = (dl - len) / dl;
+    for (let k = 0; k < 3; k++) { if (A !== C.p[0]) A[k] += d[k] * e * 0.5; B[k] -= d[k] * e * (A !== C.p[0] ? 0.5 : 1); }
+  };
+  for (let it = 0; it < 6; it++) {
+    for (let i = 0; i < N - 1; i++) link(C.p[i], C.p[i + 1], T.link, false);
+    for (let i = 0; i < N - 2; i++) link(C.p[i], C.p[i + 2], T.link * 1.85, true);
+    for (let i = 1; i < N; i++) {
+      const p = C.p[i], o = C.q[i], r = T.rr[i];
+      for (const g of legs) csPush(p, o, g[0], g[1], g[2] + r + 0.01);
+      csPush(p, o, fr.pel, fr.top, 0.1 + r * 0.5);
+      csPush(p, o, hip, hem, 0.2 + r * 0.7);
+      if (p[1] < r) { p[1] = r; o[1] = r; o[0] += (p[0] - o[0]) * T.drag; o[2] += (p[2] - o[2]) * T.drag; }
+    }
+  }
+  // (the lengths once more last, from the root out, so no push leaves a link long)
+  for (let i = 0; i < N - 1; i++) { const A = C.p[i], B = C.p[i + 1], d = csV.sub(B, A), dl = Math.hypot(d[0], d[1], d[2]) || 1, e = (dl - T.link) / dl; for (let k = 0; k < 3; k++) B[k] -= d[k] * e; }
+}
+
+// ---- the body as the shader draws it (csFigure in the castle's style), for the cloth to keep off: the same shapes
+// with the same sizes, kept in step with it by hand - a change to one is a change to the other
+const csConeD = (x, y, z, a, b, r1, r2) => {
+  const bx = b[0] - a[0], by = b[1] - a[1], bz = b[2] - a[2], ax = x - a[0], ay = y - a[1], az = z - a[2];
+  const h = Math.max(0, Math.min(1, (ax * bx + ay * by + az * bz) / (bx * bx + by * by + bz * bz || 1)));
+  const dx = ax - bx * h, dy = ay - by * h, dz = az - bz * h;
+  return Math.sqrt(dx * dx + dy * dy + dz * dz) - (r1 + (r2 - r1) * h);
+};
+const csSminD = (a, b, k) => { const h = Math.max(0, Math.min(1, 0.5 + 0.5 * (b - a) / k)); return b + (a - b) * h - k * h * (1 - h); };
+const csBoxD = (x, y, z, ex, ey, ez, r) => {
+  const qx = Math.abs(x) - ex, qy = Math.abs(y) - ey, qz = Math.abs(z) - ez;
+  const mx = Math.max(qx, 0), my = Math.max(qy, 0), mz = Math.max(qz, 0);
+  return Math.sqrt(mx * mx + my * my + mz * mz) + Math.min(Math.max(qx, qy, qz), 0) - r;
+};
+
+/** A figure's body for the cloth: its joints, its axes, its tail as it is, its scabbard when the sword is in it. */
+export function csBody(F, tail) {
+  const J = F.J, V = csV, pel = J[0], che = J[1], hea = J[2];
+  const sd = V.norm([J[3][0] - J[6][0], J[3][1] - J[6][1], J[3][2] - J[6][2] + 1e-4]);
+  const up = V.norm(V.sub(che, pel)), fb = V.norm(V.cross(sd, up));
+  const fh = V.norm([fb[0] + 1e-4, 0, fb[2]]);
+  const shm = V.mul(V.add(J[3], J[6]), 0.5);
+  const lerp = (a, b, w) => [a[0] + (b[0] - a[0]) * w, a[1] + (b[1] - a[1]) * w, a[2] + (b[2] - a[2]) * w];
+  const boots = [[10, 11], [13, 14]].map(([a, b]) => {
+    const kn = J[a], ft = J[b], top = lerp(kn, ft, 0.18), dl = V.norm(V.sub(ft, kn));
+    return [top, V.add(ft, [0, 0.02, 0]), V.sub(top, V.mul(dl, 0.01)), V.add(top, V.mul(dl, 0.045)), V.sub(V.add(ft, [0, 0.005, 0]), V.mul(fh, 0.02)), V.add(ft, V.mul(fh, 0.13))];
+  });
+  const scab = F.scab ? [F.scab[0], F.scab[1], V.sub(F.scab[0], V.mul(V.norm(V.sub(F.scab[1], F.scab[0])), 0.14))] : null;
+  // (a ball round each part - its points, and as much again as its thickness can reach past them)
+  const ball = (P, pad) => {
+    const c = [0, 1, 2].map((k) => P.reduce((s, q) => s + q[k], 0) / P.length);
+    return [c[0], c[1], c[2], Math.max(...P.map((q) => Math.hypot(q[0] - c[0], q[1] - c[1], q[2] - c[2]))) + pad];
+  };
+  const cc = V.sub(shm, V.mul(up, 0.1)), n1 = V.sub(hea, V.mul(up, 0.05));
+  const bArm = [3, 6].map((s) => ball([J[s], J[s + 1], J[s + 2]], 0.06));
+  const bLeg = [[9, 0], [12, 1]].map(([l, k]) => ball([J[l], J[l + 1], J[l + 2], boots[k][5]], 0.08));
+  const bTail = tail ? ball(tail, 0.1) : null, bScab = scab ? ball(scab, 0.04) : null;
+  return { bArm, bLeg, bTail, bScab, bTrunk: ball([J[3], J[6], pel, n1, cc], 0.21),
+ J, pel, che, hea, sd, up, fb, shm, cc, g0: V.sub(J[3], V.mul(up, 0.01)), g1: V.sub(J[6], V.mul(up, 0.01)),
+    w0: V.sub(shm, V.mul(up, 0.17)), w1: V.add(pel, V.mul(up, 0.02)), p0: V.add(J[3], V.mul(up, 0.02)), p1: V.add(J[6], V.mul(up, 0.02)),
+    n0: V.add(che, V.mul(up, 0.06)), n1, gl: [lerp(J[4], J[5], 0.72), lerp(J[7], J[8], 0.72)], boots, tail, scab };
+}
+
+/** How far a point is from the body's surface (negative inside), as csFigure draws it. */
+export function csBodyD(B, x, y, z) {
+  const J = B.J, sd = B.sd, up = B.up, fb = B.fb;
+  const near = (s) => { const dx = x - s[0], dy = y - s[1], dz = z - s[2]; return Math.sqrt(dx * dx + dy * dy + dz * dz) - s[3]; };
+  // the belt (snug at the waist), the head (a ball round it, ears and muzzle within reach)
+  const sx = x - B.pel[0], sy = y - B.pel[1], sz = z - B.pel[2], by = sx * up[0] + sy * up[1] + sz * up[2];
+  const rx = sx - up[0] * by, ry = sy - up[1] * by, rz = sz - up[2] * by;
+  let d = Math.max(Math.abs(by - 0.085) - 0.024, Math.sqrt(rx * rx + ry * ry + rz * rz) - 0.106);
+  const hx = x - B.hea[0], hy = y - B.hea[1], hz = z - B.hea[2];
+  d = Math.min(d, Math.sqrt(hx * hx + hy * hy + hz * hz) - 0.11);
+  // the trunk: the chest, the shoulder girdle, the waist; the breastplate, the pauldrons, the neck
+  if (near(B.bTrunk) < d) {
+    const tx = x - B.cc[0], ty = y - B.cc[1], tz = z - B.cc[2];
+    const lx = tx * sd[0] + ty * sd[1] + tz * sd[2], ly = tx * up[0] + ty * up[1] + tz * up[2], lz = tx * fb[0] + ty * fb[1] + tz * fb[2];
+    const chest = csBoxD(lx, ly, lz, 0.085, 0.07, 0.05, 0.045);
+    d = Math.min(d, csSminD(csSminD(chest, csConeD(x, y, z, B.g0, B.g1, 0.055, 0.055), 0.05), csConeD(x, y, z, B.w0, B.w1, 0.1, 0.085), 0.06));
+    d = Math.min(d, Math.max(csBoxD(lx, ly - 0.01, lz - 0.014, 0.068, 0.05, 0.046, 0.05), -(lz - 0.005)));
+    for (let k = 0; k < 2; k++) { const c = k ? B.p1 : B.p0, ax = x - c[0], ay = (y - c[1]) * 1.5, az = z - c[2]; d = Math.min(d, Math.sqrt(ax * ax + ay * ay + az * az) - 0.06); }
+    d = Math.min(d, csConeD(x, y, z, B.n0, B.n1, 0.034, 0.034));
+  }
+  // the legs and boots, the arms and gloves
+  for (let k = 0; k < 2; k++) {
+    const l = k ? 12 : 9;
+    if (near(B.bLeg[k]) < d) {
+      d = Math.min(d, csSminD(csConeD(x, y, z, J[l], J[l + 1], 0.046, 0.04), csConeD(x, y, z, J[l + 1], J[l + 2], 0.04, 0.032), 0.02));
+      const b = B.boots[k];
+      d = Math.min(d, csSminD(Math.min(csConeD(x, y, z, b[0], b[1], 0.052, 0.042), csConeD(x, y, z, b[2], b[3], 0.07, 0.06)), csConeD(x, y, z, b[4], b[5], 0.044, 0.026), 0.025));
+    }
+    const s = k ? 6 : 3;
+    if (near(B.bArm[k]) < d) {
+      d = Math.min(d, csSminD(csConeD(x, y, z, J[s], J[s + 1], 0.04, 0.03), csConeD(x, y, z, J[s + 1], J[s + 2], 0.03, 0.024), 0.015));
+      const h = J[s + 2], gx = x - h[0], gy = y - h[1], gz = z - h[2];
+      d = Math.min(d, Math.sqrt(gx * gx + gy * gy + gz * gz) - 0.042, csConeD(x, y, z, B.gl[k], h, 0.03, 0.045));
+    }
+  }
+  // the tail as it hangs now; the scabbard and its hilt
+  const T = B.tail;
+  if (T && near(B.bTail) < d) d = Math.min(d, csTailD(T, x, y, z));
+  if (B.scab && near(B.bScab) < d) d = Math.min(d, csConeD(x, y, z, B.scab[0], B.scab[1], 0.028, 0.02), csConeD(x, y, z, B.scab[2], B.scab[0], 0.018, 0.018));
+  return d;
+}
+
+// ---- the clothes, as cloth: each one a grid of points - the cape a sheet hung across his shoulders, the skirt a tube
+// round the belt - drawn as the triangles between them, so what is drawn is what is simulated. Stepped the way games
+// step cloth (position-based, in small steps, after Müller, Macklin and others): each step moves the points by their
+// speed and gravity and the air's push on each triangle, then holds each edge at its length, keeps the cloth from
+// folding sharp (every other point a set way apart), tethers each point within its length down the cloth from where it
+// hangs (so the cloth never stretches, Kim and others' long-range attachments), keeps each within a reach of where it
+// would lie on the body still (so a cape cannot be thrown over his head), and last keeps every point a little off the
+// body as it is drawn - its own shapes, the tail's included - so neither tail nor back nor leg comes through it.
+const CS_CAPE_C = 7, CS_CAPE_R = 7, CS_CAPE_ROW = 0.09;
+const CS_SKIRT_C = 16, CS_SKIRT_R = 5, CS_SLIT = 0.22;
+// (each row's depth down from the belt and its round's radius: from under the belt, out over the hips, then hanging)
+const CS_SKIRT_DOWN = [0, 0.05, 0.125, 0.205, 0.285], CS_SKIRT_RAD = [0.098, 0.13, 0.156, 0.174, 0.19];   // the skirt's slit at the back, for the tail: half its angle
+export const CS_CLOTH_KEEP = 0.02;           // how far cloth keeps off the body: more than a flat triangle's sag round a thigh
+const CS_SUB = 1;                            // small steps to each 1/120 s
+export const CS_CLOTH_N = CS_CAPE_C * CS_CAPE_R + 2 * CS_SKIRT_C * CS_SKIRT_R;
+
+/** A cloth's grid: C points across, R down (the first row hung), joined round if wrap; its rest shape gives its lengths. */
+function csGrid(C, R, wrap, rest) {
+  const n = C * R, id = (r, c) => r * C + ((c % C) + C) % C, P = [];
+  for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) P.push(rest(r, c));
+  const dist = (i, j) => Math.hypot(P[i][0] - P[j][0], P[i][1] - P[j][1], P[i][2] - P[j][2]);
+  const E = [], Bn = [], cm = wrap ? C : C - 1;
+  for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) {
+    const i = id(r, c);
+    if (c < cm && r > 0) E.push(i, id(r, c + 1));
+    if (r < R - 1) {
+      E.push(i, id(r + 1, c));
+      if (c < cm) E.push(i, id(r + 1, c + 1), id(r, c + 1), id(r + 1, c));
+    }
+    if (r > 0 && (wrap || c + 2 < C)) Bn.push(i, id(r, c + 2));
+    if (r + 2 < R) Bn.push(i, id(r + 2, c));
+  }
+  const len = (A) => Float64Array.from({ length: A.length / 2 }, (_, k) => dist(A[2 * k], A[2 * k + 1]));
+  // (each point's length down the cloth from the point it hangs from)
+  const tether = Float64Array.from({ length: n }, (_, i) => { let s = 0; for (let r = 1; r <= Math.floor(i / C); r++) s += dist(id(r - 1, i % C), id(r, i % C)); return s; });
+  return { C, R, wrap, n, e: Int32Array.from(E), eLen: len(E), b: Int32Array.from(Bn), bLen: len(Bn), tether,
+    p: new Float64Array(n * 3), q: new Float64Array(n * 3), v: new Float64Array(n * 3) };
+}
+
+// where each cloth's points lie on the body still, and how far each may go from there: the cape from an arc behind his
+// neck down his back, widening; the skirt from a ring under the belt, flaring, hanging between his trunk's line and
+// the plumb
+// (each worked out for a body once, then asked point by point)
+const csCapeAt = (B) => (r, c) => {
+  const w = r / (CS_CAPE_R - 1), x = (c / (CS_CAPE_C - 1) - 0.5) * (0.2 + 0.18 * w), x0 = (c / (CS_CAPE_C - 1) - 0.5) * 0.2;
+  const back = 0.1 - 1.2 * x0 * x0 + 0.015 * r, dn = 0.02 - r * CS_CAPE_ROW * 0.97;
+  return [B.shm[0] + B.up[0] * dn + B.sd[0] * x - B.fb[0] * back, B.shm[1] + B.up[1] * dn + B.sd[1] * x - B.fb[1] * back, B.shm[2] + B.up[2] * dn + B.sd[2] * x - B.fb[2] * back];
+};
+const csCapeOut = (B) => { const o = [-B.fb[0], -B.fb[1], -B.fb[2]]; return () => o; };
+const csCapeReach = (r) => r === 0 ? 0 : 0.05 + 0.4 * r / (CS_CAPE_R - 1);
+const csSkirtAt = (B) => {
+  const su = csV.norm([B.up[0] * 0.55, B.up[1] * 0.55 + 1, B.up[2] * 0.55]), hl = csV.sub(B.J[9], B.J[12]);
+  const axes = [B.up, su].map((ax) => { const s = csV.norm(csV.sub(hl, csV.mul(ax, csV.dot(hl, ax)))); return [s, csV.cross(s, ax)]; });
+  return (r, c) => {
+    const a = Math.PI + CS_SLIT + (c / (CS_SKIRT_C - 1)) * (Math.PI - CS_SLIT) * 2, [sdP, fbP] = axes[r ? 1 : 0], sa = Math.sin(a), ca = Math.cos(a);
+    const rad = CS_SKIRT_RAD[r], down = CS_SKIRT_DOWN[r];
+    return [0, 1, 2].map((k) => B.pel[k] + B.up[k] * 0.09 - su[k] * down + (sdP[k] * sa + fbP[k] * ca) * rad);
+  };
+};
+const csSkirtReach = (r) => 0.12 + 0.1 * r;
+const csSkirtOut = (B) => (x, y, z, hung) => {
+  if (hung) return B.up;
+  const dx = x - B.pel[0], dy = y - B.pel[1], dz = z - B.pel[2], h = dx * B.up[0] + dy * B.up[1] + dz * B.up[2];
+  return csV.norm([dx - B.up[0] * h, dy - B.up[1] * h, dz - B.up[2] * h]);
+};
+
+/** The bone of the limb nearest a point (an arm's, a leg's, the tail's), as a direction; null if the trunk is nearer. */
+function csLimbAxis(B, x, y, z) {
+  const J = B.J;
+  let best = csConeD(x, y, z, B.w0, B.w1, 0.1, 0.085) + 0.03, a = null;
+  const seg = (A, C, r) => { const d = csConeD(x, y, z, A, C, r, r); if (d < best) { best = d; a = csV.norm(csV.sub(C, A)); } };
+  for (const s of [3, 6]) { seg(J[s], J[s + 1], 0.035); seg(J[s + 1], J[s + 2], 0.03); }
+  for (const l of [9, 12]) { seg(J[l], J[l + 1], 0.05); seg(J[l + 1], J[l + 2], 0.04); }
+  if (B.tail) for (let i = 0; i < B.tail.length - 1; i++) seg(B.tail[i], B.tail[i + 1], B.tail[i][3]);
+  return a;
+}
+/** The body's outward facing at a point (its distance's gradient). */
+function csBodyN(B, x, y, z) {
+  const e = 0.002, f = (sx, sy, sz) => csBodyD(B, x + sx * e, y + sy * e, z + sz * e);
+  const a = f(1, -1, -1), b = f(-1, -1, 1), c = f(-1, 1, -1), g = f(1, 1, 1);
+  const nx = a - b - c + g, ny = -a - b + c + g, nz = -a + b - c + g, nl = Math.hypot(nx, ny, nz) || 1;
+  return [nx / nl, ny / nl, nz / nl];
+}
+/**
+ * A cloth point kept off the body: pushed out along the body's facing while that leads outward of the garment (out:
+ * away from him - back off his back for the cape, out from his hips for the skirt); where it would lead inward (a point
+ * caught between the tail and his back, or inside a leg on its inner side), carried outward until clear instead, so
+ * the cloth always lies over him, never between his parts. Returns the facing where it ends, or null if it was clear.
+ */
+function csKeepOff(B, P, k, keep, out, d0) {
+  let d = d0 === undefined ? csBodyD(B, P[k], P[k + 1], P[k + 2]) : d0, across = null, n = null;
+  csKeepOff.d = d;
+  // (within two millimetres of its keep is kept: a point resting at it must not creep)
+  if (d >= keep - 0.002) return null;
+  // (and carried at most six centimetres a step: cloth caught where two parts of him meet - a thigh against his belly
+  // in a crouch - stays in the fold rather than being flung out)
+  let moved = 0;
+  for (let it = 0; it < 14 && d < keep - 0.002 && moved < 0.06; it++) {
+    // (the body's facing taken once, and again only if the point is still in after two pushes along it)
+    if (it === 0 || it === 2 || it > 4) n = csBodyN(B, P[k], P[k + 1], P[k + 2]);
+    if (across || n[0] * out[0] + n[1] * out[1] + n[2] * out[2] < 0.2) {
+      // (across the limb it is caught in, at right angles to its bone, to the garment's outer side - never along it)
+      if (!across) {
+        const a = csLimbAxis(B, P[k], P[k + 1], P[k + 2]), o = a ? csV.sub(out, csV.mul(a, csV.dot(out, a))) : out, ol = Math.hypot(o[0], o[1], o[2]);
+        across = ol > 0.3 ? csV.mul(o, 1 / ol) : n;
+      }
+      n = across;
+    }
+    const s = Math.min(Math.max(keep - d, 0.004) + 1e-4, 0.06 - moved);
+    moved += s;
+    P[k] += n[0] * s; P[k + 1] += n[1] * s; P[k + 2] += n[2] * s;
+    d = csBodyD(B, P[k], P[k + 1], P[k + 2]);
+  }
+  csKeepOff.d = d;
+  return n;
+}
+
+/** One small step of a cloth on a body at that moment (B), the body's step before (B0). */
+/** How far a point is from a tail (its points with their thicknesses), as csFigure draws it. */
+function csTailD(T, x, y, z) {
+  let tl = 1e9;
+  for (let i = 0; i < T.length - 1; i++) tl = csSminD(tl, csConeD(x, y, z, T[i], T[i + 1], T[i][3], T[i + 1][3]), 0.025);
+  return tl;
+}
+/** A cloth point kept off a tail, along the tail's own facing (so a skirt parts round it, or goes under it). */
+function csTailOff(tail, P, k) {
+  for (let it = 0; it < 3; it++) {
+    const d = csTailD(tail, P[k], P[k + 1], P[k + 2]);
+    if (d >= CS_CLOTH_KEEP) break;
+    const e = 0.002, f = (sx, sy, sz) => csTailD(tail, P[k] + sx * e, P[k + 1] + sy * e, P[k + 2] + sz * e);
+    const a = f(1, -1, -1), b = f(-1, -1, 1), c = f(-1, 1, -1), g = f(1, 1, 1);
+    const nx = a - b - c + g, ny = -a - b + c + g, nz = -a + b - c + g, s = (CS_CLOTH_KEEP - d) / (Math.hypot(nx, ny, nz) || 1);
+    P[k] += nx * s; P[k + 1] += ny * s; P[k + 2] += nz * s;
+  }
+}
+function csClothSub(G, B, B0, atB, outB, reach, dt, air, tail) {
+  const { n, p, q, v, C } = G, at = atB(B), out = outB(B);
+  // the hung row goes with the body, kept off it
+  for (let c = 0; c < C; c++) {
+    const k = c * 3, P = at(0, c);
+    q[k] = p[k]; q[k + 1] = p[k + 1]; q[k + 2] = p[k + 2];
+    p[k] = P[0]; p[k + 1] = P[1]; p[k + 2] = P[2];
+    if (!G.underBelt) csKeepOff(B, p, k, CS_CLOTH_KEEP, out(p[k], p[k + 1], p[k + 2], true));
+    if (p[k + 1] < 0.012) p[k + 1] = 0.012;
+    v[k] = (p[k] - q[k]) / dt; v[k + 1] = (p[k + 1] - q[k + 1]) / dt; v[k + 2] = (p[k + 2] - q[k + 2]) / dt;
+  }
+  // the air's push on each triangle, against its speed through it, along its facing
+  const acc = new Float64Array(n * 3);
+  const cm = G.wrap ? C : C - 1;
+  for (let r = 0; r < G.R - 1; r++) for (let c = 0; c < cm; c++) {
+    const i00 = r * C + c, i01 = r * C + (c + 1) % C, i10 = i00 + C, i11 = i01 + C;
+    for (const [a, b, d] of [[i00, i01, i10], [i01, i11, i10]]) {
+      const A = a * 3, Bk = b * 3, D = d * 3;
+      const ux = p[Bk] - p[A], uy = p[Bk + 1] - p[A + 1], uz = p[Bk + 2] - p[A + 2], wx = p[D] - p[A], wy = p[D + 1] - p[A + 1], wz = p[D + 2] - p[A + 2];
+      let nx = uy * wz - uz * wy, ny = uz * wx - ux * wz, nz = ux * wy - uy * wx;
+      const nl = Math.hypot(nx, ny, nz) || 1; nx /= nl; ny /= nl; nz /= nl;
+      const vn = ((v[A] + v[Bk] + v[D]) * nx + (v[A + 1] + v[Bk + 1] + v[D + 1]) * ny + (v[A + 2] + v[Bk + 2] + v[D + 2]) * nz) / 3;
+      for (const j of [A, Bk, D]) { acc[j] -= air * vn * nx; acc[j + 1] -= air * vn * ny; acc[j + 2] -= air * vn * nz; }
+    }
+  }
+  for (let i = C; i < n; i++) {
+    const k = i * 3;
+    v[k] += acc[k] * dt; v[k + 1] += (acc[k + 1] - 9.8) * dt; v[k + 2] += acc[k + 2] * dt;
+    for (let j = 0; j < 3; j++) { v[k + j] *= 0.998; q[k + j] = p[k + j]; p[k + j] += v[k + j] * dt; }
+  }
+  // the edges at their lengths, the folds kept round (soft, by compliance), the tethers and the reach
+  const pin = (i) => i < C;
+  const hold = (I, L, alpha, minOnly) => {
+    for (let s = 0; s < L.length; s++) {
+      const i = I[2 * s], j = I[2 * s + 1], wi = pin(i) ? 0 : 1, wj = pin(j) ? 0 : 1;
+      if (wi + wj === 0) continue;
+      const a = i * 3, b = j * 3, dx = p[b] - p[a], dy = p[b + 1] - p[a + 1], dz = p[b + 2] - p[a + 2];
+      const dl = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-9, Cn = dl - L[s];
+      if (minOnly && Cn > 0) continue;
+      const g = Cn / (wi + wj + alpha) / dl;
+      p[a] += dx * g * wi; p[a + 1] += dy * g * wi; p[a + 2] += dz * g * wi;
+      p[b] -= dx * g * wj; p[b + 1] -= dy * g * wj; p[b + 2] -= dz * g * wj;
+    }
+  };
+  // (the lengths and the body taken in turn, twice over: so where a leg pushes the cloth, the cloth rides up over it
+  // rather than stretching)
+  const bv = [B.pel[0] - B0.pel[0], B.pel[1] - B0.pel[1], B.pel[2] - B0.pel[2]];
+  const dist = G.dist || (G.dist = new Float64Array(n));
+  for (let pass = 0; pass < 2; pass++) {
+  // (the lengths four times over: one pass a step cannot carry the body's motion down the cloth)
+  for (let it = 0; it < 4; it++) {
+  hold(G.e, G.eLen, 0, false);
+  hold(G.b, G.bLen, G.bend / (dt * dt), false);
+  for (let i = C; i < n; i++) {
+    const k = i * 3, a = (i % C) * 3, r = Math.floor(i / C);
+    let dx = p[k] - p[a], dy = p[k + 1] - p[a + 1], dz = p[k + 2] - p[a + 2], dl = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    if (dl > G.tether[i]) { const s = G.tether[i] / dl; p[k] = p[a] + dx * s; p[k + 1] = p[a + 1] + dy * s; p[k + 2] = p[a + 2] + dz * s; }
+    const R = at(r, i % C), m = reach(r);
+    dx = p[k] - R[0]; dy = p[k + 1] - R[1]; dz = p[k + 2] - R[2]; dl = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    if (dl > m) { const s = m / dl; p[k] = R[0] + dx * s; p[k + 1] = R[1] + dy * s; p[k + 2] = R[2] + dz * s; }
+  }
+  }
+  // off the body, sliding on it with a little friction (relative to the body's own motion there)
+  if (tail) for (let i = C; i < n; i++) csTailOff(tail, p, i * 3);
+  for (let i = 0; i < C; i++) dist[i] = CS_CLOTH_KEEP;
+  for (let i = C; i < n; i++) {
+    const k = i * 3;
+    const nrm = csKeepOff(B, p, k, CS_CLOTH_KEEP, out(p[k], p[k + 1], p[k + 2]));
+    dist[i] = csKeepOff.d;
+    if (nrm && pass) {
+      const rx = p[k] - q[k] - bv[0], ry = p[k + 1] - q[k + 1] - bv[1], rz = p[k + 2] - q[k + 2] - bv[2], rn = rx * nrm[0] + ry * nrm[1] + rz * nrm[2];
+      q[k] += (rx - nrm[0] * rn) * 0.3; q[k + 1] += (ry - nrm[1] * rn) * 0.3; q[k + 2] += (rz - nrm[2] * rn) * 0.3;
+    }
+  }
+  }
+  // (and the faces between the points: a point on each edge and in each triangle's middle is kept off the body too,
+  // carrying its corners with it - the virtual particles of games' cloth - so no limb comes through between points)
+  // (each corner moved by the average of the pushes on it, not their sum, so a crowded corner is not flung out)
+  const vp = [[0.5, 0.5, 0], [0.5, 0, 0.5], [0, 0.5, 0.5], [1 / 3, 1 / 3, 1 / 3]], X = [0, 0, 0];
+  const push = new Float64Array(n * 3), cnt = new Uint8Array(n);
+  for (let r = 0; r < G.R - 1; r++) for (let c = 0; c < cm; c++) {
+    const i00 = r * C + c, i01 = r * C + (c + 1) % C, i10 = i00 + C, i11 = i01 + C;
+    for (const T of [[i00, i01, i10], [i01, i11, i10]]) {
+      for (const w of vp) {
+        if (w[0] && w[1] && !w[2] && r === 0 && T[1] < C) continue;
+        for (let k = 0; k < 3; k++) X[k] = p[T[0] * 3 + k] * w[0] + p[T[1] * 3 + k] * w[1] + p[T[2] * 3 + k] * w[2];
+        // (clear for certain if a corner is far enough off the body: no surface is nearer it than the body is to
+        // the corner, less the way to it - half as much again for the pauldrons' squashed balls)
+        let lb = -1e9;
+        for (let j = 0; j < 3; j++) if (w[j]) { const m = T[j] * 3; lb = Math.max(lb, dist[T[j]] - 1.5 * Math.hypot(X[0] - p[m], X[1] - p[m + 1], X[2] - p[m + 2])); }
+        const x0 = X[0], y0 = X[1], z0 = X[2];
+        if (lb < CS_CLOTH_KEEP) {
+          const dx = csBodyD(B, X[0], X[1], X[2]);
+          if (dx < CS_CLOTH_KEEP) csKeepOff(B, X, 0, CS_CLOTH_KEEP, out(x0, y0, z0), dx);
+        }
+        // (the skirt off the tail that hangs over it, along the tail's own facing)
+        if (tail && csTailD(tail, X[0], X[1], X[2]) < CS_CLOTH_KEEP) csTailOff(tail, X, 0);
+        if (X[0] === x0 && X[1] === y0 && X[2] === z0) continue;
+        for (let j = 0; j < 3; j++) if (w[j] && T[j] >= C) {
+          const m = T[j] * 3;
+          push[m] += X[0] - x0; push[m + 1] += X[1] - y0; push[m + 2] += X[2] - z0; cnt[T[j]]++;
+        }
+      }
+    }
+  }
+  for (let i = C; i < n; i++) if (cnt[i]) for (let k = 0; k < 3; k++) p[i * 3 + k] += push[i * 3 + k] / cnt[i];
+  for (let i = C; i < n; i++) {
+    const k = i * 3;
+    if (p[k + 1] < 0.012) { p[k + 1] = 0.012; q[k] += (p[k] - q[k]) * 0.4; q[k + 2] += (p[k + 2] - q[k + 2]) * 0.4; if (q[k + 1] < 0.012) q[k + 1] = 0.012; }
+    v[k] = (p[k] - q[k]) / dt; v[k + 1] = (p[k + 1] - q[k + 1]) / dt; v[k + 2] = (p[k + 2] - q[k + 2]) / dt;
+  }
+}
+
+const csLerpF = (F0, F1, w) => ({ J: F1.J.map((p, i) => p.map((x, k) => F0.J[i][k] + (x - F0.J[i][k]) * w)), f: F1.f,
+  scab: F1.scab && F0.scab ? F1.scab.map((p, i) => p.map((x, k) => F0.scab[i][k] + (x - F0.scab[i][k]) * w)) : F1.scab });
+
+/** A figure's clothes at rest on it (F: its joints in the room): the cape (the hero's), the tail, the skirt, settled. */
+export function csDressHang(F, kind) {
+  const fr = csDressFrame(F);
+  const tail = csTailRest(fr, kind);
+  const S = { kind, tail: { p: tail, q: tail.map((v) => v.slice()) }, F };
+  const B = csBody(F, null);
+  S.cape = kind === 0 ? csGrid(CS_CAPE_C, CS_CAPE_R, false, csCapeAt(B)) : null;
+  S.skirt = csGrid(CS_SKIRT_C, CS_SKIRT_R, false, csSkirtAt(B));
+  if (S.cape) S.cape.bend = 2e-6;
+  S.skirt.bend = 4e-6;
+  S.skirt.underBelt = true;
+  for (const [G, atB] of [[S.cape, csCapeAt], [S.skirt, csSkirtAt]]) if (G) for (let i = 0, at = atB(B); i < G.n; i++) {
+    const P = at(Math.floor(i / G.C), i % G.C);
+    G.p.set(P, i * 3); G.q.set(P, i * 3);
+  }
+  // (settled: a second still, so it starts hanging as it would, off the tail and the body)
+  for (let k = 0; k < 60; k++) csDressStep(S, F, F, 1 / 120);
+  return S;
+}
+
+/** The clothes a step on (dt), the body going from F0 to F1 over it. */
+export function csDressStep(S, F0, F1, dt) {
+  csTailStep(S, csDressFrame(F1), dt);
+  // (the cape keeps off the tail; the skirt is under it, and keeps off the rest of him)
+  const tail = S.tail.p.map((p, i) => [p[0], p[1], p[2], CS_TAIL_R[S.kind][i]]);
+  let Bp = csBody(F0, tail), Bq = csBody(F0, null);
+  for (let s = 1; s <= CS_SUB; s++) {
+    const Fs = s === CS_SUB ? F1 : csLerpF(F0, F1, s / CS_SUB), B = csBody(Fs, tail), Bs = csBody(Fs, null);
+    if (S.cape) csClothSub(S.cape, B, Bp, csCapeAt, csCapeOut, csCapeReach, dt / CS_SUB, 1.2);
+    csClothSub(S.skirt, Bs, Bq, csSkirtAt, csSkirtOut, csSkirtReach, dt / CS_SUB, 0.8, tail);
+    Bp = B; Bq = Bs;
+  }
+  S.F = F1;
+}
+
+const csClone = (G) => G && { ...G, p: G.p.slice(), q: G.q.slice(), v: G.v.slice() };
+
+/**
+ * The clothes as drawn at a moment between steps: a copy carried on from the last step to the moment itself, the body
+ * as it is then - so nothing drawn is a step behind the body. Each cloth's points with their facing (the triangles'
+ * round each point, outward: off his back for the cape, out from him for the skirt).
+ */
+export function csDressShown(S, F, dt) {
+  let T = S;
+  if (dt > 1e-9) {
+    T = { kind: S.kind, tail: { p: S.tail.p.map((v) => v.slice()), q: S.tail.q.map((v) => v.slice()) }, cape: csClone(S.cape), skirt: csClone(S.skirt), F: S.F };
+    csDressStep(T, S.F, F, dt);
+  }
+  const normals = (G, sign) => {
+    if (!G) return null;
+    const { p, C, R } = G, N = new Float64Array(G.n * 3), cm = G.wrap ? C : C - 1;
+    for (let r = 0; r < R - 1; r++) for (let c = 0; c < cm; c++) {
+      const i00 = r * C + c, i01 = r * C + (c + 1) % C, i10 = i00 + C, i11 = i01 + C;
+      for (const [a, b, d] of [[i00, i01, i10], [i01, i11, i10]]) {
+        const A = a * 3, Bk = b * 3, D = d * 3;
+        const ux = p[Bk] - p[A], uy = p[Bk + 1] - p[A + 1], uz = p[Bk + 2] - p[A + 2], wx = p[D] - p[A], wy = p[D + 1] - p[A + 1], wz = p[D + 2] - p[A + 2];
+        const nx = (uy * wz - uz * wy) * sign, ny = (uz * wx - ux * wz) * sign, nz = (ux * wy - uy * wx) * sign;
+        for (const j of [A, Bk, D]) { N[j] += nx; N[j + 1] += ny; N[j + 2] += nz; }
+      }
+    }
+    for (let i = 0; i < G.n; i++) { const k = i * 3, l = Math.hypot(N[k], N[k + 1], N[k + 2]) || 1; N[k] /= l; N[k + 1] /= l; N[k + 2] /= l; }
+    return { p: G.p, N, C, R, wrap: G.wrap, n: G.n };
+  };
+  return { tail: T.tail.p, cape: normals(T.cape, 1), skirt: normals(T.skirt, -1) };
+}
+
+// (a facing packed into one number, two eleven-bit halves of its octahedral map; the shader unpacks it)
+const csOct = (x, y, z) => {
+  const l = Math.abs(x) + Math.abs(y) + Math.abs(z) || 1;
+  let a = x / l, b = y / l;
+  if (z < 0) { const a0 = a; a = (1 - Math.abs(b)) * (a0 >= 0 ? 1 : -1); b = (1 - Math.abs(a0)) * (b >= 0 ? 1 : -1); }
+  return Math.round((a + 1) * 1023.5) * 2048 + Math.round((b + 1) * 1023.5);
+};
+
+/**
+ * The clothes for the shader: every cloth point (the cape's, the hero's skirt's, the guard's skirt's) with its facing;
+ * the cloth cut in patches of a few quads, each with a ball round it - so a ray tests only the triangles it can meet -
+ * and where its quads begin, how many, the row, which cloth; how many patches each figure has. Shown: the hero's
+ * clothes and the guard's (or null).
+ */
+export function csClothOut(sh0, sh1) {
+  const pts = new Float32Array(CS_CLOTH_N * 4), patches = [], count = [0, 0];
+  const put = (G, base, mat, fig) => {
+    if (!G) return;
+    for (let i = 0; i < G.n; i++) pts.set([G.p[i * 3], G.p[i * 3 + 1], G.p[i * 3 + 2], csOct(G.N[i * 3], G.N[i * 3 + 1], G.N[i * 3 + 2])], (base + i) * 4);
+    const nq = G.wrap ? G.C : G.C - 1, per = mat > 8.5 ? 3 : 4;
+    for (let r = 0; r < G.R - 1; r++) for (let c0 = 0; c0 < nq; c0 += per) {
+      const idx = [];
+      for (let c = c0; c <= c0 + per; c++) for (const rr of [r, r + 1]) idx.push(rr * G.C + (c % G.C));
+      let cx = 0, cy = 0, cz = 0;
+      for (const i of idx) { cx += G.p[i * 3]; cy += G.p[i * 3 + 1]; cz += G.p[i * 3 + 2]; }
+      cx /= idx.length; cy /= idx.length; cz /= idx.length;
+      let rad = 0;
+      for (const i of idx) rad = Math.max(rad, Math.hypot(G.p[i * 3] - cx, G.p[i * 3 + 1] - cy, G.p[i * 3 + 2] - cz));
+      patches.push([cx, cy, cz, rad + 0.01, base + r * G.C, c0, Math.min(per, nq - c0), G.C, r, G.R, mat, G.wrap ? 0 : mat > 8.5 ? 1 : 2]);
+      count[fig]++;
+    }
+  };
+  put(sh0.cape, 0, 9, 0);
+  put(sh0.skirt, CS_CAPE_C * CS_CAPE_R, 3, 0);
+  if (sh1) put(sh1.skirt, CS_CAPE_C * CS_CAPE_R + CS_SKIRT_C * CS_SKIRT_R, 3, 1);
+  const P = new Float32Array(CS_PATCHES * 12);
+  patches.forEach((v, i) => P.set(v, i * 12));
+  return { pts, patches: P, n: [count[0], count[0], count[1], 0] };
+}
+export const CS_PATCHES = Math.ceil((CS_CAPE_C - 1) / 3) * (CS_CAPE_R - 1) + 2 * Math.ceil((CS_SKIRT_C - 1) / 4) * (CS_SKIRT_R - 1);
+
+// the rooms, as a seed deals them: the floor that gives way over spikes, the gate falling shut, the guard
+const CS_ROOMS = ['pit', 'gate', 'duel'];
+export const CS_PIT0 = -0.7, CS_PIT1 = 0.7, CS_PITZ = 2.1;      // the floor that gives way: across the hall
+const CS_TILE = 0.7;
+export const CS_EXIT = 6.0;                                     // the hall's far end, where the gate is
+
+/**
+ * The cartoon castle, as the laserdisc games of 1983 played: not a game moved by the player but a film the player
+ * keeps going, a room at a time - the hero walks into danger, the way out flashes, the stick is pushed or the sword
+ * button struck at the right moment, and the film goes on to the next room. Here the music is the player: a room takes a
+ * phrase, the danger on its second bar with the prompt on that bar's last beat, the move on the third bar's downbeat,
+ * and the camera cuts between shots on the bars as an animated film's editor would. The hero is a fox knight whose
+ * every movement is drawn from the side-view action games of 1989 - rotoscoped runs, a long jumper's leap, a fencer's
+ * lunge - twelve drawings a second; each room is its own: the floor crumbling into a pit of spikes, the gate falling
+ * shut, a lizard guard with a sword.
+ */
+export class CastleSim {
+  constructor(seed, spb, meta) {
+    this.seed = seed;
+    this.grid = new MusicGrid(spb, meta);
+    this.J = new Float32Array(2 * CS_JOINTS * 4);
+    this.tiles = new Float32Array(12 * 4);
+    const r = new Rng(seed, 'castle-rooms');
+    this.order = r.shuffle([...CS_ROOMS]);
+  }
+
+  /** The room a phrase plays, and its own look. */
+  room(n) { return { kind: this.order[n % this.order.length], look: Math.floor(n / this.order.length) % 2 }; }
+
+  /** A figure in the hall: its root, the way it faces (+1 along the hall, -1 back), a drawing; into the joint array at slot. */
+  place(slot, x, y, face, d, swing = 0, z = 0) {
+    const J = csJoints(d, swing);
+    // (seen from the hall's front: the figure's side toward the eye is its sword side)
+    J.forEach((p, i) => this.J.set([x + p[2] * face, y + p[1], z - p[0] * face, 0], (slot * CS_JOINTS + i) * 4));
+    return J;
+  }
+
+  /** Where everything is at t, and the drawing each figure is in (a drawing changes twelve times a second). */
+  stateAt(t) {
+    const bar = this.grid.barSec, spb = this.grid.spb;
+    const m = spb < 0.38 ? 2 : 1;                         // (a fast tune gives a room two phrases' time)
+    const unit = spb * m, len = 16 * unit;
+    const n = Math.floor(t / len + 1e-9);
+    const R = this.room(n);
+    // (the drawings are chosen as they come, twelve a second, through the run's frames; everything else is smooth)
+    const tq = t;
+    const u = (t - n * len) / unit, uq = u;
+    const runSpeed = 16 * CS_K * 12 / 3;                   // the run's own pace: 16 pixels a stride's three drawings
+    const runFrame = (tt) => CS_DRAW.run[((Math.floor(tt * 12 + 1e-6) % 8) + 8) % 8];
+    let hx = 0, hy = 0, face = 1, D = CS_DRAW.stand, F = CS_FACE.stand, sword = null;
+    let gx = 99, gy = 0, gz = 0, spark = [0, 0, 0, 0], gface = -1, GD = CS_DRAW.guard, GF = CS_FACE.guard, gSword = null, guard = 0;
+    let prompt = 0, stick = 0, stickDir = [1, 0], button = 0, crack = 0, open = 0, gate = 1, slam = 99, flash = 0;
+    const tiles = [];
+    // ---- the rooms
+    if (R.kind === 'pit') {
+      const xStop = CS_PIT0 - 0.55, xLand = CS_PIT1 + 0.75;
+      // in at a run; the floor ahead rattles, cracks, gives way; the take; the leap on the downbeat over the spikes
+      if (uq < 5) { hx = xStop - runSpeed * (5 - uq) * unit; D = runFrame(tq); F = CS_FACE.run; }
+      else if (uq < 5.4) { hx = xStop; D = CS_DRAW.crouch; F = CS_FACE.crouch; }
+      else if (uq < 6.4) { hx = xStop; D = CS_DRAW.take; F = CS_FACE.take; }
+      else if (uq < 6.8) { hx = xStop; D = CS_DRAW.stoop; F = CS_FACE.stoop; }
+      else if (uq < 7.2) { hx = xStop; D = CS_DRAW.bend; F = CS_FACE.bend; }
+      else if (uq < 7.6) { hx = xStop; D = CS_DRAW.gather; F = CS_FACE.gather; }
+      else if (uq < 8) { hx = xStop; D = CS_DRAW.swing; F = CS_FACE.swing; }
+      else if (uq < 9) {
+        const w = uq - 8;
+        hx = xStop + (xLand - xStop) * w; hy = 0.75 * 4 * w * (1 - w);
+        const seq = ['takeoff', 'rise', 'split', 'split', 'reach'];
+        D = CS_DRAW[seq[Math.min(4, Math.floor(w * 5))]]; F = CS_FACE[seq[Math.min(4, Math.floor(w * 5))]];
+      } else if (uq < 9.4) { hx = xLand; D = CS_DRAW.strike; F = CS_FACE.strike; }
+      else if (uq < 10) { hx = xLand; D = CS_DRAW.crouch; F = CS_FACE.crouch; }
+      else { hx = xLand + runSpeed * (uq - 10) * unit; D = runFrame(tq); F = CS_FACE.run; }
+      crack = Math.min(1, Math.max(0, (u - 4.3) / 0.7));
+      open = u >= 4.5 ? 1 : 0;
+      prompt = u >= 7 && u < 8.2 ? 1 : 0; stick = u >= 8 && u < 8.6 ? 1 : 0;
+      // the tiles: rattling from a beat before, then falling one after another, the nearest last
+      let k = 0;
+      for (let ix = 0; ix < 2; ix++) for (let iz = 0; iz < 6; iz++) {
+        const h = ((ix * 7 + iz * 13 + n * 5) % 11) / 11;
+        const tf = 5.0 + (1 - ix) * 0.25 + h * 0.6 + Math.abs(iz - 2.5) * 0.05;
+        const x = CS_PIT0 + (ix + 0.5) * CS_TILE, z = -CS_PITZ + (iz + 0.5) * CS_TILE;
+        let y = 0, ang = 0;
+        if (u >= 4.5 && u < tf) y = 0.025 * Math.sin(t * 70 + k * 1.7) * (u > 4.8 ? 1 : 0.5);
+        if (u >= tf) { const s = (u - tf) * unit; y = -4.9 * s * s; ang = (h - 0.5) * 6 * s; }
+        if (u >= 4.5 && y > -3.2) tiles.push([x, y, z, ang + (k % 2 ? 100 : 0)]);
+        k++;
+      }
+    } else if (R.kind === 'gate') {
+      // in at a run; the gate at the far end starts down; the take; on the downbeat a sprint, and a dive under it as it
+      // slams on the next bar's downbeat
+      const xStop = 0.6, xGate = CS_EXIT;
+      if (uq < 5) { hx = xStop - runSpeed * (5 - uq) * unit; D = runFrame(tq); F = CS_FACE.run; }
+      else if (uq < 5.4) { hx = xStop; D = CS_DRAW.crouch; F = CS_FACE.crouch; }
+      else if (uq < 7.5) { hx = xStop; D = CS_DRAW.take; F = CS_FACE.take; }
+      else if (uq < 8) { hx = xStop; D = CS_DRAW.set; F = CS_FACE.set; }
+      else if (uq < 11) {
+        const w = (uq - 8) / 3;
+        hx = xStop + (xGate - 0.9 - xStop) * Math.min(1, w * 1.25);
+        D = runFrame(tq * 1.5); F = CS_FACE.lunge;
+        if (w > 0.8) { hx = xGate - 0.9 + (w - 0.8) * 5 * 2.2; D = CS_DRAW.dive; F = CS_FACE.dive; }
+      } else { hx = xGate + 1.3 + (uq - 11) * 0.8; D = CS_DRAW.crouch; F = CS_FACE.stand; }
+      gate = u < 4 ? 1 : Math.max(0, 1 - (u - 4) / 8) * (u < 12 ? 1 : 0);
+      slam = u >= 12 ? (u - 12) * unit : 99;
+      prompt = u >= 7 && u < 8.2 ? 1 : 0; stick = u >= 8 && u < 8.6 ? 1 : 0;
+    } else {
+      // the duel, staged to read as the side-view fights did: the guard comes in through the far door while its gate is
+      // up; both on guard; then the exchanges, each on a beat with the blades ringing and sparks flying - the guard cuts
+      // and the hero parries, giving ground; the hero steps in and cuts and the guard parries, giving ground; the guard
+      // cuts again and the hero parries; the prompt; the hero's riposte on the downbeat runs him through; the guard
+      // reels, drops his sword, sinks to his knees and falls back, off the hero's way; the hero puts up his sword and goes
+      const xStop = -1.4, gStop = xStop + 1.9;
+      const ease = (a, b) => Math.max(0, Math.min(1, (uq - a) / (b - a)));
+      guard = 1;
+      if (uq < 3) { hx = xStop - runSpeed * (3 - uq) * unit; D = runFrame(tq); F = CS_FACE.run; }
+      else if (uq < 3.4) { hx = xStop; D = CS_DRAW.draw; F = CS_FACE.draw; }
+      else if (uq < 3.7) { hx = xStop; D = CS_DRAW.guard; F = CS_FACE.guard; }
+      else if (uq < 4.4) { hx = xStop - 0.12 * ease(3.8, 4.1); D = CS_DRAW.block; F = CS_FACE.block; }
+      else if (uq < 4.7) { hx = xStop - 0.12; D = CS_DRAW.windup; F = CS_FACE.windup; }
+      else if (uq < 5.3) { hx = xStop - 0.12 + 0.37 * ease(4.7, 5); D = CS_DRAW.cut; F = CS_FACE.cut; }
+      else if (uq < 6.6) { hx = xStop + 0.25 - 0.13 * ease(5.3, 5.9); D = CS_DRAW.guard; F = CS_FACE.guard; }
+      else if (uq < 7.4) { hx = xStop + 0.12; D = CS_DRAW.block; F = CS_FACE.block; }
+      else if (uq < 8) { hx = xStop + 0.12; D = CS_DRAW.windup; F = CS_FACE.windup; }
+      else if (uq < 9) { hx = xStop + 0.12 + 0.3 * Math.min(1, (uq - 8) * 4); D = CS_DRAW.lunge; F = CS_FACE.lunge; }
+      else if (uq < 10.5) { hx = xStop + 0.42; D = CS_DRAW.guard; F = CS_FACE.guard; }
+      else if (uq < 11.3) { hx = xStop + 0.42; D = CS_DRAW.stand; F = CS_FACE.stand; }
+      else { hx = xStop + 0.42 + runSpeed * (uq - 11.3) * unit; D = runFrame(tq); F = CS_FACE.run; }
+      sword = D.sword || null;
+      // the guard
+      if (uq < 0.4) { gx = CS_EXIT + 1.2; GD = CS_DRAW.stand; }
+      else if (uq < 3.2) { gx = CS_EXIT + 1.2 - (CS_EXIT + 1.2 - gStop) * (uq - 0.4) / 2.8; GD = runFrame(tq * 0.75); GF = [0.8, 0.6, 0, 0.2]; }
+      else if (uq < 3.4) { gx = gStop; GD = CS_DRAW.guard; }
+      // (the first exchange: his cut, parried)
+      else if (uq < 3.7) { gx = gStop; GD = CS_DRAW.windup; GF = [1, 0.9, 0, 0.6]; }
+      else if (uq < 4.3) { gx = gStop - 0.25 * ease(3.7, 4); GD = CS_DRAW.cut; GF = CS_FACE.cut; }
+      else if (uq < 4.7) { gx = gStop - 0.25 + 0.25 * ease(4.3, 4.6); GD = CS_DRAW.guard; }
+      // (the second: the hero's cut, parried, the guard giving ground)
+      else if (uq < 5.4) { gx = gStop + 0.12 * ease(4.8, 5.1); GD = CS_DRAW.block; GF = CS_FACE.block; }
+      else if (uq < 6.2) { gx = gStop + 0.12 - 0.12 * ease(5.4, 6); GD = CS_DRAW.guard; }
+      else if (uq < 6.7) { gx = gStop; GD = CS_DRAW.windup; GF = [1, 0.9, 0, 0.6]; }
+      else if (uq < 7.3) { gx = gStop - 0.25 * Math.min(1, (uq - 6.7) * 3); GD = CS_DRAW.cut; GF = CS_FACE.cut; }
+      else if (uq < 8.2) { gx = gStop - 0.25 + 0.25 * Math.min(1, (uq - 7.3) * 2); GD = CS_DRAW.guard; }
+      else if (uq < 8.6) { gx = gStop; GD = CS_DRAW.struck; GF = CS_FACE.struck; }
+      else if (uq < 9.3) { gx = gStop + 0.3 * (uq - 8.6) / 0.7; GD = CS_DRAW.reel; GF = CS_FACE.reel; }
+      else if (uq < 10.2) { gx = gStop + 0.3; GD = CS_DRAW.kneel; GF = CS_FACE.kneel; }
+      else { gx = gStop + 0.35; GD = CS_DRAW.down; GF = CS_FACE.down; }
+      gz = 0.75 * Math.max(0, Math.min(1, (uq - 8.6) / 1.6));
+      gSword = uq < 8.25 ? GD.sword || [0.8, 0.6] : null;
+      prompt = u >= 7.3 && u < 8.2 ? 2 : 0; button = u >= 8 && u < 8.5 ? 1 : 0;
+      flash = u >= 8.25 && u < 8.6 ? 1 - (u - 8.25) / 0.35 : 0;
+      // where the blades ring and where the riposte goes home: sparks
+      if (u >= 4 && u < 4.6) spark = [hx + 0.42, 1.12, 0, 1 - (u - 4) / 0.6];
+      else if (u >= 5 && u < 5.6) spark = [gx - 0.42, 1.12, 0, 1 - (u - 5) / 0.6];
+      else if (u >= 7 && u < 7.6) spark = [hx + 0.42, 1.12, 0, 1 - (u - 7) / 0.6];
+      else if (u >= 8.25 && u < 8.9) spark = [gStop - 0.1, 0.95, 0, 1 - (u - 8.25) / 0.65];
+      gate = 1;
+    }
+    // where each looks: the danger, the edge he makes for, his foe; nothing (ahead) otherwise
+    let look0 = null, look1 = null;
+    if (R.kind === 'pit') {
+      if (u >= 4.3 && u < 5.4) look0 = [0, 0, 0];
+      else if (u >= 5.4 && u < 7) look0 = [0, -0.7, 0];
+      else if (u >= 7 && u < 9) look0 = [CS_PIT1 + 0.8, 0, 0];
+    } else if (R.kind === 'gate') {
+      if (u >= 5 && u < 10.6) look0 = [CS_EXIT, 1.1, 0];
+      else if (u >= 11.4 && u < 13) look0 = [CS_EXIT - 1, 0.6, 0];
+    } else {
+      if (u >= 2 && u < 11.3) look0 = [gx, (u >= 9.3 ? 0.3 : 1.0) + gy, gz];
+      if (u < 9.3) look1 = [hx, 1.0 + hy, 0];
+    }
+    // the gate at the far end opens for him as he nears it (the gate room's falls shut instead)
+    if (R.kind !== 'gate') gate = Math.min(1, Math.max(0, (hx - (CS_EXIT - 3.2)) / 1.2)) || (guard ? Math.max(0, Math.min(1, (5.4 - u) / 0.6)) : 0);
+    return { bar, spb, m, unit, len, n, R, u, runSpeed, hx, hy, face, D, F, sword, gx, gy, gface, GD, GF, gSword, guard, look0, look1, gz, spark,
+      prompt, stick, stickDir, button, crack, open, gate, slam, flash, tiles };
+  }
+
+  /** A drawing as numbers: the hip; the head, the shoulders, the right hand, the left, the feet; the sword; the face. */
+  static chan(D, F) {
+    const hR = D.swap ? D.hB : D.hF, hL = D.swap ? D.hF : D.hB;
+    return [D.hip, ...D.head, ...D.sh, ...hR, ...hL, ...D.fL, ...D.fR, ...(D.sword || [0.8, 0.6]), ...F];
+  }
+
+  /**
+   * The figure's drawing at t, in between: the drawings are key frames twelve a second, and between them every number
+   * of the pose follows a cubic through the four nearest - a Catmull-Rom spline, the Kochanek-Bartels spline with no
+   * tension, continuity or bias (1984) - so the motion is continuous and its speed too, a held pose easing in and out
+   * of itself. The knees and elbows are solved afterwards from the ends, so no limb changes length on the way.
+   */
+  between(t, which) {
+    const t0 = Math.floor(t * 12 + 1e-6) / 12, w = (t - t0) * 12;
+    const S = [-1, 0, 1, 2].map((k) => this.stateAt(Math.max(0, t0 + k / 12)));
+    const c = S.map((q) => (which ? CastleSim.chan(q.GD, q.GF) : CastleSim.chan(q.D, q.F)));
+    const w2 = w * w, w3 = w2 * w;
+    const v = c[1].map((_, i) => 0.5 * (2 * c[1][i] + (c[2][i] - c[0][i]) * w + (2 * c[0][i] - 5 * c[1][i] + 4 * c[2][i] - c[3][i]) * w2 + (3 * c[1][i] - c[0][i] - 3 * c[2][i] + c[3][i]) * w3));
+    const near = w < 0.5 ? S[1] : S[2];
+    const drawn = which ? near.gSword : near.sword;
+    const sl = Math.hypot(v[13], v[14]) || 1;
+    return {
+      D: { hip: v[0], head: [v[1], v[2]], sh: [v[3], v[4]], hF: [v[5], v[6]], hB: [v[7], v[8]], fL: [v[9], v[10]], fR: [v[11], v[12]], sword: drawn ? [v[13] / sl, v[14] / sl] : null },
+      F: v.slice(15, 19),
+    };
+  }
+
+  /** A figure's joints in the room at t, and the way it faces. */
+  figureWorld(t, slot) {
+    const st = this.stateAt(t), D = this.between(t, slot).D;
+    const x = slot ? st.gx : st.hx, y = slot ? st.gy : st.hy, z = slot ? st.gz : 0, face = slot ? st.gface : st.face;
+    const J = csJoints(D, 0).map((p) => [x + p[2] * face, y + p[1], z - p[0] * face]);
+    // (and the scabbard at the far hip while the sword is in it, as uniforms() hangs it - the guard's is gone once his
+    // sword is knocked away)
+    const hip = J[12], dropped = slot === 1 && st.R.kind === 'duel' && st.u >= 8.25;
+    const scab = D.sword || dropped ? null : [[hip[0] + 0.03 * face, hip[1] + 0.02, hip[2]], [hip[0] - 0.16 * face, hip[1] - 0.3, hip[2]]];
+    return { J, f: [face, 0], scab };
+  }
+
+  /**
+   * The figures' clothes, as cloth (see csDressStep): settled at the start of each room, stepped from there to the
+   * time asked for, so going back replays them the same; as drawn at that moment (csDressShown).
+   */
+  dress(t, n, len) {
+    const start = n * len, duel = this.room(n).kind === 'duel';
+    if (!this.dressState || this.dressState.n !== n || this.dressState.t > t + 1e-9) {
+      this.dressState = { n, t: start, fig: [csDressHang(this.figureWorld(start, 0), 0), duel ? csDressHang(this.figureWorld(start, 1), 1) : null] };
+    }
+    const S = this.dressState, dt = 1 / 120;
+    while (S.t + dt <= t + 1e-9) {
+      S.t += dt;
+      for (let s = 0; s < 2; s++) if (S.fig[s]) csDressStep(S.fig[s], S.fig[s].F, this.figureWorld(S.t, s), dt);
+    }
+    return S.fig.map((f, s) => f && csDressShown(f, this.figureWorld(t, s), t - S.t));
+  }
+
+  /**
+   * Where a figure's head turns at t: toward what it looks at - the floor giving way, the pit, the far edge, the gate,
+   * its foe - turned no further than a neck turns, the body's way when it looks at nothing; eased over a fifth of a
+   * second as a head turns. Its forward and up, in the room.
+   */
+  headAt(t, slot) {
+    let yaw = 0, pitch = 0, wsum = 0;
+    for (let k = 0; k < 4; k++) {
+      const tk = Math.max(0, t - k * 0.06), st = this.stateAt(tk), w = 4 - k;
+      const face = slot ? st.gface : st.face, x = slot ? st.gx : st.hx, y = (slot ? st.gy : st.hy) + 1.0;
+      const target = slot ? st.look1 : st.look0;
+      let yw = 0, pt = -0.08;
+      if (target) {
+        const dx = (target[0] - x) * face, dz = -(target[2] - (slot ? st.gz : 0)) * face, dy = target[1] - y;
+        yw = Math.max(-1.2, Math.min(1.2, Math.atan2(dz, Math.max(dx, -0.2))));
+        pt = Math.max(-0.75, Math.min(0.45, Math.atan2(dy, Math.hypot(dx, dz))));
+      }
+      yaw += yw * w; pitch += pt * w; wsum += w;
+    }
+    yaw /= wsum; pitch /= wsum;
+    const st = this.stateAt(t), face = slot ? st.gface : st.face;
+    // (in the figure's frame: ahead is +z, its right +x; into the room: x' = z*face, z' = -x*face)
+    const h = [Math.sin(yaw), 0, Math.cos(yaw)];
+    const fwd = [h[0] * Math.cos(pitch), Math.sin(pitch), h[2] * Math.cos(pitch)];
+    const up = [-h[0] * Math.sin(pitch), Math.cos(pitch), -h[2] * Math.sin(pitch)];
+    const w = (v) => [v[2] * face, v[1], -v[0] * face];
+    return [...w(fwd), 0, ...w(up), 0];
+  }
+
+  uniforms(t) {
+    const st = this.stateAt(t);
+    let { bar, spb, unit, n, R, u, hx, hy, face, D, F, sword, gx, gy, gface, GD, GF, gSword, guard,
+      prompt, stick, stickDir, button, crack, open, gate, slam, flash, tiles } = st;
+    // the poses in between their drawings
+    const hb = this.between(t, 0);
+    D = hb.D; F = hb.F; sword = D.sword;
+    if (guard) { const gb = this.between(t, 1); GD = gb.D; GF = gb.F; gSword = GD.sword; }
+    // ---- the figures into the joint array
+    this.place(0, hx, hy, face, D, Math.sin(t * 9) * 0.5);
+    this.place(1, gx, gy, gface, GD, Math.sin(t * 7) * 0.4, st.gz);
+    const Jw = (slot, i) => [this.J[(slot * CS_JOINTS + i) * 4], this.J[(slot * CS_JOINTS + i) * 4 + 1], this.J[(slot * CS_JOINTS + i) * 4 + 2]];
+    const blade = (slot, dir) => {
+      const hand = Jw(slot, 5);
+      const f = slot === 0 ? face : gface;
+      if (!dir) {
+        // in its scabbard at the far hip, pointing back and down
+        const hip = Jw(slot, 12);
+        return [hip[0] + 0.03 * f, hip[1] + 0.02, hip[2], hip[0] - 0.16 * f, hip[1] - 0.3, hip[2]];
+      }
+      return [...hand, hand[0] + dir[0] * 0.72 * f, hand[1] + dir[1] * 0.72, hand[2]];
+    };
+    const b0 = blade(0, sword);
+    let b1 = blade(1, gSword), b1drawn = guard ? 1 : 0;
+    if (R.kind === 'duel' && u >= 8.25) {
+      const s = (u - 8.25) * unit, fall = Math.min(s, 0.4);
+      const y = Math.max(0.03, 0.8 - 4.9 * fall * fall), a = 0.6 - (0.6 + 0.05) * Math.min(1, s / 0.4);
+      const cx = st.gx - 0.55 - 0.25 * Math.min(s, 0.4), cz = st.gz * 0.5;
+      b1 = [cx - 0.38 * Math.cos(a), y + 0.38 * Math.sin(a) * (y > 0.03 ? 1 : 0), cz, cx + 0.38 * Math.cos(a), y - 0.38 * Math.sin(a) * (y > 0.03 ? 1 : 0), cz];
+      b1drawn = 1;
+    }
+    // ---- the shots, cut on the bars
+    const s = Math.floor(u / 4), lerp = (a, c, w) => a.map((v, i) => v + (c[i] - v) * w);
+    let eye, look, focal, roll = 0;
+    // (the duel's first exchange comes in the first bar: the two of them in profile, as the fight is shot)
+    if (s === 0 && R.kind === 'duel' && u >= 2.6) { const cx = (Math.max(hx, -2) + Math.min(gx, 2.5)) / 2; eye = [cx, 1.15, -3.5]; look = [cx, 0.95, 0]; focal = 1.3; }
+    else if (s === 0) { eye = [hx - 1.7, 0.55, -3.1]; look = [hx + 0.7, 1.15, 0.8]; focal = 1.3; }
+    else if (s === 1 && u < 6) {
+      if (R.kind === 'pit') { eye = [CS_PIT0 - 1.8, 2.6, -2.4]; look = [0, -0.3, 0.2]; focal = 1.45; roll = 0.06; }
+      else if (R.kind === 'gate') { eye = [CS_EXIT - 2.4, 0.5, -1.5]; look = [CS_EXIT, 2.4, 0.0]; focal = 1.45; roll = -0.05; }
+      // (the duel: the second exchange closer, from a three-quarter angle, both blades in view)
+      else { const cx = (hx + gx) / 2; eye = [cx - 1.0, 1.2, -2.3]; look = [cx + 0.1, 1.0, 0]; focal = 1.45; }
+    } else if (s === 1 && R.kind === 'duel') {
+      const cx = (Math.max(hx, -2) + Math.min(gx, 2.5)) / 2;
+      eye = [cx, 1.15, -3.5]; look = [cx, 0.95, 0]; focal = 1.3 + 0.15 * (u - 6) / 2;
+    } else if (s === 1) {
+      // the close-up keeps his face: it follows his head down as he winds up
+      const w = (u - 6) / 2, hd = Jw(0, 2), dx = hd[0] - hx, dy = hd[1] - 1.05;
+      eye = lerp([hx + 1.5, 1.2, -1.1], [hx + 1.15, 1.12, -0.75], w).map((v, i) => v + [dx * 0.85, dy * 0.75, 0][i]);
+      look = [hx + dx * 0.9, 0.98 + dy * 0.9, 0]; focal = 1.7 + 0.5 * w - 0.25 * Math.min(1, Math.abs(dy) * 2);
+    }
+    else if (s === 2) {
+      if (R.kind === 'gate') { const cx = Math.min(hx, CS_EXIT - 1.2); eye = [cx - 2.6, 0.7, -2.4]; look = [cx + 1.0, 0.7, 0.3]; focal = 1.25; roll = -0.06; }
+      else if (R.kind === 'duel') { const cx = (Math.max(hx, -2) + Math.min(gx + 0.3, 2.5)) / 2; eye = [cx, 1.25, -3.8]; look = [cx, 0.7, 0.3]; focal = 1.25; }
+      else { const w = (u - 8) / 4; eye = lerp([-0.6, 3.0, -3.2], [1.4, 2.8, -2.8], w); look = [hx * 0.7 + 0.3, 0.5 + hy * 0.8, 0.3]; focal = 1.25; roll = -0.1; }
+    } else {
+      if (R.kind === 'gate') { eye = [CS_EXIT - 3.5, 1.0, -2.0]; look = [CS_EXIT, 1.2, 0]; focal = 1.4; }
+      else { eye = [Math.min(hx, CS_EXIT - 0.5) - 2.3, 1.1, -0.3]; look = [CS_EXIT + 1.5, 1.0, 0.0]; focal = 1.4; }
+    }
+    const Fv = norm3([look[0] - eye[0], look[1] - eye[1], look[2] - eye[2]]);
+    let Rv = norm3([-Fv[2], 0, Fv[0]]);
+    let Uv = [Rv[1] * Fv[2] - Rv[2] * Fv[1], Rv[2] * Fv[0] - Rv[0] * Fv[2], Rv[0] * Fv[1] - Rv[1] * Fv[0]];
+    const cr = Math.cos(roll), sr = Math.sin(roll);
+    [Rv, Uv] = [Rv.map((v, i) => v * cr + Uv[i] * sr), Uv.map((v, i) => Uv[i] * cr - Rv[i] * sr)];
+    // the clothes: cape, tails and skirts, as cloth
+    const shown = this.shown = this.dress(t, n, st.len);
+    const cloth = csClothOut(shown[0], guard ? shown[1] : null);
+    const tails = new Float32Array(2 * CS_TAIL_N * 4);
+    for (let s = 0; s < 2; s++) if (shown[s] && (s === 0 || guard)) shown[s].tail.forEach((p, i) => tails.set([p[0], p[1], p[2], CS_TAIL_R[s][i]], (s * CS_TAIL_N + i) * 4));
+    // the slam and the strike shake the eye
+    const shake = Math.exp(-Math.max(0, slam) * 8) * (slam < 99 ? 1 : 0) + flash * 0.5;
+    this.tiles.fill(0);
+    tiles.slice(0, 12).forEach((q, i) => this.tiles.set(q, i * 4));
+    const bound = (slot) => {
+      let cx = 0, cy = 0, cz = 0;
+      for (let i = 0; i < CS_JOINTS; i++) { const p = Jw(slot, i); cx += p[0]; cy += p[1]; cz += p[2]; }
+      return [cx / CS_JOINTS, cy / CS_JOINTS, cz / CS_JOINTS];
+    };
+    return {
+      uCsCam: { v: [eye[0], eye[1], eye[2], focal, Fv[0], Fv[1], Fv[2], shake, Rv[0], Rv[1], Rv[2], 0, Uv[0], Uv[1], Uv[2], 0], kind: '4fv' },
+      uCsJ: { v: this.J, kind: '4fv' },
+      uCsBlade: { v: [...b0, sword ? 1 : 0, 0, ...b1, b1drawn, 0], kind: '4fv' },
+      uCsSpark: { v: st.spark, kind: '4f' },
+      uCsBound: { v: [...bound(0), 1.1, ...bound(1), guard ? 1.1 : 0], kind: '4fv' },
+      uCsRoom: { v: [R.look, CS_ROOMS.indexOf(R.kind), prompt, Math.floor(t * 12)], kind: '4f' },
+      uCsPit: { v: [R.kind === 'pit' ? crack : 0, R.kind === 'pit' ? open : 0, gate, flash], kind: '4f' },
+      uCsTile: { v: this.tiles, kind: '4fv' },
+      uCsHud: { v: [stickDir[0], stickDir[1], stick, button], kind: '4f' },
+      uCsFace: { v: [...F, ...GF], kind: '4fv' },
+      uCsN: { v: [tiles.length, guard ? 2 : 1, 0, 0], kind: '4f' },
+      uCsTail: { v: tails, kind: '4fv' },
+      uCsCloth: { v: cloth.pts, kind: '4fv' },
+      uCsPatch: { v: cloth.patches, kind: '4fv' },
+      uCsClothN: { v: cloth.n, kind: '4f' },
+      uCsHead: { v: [...this.headAt(t, 0), ...(guard ? this.headAt(t, 1) : [1, 0, 0, 0, 0, 1, 0, 0])], kind: '4fv' },
+    };
+  }
+}
+
+export const SIMS = { castle: CastleSim, karts: KartSim, scanner: ScannerSim, skyrush: SkyrushSim, artillery: ArtillerySim, skatepark: SkateSim, football: FootballSim, tanks: TankSim, tube: TubeSim, crossing: CrossingSim, coderain: CoderainSim, animeop: AnimeopSim, timecar: TimecarSim, moonbike: MoonbikeSim, maze3d: Maze3dSim, echolines: EcholinesSim, ansi: AnsiSim, cascade: CascadeSim, cracktro: CracktroSim, rubber: RubberSim, chessfloor: ChessfloorSim, bobs: BobsSim, pyramid: PyramidSim, pipes: PipesSim, maze: MazeSim, snake: SnakeSim, rocks: RocksSim, starfighter: StarSim, paddles: PaddlesSim, invaders: InvadersSim, bricks: BricksSim, lightcycles: LightcyclesSim };
