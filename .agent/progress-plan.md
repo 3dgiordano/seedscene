@@ -96,3 +96,5 @@ Reworked on 2026-11-07 at the owner's word (a 10 s+ wait entering the scene from
 Done on 2026-11-07 at the owner's word: a live programme no longer waits for a scene still compiling (a new track stays dark on its card until its first scene is ready, a cut within a track waits for its scene); a minute of AUTOPLAY's longest pause 21.4 s -> 0.65 s; offline renders unchanged (npm test byte-identical, same hash). Uncommitted with the kart race.
 
 Approved by the owner on 2026-11-07 ("me parece bien"): the kart race with its rework, the glow's change and the programmes' non-blocking compile, all uncommitted on branch kart-race. The owner: Claude never commits or pushes. Still to build of C: cartoon castle.
+
+Approved by the owner on 2026-11-08: the artillery (`artillery`, rebuilt with running physics and beetles, merged as #24). The cartoon castle merged by the owner as #28. Piece C done.

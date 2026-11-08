@@ -4535,6 +4535,7 @@ Piece C's scene of the side-on 2D game with small figures, `artillery`
 the curve. The owner asked (2026-11-04) for physics that really runs, as the
 games of this genre play, and for the camera that follows and zooms; and then
 for insects as its figures, so nothing reads as military. It was rebuilt.
+The owner approved it on 2026-11-08.
 
 What was read first. The numbers come from the published source of an
 open-source game of the genre, read for its mechanics: the step, gravity and
@@ -5739,4 +5740,9 @@ conversation, served from the prompt cache at a twentieth of the input price.
   the chess scenes black~~ - done 2026-11-02: the rings, fireworks, maze, bricks,
   snake, boxer and the stage's rim now clip the colour at zero and lift it only
   where it would be black (about one seed in fifty had a black moment).
-- Regenerate the gallery and the showcase, and run `npm test`.
+- ~~Regenerate the gallery and the showcase, and run `npm test`~~ - done
+  2026-11-08, after the owner approved the artillery: the 60 stills and the
+  three animations (THE JOURNEY, the arcade games, the boot) redrawn and looked
+  over. 50 stills changed since 2026-11-01 because each era plays more styles
+  now, so a seed picks a different song. The README counts 60 scenes.
+  `npm test` passes.
