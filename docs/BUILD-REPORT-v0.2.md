@@ -7,7 +7,7 @@
 v0.2 takes the v0.1 tool ([BUILD-REPORT-v0.1.md](BUILD-REPORT-v0.1.md)) and
 turns it into **SEEDSCENE**: a name, a nostalgic front door, a live mode you
 drive from the keyboard, an About part, seven eras of computing from 1972 to
-now with a journey through them, an endless AUTOPLAY channel, fifty-nine
+now with a journey through them, an endless AUTOPLAY channel, sixty
 scenes and thirty-six styles of music, each scene on its own display and
 sound board.
 
@@ -28,7 +28,7 @@ sound board.
 
 ## Where it stands, 2026-11-03
 
-- **Built:** fifty-nine scenes in seven eras (spans of years, 1972 to now), thirty-six music styles, sixteen
+- **Built:** sixty scenes in seven eras (spans of years, 1972 to now), thirty-six music styles, seventeen
   displays and six sound boards, each scene with its own or its era's; THE
   JOURNEY (three scenes an era, going on through the lists over replays),
   AUTOPLAY, born in, greetings, the screensaver, the sounds between the tracks,
@@ -154,7 +154,7 @@ resolution, so a C64 frame is genuinely 178×200.
 **Thirteen scenes.** Seven new effects from the pack, each written from
 scratch: shadebobs (their trails summed from the path, no feedback buffer),
 vector balls morphing between formations on the bar, a dot tunnel, fireworks
-on the backbeat, water ripples on the beat, the outrun sunset and a
+on the backbeat, water ripples on the beat, the neon sunset and a
 raymarched morphing solid. All are stateless — any frame can be drawn alone —
 so live playback and mp4 renders stay identical.
 
@@ -181,7 +181,7 @@ reverb tails fade instead of being cut.
    down the tunnel's throat fixed it.
 2. **Vector balls filled the screen** and the formation could not be read;
    smaller balls and a camera further back.
-3. **The outrun floor was solid cyan**: the grid-line test was inverted.
+3. **The neon sunset's floor was solid cyan**: the grid-line test was inverted.
 4. **Fireworks stayed dim on the console era — twice.** The first fix made
    the streaks wider and changed nothing visible. Re-reading the frame showed
    the real cause: this seed's palette gave navy and violet. The second fix
@@ -1186,7 +1186,7 @@ colours; and one in which the pyramid falls away, the bottom row first.
 | Frames across a round of the pyramid | the build bottom up, the drop, crouch, air and squash, the ripple, the wave, the fall, the next round |
 | Frames of the LCD juggler, the robot fight and the space run on the stage | the juggler floats as the device with space round it; the other two on the board |
 | On the real GPU, live, every scene compiled and drawn | all 32 pass |
-| Shader cost, same software renderer, 854×480 | pyramid 8.6, lcd 7.5, boxer 8.3, starfighter 8.5 ms a frame; paddles 9.7, outrun 9.4 in the same run |
+| Shader cost, same software renderer, 854×480 | pyramid 8.6, lcd 7.5, boxer 8.3, starfighter 8.5 ms a frame; paddles 9.7, sunset 9.4 in the same run |
 | `npm test` | 16 checks pass |
 
 ### The pyramid, played
@@ -2048,8 +2048,8 @@ when the bicycle is not crossing, a gallery entry can now name its own moment
 |---|---|
 | Frames through a crossing, against the stills | the moon with its seas and clouds, the pines, the bicycle in silhouette with its spokes, the cape and the bundle, crossing the moon's upper half; the halo opening on the drop |
 | On the real GPU (Intel UHD 630, Direct3D 11), every scene compiled and drawn | all 43 pass |
-| Cost, software renderer, 854×480, whole frame | moonbike 141 ms a frame; outrun 99, starfighter 578, boxer 601 in the same run |
-| Cost on the real GPU, whole frame, 1920×1080 | moonbike 24.3 ms; outrun 16.1, starfighter 68.8 |
+| Cost, software renderer, 854×480, whole frame | moonbike 141 ms a frame; sunset 99, starfighter 578, boxer 601 in the same run |
+| Cost on the real GPU, whole frame, 1920×1080 | moonbike 24.3 ms; sunset 16.1, starfighter 68.8 |
 | Bounded to where they can be seen | the gallery still the same, byte for byte; 31.6 ms down to 24.3 |
 | `npm test` | 16 checks pass |
 
@@ -2077,7 +2077,7 @@ still moved to the first crossing's moment.
 | Frames from the scene's start through two crossings | the bicycle riding in from the left; the camera following, drawing in over the moon; the far crossing small and high; the cape as cloth; the pines and the far forest shifting against the moon |
 | A cut of AUTOPLAY to the moon bike | 0.4 s after the cut the scene counts 0.6 beats since it came on: it opens with the entrance |
 | On the real GPU, every scene compiled and drawn | all 43 pass |
-| Cost on the real GPU, whole frame, 1920×1080 | moonbike 27.5 ms; outrun 14.8 |
+| Cost on the real GPU, whole frame, 1920×1080 | moonbike 27.5 ms; sunset 14.8 |
 | `npm test` | 16 checks pass |
 
 The owner liked it, and asked for time out of the frame: the bicycle left and
@@ -3492,15 +3492,15 @@ pass did not. So:
   way, one a pass. Every scene of an era has come round by its fourth to
   sixth pass, every style by its ninth at most (DOS has nine). A render is
   one pass.
-- **Y2K** plays morph, metaballs, fractal, outrun and cascade - no asteroid
+- **Y2K** plays morph, metaballs, fractal, sunset and cascade - no asteroid
   game, no 90s shooter; both stay in their own eras.
 
 | THE JOURNEY, seed `seedscene` | Before | After, first pass | Second pass |
 |---|---|---|---|
 | Arcade | rocks | lightcycles, timecar, paddles | pyramid, rocks, invaders |
 | C64 | invaders | copper, invaders, plasma | dottunnel, copper, invaders |
-| Y2K | rocks | cascade, morph, metaballs | fractal, outrun, cascade |
-| Modern | snake | morph, outrun, boxer | starfighter, metaballs, moonbike |
+| Y2K | rocks | cascade, morph, metaballs | fractal, sunset, cascade |
+| Modern | snake | morph, sunset, boxer | starfighter, metaballs, moonbike |
 
 Checked live (muted): the arcade part opens on its card over lightcycles,
 cuts to timecar and to paddles; the second pass's arcade plays pyramid and
@@ -3571,7 +3571,7 @@ went through the list scene by scene:
 
 | Era | Its scenes now |
 |---|---|
-| Arcade 1979 | paddles (the first paddle game is of 1972: no era of its own yet), invaders, rocks, maze, bricks, lightcycles, boxer, lcd, pyramid, outrun |
+| Arcade 1979 | paddles (the first paddle game is of 1972: no era of its own yet), invaders, rocks, maze, bricks, lightcycles, boxer, lcd, pyramid, sunset |
 | C64 1982 | dottunnel, plasma; the films and series of its years: scanner, timecar, moonbike |
 | Amiga 1990 | shadebobs, copper, vectorballs, ripple, metaballs, tunnel, starfield, kefrens, ball, rings, twister, bobs, dualchess, chessfloor, rubber, cracktro, plasma, fractal, bumplogo, fireworks, morph |
 | DOS 1994 | fractal, tunnel, metaballs, plasma, fire, pipes, bumplogo, ansi, echolines, maze3d, cascade |
@@ -3597,7 +3597,7 @@ style, now plays in no programme (dreamwave still does, in the Amiga's).
 
 The gallery was made again with each scene in its era (eleven stills moved:
 plasma, scanner, timecar and moonbike to the C64; fireworks and starfield to
-the Amiga; cascade to DOS; outrun, paddles and lightcycles to the arcade;
+the Amiga; cascade to DOS; sunset, paddles and lightcycles to the arcade;
 snake to the handheld; `journey.gif` with seven eras and three scenes each),
 the README's examples, era labels and table order with it, and its era
 section tells the new rule. Checked live (muted): `E` from Y2K to modern keeps
@@ -3660,7 +3660,7 @@ shared link breaks.
 A game or a film goes to the year it came out; a demo effect to the years the
 owner placed its machine in (the Amiga's in 1990–1993, the PC's in 1994–1996,
 the C64's in the 1980s). Moved by that: lightcycles, pyramid, boxer, bricks
-and outrun (1982–1986) and the Amiga's bouncing ball (1984) to 1982–1989;
+and sunset (1982–1986) and the Amiga's bouncing ball (1984) to 1982–1989;
 starfighter and footsteps (1993), cascade and echolines (the early-90s
 desktop) to 1990–1993; the first paddle game now has its year. Each keeps its own display, so
 moving its years never changes how it looks: the ball stays on the Amiga's
@@ -3676,14 +3676,14 @@ last one before it that has scenes); the intro and the help say 1972 to now.
 The owner also asked for display names that say which screen, not which kind:
 32-BIT is PS1, LCD is GAME BOY (the handheld's reflective, passive-matrix STN
 LCD), HI-RES is SVGA; two are new - SNES, the 16-bit console (256×224, 15-bit
-colour without dither), for the 16-bit space shooter; and NOKIA, the phone's
+colour without dither), for the 16-bit space shooter; and PHONE LCD, the phone's
 monochrome LCD (dark pixels on a green backlight, 84×48), for snake, which was
 a phone game, not a Game Boy one. Checked on the real GPU (Intel UHD 630,
-D3D11), muted: starfighter through SNES, snake through NOKIA, THE JOURNEY's
+D3D11), muted: starfighter through SNES, snake through PHONE LCD, THE JOURNEY's
 first card "1972–1981 / THE FIRST VIDEO GAMES", `?era=handheld` finding
 1997–1999, no errors. At the phone's own 84×48 the snake barely read; the
 owner's rule settled it - a homage, not an emulation, pleasant to today's eyes:
-the NOKIA display draws at 160 lines, and an on pixel is dark on the green
+the PHONE LCD display draws at 160 lines, and an on pixel is dark on the green
 backlight, so the snake the scene draws bright is dark, as on the phone. `npm test`
 passes, twenty-one checks; the README's era section, scene labels, examples
 and order, and the gallery, follow the spans.
@@ -3707,7 +3707,7 @@ catalogue to come - one display for each technology a scene simulates:
 
 Checked on the real GPU (Intel UHD 630, D3D11), muted: the C64's dot tunnel
 and the arcade's invaders sharp, in their palettes, behind their scan lines;
-the snake through NOKIA and the dot tunnel through GAME BOY sharp, in their
+the snake through PHONE LCD and the dot tunnel through GAME BOY sharp, in their
 greens, no tube; no errors. `npm test` passes; the gallery was made again.
 
 ## Sound boards
@@ -3903,8 +3903,8 @@ noise, is played as the plain one there (the ST had no gated reverb).
 arpeggiator under C6, hand claps and an open hat on the off-beat, a vocoder
 singing the tune over synth pads, in a minor key.
 
-**Five more styles of the Amiga years** - round 5's music: beast lands
-(`beast`), lament (`agony`), musicdisk ballad (`ballad`), jolly march
+**Five more styles of the Amiga years** - round 5's music: wild lands
+(`wildlands`), lament (`lament`), musicdisk ballad (`ballad`), jolly march
 (`march`) and hip-hop blaster (`bomb`), homages to moods, never to tunes.
 Round 5's scenes - glenz, landscape, the musicdisk player and its mode - were
 left out at the owner's word.
@@ -5658,6 +5658,181 @@ Now:
 | Drawn on the real GPU | no error |
 | The faces, close up, from seven sides (ahead, 15°, 34°, 60°, side, above, below) in three moments each | round from every side; the lizard's no longer streaked |
 
+*The castle live* (2026-11-08, checking 0.2.0's gate "runs live at 60 fps"
+before the release). Each of round 11's scenes was measured on the live page,
+muted, on the real GPU (Intel UHD 630, Direct3D 11, 1280×720 window): frames
+counted for 15 s after 30 s of play, with a screenshot to show the scene was
+the one drawn.
+- Skatepark, skyrush, artillery, scanner, football, crossing, tube and karts
+  held 60 fps.
+- The tanks got 50 to 52.
+- The castle got 18 to 29, frozen for 1 to 2.7 s every 2 or 3 s.
+
+**The cause was the cloth.** Live, the clock follows the audio and steps back
+a few milliseconds now and then, many times a minute (0.07 to 48 ms, logged).
+Each step back made the castle simulate its clothes again from the room's
+start, which costs 1 to 2.4 s. Now:
+- **A step back of under a quarter second** shows the cloth as it is; going
+  back further starts it over as before.
+- **The next room's clothes** are hung in the last second of the room before,
+  one figure begun a frame and then two settling steps a frame. They used to
+  be hung on the cut, 90 to 290 ms at once.
+
+Renders to a file never go back, so they are unchanged.
+
+| Check | Result |
+|---|---|
+| A step back of 7 ms | 0.8 ms (a restart costs 2.4 s) |
+| The worst simulation frame across a cut, 24 cuts over three seeds | 7 to 34 ms (90 to 290 before); the clothes after each cut the same, to the bit, as when the room is jumped to |
+| The castle live, after | 51 to 57 fps; the restarts gone from the log |
+
+What is left: the castle and the tanks spend nearly the whole frame on this
+GPU. In the first minute after the page opens, while it compiles the sixty
+scenes in the background, they drop frames (95% of frames within 33 ms), and
+the castle once froze for 1.9 s. The other scenes held 60.
+
+*Every scene live at 60* (2026-11-08, the owner: performance before the
+release; then, to the choice put to them, the scene drawn smaller live when its
+frames do not fit).
+
+**What was measured.** A scan of all sixty scenes on the live page, muted, on
+the real GPU (UHD 630), 40 s each, the frames counted in 5 s windows:
+- seven scenes fell well under 60 at their busiest: pipes 18 fps, boxer 30,
+  cracktro 41, copper 46, tanks 48, bobs 49, starfighter 49;
+- the castle fell to a few frames a second in its duel.
+
+A first reading, from 8 s at one moment, had blamed the first minute's
+background compiles. Turning them off showed it wrong: pipes went from 23 to
+58 fps with its own tangle.
+
+**Where the time went.** Measured frame by frame on the real GPU at fixed
+moments, against variants of each scene, every change compared pixel by pixel
+with the shader before the work:
+- *Pipes*: every pixel looked at all 192 runs. Now a run is looked at only
+  inside the rectangle it covers on the screen, out by its ball joint's
+  width. The full tangle went from 74 to 18 ms in that tool, with the same
+  pixels.
+- *Boxer*, about 31 ms:
+  - the stage and the screen took 8;
+  - his march and shading took 7, the march of the glass robot near the
+    camera 8, the crowd 4-5, the beams 2, the smoke 2.
+  Exact savings: the board covers the sky (so none is drawn under it), the
+  crowd only where a head can be, the smoke and sparks only while he is down:
+  -4 ms, the same pixels. Three tries at the marches (a tighter bound, a filter
+  round the ropes, the ropes met analytically) saved nothing and changed thin
+  edges; taken back. The two robots' marches are the scene, and are left as
+  they are.
+- *Castle*: the cloth, on the CPU. In the browser the simulation took 7 to
+  12 ms a frame in the duel (two figures, a cape and two skirts).
+  - Each frame also stepped a copy of the clothes on to the frame's time, a
+    third of the work.
+  - A late frame asked for more steps the next time, and the picture fell to
+    6 fps.
+  Exact saving: where each point hangs on the body is worked out once a step,
+  not eight times (to the bit the same). Live only:
+  - the clothes are stepped right up to each frame in even steps of about a
+    120th, the copy gone;
+  - never more than four steps a frame, so a late frame skips ahead rather
+    than falling further behind.
+  Measured with the suite's own count, the live clothes keep off the body as
+  the file's do: the cape 0.0067% of its points in against 0.0050%, the skirts
+  upright 0.41% against 0.44%, the cape's stretch at the 99th percentile 6.6%
+  against 6.0%. Files never fall behind and are stepped on the 120ths as
+  before.
+- *Background compiles*: two at once took frames from a light scene on the
+  screen (copper's worst window 31-54 fps, the boxer's first 51); one at a
+  time, 56-58, as with none.
+
+**Drawn smaller when it does not fit.** Live only, the scene is drawn a step
+smaller when its frames stop fitting:
+- seven eighths, then three quarters of the side, no less, filtered up to the
+  screen;
+- judged a second at a time against the best rate the screen has shown;
+- a step back up when there is room, taken back if it does not hold and tried
+  again after twice as long;
+- full size again for each new scene.
+The words and the screen's look stay full size. Seen side by side at three
+quarters (the boxer in its count, the castle's duel, the full tangle), the
+difference is the thinnest lines a little softer.
+
+| Check | Result |
+|---|---|
+| All sixty scenes live, 40 s each in 5 s windows, after | 56 hold 57-60 in every window; the mean over all, 59.8 fps |
+| The seven, worst window before → after | pipes 18 → 59, boxer 30 → 57, cracktro 41 → 55, copper 46 → 56-57 (one run 31, before compiles went one at a time), tanks 48 → 58, bobs 49 → 58, starfighter 49 → 58 |
+| The castle, worst window | 6-25 in the duel before → 57 |
+| Files | unchanged: the suite's renders hash as before; the castle's file clothes the same to the bit |
+
+What is left: the cracktro's busiest moments hold 55. Below about a
+three-quarter picture, a GPU slower than this one would still drop frames in
+the heaviest scenes. The cracktro's 144 stars a pixel could be looked at only
+in the cells a star can reach; it was not done, the smaller picture having
+brought it to 55.
+
+*AUTOPLAY's scenes* (2026-11-09, the owner: skipping through AUTOPLAY with the
+arrow key, a scene came back again and again in other colours, one after
+another, while scenes waited unseen).
+
+**What was measured.** The order itself, over eight seeds and 180 tracks
+each, and then live with the arrow pressed.
+- The arrow key starts the next track, so what is seen is each track's first
+  scene. Skipped through so, the same scene came twice in a row 92 times in
+  1,432 tracks, and a scene from the twelve before 243 times.
+- Each track has its own seed, hence its own colours.
+
+**The causes:**
+- 2000-2009 and 2010 on have three scenes each, and a visit has six places
+  (three tracks of two). Each scene was dealt twice, and the tracks opened on
+  djdecks, morph, morph.
+- A visit dealt across two rounds of its era's deal could repeat a scene
+  within it.
+- Six scenes belong to two or three eras (plasma, metaballs, tunnel, fractal,
+  the bump-mapped logo, morph), and came back a block later.
+- At a cycle's end an era could come back with only one other between.
+
+**Now:**
+- Each visit is laid out so each track opens on a scene of its own and no
+  scene follows itself. An era that must show some twice shows each its share
+  (a deal across three rounds could hold one three times), and as far apart as
+  the visit allows (a c b a c b).
+- A visit across two rounds keeps the last round's end out of the new
+  round's start for the whole visit, not two places.
+- The scenes the last two blocks showed go to the end of a block.
+- A cycle opens on neither of the last two eras the one before closed on.
+- A block is laid out from its own deal and its neighbours' deals, never from
+  how they were laid out. A first try had worked them out block by block from
+  the first, and jumping into a programme far along - live drops in anywhere
+  in the first 50,000 tracks - then cost up to 1.5 s, on the audio thread, at
+  every press. Now it costs what it did, 70 ms at track 30,000.
+- Where the block opens on what the one before ended on, only its first two
+  tracks move, so its last track - all the next block needs - stays as laid
+  out.
+- Held in one era, with three scenes, no layout keeps both rules; there the
+  era's deal plays on as before, which never repeats a scene in a row.
+
+A tried fix gave an era of three a scene a track, each for 40 s. It broke the
+owner's pace (tracks of 40 s, scenes of 20) and the suite caught it; taken
+back.
+
+| Check | Result |
+|---|---|
+| Skipped through, the same 1,432 tracks, before → after | 92 → 0 twice in a row; 243 → 107 seen in the twelve before |
+| Watched through | still never twice in a row |
+| An era back after only one other, 8 seeds × 58 blocks | 28 → 0 |
+| Live, the arrow pressed 20 times (hikari) | no scene twice in a row; 0.3-9 s to each new track, the longest a heavy scene compiling the first time it shows |
+| THE JOURNEY, AUTOPLAY held in one era | their hashes as before |
+| `npm test` | 43 checks pass, one new: each track of a visit opens on its own scene, none shows more than its share, skipped through none twice in a row |
+
+What is left:
+- Every era gets the same time, so the three-scene eras come round every
+  seven blocks and the 25 of 1990-1993 take some four visits. All sixty have
+  shown after 72 to 103 tracks (48 to 69 minutes). Weighting the eras by their
+  scenes was put to the owner, who kept the same time for each (2026-11-09).
+- Skipping quickly onto a heavy scene that has not compiled yet holds the
+  track's card on black for 3 to 9 s on this GPU.
+- Twice, in one of five live runs, a press seemed not to move on for 37 to
+  40 s; with the press logged it did not happen again, and the cause is not
+  known.
+
 ## What went wrong in the first round
 
 1. **New seed (`S`) made the picture glitch** — reported by the owner.
@@ -5746,3 +5921,17 @@ conversation, served from the prompt cache at a twentieth of the input price.
   over. 50 stills changed since 2026-11-01 because each era plays more styles
   now, so a seed picks a different song. The README counts 60 scenes.
   `npm test` passes.
+- ~~Rename what echoed a title~~ - done 2026-11-08 at the owner's word,
+  before the first release so that no command or link depends on the old
+  names:
+  - the scene `outrun` is now `sunset` (the About's NEON SUNSETS);
+  - the styles `beast` and `agony` are now `wildlands` (Wild Lands) and
+    `lament`;
+  - the display `nokia` is now `phone` (PHONE LCD);
+  - the gallery's seeds gigawatts, boing, juggler and powerpill are now
+    flametrail, checkerball, threeballs and allthedots.
+  The old keys stay only as the salt of their hashes, so the renamed styles
+  keep every note and the sunset its look: six seeds of each style composed
+  the same apart from the name, the sunset's gallery still matches the old
+  one but for its label, and both renders hash as before. The planned track
+  names in PLAN-v0.2 were left alone, as they reach nothing built.

@@ -21,7 +21,7 @@ export const ERAS = {
     label: '1982–1989', year: 1982, to: 1989, title: 'Home computers, arcades and the video shop',
     blurb: 'the 8-bit home, the arcade hits of the decade, and the films and series on tape',
     display: 'c64',
-    scenes: ['lightcycles', 'pyramid', 'boxer', 'bricks', 'outrun', 'scanner', 'timecar', 'moonbike', 'dottunnel', 'plasma', 'ball', 'skyrush', 'castle'],
+    scenes: ['lightcycles', 'pyramid', 'boxer', 'bricks', 'sunset', 'scanner', 'timecar', 'moonbike', 'dottunnel', 'plasma', 'ball', 'skyrush', 'castle'],
     music: ['chiptune', 'synthpop', 'stchip', 'italo'],
   },
   1990: {
@@ -29,14 +29,14 @@ export const ERAS = {
     blurb: 'copper, vector balls and cracktros; the first 3D on the consoles; the desktop and its games',
     display: 'amiga',
     scenes: ['shadebobs', 'copper', 'vectorballs', 'ripple', 'metaballs', 'tunnel', 'starfield', 'kefrens', 'rings', 'twister', 'bobs', 'dualchess', 'chessfloor', 'rubber', 'cracktro', 'plasma', 'fractal', 'bumplogo', 'fireworks', 'morph', 'footsteps', 'starfighter', 'cascade', 'echolines', 'football'],
-    music: ['rave', 'newbeat', 'orchestral', 'dreamwave', 'modjazz', 'beast', 'agony', 'ballad', 'march', 'bomb', 'terrace'],
+    music: ['rave', 'newbeat', 'orchestral', 'dreamwave', 'modjazz', 'wildlands', 'lament', 'ballad', 'march', 'bomb', 'terrace'],
   },
   1994: {
     label: '1994–1996', year: 1994, to: 1996, title: 'The PC demos and the multimedia years',
     blurb: 'mode 13h, the sound card, the bulletin boards and the screensavers',
     display: 'vga',
     scenes: ['fractal', 'tunnel', 'metaballs', 'plasma', 'fire', 'pipes', 'bumplogo', 'ansi', 'maze3d', 'artillery'],
-    music: ['ambient', 'acid', 'gabber', 'eurodance', 'jungle', 'fmmetal', 'midiquest', 'keygen', 'triphop', 'agony', 'march'],
+    music: ['ambient', 'acid', 'gabber', 'eurodance', 'jungle', 'fmmetal', 'midiquest', 'keygen', 'triphop', 'lament', 'march'],
   },
   1997: {
     label: '1997–1999', year: 1997, to: 1999, title: '3D consoles and pocket screens',

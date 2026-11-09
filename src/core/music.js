@@ -299,8 +299,8 @@ export const MUSIC_PRESETS = {
   // --- round 5's Amiga styles. Homages to moods, never to tunes: every melody is the seed's.
   // the long walk under a purple sky: tribal toms in a slow 6/8, a pan flute, a bowed drone, a mysterious minor
   // (the Amiga's atmospheric game scores, played from a few sampled instruments)
-  beast: {
-    label: 'Beast Lands', blurb: 'tribal toms in a slow 6/8, a pan flute over a bowed drone, a mysterious minor',
+  wildlands: {
+    label: 'Wild Lands', blurb: 'tribal toms in a slow 6/8, a pan flute over a bowed drone, a mysterious minor',
     bpm: [96, 114], steps: 12, scales: ['minor', 'phrygian'], progressions: MYSTERY,
     drums: 'tribal', bass: 'bowed', chords: 'ambientpad', lead: 'hook', arp: null,
     hook: { instr: 'flute', kit: 'real', oct: 72, vel: 0.6, line: true, answer: true }, leadFrom: 0.2,
@@ -310,7 +310,7 @@ export const MUSIC_PRESETS = {
   },
   // the quiet part of the demo: a slow piano over strings, a lonely lead, rain on the window, a slow pulse
   // (the Amiga's classical piano themes)
-  agony: {
+  lament: {
     label: 'Lament', blurb: 'a slow piano over strings, a lonely lead, the rain, a slow pulse',
     bpm: [66, 80], scales: ['harmonicMinor', 'minor'], progressions: LAMENT,
     drums: 'rain', bass: 'strings', chords: 'lament', lead: 'hook', arp: null,
@@ -443,6 +443,13 @@ export const MUSIC_PRESETS = {
 export const MUSIC_NAMES = Object.keys(MUSIC_PRESETS);
 
 /** The music style a seed chooses for itself when none is asked for. */
+/**
+ * The word a style's draws are salted with: its key, or for a style renamed before 0.2.0 the key it was approved
+ * under, so its tunes keep every note.
+ */
+const MUSIC_SALT = { wildlands: 'beast', lament: 'agony' };
+export function musicSalt(style) { return MUSIC_SALT[style] || style; }
+
 export function pickMusic(seed) {
   return new Rng(seed, 'music-style').pick(MUSIC_NAMES);
 }
@@ -494,7 +501,7 @@ export function scoreTempo(seed, music = 'auto') {
   const style = !music || music === 'auto' ? pickMusic(seed) : music;
   const P = MUSIC_PRESETS[style];
   if (!P) throw new Error(`Unknown music style "${music}"`);
-  const r = new Rng(seed, 'music:' + style);
+  const r = new Rng(seed, 'music:' + musicSalt(style));
   const bpm = P.bpmPick ? r.pick(P.bpmPick) : Math.round(r.float(P.bpm[0], P.bpm[1]));
   return { bpm, spb: 60 / bpm, barBeats: (P.steps || 16) / 4 };
 }
@@ -507,7 +514,8 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
   const style = !music || music === 'auto' ? pickMusic(seed) : music;
   const P = MUSIC_PRESETS[style];
   if (!P) throw new Error(`Unknown music style "${music}". Available: ${MUSIC_NAMES.join(', ')}`);
-  const rng = new Rng(seed, 'music:' + style);
+  const salt = musicSalt(style);
+  const rng = new Rng(seed, 'music:' + salt);
 
   const bpm = P.bpmPick ? rng.pick(P.bpmPick) : Math.round(rng.float(P.bpm[0], P.bpm[1]));
   const root = rng.int(0, 11);
@@ -595,7 +603,7 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
 
   // --- material for the newer styles, from a stream of its own so the older
   //     styles keep every note they had ---------------------------------------
-  const hr = new Rng(seed, 'hook:' + style);
+  const hr = new Rng(seed, 'hook:' + salt);
   // the hook: a two-bar call and answer that keeps coming back
   const hits = (P.hook && P.hook.hits) || [5, 7];
   const hookRhythm = [
@@ -611,7 +619,7 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
 
   // --- material for the sound-card styles, from yet another stream, so every
   //     style before them keeps every note it had -------------------------------
-  const xr = new Rng(seed, 'card:' + style);
+  const xr = new Rng(seed, 'card:' + salt);
   const compRhythm = xr.pick([[0, 6, 10], [3, 8, 14], [0, 7, 12], [2, 6, 11, 14]]);
   const riffPat = xr.euclid(16, xr.int(9, 12), xr.int(0, 3));
   const riffAccents = xr.pick([[0, 6, 10], [0, 3, 6, 12], [0, 7, 10, 13]]);
@@ -620,7 +628,7 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
   const approach = Array.from({ length: 64 }, () => xr.pick([-1, 1]));
 
   // --- the keygen's material, from a stream of its own -----------------------
-  const kr = new Rng(seed, 'keygen:' + style);
+  const kr = new Rng(seed, 'keygen:' + salt);
   const kgKick = kr.pick([[0, 4, 8, 12], [0, 8, 10], [0, 6, 8], [0, 3, 8, 11], [0, 7, 8, 10]]);
   const kgBounce = kr.pick([[0, 12, 0, 12, 0, 12, 0, 12], [0, 0, 12, 0, 0, 12, 0, 12], [0, 12, 7, 12, 0, 12, 7, 12]]);
   // the chord: held for half a bar, struck on the eighths, or on the off-beats against the bass
@@ -634,12 +642,12 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
   let kgLast = null;
 
   // --- the ST's material, from a stream of its own ----------------------------
-  const stR = new Rng(seed, 'st:' + style);
+  const stR = new Rng(seed, 'st:' + salt);
   const stBass = stR.pick([[0, 3, 6, 8, 11, 14], [0, 2, 4, 6, 8, 10, 12, 14], [0, 6, 8, 14], [0, 3, 8, 11]]);   // the buzzer's rhythm
   const stUp = stR.pick([[], [6, 14], [3, 11], [2, 10]]);                    // where it jumps an octave
   const stKick = stR.pick([[0, 8], [0, 8, 10], [0, 6, 8], [0, 3, 8]]);
   // --- trip-hop's material, from a stream of its own --------------------------
-  const tr = new Rng(seed, 'triphop:' + style);
+  const tr = new Rng(seed, 'triphop:' + salt);
   const thLead = tr.pick([[3, 7, 11], [7, 11], [3, 11], [11], [7, 10]]);   // the kicks leading into the beats
   const thShake = tr.euclid(16, tr.int(3, 5), tr.int(1, 5));                 // the shaker's accents
   const thEvery = tr.pick([2, 4]);                                           // a scratch every other bar, or every fourth
@@ -648,7 +656,7 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
   const thComp = tr.pick([[0, 7], [0, 10], [3, 10]]);
   // the scratches: a phrase of strokes in the scratch bar's second half, a new one each time, from a stream
   // of their own; the seed's favourite technique (thScratch) comes up more often
-  const sr = new Rng(seed, 'scratch:' + style);
+  const sr = new Rng(seed, 'scratch:' + salt);
   // the voice on the record keeps its own pitch whatever the chords do: the key's tonic, where a man's voice
   // speaks (G2 to F#3, 98-185 Hz); the hand's speed bends it
   let scNote = 36 + root; while (scNote < 43) scNote += 12;
@@ -710,14 +718,14 @@ export function composeScore(seed, duration, music = 'auto', chip = null) {
   let thLast = null;
 
   // --- the anime opening's material and form, from a stream of its own --------
-  const ar = new Rng(seed, 'anime:' + style);
+  const ar = new Rng(seed, 'anime:' + salt);
   const anVerse = ar.pick([[0, 5, 3, 4], [0, 4, 5, 3], [0, 3, 4, 4], [5, 3, 0, 4]]);
   const anPre = ar.pick([[3, 4, 3, 4], [3, 4, 5, 4], [1, 4, 3, 4]]);
   const anChorusUp = ar.bool(0.4) ? 3 : 0;            // the chorus a minor third up, on the flat mediant
   const anPump = ar.pick([1, 2, 2]);                   // and the last one a step higher still
   const anKick = ar.pick([[0, 8], [0, 6, 8], [0, 8, 10], [0, 6, 8, 10]]);
   const anStab = ar.pick([[0, 6, 10], [0, 3, 6, 10], [0, 7, 10]]);
-  const sk = new Rng(seed, 'skate:' + style);
+  const sk = new Rng(seed, 'skate:' + salt);
   const skKick = sk.bool(0.35);                        // the chorus's kick doubled before every snare
   const skWalk = sk.pick([[0, 2, 4, 2], [0, 0, 4, 2], [0, 4, 7, 4]]);   // the verse bass, in degrees of the scale: the chord's own
   // the sections, bar by bar: intro, verse, prechorus, chorus, again; a bridge; the last chorus; out

@@ -33,3 +33,5 @@ Left, the owner's:
 - optional: the workflow's actions have newer majors (checkout v7, setup-node v7,
   configure-pages v6, upload-pages-artifact v5, deploy-pages v5); GitHub warns
   the current ones run on a deprecated Node 20 - read their notes before moving
+
+2026-11-09: the owner published the v0.2.0 release on commit 039ce3d (the gallery refresh). The work of 2026-11-08/09 was still uncommitted (release notes, the castle live, the rename, every scene live at 60, AUTOPLAY's order). The release's Pages deploy failed: "Tag v0.2.0 is not allowed to deploy to github-pages due to environment protection rules" - the environment's only deployment rule is the branch main. Proposed to the owner: add a tag rule v* (Settings -> Environments -> github-pages, or gh api POST .../deployment-branch-policies name=v* type=tag), commit and push the work, delete the release with its tag and create it again on main.

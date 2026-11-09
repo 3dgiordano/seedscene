@@ -1604,6 +1604,10 @@ vec3 render(vec2 p, vec2 uv) {
   for (int i = 0; i < 192; i++) {
     if (float(i) >= uPipeInfo.x) break;
     vec4 A4 = uPipeA[i], B4 = uPipeB[i];
+    // (nowhere near the run and its joint on the screen - its ends, out by its widest - nothing to draw: on to the next)
+    float reach = PIPE_R * 1.75 * PIPE_FL / min(A4.z, B4.z);
+    vec2 lo = min(A4.xy, B4.xy) - reach, hi = max(A4.xy, B4.xy) + reach;
+    if (p.x < lo.x || p.y < lo.y || p.x > hi.x || p.y > hi.y) continue;
     vec2 A = A4.xy, ab = B4.xy - A4.xy;
     vec3 base = pipeCol(A4.w) * (0.85 + 0.25 * uPad);
     // the run: a polished cylinder from cell centre to cell centre
@@ -3049,8 +3053,8 @@ vec3 render(vec2 p, vec2 uv) {
 }
 `;
 
-const outrun = `
-// Outrun: the synthwave sunset — a striped sun, a neon grid racing to the
+const sunset = `
+// The neon sunset: the synthwave sunset — a striped sun, a neon grid racing to the
 // horizon, mountains in silhouette. Fixed colours: this one has an identity.
 float ridge(float x) {
   return 0.06 + 0.07 * abs(sin(x * 2.1 + uSeed.x * 9.0)) + 0.04 * abs(sin(x * 5.3 + uSeed.y * 5.0));
@@ -4726,6 +4730,7 @@ const boxer = `
 // light, as the arcade boxing games drew theirs: the whole show stays in
 // view, and your boxer still reads as yours. Raymarched in 3D and lit by the
 // spots.
+#define STAGE_OPAQUE
 float sdStar(vec2 p, float r, float spikes) {
   float a = atan(p.y, p.x);
   return length(p) - r * (0.55 + 0.45 * pow(abs(cos(a * spikes * 0.5)), 6.0));
@@ -4873,6 +4878,8 @@ vec3 tapDir(int i) {
 // the crowd, out of focus, and the photographers' flashes
 vec3 crowd(vec2 c2, float frenzy) {
   vec3 col = mix(vec3(0.015, 0.01, 0.035), vec3(0.09, 0.03, 0.09), smoothstep(-0.2, 0.6, c2.y));
+  // (the heads sit within 1.5 across and -0.1 to 0.45 up, none wider than 0.08: nothing to draw past that)
+  if (abs(c2.x) > 1.58 || c2.y < -0.18 || c2.y > 0.53) return col;
   for (int i = 0; i < 40; i++) {
     float fi = float(i);
     vec2 h = hash22(vec2(fi, 7.0) + uSeed.xy * 5.0);
@@ -5191,6 +5198,7 @@ vec3 render(vec2 p, vec2 uv) {
   col = mix(col, vec3(1.0, 1.0, 0.8), (1.0 - smoothstep(0.0, 0.015, big)) * sp);
   col += vec3(1.0, 0.95, 0.85) * 0.5 * exp(-KO * 10.0) * down;
   // switched off: sparks spitting from his neck, a wisp of smoke
+  if (gone * step(1.0, KO) > 0.0) {
   vec3 neck = botPoint(gA, vec3(0.0, 0.76, -0.05));
   vec2 ns = toScreen(neck, ro, fw, rt, up);
   for (int k = 0; k < 5; k++) {
@@ -5201,7 +5209,8 @@ vec3 render(vec2 p, vec2 uv) {
     col += vec3(0.6, 0.85, 1.0) * exp(-length(p - pk) * 120.0) * (1.0 - ph2) * 2.0 * gone * step(1.0, KO);
   }
   vec2 hsm = toScreen(botPoint(gA, vec3(0.0, 0.94, 0.0)), ro, fw, rt, up);
-  col += vec3(0.5) * 0.12 * fbm((p - hsm) * 6.0 - vec2(0.0, uTime * 0.6)) * exp(-length((p - hsm - vec2(0.0, 0.12)) * vec2(3.0, 1.5)) * 2.0) * gone * step(1.5, KO);
+  if (KO >= 1.5) col += vec3(0.5) * 0.12 * fbm((p - hsm) * 6.0 - vec2(0.0, uTime * 0.6)) * exp(-length((p - hsm - vec2(0.0, 0.12)) * vec2(3.0, 1.5)) * 2.0) * gone;
+  }
 
   // the count, up on the beats
   if (count > 0.5 && countN >= 1.0 && countN <= 8.0) {
@@ -11114,7 +11123,7 @@ vec3 render(vec2 p, vec2 uv) {
 
 const SOURCES = {
   plasma, tunnel, metaballs, starfield, copper, fractal,
-  shadebobs, vectorballs, dottunnel, fireworks, fire, kefrens, ball, rings, scanner, footsteps, twister, bobs, dualchess, chessfloor, rubber, bumplogo, cracktro, ansi, echolines, maze3d, moonbike, timecar, animeop, pipes, ripple, outrun, morph, prism, sculpture, fractalflight, coderain, gimbal, djdecks, castle,
+  shadebobs, vectorballs, dottunnel, fireworks, fire, kefrens, ball, rings, scanner, footsteps, twister, bobs, dualchess, chessfloor, rubber, bumplogo, cracktro, ansi, echolines, maze3d, moonbike, timecar, animeop, pipes, ripple, sunset, morph, prism, sculpture, fractalflight, coderain, gimbal, djdecks, castle,
   paddles: staged(paddles, 0.55, 0.45),
   invaders: staged(invaders, 0.6, 0.35),
   rocks: staged(rocks, 0.45, 0.5),
@@ -11184,7 +11193,7 @@ export const STYLE_INFO = {
   pyramid:     'The cube pyramid, played: hop on the beat, dodge the red balls, lure the snake off a disc',
   pipes:       'The 3D pipes screensaver: shiny pipes filling the screen from the distance forwards, elbows on the eighths',
   ripple:      'Drops on the beat rippling across a pool floor',
-  outrun:      'Synthwave sunset: striped sun, neon grid, mountains',
+  sunset:      'Synthwave sunset: striped sun, neon grid, mountains',
   morph:       'Raymarched solid melting between shapes on the bar',
   prism:       'Shader art: a lattice of light pushed out by a wave, each colour a moment behind, a star where they meet',
   sculpture:   'Shader art: a ball travelling through an arch and a ring, melting into them as it passes, under soft shadows',

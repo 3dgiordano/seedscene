@@ -1,10 +1,10 @@
 # Changelog
 
-## 0.2.0 — in development
+## 0.2.0 — 2026-11-08
 
 The release that turns the tool into **SEEDSCENE**: a name, a personality,
 a Commodore 64 front door, seven eras of computing from 1972 to now,
-fifty-nine scenes, thirty-six styles of music, seventeen displays and six
+sixty scenes, thirty-six styles of music, seventeen displays and six
 sound boards, an endless AUTOPLAY channel, and a live mode you
 can drive entirely from the keyboard.
 
@@ -98,7 +98,7 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   bass, a brass hook, orchestra hits with timpani, lasers in key.
 - **Seven new scenes**, homages written from scratch: `shadebobs`,
   `vectorballs` (morphing between formations), `dottunnel`, `fireworks`
-  (a burst on every backbeat), `ripple` (drops on the beat), `outrun` (the
+  (a burst on every backbeat), `ripple` (drops on the beat), `sunset` (the
   synthwave sunset) and `morph` (a raymarched solid melting between shapes).
 - **The name SEEDSCENE** (*seed* + *demoscene*) and its command,
   `seedscene`, replacing the working name `music-gen-video` and `mgv`.
@@ -332,8 +332,8 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   a third of the time or less, with the same pictures; and the live page
   starts loading the first scene as soon as its boot screen is up.
 - **Five more styles of the Amiga years**, homages to moods, never to tunes:
-  `beast` (beast lands - tribal toms in a slow 6/8, a pan flute, a bowed drone
-  on the tonic, a mysterious minor), `agony` (lament - a slow piano broken in
+  `wildlands` (wild lands - tribal toms in a slow 6/8, a pan flute, a bowed drone
+  on the tonic, a mysterious minor), `lament` (lament - a slow piano broken in
   eighths over strings, a lonely lead, the rain, a slow pulse), `ballad`
   (musicdisk ballad - a four-channel ballad, a lead singing with vibrato
   under A5 as a tracker's did, an arpeggio, a soft beat), `march` (jolly
@@ -342,12 +342,12 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   (hip-hop blaster - a boom-bap break at 88-100, scratches, orchestra stabs,
   a lead chopped like a rap). All five play in 1990–1993; lament and the
   march in 1994–1996 too, and the march in 1997–1999. Each passes the music
-  audit, the march's and the beast's flute with the warning the Amiga's one
+  audit, the march's and the wild lands' flute with the warning the Amiga's one
   flute sample has had before; trip-hop's scratches are shared with the
   hip-hop blaster, and trip-hop stays note for note as it was. Put right
   after the first review by the reviewer below, which found what the owner
   heard: no dance-floor claps, riser or crash in the lament, the ballad or the
-  tribal piece (the beast rolls on its toms; the march rolls its own snare in
+  tribal piece (the wild lands roll on their toms; the march rolls its own snare in
   thirty-seconds; the hip-hop's rolls play straight on the grid); on the
   Amiga a tom sampled at its own pitch, a drone looped past its swell, the
   ballad's vibrato kept, the scratches played by hand rather than from one
@@ -355,9 +355,9 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   softer FM patch on the Sound Blaster, its piano an Alberti bass under it,
   the rain a steady wash; the oom-pah chords under the tune; the hip-hop's
   stab an accent every two bars, under the lead; a second rhythm for the
-  beast's, the lament's and the rap's tunes. And after a second review, made
+  wild lands', the lament's and the rap's tunes. And after a second review, made
   with the reviewer's tools: that second rhythm given to the answering phrases
-  (a coin each phrase left half the seeds with one rhythm); the beast's tune on
+  (a coin each phrase left half the seeds with one rhythm); the wild lands' tune on
   the 6/8's eighths, its toms on the left, its tom rolls between the groove's
   toms; the march's kick with the tuba, softer, no riser before its drop; the
   ballad's and the rap's lead the soft FM patch on the Sound Blaster, where it
@@ -527,6 +527,26 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   against Wikipedia's screenshots of three kart racers of 1997-1999; the
   drivers, karts and courses are drawn here, no character, item or course of
   any game.
+- **The cartoon castle** (`castle`, 1982–1989, on the arcade monitor with the
+  HI-FI board), the hand-animated laserdisc adventures of the 80s, as an
+  idea: a caped fox knight running a torchlit castle, a room a phrase, cut as
+  an animated film's editor would cut it - wide shots, close-ups, low and
+  high angles, a dutch tilt. The floor ahead gives way as he arrives and he
+  leaps the spikes on the downbeat, landing on a beat; he dives under a gate
+  that slams on a bar line; he crosses swords with a lizard guard, three
+  exchanges parried and parrying on the beats with sparks where the blades
+  meet, then runs him through on the downbeat. The prompt for each move
+  flashes the beat before, the stick and the button lit on a panel as the
+  cabinet had them. The sets are painted in the shader - big stones each of
+  its own tone, the light in a few bands, torches flaring with the kick - and
+  the figures drawn as cels in the round: flat colour, one shadow tone, an
+  ink line, posed twelve times a second from a library of drawings and
+  smoothed between. The fox's cape and skirt and the lizard's are cloth,
+  simulated as triangles that fall, swing and keep off the body; the tails
+  are simulated too, and the eyes are balls set in the head, so they keep
+  their shape from any side. Drawn against the arcade museum's and
+  Wikipedia's captures of the laserdisc game of 1983; the fox, the lizard and
+  the rooms are drawn here, no character, room or creature of any game.
 - **The football match** (`football`, 1990–1993), the top-down football
   games of the arcades and the Amiga: two sides of eleven on a pitch mown in
   stripes, seen from above, the camera following the ball - the lines, the
@@ -1041,7 +1061,7 @@ scene now has one era, a span of years (see **Eras are spans of years** and
   1990–1993). The machine names still find their era.
 - **Displays.** The screens are their own catalogue, apart from the eras:
   sixteen, each named for one technology - B/W, ARCADE, VECTOR, COLOR VECTOR, MONO, C64, VHS, EGA,
-  AMIGA, VGA, SNES, COMPOSITE TV, GAME BOY, NOKIA, SVGA and MODERN (no filter).
+  AMIGA, VGA, SNES, COMPOSITE TV, GAME BOY, PHONE LCD, SVGA and MODERN (no filter).
   Every display draws at full resolution - a simulation, not an emulation -
   and only one that was a CRT gets a CRT's scan lines, curvature and glow; an
   LCD gets its palette. On AUTO every scene is seen through its own (a game its
@@ -1135,6 +1155,48 @@ scene now has one era, a span of years (see **Eras are spans of years** and
 
 ### Fixed
 
+- **AUTOPLAY no longer shows a scene again and again in other colours while
+  scenes wait unseen.** Skipped through with the arrow key, a track at a time,
+  it showed the same scene twice in a row 92 times in 1,432 tracks (over eight
+  seeds), and a scene seen in the twelve tracks before 243 times. The causes:
+  - an era with fewer scenes than a visit's six places (2000-2009 and 2010 on
+    have three) dealt each twice;
+  - a visit dealt across two rounds of its era could repeat one;
+  - the few scenes two eras share came back in the next block;
+  - an era could come back with only one other between.
+  Now:
+  - each track of a visit opens on a scene of its own, and no scene follows
+    itself;
+  - where an era must show one twice, it is as far apart as the visit allows
+    and in another track (a c b a c b);
+  - shared scenes go to the end of a block;
+  - an era comes back no sooner than two others.
+  The same 1,432 tracks: 0 in a row, 107 within twelve. Tracks keep the pace,
+  40 s of two 20 s scenes. Held in one era, and in THE JOURNEY, all plays as
+  before.
+- **Every scene holds the screen's rate live, on a laptop's integrated GPU
+  too.** Measured live on one (Intel UHD 630) over 40 s each, seven scenes
+  dropped well under 60 fps at their busiest: the 3D pipes to 18, the boxer to
+  30, the cracktro to 41, the copper bars, the tanks, the bobs and the
+  starfighter to 46-49. The castle could fall to a few frames a second in
+  its duel.
+  - **A scene whose frames stop fitting is drawn a step smaller, live:**
+    seven eighths, then three quarters of the side, no less. It goes back up
+    when they fit again, and starts full size each time.
+    - The words over it and the screen's look keep their full resolution.
+    - On a GPU with room to spare nothing changes.
+    - Files are drawn full size, as before.
+  - **The 3D pipes:** each run is looked at only where it lies on the
+    screen, so the full tangle costs a quarter of what it did, with the same
+    picture.
+  - **The boxer:** no sky is drawn under its board, no crowd where no head
+    can be, and no smoke or sparks unless the robot is down; the same picture,
+    an eighth less.
+  - **The castle's cloth, live:** it is stepped right up to each frame,
+    rather than a copy stepped on to it, which was a third of its work. It
+    never takes more than four steps in a frame, so a late frame can no
+    longer ask for more and fall further behind. The cloth keeps off the
+    body as well as in a file. Files are stepped as before, to the bit.
 - **A programme never stops for a scene still compiling.** Live, AUTOPLAY and
   THE JOURNEY waited for any scene their track needed that the background had
   not compiled yet - 21 s at once in a minute of AUTOPLAY on a laptop's GPU.

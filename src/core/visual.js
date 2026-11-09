@@ -10,9 +10,13 @@ import { ABOUT_PAGES, ABOUT_STORY, ABOUT_GREETS } from '../brand.js';
 import { ERAS } from './eras.js';
 import { displayFor, displayUniforms, displayResolution } from './displays.js';
 
+// the word a scene's look is salted with: its key, or for a scene renamed before 0.2.0 the key it was approved under
+const SCENE_SALT = { sunset: 'outrun' };
+const sceneSalt = (style) => SCENE_SALT[style] || style;
+
 /** Seed -> an Inigo Quilez cosine palette that is pleasant rather than muddy. */
 export function makePalette(seed, style) {
-  const r = new Rng(seed, 'palette:' + style);
+  const r = new Rng(seed, 'palette:' + sceneSalt(style));
   const base = r.float(0.35, 0.55);
   const a = [base, base, base].map((v) => v + r.float(-0.08, 0.08));
   const amp = r.float(0.3, 0.48);
@@ -108,7 +112,7 @@ export class Renderer {
   deriveLook() {
     const { seed, style } = this.opts;
     this.palette = makePalette(seed, style);
-    const r = new Rng(seed, 'visual:' + style);
+    const r = new Rng(seed, 'visual:' + sceneSalt(style));
     this.seedVec = [r.float(), r.float(), r.float(), r.float()];
     this.scrollText = this.buildScrollText();
     // the game behind a scene, if it has one, starts over with every new seed
@@ -116,6 +120,8 @@ export class Renderer {
     // (games that play on the music's grid read its bars and accents from the score's meta;
     // a scene that moves with the notes reads the music's feature tracks)
     this.sim = Sim ? new Sim(seed, (this.opts.meta && this.opts.meta.spb) || 0.5, this.opts.meta, this.opts.features, this.opts.greets || []) : null;
+    // (live, a game that simulates in small steps may skip ahead rather than fall further behind: see the castle's cloth)
+    if (this.sim) this.sim.live = !!this.opts.live;
   }
 
   /**
@@ -156,8 +162,9 @@ export class Renderer {
   /**
    * Compile scenes in the background before they are needed, so that showing one
    * for the first time does not stop the picture while the driver works on it
-   * (the heaviest takes seconds). Two at a time, in the order given; only where
-   * the driver can say when one is done - elsewhere scenes compile when first shown.
+   * (the heaviest takes seconds). One at a time, in the order given (two at once cost the scene on the screen
+   * frames on a laptop's GPU); only where the driver can say when one is done - elsewhere scenes compile when first
+   * shown.
    */
   /**
    * Whether a scene can be drawn now without the page waiting for the driver: compiled, or its compile done
@@ -197,7 +204,7 @@ export class Renderer {
     if (this.warming) return;
     this.warming = true;
     const step = () => {
-      // collect what the driver has finished, then start the next while two are not running
+      // collect what the driver has finished, then start the next when none is running
       for (const [n, st] of this.started) {
         if (!programDone(this.gl, st, this.parallel)) continue;
         try { this.programs.set(n, finishProgram(this.gl, st)); } catch (e) { console.error(e); }
@@ -205,7 +212,7 @@ export class Renderer {
       }
       // nothing else starts while the scene on screen is still compiling: it would only slow it
       const first = this.started.has(this.opts.style) && !this.programs.has(this.opts.style);
-      while (!first && this.started.size < 2 && this.warmQueue.length) {
+      while (!first && this.started.size < 1 && this.warmQueue.length) {
         const n = this.warmQueue.shift();
         if (!this.programs.has(n)) this.started.set(n, startProgram(this.gl, styleSource(n)));
       }
@@ -216,10 +223,12 @@ export class Renderer {
   }
 
 
-  /** The scene is drawn at its display's own resolution. */
+  /** The scene is drawn at its display's own resolution (live, a little smaller while the frames do not fit). */
   buildSceneTarget() {
     const gl = this.gl;
     const v = displayResolution(this.display, this.width, this.height);
+    const k = this.resScale || 1;
+    v.w = Math.max(1, Math.round(v.w * k)); v.h = Math.max(1, Math.round(v.h * k));
     if (this.scene && this.scene.w === v.w && this.scene.h === v.h) return;
     if (this.scene) { gl.deleteFramebuffer(this.scene.fbo); gl.deleteTexture(this.scene.tex); }
     this.scene = createTarget(gl, v.w, v.h);
@@ -625,9 +634,47 @@ export class Renderer {
     }
   }
 
+  /**
+   * Live only: when a scene's frames stop fitting the screen's refresh, it is drawn a step smaller - seven eighths,
+   * then three quarters of the side, no less - and a step back up when they fit again; the overlay and the screen keep
+   * their full resolution. Judged a second at a time, against the best rate this screen has shown; a step up that
+   * does not hold is taken back, and tried again after twice as long. A new scene starts full size. Offline renders
+   * never get here: every frame of a file is full size.
+   */
+  adapt() {
+    const now = performance.now();
+    const A = this.adaptive || (this.adaptive = { style: null, last: 0, from: now, n: 0, sum: 0, best: 58, step: 0, changed: now, wait: 8000, probing: false });
+    const set = (step) => {
+      A.step = step; A.changed = now;
+      this.resScale = [1, 0.875, 0.75][step];
+      this.buildSceneTarget();
+    };
+    if (A.style !== this.opts.style) { A.style = this.opts.style; A.wait = 8000; A.probing = false; A.n = 0; A.sum = 0; A.from = now; if (A.step) set(0); }
+    const dt = now - A.last;
+    A.last = now;
+    if (dt > 0 && dt < 250) { A.n++; A.sum += dt; }        // (a pause or a hidden tab is not counted)
+    if (now - A.from < 1000) return;
+    const fps = A.n ? 1000 * A.n / A.sum : 0;
+    A.from = now; A.n = 0; A.sum = 0;
+    if (!fps) return;
+    A.best = Math.max(A.best, Math.min(fps, 250));
+    const slow = fps < A.best * 0.92, easy = fps >= A.best * 0.97;
+    if (slow && A.step < 2) {
+      if (A.probing) A.wait = Math.min(A.wait * 2, 64000);
+      A.probing = false;
+      set(A.step + 1);
+    } else if (A.probing && easy) {
+      A.probing = false; A.wait = 8000;
+    } else if (!slow && easy && A.step > 0 && now - A.changed > A.wait) {
+      A.probing = true;
+      set(A.step - 1);
+    }
+  }
+
   /** Render one frame at time t with feature set f. */
   draw(t, f) {
     const gl = this.gl;
+    if (this.opts.live) this.adapt();
     gl.bindVertexArray(this.vao);
 
     // 1. style pass into the offscreen target
@@ -654,7 +701,8 @@ export class Renderer {
     const u = this.post.uniforms;
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.scene.tex);
-    gl.bindSampler(0, this.nearest);
+    // (drawn smaller, the picture is filtered up to the screen, not stepped)
+    gl.bindSampler(0, (this.resScale || 1) < 1 ? this.linear : this.nearest);
     if (u.uScene) gl.uniform1i(u.uScene, 0);
     gl.activeTexture(gl.TEXTURE2);
     gl.bindTexture(gl.TEXTURE_2D, this.scene.tex);

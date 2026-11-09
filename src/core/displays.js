@@ -111,8 +111,8 @@ export const DISPLAYS = {
     palette: 'dmg', levels: 0, dither: 0.7,
     tube: 'lcd', bloom: 0, scan: 0, barrel: 0, aberr: 0, grain: 0, vignette: 0.25,
   },
-  nokia: {
-    name: 'NOKIA', label: 'Phone LCD', blurb: 'the phone\'s monochrome LCD: dark pixels on a green backlight',
+  phone: {
+    name: 'PHONE LCD', label: 'Phone LCD', blurb: 'the phone\'s monochrome LCD: dark pixels on a green backlight',
     screen: 'lcd',
     lines: 160, pixelAspect: 1,            // (a homage, not an emulation: fine enough to read, coarse enough to recall it)
     palette: 'phone', levels: 0, dither: 0.35,
@@ -149,10 +149,10 @@ export const SCENE_DISPLAY = {
   rocks: 'vector',                    // (the vector arcade games of 1979 were drawn by a beam)
   tube: 'neonvector', tanks: 'neonvector',   // (the vector arcade games, with the punch of the other arcade scenes: colorvector is still there to force)
   invaders: 'arcade', maze: 'arcade', crossing: 'arcade', bricks: 'arcade', lightcycles: 'arcade',
-  boxer: 'arcade', pyramid: 'arcade', outrun: 'arcade', skyrush: 'arcade',
+  boxer: 'arcade', pyramid: 'arcade', sunset: 'arcade', skyrush: 'arcade',
   castle: 'arcade',                   // (the laserdisc game played on the arcade's own monitor)
   lcd: 'modern',
-  snake: 'nokia',                     // (the phone's game, on the phone's screen)
+  snake: 'phone',                     // (the phone's game, on the phone's screen)
   starfighter: 'snes',                // (the 16-bit console's polygons)
   scanner: 'vhs', timecar: 'vhs', moonbike: 'vhs', footsteps: 'vhs', animeop: 'vhs', coderain: 'vhs',
   djdecks: 'modern',                  // (the decks drawn whole, and the club round them, on the decade's flat screen)

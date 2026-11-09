@@ -134,9 +134,9 @@ whole idea. **Not yet** — nothing covers it.
 | Kind of game | What it brings | Where it stands |
 |---|---|---|
 | the Amiga's shooters and run-and-guns | heroic shooters, driving and melodic | Done — `heroic`, `starpilot` |
-| the atmospheric Amiga side-scrollers | atmosphere: tribal drums, flutes, mystery | Done — `beast` |
+| the atmospheric Amiga side-scrollers | atmosphere: tribal drums, flutes, mystery | Done — `wildlands` |
 | the Amiga's racing games | racing at full speed | Not yet |
-| the melancholy late-Amiga shooters | melancholy: piano, strings, a slow pulse | Done — `agony` |
+| the melancholy late-Amiga shooters | melancholy: piano, strings, a slow pulse | Done — `lament` |
 | the Amiga's pinball games | bouncy, bright, catchy | Not yet |
 | the late-Amiga space shooters | orchestral techno in space | Partly — `starpilot` |
 | the Amiga's dark sci-fi action games | dark, industrial | Partly — `derelict`, `cyborg` |
@@ -151,7 +151,7 @@ whole idea. **Not yet** — nothing covers it.
 | The media players' visualizers of the early 2000s | Not yet — no feedback-warp visualizer |
 | Today's visualizer programs: audio-reactive 3D worlds | Partly — the 3D stage under the games |
 | The bullet-hell shooters | Not yet |
-| Neon synthwave demos | Done — `outrun`, the modern era |
+| Neon synthwave demos | Done — `sunset`, the modern era |
 
 ### Energy keywords
 
@@ -169,7 +169,7 @@ whole idea. **Not yet** — nothing covers it.
 | The light-cycle film | Done — `lightcycles`; no music of its own |
 | The cyborg and space-horror films of the 80s | Done — `cyborg`, `derelict` |
 | Pop, rock and roll | Done — `synthpop`, `rocknroll` |
-| Racing: the arcade road racers, the police-chase racers, the Amiga's racers | Not yet — `outrun` is a sunset, not a road |
+| Racing: the arcade road racers, the police-chase racers, the Amiga's racers | Not yet — `sunset` is a sunset, not a road |
 | The cyberpunk film of 1999 | Not yet |
 | Parties: the big demo parties, from the 90s to now | Not yet — no party atmosphere: a big screen, a crowd, a compo |
 | Archives: the scene's databases and music archives | Sources to search and listen to, not content: they feed the proposals below |
@@ -223,7 +223,7 @@ whole idea. **Not yet** — nothing covers it.
 ### What the inventory says
 
 - The pack's **musical styles** are all covered.
-- The **game soundtracks** are half covered. What's missing are the moods that aren't heroic: atmosphere, melancholy, bounce, a march, hip-hop. (Since filled by round 5 but for the bounce: the atmosphere `beast`, the melancholy `agony`, the march `march`, hip-hop `bomb`.)
+- The **game soundtracks** are half covered. What's missing are the moods that aren't heroic: atmosphere, melancholy, bounce, a march, hip-hop. (Since filled by round 5 but for the bounce: the atmosphere `wildlands`, the melancholy `lament`, the march `march`, hip-hop `bomb`.)
 - The **effects** are mostly covered. The well-known Amiga tricks are missing (Kefrens bars, rotozoomer, glenz, the checkered ball), and so is anything that feeds back on itself (the media players' visualizers).
 - The **periods** have one hole each between 1985 and 1993: the Atari ST, the Mega Drive and the SNES, and the Gravis Ultrasound. (The Atari ST's chip has since come, as a board of 1982–1989.)
 - Racing and the cyberpunk film of 1999 are entirely open.
@@ -258,7 +258,7 @@ before the arcades.
 | P4 | **The media player, 2001** — the desktop players, their visualizers, the first MP3s | the synthesizer's own voices, through a gentle "MP3" band-limit | the visualizer channel, code rain, the rollercoaster (new) | `bigbeat`, `lobby`, `coaster` (new); `trance` | M |
 | P5 | **Arcade, 1995** — the Neo Geo and the shooter cabinets | **YM2610**: four FM voices, three squares and sampled drums that hit hard | run-and-gun, plane shooter, versus fighter, tournament, hoops (new); `boxer`, the racer | `brigade`, `squadron`, `versus`, `kombat`, `courtjam` (new); `fmmetal`, `heroic` | M |
 | P6 | **Flash and indie, 2010** — browser games, the pixel-art revival, the rhythm runners | the synthesizer's own voices with a bit-crushed chip layer: chiptune over a modern low end | rhythm runner, blocks (new); jumper, `snake` | `indiechip`, `wobble`, `electroswing` (new) | M |
-| P7 | **Lo-fi and vaporwave, 2017** — beats to study to, the mall at dusk | the synthesizer's own voices on a worn tape: wow and flutter, crackle, a soft top end | rainy window, vapor plaza (new); `ripple`, `outrun` | `lofi`, `vapor` (new); `dreamwave` | M |
+| P7 | **Lo-fi and vaporwave, 2017** — beats to study to, the mall at dusk | the synthesizer's own voices on a worn tape: wow and flutter, crackle, a soft top end | rainy window, vapor plaza (new); `ripple`, `sunset` | `lofi`, `vapor` (new); `dreamwave` | M |
 | P8 | **Rhythm games, 2005** — the dance pads and the plastic guitars | the synthesizer's own voices, mastered loud and bright, as the discs were | dance pad, note highway (new); the racer at night | `eurobeat`, `arenarock` (new); `trance`, `hardcore` | M |
 | P9 | **Festival and mobile, 2014** — the main stages and the games you tapped | the synthesizer's own voices, with the side-chained pump of the festival sound | festival stage, tap flyer (new); rhythm runner | `bigroom` (new); `wobble`, `trance` | M |
 | P10 | **Adventure games, 1990** — point and click: pirates, mansions, goblins, the desert palace | by the seed: **Roland MT-32** (LA synthesis: a sampled attack on a synthesized body, its own reverb — the card the adventures were scored for), **AdLib** (the OPL3's older sister) or, rarely, the **PC speaker** | pirate duel, treasure island, time-split mansion, three helpers, sword duel, cinematic chase (new) | `calypso`, `toon`, `whimsy`, `persia` (new); `midiquest` | L |
@@ -337,8 +337,8 @@ recognizable, and the era and sound chip it would play on.
 
 | Style | Homage to | What makes it | Era · chip | Effort |
 |---|---|---|---|---|
-| `beast` **Beast Lands** | the atmospheric Amiga side-scrollers | tribal toms in a slow 6/8, a pan flute, a bowed drone, a mysterious minor | Amiga · Paula | S |
-| `agony` **Lament** | the melancholy late-Amiga shooters | a slow piano over strings, a lonely lead, rain-like noise | Amiga · Paula; DOS · GUS | S |
+| `wildlands` **Wild Lands** | the atmospheric Amiga side-scrollers | tribal toms in a slow 6/8, a pan flute, a bowed drone, a mysterious minor | Amiga · Paula | S |
+| `lament` **Lament** | the melancholy late-Amiga shooters | a slow piano over strings, a lonely lead, rain-like noise | Amiga · Paula; DOS · GUS | S |
 | `pinball` **Pinball Fever** | the Amiga's pinball games | bouncy techno-pop at 130, a clavinet riff, bells, a chorus that hits | Amiga; 16-bit console | S |
 | `march` **Jolly March** | the little-walker games | a march: snare rolls, a tuba bass, a whistled lead, then a dance beat under it | Amiga; handheld | S |
 | `bomb` **Hip-Hop Blaster** | the Amiga shooters with a hip-hop beat | a slow hip-hop break, scratches, a stab, a rap-like chopped lead (no voice) | Amiga · Paula | S |
@@ -493,8 +493,8 @@ playing" card. 136 tracks across the twenty-two periods.
 | Atari ST 1987 | *Fullscreen* | `stchip` | the border broken | sine scroller |
 | Atari ST 1987 | *Buzzer Beat* | `stchip` | the demo menu | Kefrens bars |
 | Amiga 1990 | *Rave of the Art* | `rave` | the party at 3 a.m. | vector balls |
-| Amiga 1990 | *Beast Lands* | `beast` | the long walk under a purple sky | landscape |
-| Amiga 1990 | *Lament* | `agony` | the quiet part of the demo | water ripple |
+| Amiga 1990 | *Wild Lands* | `wildlands` | the long walk under a purple sky | landscape |
+| Amiga 1990 | *Lament* | `lament` | the quiet part of the demo | water ripple |
 | Amiga 1990 | *Bumper* | `pinball` | the table lights up | pinball |
 | Amiga 1990 | *Multiball* | `pinball` | three balls at once on the drop | pinball |
 | Amiga 1990 | *Turbo* | `turbo` | top speed, split screen | racer |
@@ -590,7 +590,7 @@ playing" card. 136 tracks across the twenty-two periods.
 | Lo-fi and vaporwave 2017 | *Rainy Window* | `lofi` | homework, rain, the lamp on | rainy window |
 | Lo-fi and vaporwave 2017 | *Mall Dusk* | `vapor` | an empty mall at closing time | vapor plaza |
 | Lo-fi and vaporwave 2017 | *Night Bus* | `lofi` | the city through a wet window | `ripple` |
-| Modern 2024 | *Neon Rain* | `neonnoir` | rain on a neon street | `outrun` |
+| Modern 2024 | *Neon Rain* | `neonnoir` | rain on a neon street | `sunset` |
 | Modern 2024 | *Bullet Dance* | `hardcore` | a screen full of bullets | bullet hell |
 | Modern 2024 | *Coaster Night* | `coaster` | a neon ride over the skyline | rollercoaster (3D, at night) |
 | Modern 2024 | *Stamp and Haul* | `shanty` | the whole crew stamping on the deck | sea battle |
@@ -761,7 +761,7 @@ Classic demo effects the pack did not name:
 
 | Scene | Proposal | Effort |
 |---|---|---|
-| `outrun` | add the road: becomes the racer's sunset stage | with racer |
+| `sunset` | add the road: becomes the racer's sunset stage | with racer |
 | `starfield` | layered parallax and a lens flare on the brightest star | S |
 | `lightcycles` | its own `grid` music in the 32-bit and modern eras | with `grid` |
 | `vectorballs` | gouraud-shaded meshes on the bar, the torus and the knot | S |
@@ -804,7 +804,7 @@ Inside each round the chip goes first, since the styles are tuned on it.
 | 2 | **The arcade of 1995, and the fighters** (P5): YM2610 (on the YM2612), 2A03; `brigade`, `squadron`, `versus`, `kombat`, `kungfu`; run-and-gun, plane shooter, missile defense, kung-fu corridor, versus fighter, tournament; cabinet mode | stands on round 1's FM; the platform, plane and fighting games together |
 | 3 | **Sports and pinball**: `olympic`, `dirt`, `courtjam`; athletics, motocross, hoops, pinball | the games of the arcades and the 8-bit years, on the chips of rounds 1 and 2 |
 | 4 | **Racing and the cyberpunk film**: `turbo`, `nitro`, `underground`, `lobby`, `bigbeat`; code rain, bullet time | the racer from round 1 gets its other eras |
-| 5 | **The Atari ST and the Amiga classics** (P1): YM2149; `stchip`, `beast`, `agony`, `ballad`, `march`, `bomb`, `italo`; Kefrens bars, twister, ball, glenz, landscape, the musicdisk player; the musicdisk mode | the pack's own heart: the trackmos and the MOD-era soundtracks |
+| 5 | **The Atari ST and the Amiga classics** (P1): YM2149; `stchip`, `wildlands`, `lament`, `ballad`, `march`, `bomb`, `italo`; Kefrens bars, twister, ball, glenz, landscape, the musicdisk player; the musicdisk mode | the pack's own heart: the trackmos and the MOD-era soundtracks |
 | 6 | **Adventures, pirates and the woodgrain console** (P10, P11): MT-32, AdLib, PC speaker, TIA; `calypso`, `toon`, `whimsy`, `persia`, `vcs`, `highseas`, `shanty`; pirate duel, sea battle, treasure island, time-split mansion, three helpers, sword duel, jungle runner, gallery shooter, cinematic chase, walkers | the adventure games need a chip of their own, the MT-32, and the most character animation of any round |
 | 7 | **The DOS party and the city** (P3): GUS; `idm`, `zoning`, `kaiju`, `industrial`; lens, crystals, raycaster, the city builder and its disasters; the party mode | the city builder is the largest scene: it comes when the rest is settled |
 | 8 | **The rhythm games** (P8): `eurobeat`, `arenarock`; dance pad, note highway | both need a simulator that judges timing against the score |
@@ -834,7 +834,7 @@ between the tracks - round 12 done (2026-10-31). From round 5, the YM2149 - a so
 not an era of its own, since the eras became spans of years - and its style
 `stchip` (2026-11-02, at the owner's word: the chip and its own style first; the
 round's Amiga and C64 styles later); then `italo` (2026-11-02), in 1982–1989; then
-`beast`, `agony`, `ballad`, `march` and `bomb` (2026-11-02) - round 5's styles done. Its
+`wildlands`, `lament`, `ballad`, `march` and `bomb` (2026-11-02) - round 5's styles done. Its
 scenes glenz and landscape, the musicdisk player and the musicdisk mode were left out of
 round 5 at the owner's word (2026-11-02).
 

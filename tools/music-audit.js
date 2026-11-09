@@ -41,7 +41,7 @@ const LEAD_INSTR = {
 // where a clash is what the style is about, or its bass is meant to walk away from the chord
 const EXEMPT = {
   derelict: { clash: 'the half-step above the root is the dread it is built on', walk: 'a drone holds the tonic under the moving chords (a pedal)' },
-  beast: { walk: 'a bowed drone holds the tonic under the moving chords (a pedal)' },
+  wildlands: { walk: 'a bowed drone holds the tonic under the moving chords (a pedal)' },
   march: { grid: 'its snare rolls are thirty-seconds, between the sixteenths on purpose' },
   terrace: { grid: 'its snare rolls are thirty-seconds, between the sixteenths on purpose' },
   cyborg: { clash: 'an odd-metre machine score: tension is the point' },

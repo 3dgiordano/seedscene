@@ -30,8 +30,8 @@ Seeds aurora, hikari, seedscene; 90 s each; 2026-11-02. ✓ pass, ⚠ warn, ✗ 
 | `fmmetal` | ✓ 99% | ✓ 0% | ✓ 93% | ✓ 95% | ✓ 5% | ✓ F#5 | ✓ 11 | ✓ 4% | ✓ 0% | ✓ 88% | ⚠ 5.0% | ✓ 0.0% | ⚠ 51% | ✓ -2.6 dB | · - | ✓ -1.9 | ✓ 5.5x |
 | `midiquest` | ✓ 88% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ G#5 | ✓ 12 | ✓ 6% | ✓ 1% | ✓ 73% | ✓ 0.0% | ✓ 0.0% | ✓ 31% | ✓ -2.6 dB | ✓ 6 dB flute | ✓ -2.4 | ✓ 5.4x |
 | `rocknroll` | ~ 74% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ B5 | ✓ 12 | ✓ 2% | ✓ 0% | ✓ 82% | ✓ 0.0% | · swung | ⚠ 65% | ✓ 1.6 dB | · - | ✓ -1.9 | ✓ 7.0x |
-| `beast` | ~ 75% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ F5 | ✓ 7 | ✓ 5% | ✓ 0% | ✓ 85% | ✓ 0.0% | ✓ 0.0% | ✓ 27% | ✓ -2.8 dB | ⚠ 10 dB flute | ✓ -3.2 | ✓ 5.3x |
-| `agony` | ✓ 96% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ G#5 | ✓ 9 | ✓ 2% | ✓ 0% | ✓ 52% | ✓ 0.0% | ✓ 0.0% | ✓ 0% | ✓ -0.4 dB | · - | ✓ -4.2 | ✓ 8.6x |
+| `wildlands` | ~ 75% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ F5 | ✓ 7 | ✓ 5% | ✓ 0% | ✓ 85% | ✓ 0.0% | ✓ 0.0% | ✓ 27% | ✓ -2.8 dB | ⚠ 10 dB flute | ✓ -3.2 | ✓ 5.3x |
+| `lament` | ✓ 96% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ G#5 | ✓ 9 | ✓ 2% | ✓ 0% | ✓ 52% | ✓ 0.0% | ✓ 0.0% | ✓ 0% | ✓ -0.4 dB | · - | ✓ -4.2 | ✓ 8.6x |
 | `ballad` | ✓ 97% | ✓ 0% | ✓ 100% | ✓ 100% | ✓ 0% | ✓ F#5 | ✓ 8 | ✓ 2% | ✓ 0% | ✓ 75% | ✓ 0.0% | ✓ 0.0% | ✓ 36% | ✓ -1.9 dB | · - | ✓ -2.4 | ✓ 8.1x |
 | `march` | · - | · - | ✓ 100% | ✓ 100% | ✓ 0% | ✓ B5 | ✓ 12 | ✓ 4% | ✓ 0% | ✓ 72% | ✓ 0.7% | ✓ 0.0% | ✓ 27% | ✓ -2.9 dB | ⚠ 10 dB flute | ✓ -2.1 | ✓ 9.9x |
 | `bomb` | ✓ 95% | ✓ 0% | ✓ 100% | · - | · - | ✓ F#5 | ✓ 9 | ✓ 2% | ✓ 0% | ✓ 59% | ✓ 0.0% | · swung | ✓ 25% | ✓ 6.5 dB | · - | ✓ -2.3 | ✓ 11.6x |
@@ -199,14 +199,14 @@ Seeds aurora, hikari, seedscene; 90 s each; 2026-11-02. ✓ pass, ⚠ warn, ✗ 
 - ⚠ 65% of the melody's echoes land a step from the note then sounding - listen: a rub at every turn, or the genre's own echo
 - ~ the bass let off the chord: a boogie bass walks the sixth and seventh
 
-## Beast Lands (`beast`)
+## Wild Lands (`wildlands`)
 
 107, 102, 100 bpm; C# minor, G minor, E phrygian. Layers: 42 bass, 190 chord, 139 melody notes.
 
 - ⚠ the flute:real strays 10 dB on average from a flute (A5, on paula): -18 -13 -26 -35 -37 where the real one has -24 -29 -40 -42 -44 - UNSW Music Acoustics, flute spectra (modern B-foot flute, G4 and A5)
 - ~ the bass let off the chord: a bowed drone holds the tonic under the moving chords (a pedal)
 
-## Lament (`agony`)
+## Lament (`lament`)
 
 72, 76, 71 bpm; F harmonicMinor, G# harmonicMinor, F harmonicMinor. Layers: 15 bass, 258 chord, 64 melody notes.
 

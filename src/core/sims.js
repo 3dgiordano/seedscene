@@ -8732,9 +8732,12 @@ function csTailOff(tail, P, k) {
 }
 function csClothSub(G, B, B0, atB, outB, reach, dt, air, tail) {
   const { n, p, q, v, C } = G, at = atB(B), out = outB(B);
+  // (where each point would hang on the body this step: the same for the whole step, so worked out once)
+  const rest = G.rest || (G.rest = new Float64Array(n * 3));
+  for (let i = 0; i < n; i++) { const P = at(Math.floor(i / C), i % C); rest[i * 3] = P[0]; rest[i * 3 + 1] = P[1]; rest[i * 3 + 2] = P[2]; }
   // the hung row goes with the body, kept off it
   for (let c = 0; c < C; c++) {
-    const k = c * 3, P = at(0, c);
+    const k = c * 3, P = [rest[k], rest[k + 1], rest[k + 2]];
     q[k] = p[k]; q[k + 1] = p[k + 1]; q[k + 2] = p[k + 2];
     p[k] = P[0]; p[k + 1] = P[1]; p[k + 2] = P[2];
     if (!G.underBelt) csKeepOff(B, p, k, CS_CLOTH_KEEP, out(p[k], p[k + 1], p[k + 2], true));
@@ -8787,9 +8790,9 @@ function csClothSub(G, B, B0, atB, outB, reach, dt, air, tail) {
     const k = i * 3, a = (i % C) * 3, r = Math.floor(i / C);
     let dx = p[k] - p[a], dy = p[k + 1] - p[a + 1], dz = p[k + 2] - p[a + 2], dl = Math.sqrt(dx * dx + dy * dy + dz * dz);
     if (dl > G.tether[i]) { const s = G.tether[i] / dl; p[k] = p[a] + dx * s; p[k + 1] = p[a + 1] + dy * s; p[k + 2] = p[a + 2] + dz * s; }
-    const R = at(r, i % C), m = reach(r);
-    dx = p[k] - R[0]; dy = p[k + 1] - R[1]; dz = p[k + 2] - R[2]; dl = Math.sqrt(dx * dx + dy * dy + dz * dz);
-    if (dl > m) { const s = m / dl; p[k] = R[0] + dx * s; p[k + 1] = R[1] + dy * s; p[k + 2] = R[2] + dz * s; }
+    const m = reach(r);
+    dx = p[k] - rest[k]; dy = p[k + 1] - rest[k + 1]; dz = p[k + 2] - rest[k + 2]; dl = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    if (dl > m) { const s = m / dl; p[k] = rest[k] + dx * s; p[k + 1] = rest[k + 1] + dy * s; p[k + 2] = rest[k + 2] + dz * s; }
   }
   }
   // off the body, sliding on it with a little friction (relative to the body's own motion there)
@@ -8847,7 +8850,7 @@ const csLerpF = (F0, F1, w) => ({ J: F1.J.map((p, i) => p.map((x, k) => F0.J[i][
   scab: F1.scab && F0.scab ? F1.scab.map((p, i) => p.map((x, k) => F0.scab[i][k] + (x - F0.scab[i][k]) * w)) : F1.scab });
 
 /** A figure's clothes at rest on it (F: its joints in the room): the cape (the hero's), the tail, the skirt, settled. */
-export function csDressHang(F, kind) {
+export function csDressHang(F, kind, settle = CS_SETTLE) {
   const fr = csDressFrame(F);
   const tail = csTailRest(fr, kind);
   const S = { kind, tail: { p: tail, q: tail.map((v) => v.slice()) }, F };
@@ -8862,8 +8865,16 @@ export function csDressHang(F, kind) {
     G.p.set(P, i * 3); G.q.set(P, i * 3);
   }
   // (settled: a second still, so it starts hanging as it would, off the tail and the body)
-  for (let k = 0; k < 60; k++) csDressStep(S, F, F, 1 / 120);
+  csDressSettle(S, settle);
   return S;
+}
+const CS_SETTLE = 60;
+
+/** The hang's settling, k steps more of it (live, spread over the frames before the room comes on). */
+export function csDressSettle(S, k) {
+  S.settled = S.settled || 0;
+  for (; k > 0 && S.settled < CS_SETTLE; k--, S.settled++) csDressStep(S, S.F, S.F, 1 / 120);
+  return S.settled >= CS_SETTLE;
 }
 
 /** The clothes a step on (dt), the body going from F0 to F1 over it. */
@@ -9173,13 +9184,43 @@ export class CastleSim {
    */
   dress(t, n, len) {
     const start = n * len, duel = this.room(n).kind === 'duel';
+    // (live, the clock follows the audio and can step back a few milliseconds: the cloth is then shown as it is, not
+    // simulated again from the room's start, which cost up to two seconds a time; going back further starts it over)
+    const S0 = this.dressState;
+    if (S0 && S0.n === n && S0.t > t + 1e-9 && S0.t - t < 0.25) return S0.fig.map((f, s) => f && csDressShown(f, this.figureWorld(S0.t, s), 0));
     if (!this.dressState || this.dressState.n !== n || this.dressState.t > t + 1e-9) {
-      this.dressState = { n, t: start, fig: [csDressHang(this.figureWorld(start, 0), 0), duel ? csDressHang(this.figureWorld(start, 1), 1) : null] };
+      // (the next room's clothes, hung ahead in the last second of this one, are the same as hung now)
+      const P = this.preHang;
+      if (P && P.n === n && S0 && S0.n === n - 1 && P.fig[0] && (!P.duel || P.fig[1])) { P.fig.forEach((f) => f && csDressSettle(f, CS_SETTLE)); this.dressState = { n, t: start, fig: P.fig }; }
+      else this.dressState = { n, t: start, fig: [csDressHang(this.figureWorld(start, 0), 0), duel ? csDressHang(this.figureWorld(start, 1), 1) : null] };
+      this.preHang = null;
     }
     const S = this.dressState, dt = 1 / 120;
+    // live: the clothes stepped right up to the frame, in as many even steps of about a 120th of a second as reach it -
+    // no copy stepped on to it each frame, a third of the work - and never more than four: a frame that came late would
+    // otherwise ask for more steps, come later still, and the picture fall to a few frames a second; they skip ahead
+    // instead and catch up with the body. A file is drawn on the 120ths and never falls behind: every step is taken.
+    if (this.live && t - S.t > 1e-4) {
+      if (t - S.t > 4 * dt) S.t = t - 4 * dt;
+      const k = Math.max(1, Math.round((t - S.t) / dt)), h = (t - S.t) / k;
+      for (let i = 0; i < k; i++) {
+        S.t = i === k - 1 ? t : S.t + h;
+        for (let s = 0; s < 2; s++) if (S.fig[s]) csDressStep(S.fig[s], S.fig[s].F, this.figureWorld(S.t, s), h);
+      }
+    }
     while (S.t + dt <= t + 1e-9) {
       S.t += dt;
       for (let s = 0; s < 2; s++) if (S.fig[s]) csDressStep(S.fig[s], S.fig[s].F, this.figureWorld(S.t, s), dt);
+    }
+    // live, a few steps a frame of the next room's hang, through this room's last second
+    const next = (n + 1) * len;   // (as the next room will reckon its start, to the last bit)
+    if (t > next - 1 && t < next) {
+      // (one figure begun a frame, then two steps a frame each: the hang's sixty steps in under a second)
+      if (!this.preHang || this.preHang.n !== n + 1) this.preHang = { n: n + 1, fig: [null, null], duel: this.room(n + 1).kind === 'duel' };
+      const P = this.preHang;
+      if (!P.fig[0]) P.fig[0] = csDressHang(this.figureWorld(next, 0), 0, 0);
+      else if (P.duel && !P.fig[1]) P.fig[1] = csDressHang(this.figureWorld(next, 1), 1, 0);
+      else P.fig.forEach((f) => f && csDressSettle(f, 2));
     }
     return S.fig.map((f, s) => f && csDressShown(f, this.figureWorld(t, s), t - S.t));
   }

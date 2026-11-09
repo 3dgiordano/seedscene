@@ -63,7 +63,7 @@ at every close. The sound-card round and the dropout fix were built on it.
 - **aspiration, again, for the eras** — every era was rendered with several
   scenes and the frames read side by side before anything was called done.
   That found a dot tunnel that vanished in a 16-colour and a 4-green palette,
-  vector balls swamping the frame, an inverted grid on the outrun floor, and
+  vector balls swamping the frame, an inverted grid on the neon sunset's floor, and
   fireworks too dim to see on the console era.
 - **persistence** — the fireworks took two tries. The first (wider streaks)
   changed nothing visible; instead of widening them again, the frame was

@@ -212,11 +212,10 @@ check('AUTOPLAY sounds the same every time, whatever the block size', ah === pro
       if (last[e] === shown.join()) again++;
       last[e] = shown.join(); visits++;
       for (let k = 0; k < 3; k++) {
-        const m = a.plan(block * 3 + k).music;
+        const pl = a.plan(block * 3 + k), m = pl.music;
         if (m === prevMusic) twice++;
         prevMusic = m;
-        for (let s = 0; s < Math.min(2, ERAS[e].scenes.length); s++) {
-          const sc = order[k * 2 + s];
+        for (const sc of a.trackScenes(block * 3 + k, pl)) {
           if (sc === prevScene) twice++;
           prevScene = sc;
         }
@@ -225,6 +224,35 @@ check('AUTOPLAY sounds the same every time, whatever the block size', ah === pro
   }
   check('AUTOPLAY plays each visit to an era its own way, moves on to another era every block, and never plays a scene or style twice in a row',
     again <= visits / 50 && sameEra === 0 && twice === 0, `${again} visits like the last of ${visits}`);
+}
+{
+  // a visit opens each of its tracks on a scene of its own, and shows no scene twice - or, in an era with fewer
+  // scenes than the visit has places (three, for six), none more than its share; skipped through track by track -
+  // the arrow key - no scene follows itself, and few come back within twelve tracks (eras share a few scenes, and the
+  // smallest are visited as often as the largest)
+  let inVisit = 0, inRow = 0, near = 0, tracks = 0;
+  for (const seed of ['aurora', 'seedscene', 'insertcoin', 'hikari']) {
+    const a = composeAutoplay(seed);
+    const firsts = [];
+    for (let block = 0; block < 120; block++) {
+      const seen = [], opens = [], list = ERAS[a.blockEra(block)].scenes;
+      for (let k = 0; k < 3; k++) {
+        const i = block * 3 + k, sc = a.trackScenes(i, a.plan(i));
+        seen.push(...sc);
+        opens.push(sc[0]);
+        firsts.push(sc[0]);
+      }
+      const most = Math.max(...[...new Set(seen)].map((sc) => seen.filter((x) => x === sc).length));
+      if (new Set(opens).size !== opens.length || most > Math.ceil(seen.length / list.length)) inVisit++;
+    }
+    for (let i = 1; i < firsts.length; i++) {
+      tracks++;
+      if (firsts[i] === firsts[i - 1]) inRow++;
+      if (firsts.slice(Math.max(0, i - 12), i).includes(firsts[i])) near++;
+    }
+  }
+  check('AUTOPLAY opens each track of a visit on its own scene, shows none more than its share, and skipped through track by track never shows one twice in a row',
+    inVisit === 0 && inRow === 0 && near <= tracks * 0.1, `${near} of ${tracks} tracks show a scene seen in the twelve before`);
 }
 {
   // the live keys' catalogue: era after era, oldest first, every scene of every era, dealt by the seed
@@ -594,6 +622,19 @@ check('AUTOPLAY sounds the same every time, whatever the block size', ah === pro
     b2.uniforms(30);
     const b = b2.uniforms(20);
     for (const k of ['uCsCam', 'uCsJ', 'uCsCloth', 'uCsPatch', 'uCsClothN', 'uCsPit', 'uCsTile', 'uCsTail', 'uCsHead']) if (String(a[k].v) !== String(b[k].v)) same = false;
+    // (live, the clock can step back a few milliseconds: the cloth waits for it, and what follows is the same)
+    const c = new SIMS.castle(seed, spb, meta), d = new SIMS.castle(seed, spb, meta);
+    c.uniforms(20); const kept = c.dressState; c.uniforms(19.993);
+    if (c.dressState !== kept) same = false;
+    const c2 = c.uniforms(20.5);
+    d.uniforms(20); const d2 = d.uniforms(20.5);
+    for (const k of ['uCsCloth', 'uCsTail']) if (String(c2[k].v) !== String(d2[k].v)) same = false;
+    // (played through a cut at 60 frames a second, the next room's clothes are hung ahead; they hang the same as when
+    // the room is jumped to)
+    const roomLen = c.stateAt(20).len, cut = Math.ceil(20 / roomLen) * roomLen, e = new SIMS.castle(seed, spb, meta);
+    for (let t = cut - 1.2; t < cut + 0.3; t += 1 / 60) e.uniforms(t);
+    const e2 = e.uniforms(cut + 0.3), f2 = new SIMS.castle(seed, spb, meta).uniforms(cut + 0.3);
+    for (const k of ['uCsCloth', 'uCsTail']) if (String(e2[k].v) !== String(f2[k].v)) same = false;
   }
   check("The castle's leap over the pit leaves on the downbeat and clears the hole, and the dive beats the gate",
     leaps >= 2 && offLeap === 0 && lowOver === 0 && dives >= 2 && caught === 0, `${leaps} leaps, ${dives} dives`);

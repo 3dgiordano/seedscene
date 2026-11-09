@@ -56,7 +56,7 @@ export const ERA_CARDS = {
   2010: ['COMPILING SHADERS... DONE', 'RAYMARCHING  NEON  NOW'],
 };
 // each era's chime, the start-up sound of the screen most of its things were seen on
-const CHIME_OF = { arcade: 'arcade', c64: 'c64', amiga: 'amiga', vga: 'dos', composite: 'console', snes: 'console', gameboy: 'handheld', nokia: 'handheld' };
+const CHIME_OF = { arcade: 'arcade', c64: 'c64', amiga: 'amiga', vga: 'dos', composite: 'console', snes: 'console', gameboy: 'handheld', phone: 'handheld' };
 
 const BLOCK = 3;               // autoplay: tracks per era before moving on
 const TWELVE = 12;             // born in: the age the era is the viewer's own
@@ -92,13 +92,15 @@ export function bornInHome(year) {
  * item, nor - with four or more to deal - on the one before it, so a part that runs over the end of
  * a round shows no item twice. `rounds` keeps the rounds dealt so far.
  */
-function dealt(rounds, seed, label, list, n) {
+function dealt(rounds, seed, label, list, n, keep = 2) {
   const len = list.length;
   const r = Math.floor(n / len);
   while (rounds.length <= r) {
     const k = rounds.length;
     const round = new Rng(seed, k ? `${label}/${k}` : label).shuffle(list);
-    const gap = len > 3 ? 2 : len > 1 ? 1 : 0;
+    // (how far into the new round the last round's end is kept away: two, or - for a share as long as an AUTOPLAY
+    // visit - that share, so a visit across two rounds shows nothing twice)
+    const gap = len > 3 ? Math.min(keep, len - 1) : len > 1 ? 1 : 0;
     const prev = rounds[k - 1];
     for (let p = 0; prev && p < gap; p++) {
       const tail = prev.slice(len - (gap - p));
@@ -174,6 +176,7 @@ export class Programme {
     this.transitions = new Map();
     this.leads = new Map();
     this.visits = [];              // autoplay: how many blocks before each one were in its era
+    this.laid = new Map();         // autoplay: blocks' scenes as laid out (the last few)
     this.deals = new Map();        // each list's rounds dealt so far
     this.journeyPlans = [];        // THE JOURNEY: the parts planned so far (each opens away from the one before)
     const total = this.partSec * this.count;
@@ -183,10 +186,10 @@ export class Programme {
 
   /** Era, scene and music of part i, without composing it. */
   /** The n-th item of a list dealt round after round (see dealt). */
-  deal(seed, label, list, n) {
+  deal(seed, label, list, n, keep = 2) {
     const key = `${seed}\n${label}`;
     if (!this.deals.has(key)) this.deals.set(key, []);
-    return dealt(this.deals.get(key), seed, label, list, n);
+    return dealt(this.deals.get(key), seed, label, list, n, keep);
   }
 
   plan(i) {
@@ -261,9 +264,18 @@ export class Programme {
   /** Autoplay: a cycle's order of the eras - never opening on the era the cycle before closed on. */
   cycleEras(cycle) {
     const order = new Rng(this.seed, `autoplay-cycle-${cycle}`).shuffle(ERA_NAMES);
-    if (cycle > 0 && order.length > 2) {
+    if (cycle > 0 && order.length > 4) {
       const before = new Rng(this.seed, `autoplay-cycle-${cycle - 1}`).shuffle(ERA_NAMES);
-      // (the cycle before is taken as drawn: only its first two can have moved, never its last)
+      // (nor on either of the last two it closed on, so an era comes back no sooner than two others: the cycle
+      // before is taken as drawn - only its first two can have moved, never its last two)
+      const late = before.slice(-2);
+      for (let p = 0; p < 2; p++) {
+        if (!late.includes(order[p])) continue;
+        const q = order.findIndex((e, j) => j >= 2 && !late.includes(e));
+        [order[p], order[q]] = [order[q], order[p]];
+      }
+    } else if (cycle > 0 && order.length > 2) {
+      const before = new Rng(this.seed, `autoplay-cycle-${cycle - 1}`).shuffle(ERA_NAMES);
       if (order[0] === before[before.length - 1]) [order[0], order[1]] = [order[1], order[0]];
     }
     return order;
@@ -281,46 +293,127 @@ export class Programme {
   }
 
   /**
+   * Autoplay: a visit's share of scenes made even - an era with fewer scenes than the visit has places (three, at
+   * two a track, for six) shows each its share and none more (a visit dealt across three of the era's rounds could
+   * hold one three times: the extra goes to a scene shown less).
+   */
+  balance(order, list) {
+    const cap = Math.ceil(order.length / list.length), count = new Map(list.map((sc) => [sc, 0]));
+    const even = order.map((sc) => { count.set(sc, (count.get(sc) || 0) + 1); return sc; });
+    for (let j = even.length - 1; j >= 0; j--) {
+      if (count.get(even[j]) <= cap) continue;
+      const less = list.filter((sc) => count.get(sc) < cap).sort((x, y) => count.get(x) - count.get(y))[0];
+      if (!less) continue;
+      count.set(even[j], count.get(even[j]) - 1); count.set(less, count.get(less) + 1);
+      even[j] = less;
+    }
+    return even;
+  }
+
+  /**
+   * Autoplay: a visit's scenes laid out over its tracks so that each track opens on a scene of its own - what
+   * skipping through track by track shows - and no scene follows itself, nor comes twice in a track; where an era
+   * must show some twice, as far apart as the visit allows, in another track (a c b a c b).
+   */
+  lay(deal) {
+    const per = this.sceneCount, rest = [...deal], firsts = [];
+    for (let k = 0; k < BLOCK; k++) {
+      const j = rest.findIndex((sc) => !firsts.includes(sc));
+      firsts.push(rest.splice(j >= 0 ? j : 0, 1)[0]);
+    }
+    const out = [];
+    for (let k = 0; k < BLOCK; k++) {
+      out.push(firsts[k]);
+      for (let s = 1; s < per; s++) {
+        const mine = out.slice(k * per), next = s === per - 1 ? firsts[k + 1] : null;
+        const tries = [(sc) => !mine.includes(sc) && sc !== next, (sc) => !mine.includes(sc), (sc) => sc !== out[out.length - 1], () => true];
+        let j = -1;
+        for (const ok of tries) if ((j = rest.findIndex(ok)) >= 0) break;
+        out.push(rest.splice(j, 1)[0]);
+      }
+    }
+    return out;
+  }
+
+  /**
    * Autoplay: the share of an era's scenes or music a block plays - `perVisit` of them, on from where
    * the era's last visit stopped in its deal (see dealt), so each visit plays the next of them and a
    * list comes round again only when all of it has played, each time in a new order.
    */
   eraDeal(block, kind, list, perVisit, skip = 0) {
     const at = this.eraVisit(block) * perVisit + skip;
-    return Array.from({ length: perVisit }, (_, j) => this.deal(this.seed, `autoplay-${kind}-${this.blockEra(block)}`, list, at + j));
+    return Array.from({ length: perVisit }, (_, j) => this.deal(this.seed, `autoplay-${kind}-${this.blockEra(block)}`, list, at + j, kind === 'scenes' ? perVisit : 2));
   }
 
   /**
-   * Autoplay: the order a block plays its era's scenes in - on from where the era's last visit stopped.
-   * It does not open on a scene the last block may have closed on (eras share scenes): any of the
-   * places its last track could have reached, or the one it may have swapped.
+   * Autoplay: the scenes a block deals itself - on from where its era's last visit stopped (an era of few scenes
+   * can deal the last visit's order again: then from one further on; not where a block follows another in its era,
+   * which goes on from it, scene after scene).
+   */
+  dealtScenes(n) {
+    const share = (b, skip) => this.eraDeal(b, 'scenes', ERAS[this.blockEra(b)].scenes, BLOCK * this.sceneCount, skip);
+    const mine = share(n, 0);
+    if (n > 0 && this.blockEra(n - 1) === this.blockEra(n)) return mine;
+    let c = n - 1;
+    while (c >= 0 && this.blockEra(c) !== this.blockEra(n)) c--;
+    return c >= 0 && share(c, 0).join() === mine.join() ? share(n, 1) : mine;
+  }
+
+  /**
+   * Autoplay: a block's scenes laid out, from its own deal and the scenes of the two blocks before it - never from
+   * how those were laid out, so a block far into the channel is worked out at once, without the hours before it.
+   * Eras share a few scenes: one the last two blocks show goes to the end of this one, as far from them as it can
+   * be; and a visit laid out just as its era's last one was is taken from a little further on in its deal.
+   */
+  laidOut(block) {
+    if (this.laid.has(block)) return this.laid.get(block);
+    const era = this.blockEra(block), list = ERAS[era].scenes;
+    const scenesOf = (b) => this.balance(this.dealtScenes(b), ERAS[this.blockEra(b)].scenes);
+    let order = this.dealtScenes(block);
+    if (block > 0 && this.blockEra(block - 1) !== era) {
+      const shown = new Set([...scenesOf(block - 1), ...(block > 1 ? scenesOf(block - 2) : [])]);
+      order = [...order.filter((sc) => !shown.has(sc)), ...order.filter((sc) => shown.has(sc))];
+    }
+    let out = order;
+    if (order.length === BLOCK * this.sceneCount) {
+      const even = this.balance(order, list);
+      out = this.lay(even);
+      let c = block - 1;
+      while (c >= 0 && this.blockEra(c) !== era) c--;
+      if (c >= 0) {
+        const before = this.lay(scenesOf(c)).join();
+        for (let r = 1; out.join() === before && r < even.length; r++) out = this.lay([...even.slice(r), ...even.slice(0, r)]);
+      }
+    }
+    if (this.laid.size > 64) this.laid.clear();
+    this.laid.set(block, out);
+    return out;
+  }
+
+  /**
+   * Autoplay: the order a block plays its era's scenes in. It does not open on a scene the block before ended on,
+   * nor on that block's last track's first one (what skipping through shows): where it would, its first track
+   * opens on its other scene, or its first two tracks change places - its last track stays as it was laid out, so
+   * the block after can tell how this one ends without it.
    */
   blockScenes(block) {
-    const share = (n, skip) => this.eraDeal(n, 'scenes', ERAS[this.blockEra(n)].scenes, BLOCK * this.sceneCount, skip);
-    // (an era of few scenes can deal the last visit's order again: then it starts one further on in its deal;
-    // not where a block follows another in its era, which goes on from it, scene after scene)
-    const draw = (n) => {
-      const mine = share(n, 0);
-      if (n > 0 && this.blockEra(n - 1) === this.blockEra(n)) return mine;
-      let c = n - 1;
-      while (c >= 0 && this.blockEra(c) !== this.blockEra(n)) c--;
-      return c >= 0 && share(c, 0).join() === mine.join() ? share(n, 1) : mine;
-    };
-    const order = draw(block);
-    // (a block after one in its own era carries on in the era's deal, which never repeats a scene in a row)
-    if (block > 0 && this.blockEra(block - 1) !== this.blockEra(block)) {
-      const prev = draw(block - 1);
-      const last = (BLOCK - 1) * this.sceneCount;
-      const maybe = [0, ...Array.from({ length: this.sceneCount }, (_, j) => last + j)].map((j) => prev[j % prev.length]);
-      // (and where the swap leaves no scene next to itself, in the order the block plays them)
-      const fits = (sc, j) => j > 0 && !maybe.includes(sc);
-      const apart = (j) => [j - 1, j + 1].every((n) => n < 1 || n >= order.length || order[n] !== order[0])
-        && (j === 1 || order[1] !== order[j]);
-      const good = order.findIndex((sc, n) => fits(sc, n) && apart(n));
-      const j = !maybe.includes(order[0]) ? -1 : good > 0 ? good : order.findIndex(fits);
-      if (j > 0) [order[0], order[j]] = [order[j], order[0]];
-    }
-    return order;
+    // (held in one era, block follows block in it: its deal goes on scene after scene, which never repeats one in a row)
+    if (this.era) return this.dealtScenes(block);
+    const out = [...this.laidOut(block)], per = this.sceneCount;
+    if (block === 0 || out.length !== BLOCK * per) return out;
+    const prev = this.laidOut(block - 1), last = (BLOCK - 1) * per;
+    const n = Math.min(per, ERAS[this.blockEra(block - 1)].scenes.length);
+    const avoid = [prev[last % prev.length], prev[(last + n - 1) % prev.length]];
+    if (!avoid.includes(out[0])) return out;
+    // (every way of the first two tracks, each either way round; best with every track opening on its own scene, else
+    // with no two tracks in a row opening alike)
+    const opens = (o) => Array.from({ length: BLOCK }, (_, k) => o[k * per]);
+    const ok = (o) => !avoid.includes(o[0]) && o.every((sc, j) => j === 0 || sc !== o[j - 1]) && opens(o).every((sc, k) => k === 0 || sc !== opens(o)[k - 1]);
+    const t0 = out.slice(0, per), t1 = out.slice(per, 2 * per), tail = out.slice(2 * per);
+    const turned = (t) => (per > 1 ? [t, [t[1], t[0], ...t.slice(2)]] : [t]);
+    const tries = [];
+    for (const [x, y] of [[t0, t1], [t1, t0]]) for (const a of turned(x)) for (const b of turned(y)) tries.push([...a, ...b, ...tail]);
+    return tries.find((o) => ok(o) && new Set(opens(o)).size === BLOCK) || tries.find(ok) || out;
   }
 
   /**
